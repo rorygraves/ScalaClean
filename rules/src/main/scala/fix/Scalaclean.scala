@@ -4,7 +4,7 @@ import scalafix.v1._
 
 import scala.meta.{Defn, _}
 
-class Scalaclean extends SemanticRule("Scalaclean") {
+class ScalaClean extends SemanticRule("ScalaClean") {
 
 
   def visitPkgStatements(pkg: String, statements: List[Stat]): Unit = {
