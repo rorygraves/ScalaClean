@@ -1,2 +1,9 @@
 *.class
 *.log
+input/target/
+output/target/
+rules/target/
+test/target/
+project/target/
+project/project/target/
+target/
