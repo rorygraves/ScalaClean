@@ -1,5 +1,5 @@
 /*
-rule = ScalaClean
+rule = ScalaCleanAnalysis
 */
 package fix
 
