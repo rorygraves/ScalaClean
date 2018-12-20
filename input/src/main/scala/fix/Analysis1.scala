@@ -1,5 +1,6 @@
 /*
-rule = ScalaCleanAnalysis
+rules = [ ScalaCleanAnalysis , ScalaCleanDeadClass ]
+
 */
 package fix
 
