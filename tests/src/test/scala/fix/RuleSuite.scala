@@ -3,9 +3,11 @@ package fix
 import java.nio.charset.StandardCharsets
 
 import org.scalatest.exceptions.TestFailedException
+import scalafix.internal.patch.PatchInternals
 import scalafix.internal.testkit.{AssertDiff, CommentAssertion}
 import scalafix.lint.RuleDiagnostic
 import scalafix.testkit.{RuleTest, SemanticRuleSuite}
+import scalafix.v1.{Rule, SemanticDocument, SemanticRule}
 
 import scala.meta._
 import scala.meta.internal.io.FileIO
@@ -16,6 +18,19 @@ class RuleSuite extends SemanticRuleSuite() {
 
   runAllTests()
 
+  def semanticPatch(
+    rule: Rule,
+    sdoc: SemanticDocument,
+    suppress: Boolean
+  ): (String, List[RuleDiagnostic]) = {
+    val fixes = (rule match {
+      case rule: SemanticRule =>
+        Some(rule.name -> rule.fix(sdoc))
+      case _ =>
+        None
+    }).map(Map.empty + _).getOrElse(Map.empty)
+    PatchInternals.semantic(fixes, sdoc, suppress)
+  }
   // Overridden version of runOn which is hacked ro to run the rules in sequence rather than parallised.
   // earlier rules results are ignored - i.e. this only works for ScalaCleanAnalysis followed by a proper rule for
   // testing.
@@ -27,7 +42,7 @@ class RuleSuite extends SemanticRuleSuite() {
       var messages: List[RuleDiagnostic] = Nil
       rule.rules.foreach { r =>
         r.beforeStart()
-        val res = rule.semanticPatch(sdoc, suppress = false)
+        val res = semanticPatch(r, sdoc, suppress = false)
         fixed = res._1
         messages = res._2
         r.afterComplete()
