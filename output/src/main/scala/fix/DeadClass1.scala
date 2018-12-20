@@ -1,7 +1,7 @@
 package fix
 
 object TestMain {
-  def main(args: Array[String]) = {
+  def main(args: Array[String]): Unit = {
 
     val used = UsedClass(5)
     println(used.usedMethod(true, 3))
@@ -19,5 +19,3 @@ case class UsedClass(value: Int)  {
   }
 
 }
-
-case class UnusedClass(value: String)

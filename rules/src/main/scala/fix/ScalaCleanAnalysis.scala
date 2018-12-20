@@ -9,12 +9,11 @@ class ScalaCleanAnalysis extends SemanticRule("ScalaCleanAnalysis")  {
   val model = new SCModel()
 
   override def beforeStart(): Unit = {
-    println("Clean BEFORE START")
+    println("Analysis BEFORE START")
   }
 
   override def afterComplete(): Unit = {
-    println("clean AFTER COMPLETE")
-    model.printStructure()
+    println("Analysis AFTER COMPLETE")
   }
 
   def visitPkgStatements(pkg: String, statements: List[Stat]): Unit = {

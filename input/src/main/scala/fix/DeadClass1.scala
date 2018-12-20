@@ -5,7 +5,7 @@ rules = [ ScalaCleanAnalysis , ScalaCleanDeadClass ]
 package fix
 
 object TestMain {
-  def main(args: Array[String]) = {
+  def main(args: Array[String]): Unit = {
 
     val used = UsedClass(5)
     println(used.usedMethod(true, 3))
