@@ -13,7 +13,6 @@ inThisBuild(
       )
     ),
     scalaVersion := V.scala212,
-    addCompilerPlugin(scalafixSemanticdb),
     scalacOptions ++= List(
       "-Yrangepos"
     )
@@ -28,6 +27,7 @@ lazy val rules = project.settings(
 )
 
 lazy val input = project.settings(
+  addCompilerPlugin(scalafixSemanticdb),
   skip in publish := true
 )
 
