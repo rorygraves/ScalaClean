@@ -1,6 +1,6 @@
 package fix
 
-import scalaclean.model.SCModel
+import scalaclean.model.{ModelHelper, SCModel}
 import scalafix.v1._
 
 /**
@@ -8,12 +8,18 @@ import scalafix.v1._
   * needs to be run after ScalaCleanAnalysis
   */
 class ScalaCleanDeadClass extends SemanticRule("ScalaCleanDeadClass")  {
-  val model = new SCModel()
+  var model: SCModel = _
 
 
   override def beforeStart(): Unit = {
+    println("Cleaner Rule BEFORE START")
     // TODO - where do we get the config path to load from - check other rules for examples
-    println("Cleaner Rule BEFORE START - load model from config?")
+
+    // hack to load the model from the helper class
+    this.model = ModelHelper.model.getOrElse(throw new IllegalStateException("No model to work from"))
+    println("Structure ----------------")
+    model.printStructure()
+    println("Structure end ----------------")
 
   }
 

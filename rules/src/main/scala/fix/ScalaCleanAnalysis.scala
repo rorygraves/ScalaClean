@@ -1,6 +1,6 @@
 package fix
 
-import scalaclean.model.{SCClass, SCModel}
+import scalaclean.model.{ModelHelper, SCClass, SCModel}
 import scalafix.v1._
 
 import scala.meta.{Defn, _}
@@ -13,6 +13,7 @@ class ScalaCleanAnalysis extends SemanticRule("ScalaCleanAnalysis")  {
   }
 
   override def afterComplete(): Unit = {
+    ModelHelper.model = Some(model)
     println("Analysis AFTER COMPLETE")
   }
 
