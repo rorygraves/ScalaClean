@@ -17,13 +17,13 @@ class ScalaCleanAnalysis extends SemanticRule("ScalaCleanAnalysis")  {
     println("Analysis AFTER COMPLETE")
   }
 
-  def visitPkgStatements(pkg: String, statements: List[Stat])(implicit doc: SemanticDocument): Unit = {
-    println(s"Package: $pkg")
-    statements.foreach(visitPkgStatement(pkg,_))
+  def visitPkgStatements(pkg: Pkg, statements: List[Stat])(implicit doc: SemanticDocument): Unit = {
+    println(s"Package: ${pkg.symbol}")
+    statements.foreach(visitPkgStatement(_))
   }
 
-  def visitObject(pkg: String, obj: Defn.Object)(implicit doc: SemanticDocument): Unit = {
-    println(s"Object = $pkg.${obj.name}  " + obj.mods.structureLabeled)
+  def visitObject(obj: Defn.Object)(implicit doc: SemanticDocument): Unit = {
+    println(s"Object = ${obj.symbol}")
 
   }
 
@@ -43,14 +43,12 @@ class ScalaCleanAnalysis extends SemanticRule("ScalaCleanAnalysis")  {
     }
   }
 
-  def visitPkgStatement(pkg: String, statement: Stat)(implicit doc: SemanticDocument): Unit = {
+  def visitPkgStatement(statement: Stat)(implicit doc: SemanticDocument): Unit = {
     statement match {
-      case Pkg(pName, pstats) => // a package containing a sub-package
-        
-        val newPkg = s"$pkg.$pName"
-        visitPkgStatements(newPkg, pstats)
+      case childPkg @ Pkg(pName, pstats) => // a package containing a sub-package
+        visitPkgStatements(childPkg, pstats)
       case o : Defn.Object =>
-        visitObject(pkg, o)
+        visitObject(o)
       case c: Defn.Class =>
         visitClass(c, None)
       case _ =>
@@ -62,7 +60,7 @@ class ScalaCleanAnalysis extends SemanticRule("ScalaCleanAnalysis")  {
 //    println("Tree.structureLabeled: " + doc.tree.structureLabeled)
     doc.tree match {
       case Source(stats) =>
-        visitPkgStatements("_root_", stats)
+        stats.foreach(visitPkgStatement(_))
       case _ =>
         throw new IllegalStateException(s"document: ${doc.input} does not start with a Source")
     }
