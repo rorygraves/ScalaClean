@@ -1,5 +1,6 @@
 *.class
 *.log
+.idea/
 input/target/
 output/target/
 rules/target/
