@@ -1,5 +1,6 @@
 package scalaclean.model
 
+@deprecated
 class SCModel {
   def printStructure(): Unit = {
     // TODO
@@ -21,6 +22,7 @@ class SCModel {
   }
 }
 
+@deprecated
 class SCClass(fullName: String) {
   var outerCls: Option[SCClass] = None
   def setOuter(outerClass: Option[SCClass]) : Unit = {

@@ -1,12 +1,13 @@
 package fix
 
-import scalaclean.model.{ModelHelper, SCClass, SCModel}
+import scalaclean.model.{ModelHelper, ScalaCleanModel}
+import scalaclean.model.analysis._
 import scalafix.v1._
 
 import scala.meta.{Defn, _}
 
 class ScalaCleanAnalysis extends SemanticRule("ScalaCleanAnalysis")  {
-  val model = new SCModel()
+  val model = new ScalaCleanModel()
 
   override def beforeStart(): Unit = {
     println("Analysis BEFORE START")
@@ -17,53 +18,8 @@ class ScalaCleanAnalysis extends SemanticRule("ScalaCleanAnalysis")  {
     println("Analysis AFTER COMPLETE")
   }
 
-  def visitPkgStatements(pkg: Pkg, statements: List[Stat])(implicit doc: SemanticDocument): Unit = {
-    println(s"Package: ${pkg.symbol}")
-    statements.foreach(visitPkgStatement(_))
-  }
-
-  def visitObject(obj: Defn.Object)(implicit doc: SemanticDocument): Unit = {
-    println(s"Object = ${obj.symbol}")
-
-  }
-
-  def visitClass(cls: Defn.Class, outerClass: Option[SCClass])(implicit doc: SemanticDocument): Unit = {
-    val fullName = cls.name.symbol.toString()
-    val scCls = model.getOrCreateClass(fullName)
-    scCls.setOuter(outerClass)
-    println(s"class = $fullName")
-    cls.templ.stats.foreach {
-      case vl : Defn.Val =>
-      case vr : Defn.Var =>
-      case df @ Defn.Def(mods,defName,_,_,_,_) =>
-        println(s"  method = $defName  " + mods.structureLabeled)
-
-      case dc: Defn.Class => // Inner class
-
-    }
-  }
-
-  def visitPkgStatement(statement: Stat)(implicit doc: SemanticDocument): Unit = {
-    statement match {
-      case childPkg @ Pkg(pName, pstats) => // a package containing a sub-package
-        visitPkgStatements(childPkg, pstats)
-      case o : Defn.Object =>
-        visitObject(o)
-      case c: Defn.Class =>
-        visitClass(c, None)
-      case _ =>
-        throw new IllegalStateException()
-    }
-  }
-
   override def fix(implicit doc: SemanticDocument): Patch = {
-//    println("Tree.structureLabeled: " + doc.tree.structureLabeled)
-    doc.tree match {
-      case Source(stats) =>
-        stats.foreach(visitPkgStatement(_))
-      case _ =>
-        throw new IllegalStateException(s"document: ${doc.input} does not start with a Source")
-    }
+    model.analyse(doc)
     Patch.empty
   }
 

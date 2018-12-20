@@ -1,6 +1,6 @@
 package fix
 
-import scalaclean.model.{ModelHelper, SCModel}
+import scalaclean.model.{ModelHelper, SCModel, ScalaCleanModel}
 import scalafix.v1._
 
 import scala.meta.Defn
@@ -10,7 +10,7 @@ import scala.meta.Defn
   * needs to be run after ScalaCleanAnalysis
   */
 class ScalaCleanDeadClass extends SemanticRule("ScalaCleanDeadClass")  {
-  var model: SCModel = _
+  var model: ScalaCleanModel = _
 
 
   override def beforeStart(): Unit = {
@@ -19,6 +19,7 @@ class ScalaCleanDeadClass extends SemanticRule("ScalaCleanDeadClass")  {
 
     // hack to load the model from the helper class
     this.model = ModelHelper.model.getOrElse(throw new IllegalStateException("No model to work from"))
+    model.finishedParsing()
     println("Structure ----------------")
     model.printStructure()
     println("Structure end ----------------")
