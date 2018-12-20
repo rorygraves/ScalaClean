@@ -17,18 +17,18 @@ class ScalaCleanAnalysis extends SemanticRule("ScalaCleanAnalysis")  {
     println("Analysis AFTER COMPLETE")
   }
 
-  def visitPkgStatements(pkg: String, statements: List[Stat]): Unit = {
+  def visitPkgStatements(pkg: String, statements: List[Stat])(implicit doc: SemanticDocument): Unit = {
     println(s"Package: $pkg")
     statements.foreach(visitPkgStatement(pkg,_))
   }
 
-  def visitObject(pkg: String, obj: Defn.Object): Unit = {
+  def visitObject(pkg: String, obj: Defn.Object)(implicit doc: SemanticDocument): Unit = {
     println(s"Object = $pkg.${obj.name}  " + obj.mods.structureLabeled)
 
   }
 
-  def visitClass(pkg: String, cls: Defn.Class, outerClass: Option[SCClass]): Unit = {
-    val fullName = s"$pkg.${cls.name}"
+  def visitClass(cls: Defn.Class, outerClass: Option[SCClass])(implicit doc: SemanticDocument): Unit = {
+    val fullName = cls.name.symbol.toString()
     val scCls = model.getOrCreateClass(fullName)
     scCls.setOuter(outerClass)
     println(s"class = $fullName")
@@ -43,15 +43,16 @@ class ScalaCleanAnalysis extends SemanticRule("ScalaCleanAnalysis")  {
     }
   }
 
-  def visitPkgStatement(pkg: String, statement: Stat): Unit = {
+  def visitPkgStatement(pkg: String, statement: Stat)(implicit doc: SemanticDocument): Unit = {
     statement match {
       case Pkg(pName, pstats) => // a package containing a sub-package
+        
         val newPkg = s"$pkg.$pName"
         visitPkgStatements(newPkg, pstats)
       case o : Defn.Object =>
         visitObject(pkg, o)
       case c: Defn.Class =>
-        visitClass(pkg, c, None)
+        visitClass(c, None)
       case _ =>
         throw new IllegalStateException()
     }

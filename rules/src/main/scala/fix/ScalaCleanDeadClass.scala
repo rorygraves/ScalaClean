@@ -33,25 +33,23 @@ class ScalaCleanDeadClass extends SemanticRule("ScalaCleanDeadClass")  {
   def isClassDead(name: String): Boolean = {
     // TODO This should depend on the SCModel
     println("ISDEAD = " + name)
-    name == "_root_.fix.UnusedClass"
+    name == "fix/UnusedClass#"
   }
 
-  def visitPkgStatements(pkg: String, statements: List[Stat]): Unit = {
+  def visitPkgStatements(pkg: String, statements: List[Stat])(implicit doc: SemanticDocument): Unit = {
     println(s"Package: $pkg")
     statements.foreach(visitPkgStatement(pkg,_))
   }
 
-  def visitObject(pkg: String, obj: Defn.Object): Unit = {
+  def visitObject(pkg: String, obj: Defn.Object)(implicit doc: SemanticDocument): Unit = {
     println(s"Object = $pkg.${obj.name}  " + obj.mods.structureLabeled)
 
   }
 
   val toRemoveTokens = ListBuffer[meta.Token]()
 
-  def visitClass(pkg: String, cls: Defn.Class, outerClass: Option[SCClass]): Unit = {
-    val fullName = s"$pkg.${cls.name}"
-    val scCls = model.getOrCreateClass(fullName)
-    scCls.setOuter(outerClass)
+  def visitClass(pkg: String, cls: Defn.Class, outerClass: Option[SCClass])(implicit doc: SemanticDocument): Unit = {
+    val fullName = cls.name.symbol.toString()
     println(s"class = $fullName")
     if(isClassDead(fullName))
       toRemoveTokens ++= cls.tokens
@@ -67,9 +65,10 @@ class ScalaCleanDeadClass extends SemanticRule("ScalaCleanDeadClass")  {
     }
   }
 
-  def visitPkgStatement(pkg: String, statement: Stat): Unit = {
+  def visitPkgStatement(pkg: String, statement: Stat)(implicit doc: SemanticDocument): Unit = {
     statement match {
-      case Pkg(pName, pstats) => // a package containing a sub-package
+      case p @ Pkg(pName, pstats) => // a package containing a sub-package
+        println("PSYMBOL = " + p.symbol)
         val newPkg = s"$pkg.$pName"
         visitPkgStatements(newPkg, pstats)
       case o : Defn.Object =>
