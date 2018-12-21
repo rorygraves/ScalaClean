@@ -1,6 +1,7 @@
 package fix
 
-import scalaclean.model.{ModelHelper, SCModel, ScalaCleanModel}
+import fix.util.TreeVisitor
+import scalaclean.model.{ModelHelper, ScalaCleanModel}
 import scalafix.v1._
 
 import scala.meta.Defn
@@ -9,7 +10,7 @@ import scala.meta.Defn
   * A rule that removes unreferenced classes,
   * needs to be run after ScalaCleanAnalysis
   */
-class ScalaCleanDeadClass extends SemanticRule("ScalaCleanDeadClass")  {
+class ScalaCleanDeadClass extends SemanticRule("ScalaCleanDeadClass") {
   var model: ScalaCleanModel = _
 
 
@@ -19,29 +20,38 @@ class ScalaCleanDeadClass extends SemanticRule("ScalaCleanDeadClass")  {
 
     // hack to load the model from the helper class
     this.model = ModelHelper.model.getOrElse(throw new IllegalStateException("No model to work from"))
-    println("Structure ----------------")
-    model.printStructure()
-    println("Structure end ----------------")
   }
 
-  override def afterComplete(): Unit = {
-    println("Cleaner Rule AFTER COMPLETE")
-  }
+  val deadTargets = List(
+    "fix/UnusedClass#",
+//    "fix/UsedClass#unusedMethod().:List(List(Int))"
+  )
 
-  def isClassDead(symbol: Symbol): Boolean = {
-    // TODO This should depend on the SCModel
-    name.toString() == "fix/UnusedClass#"
+
+  def isUnused(identifier: String): Boolean = {
+    // TODO This should depend on the inputFile
+    deadTargets.contains(identifier)
   }
 
   override def fix(implicit doc: SemanticDocument): Patch = {
-    val patches = doc.tree.collect {
-      case cls : Defn.Class =>
-        if(isClassDead(cls.name.symbol))
-          Patch.removeTokens(cls.tokens)
+
+    val tv = new TreeVisitor {
+      override def handleClass(clsSymbol: Symbol, cls: Defn.Class): (Patch, Boolean) = {
+        if (isUnused(clsSymbol.toString()))
+          (Patch.removeTokens(cls.tokens), false)
         else
-          Patch.empty
+          (Patch.empty, true)
+      }
+
+      override def handleMethod(objName: Symbol, fullSig: String, method: Defn.Def): (Patch, Boolean) = {
+        println("AAAA - here = " + fullSig)
+        if (isUnused(fullSig))
+          (Patch.removeTokens(method.tokens), false)
+        else
+          (Patch.empty, true)
+      }
     }
 
-    Patch.fromIterable(patches)
+    tv.visitDocument(doc.tree)
   }
 }
