@@ -1,2 +1,2 @@
-fix.ScalaCleanDeadCodeAnalysis
-fix.ScalaCleanDeadCodeRemover
+scalaclean.deadcode.ScalaCleanDeadCodeAnalysis
+scalaclean.deadcode.ScalaCleanDeadCodeRemover

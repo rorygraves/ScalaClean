@@ -1,8 +1,4 @@
-/*
-rules = [ ScalaCleanDeadCodeAnalysis , ScalaCleanDeadCodeRemover ]
-
-*/
-package deadcode
+package scalaclean.deadcode
 
 object TestMain {
   def main(args: Array[String]): Unit = {
@@ -18,9 +14,5 @@ case class UsedClass(value: Int)  {
     y + value
   }
 
-  def unusedMethod(z: Int): String = {
-    ???
-  }
+  
 }
-
-case class UnusedClass(value: String)

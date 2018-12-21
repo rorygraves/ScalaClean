@@ -1,6 +1,6 @@
-package fix
+package scalaclean.deadcode
 
-import fix.util.TreeVisitor
+import scalaclean.model.util.TreeVisitor
 import scalaclean.model._
 import scalafix.v1._
 
@@ -62,8 +62,8 @@ class ScalaCleanDeadCodeRemover extends SemanticRule("ScalaCleanDeadCodeRemover"
   }
 
   val deadTargets = List(
-    "fix/UnusedClass#",
-    "fix/UsedClass#unusedMethod().:List(List(Int))"
+    "scalaclean/deadcode/UnusedClass#",
+    "scalaclean/deadcode/UsedClass#unusedMethod().:List(List(Int))"
   )
 
   def isUnused(identifier: String): Boolean = {

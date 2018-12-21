@@ -1,6 +1,6 @@
-package fix
+package scalaclean.deadcode
 
-import fix.util.TreeVisitor
+import scalaclean.model.util.TreeVisitor
 import scalaclean.model.{ModelHelper, ScalaCleanModel}
 import scalafix.v1._
 

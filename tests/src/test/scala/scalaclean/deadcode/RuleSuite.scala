@@ -1,4 +1,4 @@
-package fix
+package scalaclean.deadcode
 
 import java.nio.charset.StandardCharsets
 
