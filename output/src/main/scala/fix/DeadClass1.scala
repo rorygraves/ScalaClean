@@ -14,7 +14,5 @@ case class UsedClass(value: Int)  {
     y + value
   }
 
-  def unusedMethod(z: Int): String = {
-    ???
-  }
+  
 }

@@ -50,7 +50,7 @@ class ScalaCleanDeadClass extends SemanticRule("ScalaCleanDeadClass")  {
 
   val deadTargets = List(
     "fix/UnusedClass#",
-//    "fix/UsedClass#unusedMethod().:List(List(Int))"
+    "fix/UsedClass#unusedMethod().:List(List(Int))"
   )
 
 
@@ -70,7 +70,6 @@ class ScalaCleanDeadClass extends SemanticRule("ScalaCleanDeadClass")  {
       }
 
       override def handleMethod(objName: Symbol, fullSig: String, method: Defn.Def): (Patch, Boolean) = {
-        println("AAAA - here = " + fullSig)
         if (isUnused(fullSig))
           (Patch.removeTokens(method.tokens), false)
         else
