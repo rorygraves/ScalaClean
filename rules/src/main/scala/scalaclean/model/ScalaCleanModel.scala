@@ -20,8 +20,8 @@ sealed trait TraitModel extends ClassLike
 
 sealed trait MethodModel extends ModelElement {
   val name:String
-
 }
+sealed trait CodeModel extends ModelElement
 
 sealed trait FieldModel extends ModelElement
 sealed trait ValModel extends FieldModel
@@ -160,10 +160,10 @@ class ScalaCleanModel {
       private[builder] override def build: Unit = super.build
 
     }
-    class VarModelImpl(name: String) extends FieldModelImpl(name) with VarModel
-    class ValModelImpl(name: String) extends ModelElementImpl with ValModel
+    class VarModelImpl(name: String, vr: Defn.Var) extends FieldModelImpl(name) with VarModel
+    class ValModelImpl(name: String, vl: Defn.Val) extends FieldModelImpl(name) with ValModel
 
-    class MethodModelImpl(val name: String) extends ModelElementImpl with MethodModel {
+    class MethodModelImpl(val name: String, df: Defn.Def) extends ModelElementImpl with MethodModel {
 
       private[builder] override def build: Unit = super.build
     }
@@ -203,7 +203,7 @@ class ScalaCleanModel {
         methodData.result()
       }
       private val fieldData = mutable.Map[String, FieldModelImpl]()
-      private val methodData = List.newBuilder[MethodModel]
+      private val methodData = List.newBuilder[MethodModelImpl]
       private val innerData = List.newBuilder[ClassLikeImpl]
       private var outerData = Option.empty[ClassLikeImpl]
       private val parentData = List.newBuilder[ClassLikeImpl]
@@ -233,9 +233,20 @@ class ScalaCleanModel {
       def analyse(templ: scala.meta.Template)(implicit doc: SemanticDocument): Unit = {
         templ.stats.foreach {
           case vl: Defn.Val =>
+            val name = vl.symbol.value
+            println(s"  val = ${name} ")
+            val impl = new ValModelImpl(name,vl)
+            fieldData(name) = impl
           case vr: Defn.Var =>
+            val name = vr.symbol.value
+            println(s"  var = ${name} ")
+            val impl = new VarModelImpl(name, vr)
+            fieldData(name) = impl
           case df@Defn.Def(mods, defName, _, _, _, _) =>
-            println(s"  method = $defName  " + mods.structureLabeled)
+            val name = df.symbol.value
+            println(s"  method = $name  " + mods.structureLabeled)
+            val impl = new MethodModelImpl(name, df)
+            methodData += impl
 
           case dc: Defn.Class => // Inner class
         }
