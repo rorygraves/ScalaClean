@@ -1,6 +1,6 @@
 package scalaclean.deadcode
 
-import scalaclean.model.util.TreeVisitor
+import scalaclean.util.TreeVisitor
 import scalaclean.model._
 import scalafix.v1._
 

@@ -1,11 +1,11 @@
-package scalaclean.deadcode
+package scalaclean.privatiser
 
-import scalaclean.util.TreeVisitor
 import scalaclean.model.{ModelHelper, ScalaCleanModel}
+import scalaclean.util.TreeVisitor
 import scalafix.v1._
 
 
-class ScalaCleanDeadCodeAnalysis extends SemanticRule("ScalaCleanDeadCodeAnalysis")  {
+class ScalaCleanPrivatiserAnalysis extends SemanticRule("ScalaCleanPrivatiserAnalysis")  {
   val model = new ScalaCleanModel()
 
   override def beforeStart(): Unit = {

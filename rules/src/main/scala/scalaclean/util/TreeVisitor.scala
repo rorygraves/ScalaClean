@@ -1,4 +1,4 @@
-package scalaclean.model.util
+package scalaclean.util
 
 import scalafix.patch.Patch
 import scalafix.v1._

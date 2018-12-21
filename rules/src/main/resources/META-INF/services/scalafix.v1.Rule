@@ -1,2 +1,4 @@
 scalaclean.deadcode.ScalaCleanDeadCodeAnalysis
 scalaclean.deadcode.ScalaCleanDeadCodeRemover
+scalaclean.privatiser.ScalaCleanPrivatiserAnalysis
+scalaclean.privatiser.ScalaCleanPrivatiserApply

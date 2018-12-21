@@ -14,5 +14,5 @@ case class UsedClass(value: Int)  {
     y + value
   }
 
-  
+
 }
