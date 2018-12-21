@@ -1,8 +1,8 @@
 /*
-rules = [ ScalaCleanAnalysis , ScalaCleanDeadClass ]
+rules = [ ScalaCleanDeadCodeAnalysis , ScalaCleanDeadCodeRemover ]
 
 */
-package fix
+package deadcode
 
 object TestMain {
   def main(args: Array[String]): Unit = {

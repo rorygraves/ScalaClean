@@ -1,2 +1,2 @@
-fix.ScalaCleanAnalysis
-fix.ScalaCleanDeadClass
+fix.ScalaCleanDeadCodeAnalysis
+fix.ScalaCleanDeadCodeRemover

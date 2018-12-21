@@ -20,16 +20,13 @@ class TreeVisitor()(implicit doc: SemanticDocument) {
 
   def visitPackage(pkg: Pkg): Patch = {
     val (patch, traverseChildren) = handlePackage(pkg.name, pkg)
-    if(traverseChildren) {
-      println("PKG STMTS SIZE = " + pkg.stats.length)
+    if (traverseChildren) {
       pkg.stats.foldLeft(patch) { case (patch, stmt) =>
-//        println("PKG STMT: " + stmt)
-        println("PKG STMT: " + stmt)
         patch + visitStatement(stmt)
-//        Patch.empty
+      //        Patch.empty
       case _ =>
         println("PKG STMT: OTHER")
-          Patch.empty
+        Patch.empty
       }
     } else
       patch
@@ -41,15 +38,15 @@ class TreeVisitor()(implicit doc: SemanticDocument) {
 
   def visitStatements(stmts: List[Stat]): Patch = {
     stmts.foldLeft(Patch.empty) { case (patch, stmt) =>
-        patch + visitStatement(stmt)
+      patch + visitStatement(stmt)
     }
   }
 
   def visitStatement(statement: Stat): Patch = {
     statement match {
-      case pkg : Pkg =>
+      case pkg: Pkg =>
         visitPackage(pkg)
-      case o : Defn.Object =>
+      case o: Defn.Object =>
         visitObject(o)
       case c: Defn.Class =>
         visitClass(c)
@@ -70,12 +67,12 @@ class TreeVisitor()(implicit doc: SemanticDocument) {
 
 
   def visitMethod(method: Defn.Def): Patch = {
-    val typeSigs = method.paramss.map(_.map(v=> v.decltpe.get)).toString
+    val typeSigs = method.paramss.map(_.map(v => v.decltpe.get)).toString
     val fullSig = s"${method.symbol}:$typeSigs"
-    println(s"Method = $fullSig" )
+    println(s"Method = $fullSig")
     println()
-    val (patch, traverseChildren) = handleMethod(method.symbol,fullSig, method)
-    if(traverseChildren) {
+    val (patch, traverseChildren) = handleMethod(method.symbol, fullSig, method)
+    if (traverseChildren) {
       patch + visitBodyStatement(method.body)
     } else
       patch
@@ -88,7 +85,7 @@ class TreeVisitor()(implicit doc: SemanticDocument) {
   def visitObject(obj: Defn.Object): Patch = {
     println(s"Object = ${obj.symbol}")
     val (patch, traverseChildren) = handleObject(obj.symbol, obj)
-    if(traverseChildren) {
+    if (traverseChildren) {
       visitStatements(obj.templ.stats)
     } else
       patch
@@ -100,7 +97,7 @@ class TreeVisitor()(implicit doc: SemanticDocument) {
 
   private def visitClass(cls: Defn.Class): Patch = {
     val (patch, traverseChildren) = handleClass(cls.symbol, cls)
-    if(traverseChildren) {
+    if (traverseChildren) {
       // Parent def?
       println("CLASS PARENT? = " + cls.parent.map(_.symbol))
       visitStatements(cls.templ.stats)

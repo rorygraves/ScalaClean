@@ -1,4 +1,4 @@
-package fix
+package deadcode
 
 object TestMain {
   def main(args: Array[String]): Unit = {
@@ -14,5 +14,4 @@ case class UsedClass(value: Int)  {
     y + value
   }
 
-  
 }

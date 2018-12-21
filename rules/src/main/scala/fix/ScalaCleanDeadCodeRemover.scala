@@ -8,9 +8,9 @@ import scala.meta.Defn
 
 /**
   * A rule that removes unreferenced classes,
-  * needs to be run after ScalaCleanAnalysis
+  * needs to be run after ScalaCleanDeadCodeAnalysis
   */
-class ScalaCleanDeadClass extends SemanticRule("ScalaCleanDeadClass")  {
+class ScalaCleanDeadCodeRemover extends SemanticRule("ScalaCleanDeadCodeRemover")  {
   object NotVisited extends Colour
   var model: ScalaCleanModel = _
 
@@ -65,7 +65,6 @@ class ScalaCleanDeadClass extends SemanticRule("ScalaCleanDeadClass")  {
     "fix/UnusedClass#",
     "fix/UsedClass#unusedMethod().:List(List(Int))"
   )
-
 
   def isUnused(identifier: String): Boolean = {
     // TODO This should depend on the inputFile

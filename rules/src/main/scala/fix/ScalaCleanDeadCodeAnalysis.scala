@@ -5,7 +5,7 @@ import scalaclean.model.{ModelHelper, ScalaCleanModel}
 import scalafix.v1._
 
 
-class ScalaCleanAnalysis extends SemanticRule("ScalaCleanAnalysis")  {
+class ScalaCleanDeadCodeAnalysis extends SemanticRule("ScalaCleanDeadCodeAnalysis")  {
   val model = new ScalaCleanModel()
 
   override def beforeStart(): Unit = {

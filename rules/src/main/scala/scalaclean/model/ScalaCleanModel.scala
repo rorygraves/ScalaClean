@@ -53,10 +53,10 @@ class ScalaCleanModel {
 
   private object builder {
 
-    import collection.mutable
     import ModelBuilder._
     import scalafix.v1._
-    import scalafix.v1._
+
+    import collection.mutable
 
 
     val allKnownClasses = mutable.Map[String, ClassModelImpl]()
