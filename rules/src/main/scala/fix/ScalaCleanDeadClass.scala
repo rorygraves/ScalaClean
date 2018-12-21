@@ -31,6 +31,19 @@ class ScalaCleanDeadClass extends SemanticRule("ScalaCleanDeadClass")  {
          if isMainMethod(method)) yield method
   }
 
+  def markUsed(element:ModelElement): Unit = {
+    if (element.colours.nonEmpty) {
+      element.colours == Nil
+      element match {
+        case method: MethodModel =>
+        //todo recurse based on the type of what is found
+        //  method.body ???
+
+      }
+      //todo recurse based on the enclosing element
+      //markUsed(element.owner)
+    }
+  }
   override def beforeStart(): Unit = {
     println("Cleaner Rule BEFORE START")
     // TODO - where do we get the config path to load from - check other rules for examples
@@ -42,7 +55,7 @@ class ScalaCleanDeadClass extends SemanticRule("ScalaCleanDeadClass")  {
     markInitial
 
     val entries = allEntryPoints
-    //...
+    entries foreach markUsed
     println("Structure ----------------")
     model.printStructure()
     println("Structure end ----------------")
