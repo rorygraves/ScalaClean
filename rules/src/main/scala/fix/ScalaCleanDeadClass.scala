@@ -19,7 +19,6 @@ class ScalaCleanDeadClass extends SemanticRule("ScalaCleanDeadClass")  {
 
     // hack to load the model from the helper class
     this.model = ModelHelper.model.getOrElse(throw new IllegalStateException("No model to work from"))
-    model.finishedParsing()
     println("Structure ----------------")
     model.printStructure()
     println("Structure end ----------------")
