@@ -3,21 +3,36 @@ package scalaclean.model
 import scalafix.v1.SemanticDocument
 
 import scala.meta.{Defn, Pkg, Source, Stat}
+import scala.reflect.ClassTag
 
-sealed trait ClassLike {
+sealed trait ModelElement{
+  var colours = List.empty[Colour]
+}
+
+sealed trait ClassLike extends ModelElement{
   def fullName: String
+  def methods: List[MethodModel]
+  def fields: Map[String, FieldModel]
 }
 sealed trait ClassModel extends ClassLike
 sealed trait ObjectModel extends ClassLike
 sealed trait TraitModel extends ClassLike
 
+sealed trait MethodModel extends ModelElement {
+  val name:String
+
+}
+
+sealed trait FieldModel extends ModelElement
+sealed trait ValModel extends FieldModel
+sealed trait VarModel extends FieldModel
+
 class ScalaCleanModel {
-  def printStructure() = allClasses foreach {
+  def printStructure() = allOf[ClassLike] foreach {
     cls => println(s"class ${cls.fullName}")
   }
 
   def analyse(implicit doc: SemanticDocument) = builder.analyse
-
 
   import builder._
 
@@ -30,8 +45,10 @@ class ScalaCleanModel {
     ModelBuilder.elements.result()
   }
 
-  lazy val allClasses: Seq[ClassModel] = all collect {
-    case cls: ClassModel => cls
+  def allOf[T <: ModelElement](implicit cls: ClassTag[T]): List[T] = {
+    all collect {
+      case wanted: T => wanted
+    }
   }
 
   private object builder {
@@ -54,24 +71,24 @@ class ScalaCleanModel {
     def visitObject(obj: Defn.Object)(implicit doc: SemanticDocument): Unit = {
       val sym = obj.symbol
 
-      val resolved = allKnownObjects.getOrElseUpdate(sym.toString, new ObjectModelImpl(sym))
-      resolved.analyse(obj)
+      val resolved = allKnownObjects.getOrElseUpdate(sym.toString, new ObjectModelImpl(sym, obj))
+      resolved.analyse
       println(s"object = ${resolved.fullName}")
     }
 
-    def visitTrait(obj: Defn.Trait)(implicit doc: SemanticDocument): Unit = {
-      val sym = obj.symbol
+    def visitTrait(trt: Defn.Trait)(implicit doc: SemanticDocument): Unit = {
+      val sym = trt.symbol
 
-      val resolved = allKnownTraits.getOrElseUpdate(sym.toString, new TraitModelImpl(sym))
-      resolved.analyse(obj)
+      val resolved = allKnownTraits.getOrElseUpdate(sym.toString, new TraitModelImpl(sym, trt))
+      resolved.analyse
       println(s"trait = ${resolved.fullName}")
     }
 
     def visitClass(cls: Defn.Class)(implicit doc: SemanticDocument): Unit = {
       val sym = cls.symbol
 
-      val resolved = allKnownClasses.getOrElseUpdate(sym.toString, new ClassModelImpl(sym))
-      resolved.analyse(cls)
+      val resolved = allKnownClasses.getOrElseUpdate(sym.toString, new ClassModelImpl(sym, cls))
+      resolved.analyse
       println(s"class = ${resolved.fullName}")
     }
 
@@ -112,19 +129,19 @@ class ScalaCleanModel {
         elements.result() foreach (_.build)
       }
 
-      private[ScalaCleanModel] val elements = List.newBuilder[ModelElement]
+      private[ScalaCleanModel] val elements = List.newBuilder[ModelElementImpl]
 
     }
 
 
-    sealed trait ModelElement {
+    sealed trait ModelElementImpl extends  ModelElement{
       assertBuilding
       elements += this
 
       private[builder] def build: Unit = ()
     }
 
-    class FieldModel(val name: String) extends ModelElement {
+    abstract class FieldModelImpl(val name: String) extends ModelElementImpl with FieldModel {
       def initialiser = {
         assertBuildModelFinished
         _initialiser
@@ -143,24 +160,26 @@ class ScalaCleanModel {
       private[builder] override def build: Unit = super.build
 
     }
+    class VarModelImpl(name: String) extends FieldModelImpl(name) with VarModel
+    class ValModelImpl(name: String) extends ModelElementImpl with ValModel
 
-    class MethodModel(val name: String) extends ModelElement {
+    class MethodModelImpl(val name: String) extends ModelElementImpl with MethodModel {
 
       private[builder] override def build: Unit = super.build
     }
 
-    class CodeModel() extends ModelElement {
+    class CodeModel() extends ModelElementImpl {
 
       def owner = {
         assertBuildModelFinished
         __owner
       }
 
-      private var __owner = Option.empty[ModelElement]
+      private var __owner = Option.empty[ModelElementImpl]
 
       def _owner = __owner
 
-      def _owner_=(modelElement: ModelElement) = {
+      def _owner_=(modelElement: ModelElementImpl) = {
         assertBuilding()
         assert(__owner isEmpty)
         __owner = Some(this)
@@ -170,12 +189,12 @@ class ScalaCleanModel {
     }
 
 
-    abstract sealed class ClassLikeImpl (val sym: Symbol) extends ModelElement {
+    abstract sealed class ClassLikeImpl (val sym: Symbol) extends ClassLike with ModelElementImpl {
       lazy val fields: Map[String, FieldModel] = {
         assertBuildModelFinished
         fieldData.toMap
       }
-      lazy val methods: Seq[MethodModel] = {
+      lazy val methods: List[MethodModel] = {
         assertBuildModelFinished
         methodData.result()
       }
@@ -183,14 +202,14 @@ class ScalaCleanModel {
         assertBuildModelFinished
         methodData.result()
       }
-      private val fieldData = mutable.Map[String, FieldModel]()
+      private val fieldData = mutable.Map[String, FieldModelImpl]()
       private val methodData = List.newBuilder[MethodModel]
       private val innerData = List.newBuilder[ClassLikeImpl]
       private var outerData = Option.empty[ClassLikeImpl]
       private val parentData = List.newBuilder[ClassLikeImpl]
       private val childData = List.newBuilder[ClassLikeImpl]
 
-      private[builder] def addField(field: FieldModel): Unit = {
+      private[builder] def addField(field: FieldModelImpl): Unit = {
         assertBuilding
         assert(!fieldData.contains(field.name))
         fieldData(field.name) = field
@@ -221,20 +240,19 @@ class ScalaCleanModel {
           case dc: Defn.Class => // Inner class
         }
       }
-
       private[builder] override def build: Unit = ()
     }
 
-    class ClassModelImpl private[ScalaCleanModel](sym: Symbol) extends ClassLikeImpl(sym) with ClassModel {
-      def analyse(cls: Defn.Class)(implicit doc: SemanticDocument): Unit = analyse(cls.templ)
+    class ClassModelImpl private[ScalaCleanModel](sym: Symbol, cls: Defn.Class) extends ClassLikeImpl(sym) with ClassModel {
+      def analyse(implicit doc: SemanticDocument): Unit = analyse(cls.templ)
     }
 
-    class ObjectModelImpl private[ScalaCleanModel](sym: Symbol) extends ClassLikeImpl(sym) with ObjectModel {
-      def analyse(cls: Defn.Object)(implicit doc: SemanticDocument): Unit = analyse(cls.templ)
+    class ObjectModelImpl private[ScalaCleanModel](sym: Symbol, cls: Defn.Object) extends ClassLikeImpl(sym) with ObjectModel {
+      def analyse(implicit doc: SemanticDocument): Unit = analyse(cls.templ)
     }
 
-    class TraitModelImpl private[ScalaCleanModel](sym: Symbol) extends ClassLikeImpl(sym) with TraitModel {
-      def analyse(cls: Defn.Trait)(implicit doc: SemanticDocument): Unit = analyse(cls.templ)
+    class TraitModelImpl private[ScalaCleanModel](sym: Symbol, trt: Defn.Trait) extends ClassLikeImpl(sym) with TraitModel {
+      def analyse(implicit doc: SemanticDocument): Unit = analyse(trt.templ)
     }
 
   }
