@@ -22,7 +22,7 @@ class ScalaCleanPrivatiserAnalysis extends SemanticRule("ScalaCleanPrivatiserAna
     val tv = new TreeVisitor
     tv.visitDocument(doc.tree)
     println("-------------------------")
-    model.analyse(doc)
+//    model.analyse(doc)
     Patch.empty
   }
 
