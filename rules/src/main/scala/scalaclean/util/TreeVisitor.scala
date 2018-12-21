@@ -52,8 +52,17 @@ class TreeVisitor()(implicit doc: SemanticDocument) {
         visitClass(c)
       case m: Defn.Def =>
         visitMethod(m)
+      case v: Defn.Val =>
+        println(s"Found a val $v")
+        Patch.empty
+      case v: Defn.Var =>
+        println(s"Found a var $v")
+        Patch.empty
+      case term: Term =>
+        println(s"Found a term $term")
+        Patch.empty
       case s =>
-        throw new IllegalStateException("ERROR unknown statement: " + s)
+        throw new IllegalStateException(s"ERROR unknown statement: $s (class was ${s.getClass})")
     }
   }
 
