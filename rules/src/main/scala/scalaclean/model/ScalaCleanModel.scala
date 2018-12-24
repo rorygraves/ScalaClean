@@ -1,12 +1,14 @@
 package scalaclean.model
 
+import scalaclean.util.{BasicTreeVisitor, DefaultTreeVisitor, Scope, TreeVisitor}
 import scalafix.v1.SemanticDocument
 
-import scala.meta.{Defn, Pkg, Source, Stat}
+import scala.meta.{Defn, Pkg, Source, Stat, Term}
 import scala.reflect.ClassTag
 
 sealed trait ModelElement{
   var colours = List.empty[Colour]
+  def enclosing: Option[ModelElement]
 }
 
 sealed trait ClassLike extends ModelElement{
@@ -62,57 +64,70 @@ class ScalaCleanModel {
     val allKnownClasses = mutable.Map[String, ClassModelImpl]()
     val allKnownObjects = mutable.Map[String, ObjectModelImpl]()
     val allKnownTraits = mutable.Map[String, TraitModelImpl]()
+    val bySymbol = mutable.Map[Symbol, ModelElementImpl]()
 
-    def visitPkgStatements(pkg: Pkg, statements: List[Stat])(implicit doc: SemanticDocument): Unit = {
-      println(s"Package: ${pkg.symbol}")
-      statements.foreach(visitPkgStatement(_))
-    }
-
-    def visitObject(obj: Defn.Object)(implicit doc: SemanticDocument): Unit = {
-      val sym = obj.symbol
-
-      val resolved = allKnownObjects.getOrElseUpdate(sym.toString, new ObjectModelImpl(sym, obj))
-      resolved.analyse
-      println(s"object = ${resolved.fullName}")
-    }
-
-    def visitTrait(trt: Defn.Trait)(implicit doc: SemanticDocument): Unit = {
-      val sym = trt.symbol
-
-      val resolved = allKnownTraits.getOrElseUpdate(sym.toString, new TraitModelImpl(sym, trt))
-      resolved.analyse
-      println(s"trait = ${resolved.fullName}")
-    }
-
-    def visitClass(cls: Defn.Class)(implicit doc: SemanticDocument): Unit = {
-      val sym = cls.symbol
-
-      val resolved = allKnownClasses.getOrElseUpdate(sym.toString, new ClassModelImpl(sym, cls))
-      resolved.analyse
-      println(s"class = ${resolved.fullName}")
-    }
-
-    def visitPkgStatement(statement: Stat)(implicit doc: SemanticDocument): Unit = {
-      statement match {
-        case childPkg@Pkg(pName, pstats) => // a package containing a sub-package
-          visitPkgStatements(childPkg, pstats)
-        case o: Defn.Object =>
-          visitObject(o)
-        case c: Defn.Class =>
-          visitClass(c)
-        case _ =>
-          throw new IllegalStateException()
-      }
-    }
+    private var enclosing = Option.empty[ModelElementImpl]
 
     def analyse(implicit doc: SemanticDocument) = {
       assertBuilding()
-      doc.tree match {
-        case Source(stats) =>
-          stats.foreach(visitPkgStatement(_))
-        case _ =>
-          throw new IllegalStateException(s"document: ${doc.input} does not start with a Source")
+      object analysisVisitor extends BasicTreeVisitor() {
+
+        val continue = true
+
+        override type Child = Option[ModelElementImpl]
+        override protected def beforeChildren: Child = enclosing
+        override protected def afterChildren(prev: Child): Unit = enclosing = prev
+
+        override def handleVar(symbol: Symbol, varDef: Defn.Var): Boolean = {
+          new VarModelImpl(symbol.toString, varDef, enclosing)
+          continue
+        }
+
+        override def handleVal(symbol: Symbol, valDef: Defn.Val): Boolean = {
+          new ValModelImpl(symbol.toString, valDef, enclosing)
+          continue
+        }
+
+        override def handlePackage(packageName: Term.Name, pkg: Pkg): Boolean = {
+          continue
+        }
+
+        override def handleMethod(symbol: Symbol, fullSig: String, method: Defn.Def): Boolean = {
+          new MethodModelImpl(symbol.toString, method, enclosing)
+          continue
+        }
+
+        override def handleObject(sym: Symbol, obj: Defn.Object): Boolean = {
+          val resolved = allKnownObjects.getOrElseUpdate(sym.toString, {
+            val res = new ObjectModelImpl(sym, obj, enclosing)
+            assert(bySymbol.put(sym, res).isEmpty)
+            res
+          })
+          println(s"object = ${resolved.fullName}")
+          continue
+        }
+
+        override def handleTrait(sym: Symbol, obj: Defn.Trait): Boolean = {
+          val resolved = allKnownTraits.getOrElseUpdate(sym.toString, {
+            val res = new TraitModelImpl(sym, obj, enclosing)
+            assert(bySymbol.put(sym, res).isEmpty)
+            res
+          })
+          println(s"object = ${resolved.fullName}")
+          continue
+        }
+
+        override def handleClass(sym: Symbol, cls: Defn.Class): Boolean = {
+          val resolved = allKnownClasses.getOrElseUpdate(sym.toString, {
+            val res = new ClassModelImpl(sym, cls, enclosing)
+            assert(bySymbol.put(sym, res).isEmpty)
+            res
+          })
+          println(s"class = ${resolved.fullName}")
+          continue
+        }
       }
+      analysisVisitor.visitDocument(doc.tree)
     }
 
     object ModelBuilder {
@@ -134,14 +149,21 @@ class ScalaCleanModel {
     }
 
 
-    sealed trait ModelElementImpl extends  ModelElement{
+    sealed abstract class ModelElementImpl(val enclosing: Option[ModelElementImpl]) extends  ModelElement{
       assertBuilding
       elements += this
 
       private[builder] def build: Unit = ()
+
+      enclosing foreach {
+        _._children ::= this
+      }
+      private var _children = List.empty[ModelElementImpl]
+      private[ScalaCleanModel] def children = _children
+
     }
 
-    abstract class FieldModelImpl(val name: String) extends ModelElementImpl with FieldModel {
+    abstract class FieldModelImpl(val name: String, enclosing: Option[ModelElementImpl]) extends ModelElementImpl(enclosing) with FieldModel {
       def initialiser = {
         assertBuildModelFinished
         _initialiser
@@ -160,15 +182,15 @@ class ScalaCleanModel {
       private[builder] override def build: Unit = super.build
 
     }
-    class VarModelImpl(name: String, vr: Defn.Var) extends FieldModelImpl(name) with VarModel
-    class ValModelImpl(name: String, vl: Defn.Val) extends FieldModelImpl(name) with ValModel
+    class VarModelImpl(name: String, vr: Defn.Var, enclosing: Option[ModelElementImpl]) extends FieldModelImpl(name, enclosing) with VarModel
+    class ValModelImpl(name: String, vl: Defn.Val, enclosing: Option[ModelElementImpl]) extends FieldModelImpl(name, enclosing) with ValModel
 
-    class MethodModelImpl(val name: String, df: Defn.Def) extends ModelElementImpl with MethodModel {
+    class MethodModelImpl(val name: String, df: Defn.Def, enclosing: Option[ModelElementImpl]) extends ModelElementImpl(enclosing) with MethodModel {
 
       private[builder] override def build: Unit = super.build
     }
 
-    class CodeModel() extends ModelElementImpl {
+    class CodeModel(enclosing: Option[ModelElementImpl]) extends ModelElementImpl(enclosing) {
 
       def owner = {
         assertBuildModelFinished
@@ -189,81 +211,37 @@ class ScalaCleanModel {
     }
 
 
-    abstract sealed class ClassLikeImpl (val sym: Symbol) extends ClassLike with ModelElementImpl {
+    abstract sealed class ClassLikeImpl (val sym: Symbol, enclosing: Option[ModelElementImpl]) extends ModelElementImpl(enclosing) with ClassLike {
       lazy val fields: Map[String, FieldModel] = {
         assertBuildModelFinished
-        fieldData.toMap
+        (children collect {
+          case field: FieldModelImpl => field.name -> field
+        }).toMap
       }
       lazy val methods: List[MethodModel] = {
         assertBuildModelFinished
-        methodData.result()
-      }
-      lazy val outerClass: Seq[MethodModel] = {
-        assertBuildModelFinished
-        methodData.result()
-      }
-      private val fieldData = mutable.Map[String, FieldModelImpl]()
-      private val methodData = List.newBuilder[MethodModelImpl]
-      private val innerData = List.newBuilder[ClassLikeImpl]
-      private var outerData = Option.empty[ClassLikeImpl]
-      private val parentData = List.newBuilder[ClassLikeImpl]
-      private val childData = List.newBuilder[ClassLikeImpl]
-
-      private[builder] def addField(field: FieldModelImpl): Unit = {
-        assertBuilding
-        assert(!fieldData.contains(field.name))
-        fieldData(field.name) = field
-      }
-
-      private[builder] def addInner(c: ClassLikeImpl): Unit = {
-        assertBuilding
-        assert(c.outerData.isEmpty)
-        c.outerData = Some(this)
-        innerData += c
-      }
-
-      private[builder] def addParentClass(c: ClassLikeImpl): Unit = {
-        assertBuilding
-        parentData += c
-        c.childData += this
-      }
-
-      def fullName: String = sym.toString
-
-      def analyse(templ: scala.meta.Template)(implicit doc: SemanticDocument): Unit = {
-        templ.stats.foreach {
-          case vl: Defn.Val =>
-            val name = vl.symbol.value
-            println(s"  val = ${name} ")
-            val impl = new ValModelImpl(name,vl)
-            fieldData(name) = impl
-          case vr: Defn.Var =>
-            val name = vr.symbol.value
-            println(s"  var = ${name} ")
-            val impl = new VarModelImpl(name, vr)
-            fieldData(name) = impl
-          case df@Defn.Def(mods, defName, _, _, _, _) =>
-            val name = df.symbol.value
-            println(s"  method = $name  " + mods.structureLabeled)
-            val impl = new MethodModelImpl(name, df)
-            methodData += impl
-
-          case dc: Defn.Class => // Inner class
+        children collect {
+          case m: MethodModel => m
         }
       }
+      lazy val innerClassLike: Seq[ClassLike] = {
+        assertBuildModelFinished
+        children collect {
+          case m: ClassModel => m
+        }
+      }
+      def fullName: String = sym.toString
+
       private[builder] override def build: Unit = ()
     }
 
-    class ClassModelImpl private[ScalaCleanModel](sym: Symbol, cls: Defn.Class) extends ClassLikeImpl(sym) with ClassModel {
-      def analyse(implicit doc: SemanticDocument): Unit = analyse(cls.templ)
+    class ClassModelImpl private[ScalaCleanModel](sym: Symbol, cls: Defn.Class, encl: Option[ModelElementImpl]) extends ClassLikeImpl(sym, enclosing) with ClassModel {
     }
 
-    class ObjectModelImpl private[ScalaCleanModel](sym: Symbol, cls: Defn.Object) extends ClassLikeImpl(sym) with ObjectModel {
-      def analyse(implicit doc: SemanticDocument): Unit = analyse(cls.templ)
+    class ObjectModelImpl private[ScalaCleanModel](sym: Symbol, cls: Defn.Object, encl: Option[ModelElementImpl]) extends ClassLikeImpl(sym, enclosing) with ObjectModel {
     }
 
-    class TraitModelImpl private[ScalaCleanModel](sym: Symbol, trt: Defn.Trait) extends ClassLikeImpl(sym) with TraitModel {
-      def analyse(implicit doc: SemanticDocument): Unit = analyse(trt.templ)
+    class TraitModelImpl private[ScalaCleanModel](sym: Symbol, trt: Defn.Trait, encl: Option[ModelElementImpl]) extends ClassLikeImpl(sym, enclosing) with TraitModel {
     }
 
   }

@@ -31,4 +31,8 @@ abstract class SymbolTreeVisitor()(implicit doc: SemanticDocument) extends TreeV
   override def handleClass(clsSymbol: Symbol, cls: Defn.Class,scope: List[Scope]): (Patch, Boolean) = {
     handlerSymbol(clsSymbol, cls, scope)
   }
+
+  override def handleTrait(trtSymbol: Symbol, cls: Defn.Trait, scope: List[Scope]): (Patch, Boolean) = {
+    handlerSymbol(trtSymbol, cls, scope)
+  }
 }
