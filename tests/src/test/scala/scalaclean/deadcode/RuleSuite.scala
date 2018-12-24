@@ -31,6 +31,7 @@ class RuleSuite extends SemanticRuleSuite() {
     }).map(Map.empty + _).getOrElse(Map.empty)
     PatchInternals.semantic(fixes, sdoc, suppress)
   }
+
   // Overridden version of runOn which is hacked ro to run the rules in sequence rather than parallised.
   // earlier rules results are ignored - i.e. this only works for ScalaCleanDeadCodeAnalysis followed by a proper rule for
   // testing.
@@ -81,6 +82,4 @@ class RuleSuite extends SemanticRuleSuite() {
       }
     }
   }
-
-
 }

@@ -1,7 +1,7 @@
 package scalaclean.privatiser
 
 import scalaclean.model.{ModelHelper, ScalaCleanModel}
-import scalaclean.util.TreeVisitor
+import scalaclean.util.DefaultTreeVisitor
 import scalafix.v1._
 
 
@@ -19,7 +19,7 @@ class ScalaCleanPrivatiserAnalysis extends SemanticRule("ScalaCleanPrivatiserAna
   }
 
   override def fix(implicit doc: SemanticDocument): Patch = {
-    val tv = new TreeVisitor
+    val tv = new DefaultTreeVisitor
     tv.visitDocument(doc.tree)
     println("-------------------------")
 //    model.analyse(doc)

@@ -1,3 +1,4 @@
+
 package scalaclean.deadcode
 
 object TestMain {
@@ -12,7 +13,5 @@ object TestMain {
 case class UsedClass(value: Int)  {
   def usedMethod(myBool: Boolean, y: Int) : Int = {
     y + value
-  }
-
-
+  } 
 }

@@ -1,7 +1,7 @@
 package scalaclean.deadcode
 
-import scalaclean.util.TreeVisitor
 import scalaclean.model.{ModelHelper, ScalaCleanModel}
+import scalaclean.util.DefaultTreeVisitor
 import scalafix.v1._
 
 
@@ -19,7 +19,7 @@ class ScalaCleanDeadCodeAnalysis extends SemanticRule("ScalaCleanDeadCodeAnalysi
   }
 
   override def fix(implicit doc: SemanticDocument): Patch = {
-    val tv = new TreeVisitor
+    val tv = new DefaultTreeVisitor
     tv.visitDocument(doc.tree)
     println("-------------------------")
     model.analyse(doc)
