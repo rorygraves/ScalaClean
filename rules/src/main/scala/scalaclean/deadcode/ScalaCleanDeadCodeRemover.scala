@@ -1,7 +1,7 @@
 package scalaclean.deadcode
 
 import scalaclean.model._
-import scalaclean.util.{DefaultTreeVisitor, Scope, TokenHelper}
+import scalaclean.util.{DefaultTreeVisitor, Scope, SymbolTreeVisitor, TokenHelper}
 import scalafix.v1._
 
 import scala.meta.Defn
@@ -78,34 +78,18 @@ class ScalaCleanDeadCodeRemover extends SemanticRule("ScalaCleanDeadCodeRemover"
 
   override def fix(implicit doc: SemanticDocument): Patch = {
 
-    doc.tree.collect {case _ =>
-    }
-    val tv = new DefaultTreeVisitor {
-      override def handleClass(clsSymbol: Symbol, cls: Defn.Class,scope: List[Scope]): (Patch, Boolean) = {
-        if (isUnused(clsSymbol.toString())) {
-          val clsTokens = cls.tokens
-          val firstToken = clsTokens.head
+    val tv = new SymbolTreeVisitor {
 
-          //
-          //          val intialTokens = doc.tokens.reverse.dropWhile(_.pos.start < firstToken.pos.start)
-          //          doc.tokens.indexOf(firstToken)
+      override protected def handlerSymbol(symbol: Symbol, defn: Defn, scope: List[Scope]): (Patch, Boolean) = {
+        if (isUnused(symbol.toString())) {
+          val tokens = defn.tokens
+          val firstToken = tokens.head
 
-          (Patch.removeTokens(TokenHelper.whitespaceTokensBefore(firstToken, doc.tokens)) + Patch.removeTokens(cls.tokens), false)
-        } else
-          (Patch.empty, true)
-      }
-
-      override def handleMethod(objName: Symbol, fullSig: String, method: Defn.Def,scope: List[Scope]): (Patch, Boolean) = {
-        if (isUnused(fullSig)) {
-          val mTokens = method.tokens
-          val firstToken = mTokens.head
-
-          (Patch.removeTokens(TokenHelper.whitespaceTokensBefore(firstToken, doc.tokens)) + Patch.removeTokens(mTokens), false)
+          (Patch.removeTokens(TokenHelper.whitespaceTokensBefore(firstToken, doc.tokens)) + Patch.removeTokens(tokens), false)
         } else
           (Patch.empty, true)
       }
     }
-
     tv.visitDocument(doc.tree)
   }
 }

@@ -1,7 +1,10 @@
 package scalaclean.privatiser
 
 import scalaclean.model._
+import scalaclean.util.{Scope, SymbolTreeVisitor, TokenHelper}
 import scalafix.v1._
+
+import scala.meta.Defn
 
 /**
   * A rule that removes unreferenced classes,
@@ -31,22 +34,18 @@ class ScalaCleanPrivatiserApply extends SemanticRule("ScalaCleanPrivatiserApply"
 
   override def fix(implicit doc: SemanticDocument): Patch = {
 
-//    val tv = new TreeVisitor {
-//      override def handleClass(clsSymbol: Symbol, cls: Defn.Class): (Patch, Boolean) = {
-//        if (isUnused(clsSymbol.toString()))
-//          (Patch.removeTokens(cls.tokens), false)
-//        else
-//          (Patch.empty, true)
-//      }
+//    val tv = new SymbolTreeVisitor {
 //
-//      override def handleMethod(objName: Symbol, fullSig: String, method: Defn.Def): (Patch, Boolean) = {
-//        if (isUnused(fullSig))
-//          (Patch.removeTokens(method.tokens), false)
-//        else
+//      override protected def handlerSymbol(symbol: Symbol, defn: Defn, scope: List[Scope]): (Patch, Boolean) = {
+//        if (isUnused(symbol.toString())) {
+//          val tokens = defn.tokens
+//          val firstToken = tokens.head
+//
+//          (Patch.removeTokens(TokenHelper.whitespaceTokensBefore(firstToken, doc.tokens)) + Patch.removeTokens(tokens), false)
+//        } else
 //          (Patch.empty, true)
 //      }
 //    }
-//
 //    tv.visitDocument(doc.tree)
     Patch.empty
   }
