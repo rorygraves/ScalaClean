@@ -3,7 +3,7 @@ package scalaclean.model
 import scalaclean.util.{BasicTreeVisitor, DefaultTreeVisitor, Scope, TreeVisitor}
 import scalafix.v1.SemanticDocument
 
-import scala.meta.{Defn, Pkg, Source, Stat, Term}
+import scala.meta.{Defn, Pkg, Source, Stat, Term, Tree}
 import scala.reflect.ClassTag
 
 sealed trait ModelElement{
@@ -126,6 +126,19 @@ class ScalaCleanModel {
           println(s"class = ${resolved.fullName}")
           continue
         }
+        override def handleOther(sym: Symbol, defn: Tree): Boolean = {
+          defn match {
+            case source:Source => //ignore
+          }
+          enclosing match {
+            case Some(parent) =>
+              println(s"*** other add to $parent = $defn ${defn.symbol}")
+            case None =>
+              val pos = defn.pos
+              println(s"XXX cant add to parent = ${defn.getClass} ${pos.start} .. ${pos.end} - ${defn.symbol}")
+          }
+          continue
+        }
       }
       analysisVisitor.visitDocument(doc.tree)
     }
@@ -160,6 +173,13 @@ class ScalaCleanModel {
       }
       private var _children = List.empty[ModelElementImpl]
       private[ScalaCleanModel] def children = _children
+      private[ScalaCleanModel] def enclosingClassLike: Option[ClassLike] = {
+        enclosing match {
+          case None => None
+          case Some(classLike: ClassLike) => Some(classLike)
+          case Some(other: ModelElementImpl) => other.enclosingClassLike
+        }
+      }
 
     }
 

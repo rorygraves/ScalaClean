@@ -3,6 +3,7 @@ package scalaclean.util
 import scalafix.patch.Patch
 import scalafix.v1._
 
+import scala.meta.internal.semanticdb.Scala.Names.TermName
 import scala.meta.{Defn, Pkg, Term, Tree}
 
 abstract class BasicTreeVisitor()(implicit doc: SemanticDocument) {
@@ -43,9 +44,11 @@ abstract class BasicTreeVisitor()(implicit doc: SemanticDocument) {
         processHandler(valDef, handleVal(valDef.symbol, valDef))
       case varDef: Defn.Var =>
         processHandler(varDef, handleVar(varDef.symbol, varDef))
-      case _ =>
-        println(s"Visiting ${tree.getClass} ${tree.symbol}")
-        visitChildren(tree)
+      case other: Tree=>
+        processHandler(other, handleOther(other.symbol, other))
+//      case x =>
+//        println(s"Visiting unknown ${tree.getClass} ${tree.symbol}")
+//        visitChildren(tree)
     }
   }
 
@@ -57,4 +60,5 @@ abstract class BasicTreeVisitor()(implicit doc: SemanticDocument) {
   def handleObject(objName: Symbol, obj: Defn.Object):Boolean
   def handleClass(clsSymbol: Symbol, cls: Defn.Class):Boolean
   def handleTrait(trtSymbol: Symbol, cls: Defn.Trait):Boolean
+  def handleOther(otSymbol: Symbol, other: Tree):Boolean
 }

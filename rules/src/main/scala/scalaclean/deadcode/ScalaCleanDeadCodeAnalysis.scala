@@ -19,9 +19,6 @@ class ScalaCleanDeadCodeAnalysis extends SemanticRule("ScalaCleanDeadCodeAnalysi
   }
 
   override def fix(implicit doc: SemanticDocument): Patch = {
-    val tv = new DefaultTreeVisitor
-    tv.visitDocument(doc.tree)
-    println("-------------------------")
     model.analyse(doc)
     Patch.empty
   }
