@@ -9,17 +9,17 @@ class ScalaCleanDeadCodeAnalysis extends SemanticRule("ScalaCleanDeadCodeAnalysi
   val model = new ScalaCleanModel()
 
   override def beforeStart(): Unit = {
-    println("Analysis BEFORE START")
+    println("Analysis (dead code) BEFORE START")
   }
 
   override def afterComplete(): Unit = {
     model.finishedParsing()
     ModelHelper.model = Some(model)
-    println("Analysis AFTER COMPLETE")
+    println(s"Analysis (dead code) AFTER COMPLETE size = ${model.size}")
   }
 
   override def fix(implicit doc: SemanticDocument): Patch = {
-    model.analyse(doc)
+//    model.analyse(doc)
     Patch.empty
   }
 

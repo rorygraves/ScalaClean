@@ -15,14 +15,11 @@ class ScalaCleanPrivatiserAnalysis extends SemanticRule("ScalaCleanPrivatiserAna
   override def afterComplete(): Unit = {
     model.finishedParsing()
     ModelHelper.model = Some(model)
-    println("Analysis AFTER COMPLETE")
+    println(s"Analysis AFTER COMPLETE ${model.size}")
   }
 
   override def fix(implicit doc: SemanticDocument): Patch = {
-    val tv = new DefaultTreeVisitor
-    tv.visitDocument(doc.tree)
-    println("-------------------------")
-//    model.analyse(doc)
+    model.analyse(doc)
     Patch.empty
   }
 

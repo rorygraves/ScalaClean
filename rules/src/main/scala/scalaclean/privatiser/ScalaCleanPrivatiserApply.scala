@@ -8,18 +8,40 @@ import scala.meta.Defn
 
 /**
   * A rule that removes unreferenced classes,
-  * needs to be run after ScalaCleanDeadCodeAnalysis
+  * needs to be run after ScalaCleanPrivatiserAnalysis
   */
 class ScalaCleanPrivatiserApply extends SemanticRule("ScalaCleanPrivatiserApply")  {
-  object NotVisited extends Colour
   var model: ScalaCleanModel = _
 
+  sealed trait PrivatiserLevel extends Colour
+  case class Protected(name:String) extends PrivatiserLevel
+  case class Private(name:String) extends PrivatiserLevel
+  case object NoChange extends PrivatiserLevel
+
+  def calcLevel(element: ModelElement): PrivatiserLevel = {
+    val incoming = {element.internalIncomingReferences map (_._1)}.toSet - element
+    println(s"Privatiser for $element START - process ${element.internalIncomingReferences}")
+
+    incoming foreach {
+      ref =>
+      println (s"$element is referred to by $ref")
+    }
+
+    println(s"Privatiser for $element END")
+    NoChange
+  }
+
   override def beforeStart(): Unit = {
-    println("Cleaner Rule BEFORE START")
+    println("Cleaner Rule Privatiser BEFORE START")
     // TODO - where do we get the config path to load from - check other rules for examples
 
     // hack to load the model from the helper class
     this.model = ModelHelper.model.getOrElse(throw new IllegalStateException("No model to work from"))
+    println(s"Cleaner Rule Privatiser size ${model.allOf[ModelElement].size}")
+    model.allOf[ModelElement].foreach {
+      e => e.colour = calcLevel(e)
+    }
+    println("Cleaner Rule Privatiser BEFORE START END")
   }
 
   val deadTargets = List(

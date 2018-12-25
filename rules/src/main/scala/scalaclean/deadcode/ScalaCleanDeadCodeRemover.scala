@@ -13,14 +13,14 @@ import scala.meta.Defn
 class ScalaCleanDeadCodeRemover extends SemanticRule("ScalaCleanDeadCodeRemover") {
 
   object NotVisited extends Colour
+  object Visited extends Colour
 
   var model: ScalaCleanModel = _
 
 
   def markInitial = {
-    val initialColour = List(NotVisited)
     model.allOf[ModelElement].foreach {
-      e => e.colours = initialColour
+      e => e.colour = NotVisited
     }
   }
 
@@ -36,8 +36,8 @@ class ScalaCleanDeadCodeRemover extends SemanticRule("ScalaCleanDeadCodeRemover"
   }
 
   def markUsed(element: ModelElement): Unit = {
-    if (element.colours.nonEmpty) {
-      element.colours == Nil
+    if (element.colour == NotVisited) {
+      element.colour = Visited
       element match {
         case method: MethodModel =>
         //todo recurse based on the type of what is found
@@ -78,18 +78,19 @@ class ScalaCleanDeadCodeRemover extends SemanticRule("ScalaCleanDeadCodeRemover"
 
   override def fix(implicit doc: SemanticDocument): Patch = {
 
-    val tv = new SymbolTreeVisitor {
-
-      override protected def handlerSymbol(symbol: Symbol, defn: Defn, scope: List[Scope]): (Patch, Boolean) = {
-        if (isUnused(symbol.toString())) {
-          val tokens = defn.tokens
-          val firstToken = tokens.head
-
-          (Patch.removeTokens(TokenHelper.whitespaceTokensBefore(firstToken, doc.tokens)) + Patch.removeTokens(tokens), false)
-        } else
-          (Patch.empty, true)
-      }
-    }
-    tv.visitDocument(doc.tree)
+//    val tv = new SymbolTreeVisitor {
+//
+//      override protected def handlerSymbol(symbol: Symbol, defn: Defn, scope: List[Scope]): (Patch, Boolean) = {
+//        if (isUnused(symbol.toString())) {
+//          val tokens = defn.tokens
+//          val firstToken = tokens.head
+//
+//          (Patch.removeTokens(TokenHelper.whitespaceTokensBefore(firstToken, doc.tokens)) + Patch.removeTokens(tokens), false)
+//        } else
+//          (Patch.empty, true)
+//      }
+//    }
+//    tv.visitDocument(doc.tree)
+    Patch.empty
   }
 }
