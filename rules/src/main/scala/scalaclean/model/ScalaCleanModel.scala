@@ -2,6 +2,7 @@ package scalaclean.model
 
 import scalafix.v1.{SemanticDocument, Symbol}
 
+import scala.meta.prettyprinters.Syntax
 import scala.meta.{Defn, Pkg, Source, Tree}
 import scala.reflect.ClassTag
 
@@ -16,8 +17,8 @@ sealed trait ModelElement {
   val internalOutgoingReferences: List[(ModelElement, Tree)]
   val internalIncomingReferences: List[(ModelElement, Tree)]
 
-    protected def infoTypeName: String
-  protected def infoPosString: String = ""
+  protected def infoTypeName: String
+  protected def infoPosString: String
   protected def infoDetail = ""
   protected def infoName = symbol.displayName
 
@@ -30,12 +31,14 @@ sealed trait ClassLike extends ModelElement {
   def methods: List[MethodModel]
 
   def fields: Map[String, FieldModel]
+  def xtends[T](implicit cls: ClassTag[T]): Boolean
 }
 
 sealed trait ClassModel extends ClassLike {
   override protected def infoTypeName: String = "class"
 }
 sealed trait ObjectModel extends ClassLike{
+
   override protected def infoTypeName: String = "object"
 }
 
@@ -58,6 +61,13 @@ sealed trait VarModel extends FieldModel{
 }
 
 class ScalaCleanModel {
+  def fromSymbol[T <: ModelElement](symbol: Symbol)(implicit tpe: ClassTag[T]): T =
+    builder.bySymbol.get(symbol) match {
+      case None => throw new IllegalArgumentException(s"Unknown symbol $symbol")
+      case Some(x) if tpe.runtimeClass.isInstance(x) => x.asInstanceOf[T]
+      case Some(x) => throw new IllegalArgumentException(s"Unexxpected symbol $symbol - found a $x when expecting a ${tpe.runtimeClass}")
+    }
+
   def printStructure() = allOf[ClassLike] foreach {
     cls => println(s"class ${cls.fullName}")
   }
@@ -119,11 +129,6 @@ class ScalaCleanModel {
           }
         }
 
-        private def processHandler(tree: Tree, handleRes: Boolean): Unit =
-          if (handleRes)
-            visitChildren(tree)
-
-
         def visitTree(tree: Tree): Unit = {
 
           tree match {
@@ -131,29 +136,17 @@ class ScalaCleanModel {
               visitChildren(tree)
             case obj: Defn.Object =>
               val sym = obj.symbol
-              val parent = allKnownObjects.getOrElseUpdate(sym.toString, {
-                val res = new ObjectModelImpl(obj, enclosing, doc)
-                assert(bySymbol.put(sym, res).isEmpty)
-                res
-              })
+              val parent = allKnownObjects.getOrElseUpdate(sym.toString, new ObjectModelImpl(obj, enclosing, doc))
               println(s"object = ${parent.fullName}")
               visitEnclosingChildren(parent, tree)
             case cls: Defn.Class =>
               val sym = cls.symbol
-              val parent = allKnownClasses.getOrElseUpdate(sym.toString, {
-                val res = new ClassModelImpl(cls, enclosing, doc)
-                assert(bySymbol.put(sym, res).isEmpty)
-                res
-              })
+              val parent = allKnownClasses.getOrElseUpdate(sym.toString, new ClassModelImpl(cls, enclosing, doc))
               println(s"class = ${parent.fullName}")
               visitEnclosingChildren(parent, tree)
             case cls: Defn.Trait =>
               val sym = cls.symbol
-              val parent = allKnownTraits.getOrElseUpdate(sym.toString, {
-                val res = new TraitModelImpl(cls, enclosing, doc)
-                assert(bySymbol.put(sym, res).isEmpty)
-                res
-              })
+              val parent = allKnownTraits.getOrElseUpdate(sym.toString, new TraitModelImpl(cls, enclosing, doc))
               println(s"trait = ${parent.fullName}")
               visitEnclosingChildren(parent, tree)
             case method: Defn.Def =>
@@ -168,19 +161,19 @@ class ScalaCleanModel {
               val parent = new VarModelImpl(varDef, enclosing, doc)
               visitEnclosingChildren(parent, tree)
             case other: Tree =>
-              handleOther(other.symbol, other)
+              handleOther(other)
               visitChildren(other)
           }
         }
 
-        def handleOther(sym: Symbol, defn: Tree): Boolean = {
+        def handleOther(defn: Tree): Boolean = {
           defn match {
             case source: Source => //ignore
             case tree: Tree if tree.symbol.isNone => //ignore
             case tree =>
               enclosing match {
+                case Some(parent) if parent.symbol == defn.symbol => //ignore internal refs
                 case Some(parent) =>
-                  println(s"*** $parent refers to ${defn.symbol}")
                   parent.addRefersTo(defn)
                 case None =>
                   val pos = defn.pos
@@ -213,9 +206,17 @@ class ScalaCleanModel {
 
 
     sealed abstract class ModelElementImpl(protected val defn: Defn, val enclosing: Option[ModelElementImpl], protected val doc: SemanticDocument) extends ModelElement {
+      assert(bySymbol.put(symbol, this).isEmpty)
+
       def addRefersTo(tree: Tree): Unit = {
         _refersTo ::= tree
       }
+
+      override protected def infoPosString: String = {
+        val pos = defn.pos
+        s"${pos.startLine}:${pos.startColumn} - ${pos.endLine}:${pos.endColumn}"
+      }
+
       private var _refersTo = List.empty[Tree]
       private var _refersFrom = List.empty[(ModelElementImpl, Tree)]
 
@@ -224,11 +225,15 @@ class ScalaCleanModel {
 
       private[builder] def build: Unit = {
         _refersTo foreach {
-          ref => bySymbol.get(ref.symbol(doc)) foreach {
-            _._refersFrom ::= (this, ref)
-          }
+          ref =>
+            val referred = ref.symbol(doc)
+            val symToRef = bySymbol.get(referred)
+            symToRef foreach {
+              _._refersFrom ::= (this, ref)
+            }
         }
       }
+
       override lazy val internalOutgoingReferences: List[(ModelElementImpl, Tree)] = {
         assertBuildModelFinished
         for (tree <- _refersTo;
@@ -257,11 +262,12 @@ class ScalaCleanModel {
       }
 
       override def symbol: Symbol = defn.symbol(doc)
+
       def name = symbol.displayName
 
     }
 
-    abstract class FieldModelImpl(defn:Defn, enclosing: Option[ModelElementImpl], doc: SemanticDocument) extends ModelElementImpl(defn, enclosing, doc) with FieldModel
+    abstract class FieldModelImpl(defn: Defn, enclosing: Option[ModelElementImpl], doc: SemanticDocument) extends ModelElementImpl(defn, enclosing, doc) with FieldModel
 
     class VarModelImpl(vr: Defn.Var, enclosing: Option[ModelElementImpl], doc: SemanticDocument) extends FieldModelImpl(vr, enclosing, doc) with VarModel
 
@@ -294,16 +300,18 @@ class ScalaCleanModel {
       def fullName: String = symbol.toString
 
       private[builder] override def build: Unit = ()
+
+      override def xtends[T](implicit cls: ClassTag[T]): Boolean = {
+        //FIXME
+        false
+      }
     }
 
-    class ClassModelImpl private[ScalaCleanModel](cls: Defn.Class, enclosing: Option[ModelElementImpl], doc: SemanticDocument) extends ClassLikeImpl(cls, enclosing, doc) with ClassModel {
-    }
+    class ClassModelImpl private[ScalaCleanModel](cls: Defn.Class, enclosing: Option[ModelElementImpl], doc: SemanticDocument) extends ClassLikeImpl(cls, enclosing, doc) with ClassModel
 
-    class ObjectModelImpl private[ScalaCleanModel](cls: Defn.Object, enclosing: Option[ModelElementImpl], doc: SemanticDocument) extends ClassLikeImpl(cls, enclosing, doc) with ObjectModel {
-    }
+    class ObjectModelImpl private[ScalaCleanModel](cls: Defn.Object, enclosing: Option[ModelElementImpl], doc: SemanticDocument) extends ClassLikeImpl(cls, enclosing, doc) with ObjectModel
 
-    class TraitModelImpl private[ScalaCleanModel](cls: Defn.Trait, enclosing: Option[ModelElementImpl], doc: SemanticDocument) extends ClassLikeImpl(cls, enclosing, doc) with TraitModel {
-    }
+    class TraitModelImpl private[ScalaCleanModel](cls: Defn.Trait, enclosing: Option[ModelElementImpl], doc: SemanticDocument) extends ClassLikeImpl(cls, enclosing, doc) with TraitModel
 
   }
 
