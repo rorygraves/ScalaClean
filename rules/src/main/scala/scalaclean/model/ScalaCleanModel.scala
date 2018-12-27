@@ -2,8 +2,7 @@ package scalaclean.model
 
 import scalafix.v1.{SemanticDocument, Symbol}
 
-import scala.meta.prettyprinters.Syntax
-import scala.meta.{Defn, Pkg, Source, Tree}
+import scala.meta.{Defn, Pkg, Source, Template, Tree}
 import scala.reflect.ClassTag
 
 sealed trait ModelElement {
@@ -16,6 +15,12 @@ sealed trait ModelElement {
 
   val internalOutgoingReferences: List[(ModelElement, Tree)]
   val internalIncomingReferences: List[(ModelElement, Tree)]
+
+  def directOverrides: List[Symbol]
+  def transitiveOverrides: List[Symbol]
+
+  def directOverriddenBy: List[ModelElement]
+  def transitiveOverriddenBy: List[ModelElement]
 
   protected def infoTypeName: String
   protected def infoPosString: String
@@ -32,6 +37,13 @@ sealed trait ClassLike extends ModelElement {
 
   def fields: Map[String, FieldModel]
   def xtends[T](implicit cls: ClassTag[T]): Boolean
+  def xtends(symbol: Symbol): Boolean
+
+  def directExtends: Set[Symbol]
+  def transitiveExtends: Set[Symbol]
+
+  def directExtendedBy: Set[ClassLike]
+  def transitiveExtendedBy: Set[ClassLike]
 }
 
 sealed trait ClassModel extends ClassLike {
@@ -206,6 +218,7 @@ class ScalaCleanModel {
 
 
     sealed abstract class ModelElementImpl(protected val defn: Defn, val enclosing: Option[ModelElementImpl], protected val doc: SemanticDocument) extends ModelElement {
+      assertBuilding()
       assert(bySymbol.put(symbol, this).isEmpty)
 
       def addRefersTo(tree: Tree): Unit = {
@@ -245,6 +258,24 @@ class ScalaCleanModel {
         assertBuildModelFinished
         _refersFrom
       }
+      private var _directOverrides = List.empty[Symbol]
+      private var _directOverrided = List.empty[ModelElementImpl]
+      override def directOverrides: List[Symbol] = {
+        assertBuildModelFinished()
+        _directOverrides
+      }
+      override def transitiveOverrides: List[Symbol] = {
+        assertBuildModelFinished()
+        ???
+      }
+      override def directOverriddenBy: List[ModelElement] = {
+        assertBuildModelFinished()
+        _directOverrided
+      }
+      override lazy val transitiveOverriddenBy: List[ModelElement] = {
+        directOverriddenBy ::: directOverriddenBy flatMap (_.transitiveOverriddenBy)
+      }
+      //TODO detect override and update _directOverrides && _directOverrided
 
       enclosing foreach {
         _._children ::= this
@@ -296,22 +327,59 @@ class ScalaCleanModel {
           case m: ClassModel => m
         }
       }
+      private var _directExtendedBy = Set.empty[ClassLike]
+      protected def template: Template
+
+      override val directExtends: Set[Symbol] = (template.inits collect {
+        case i => i.symbol(doc)
+      }) toSet
+
+      override lazy val transitiveExtends: Set[Symbol] = {
+        assertBuildModelFinished()
+        //FIXME this doesn't cope with inheritance outside the model
+        directExtends ++ (directExtends flatMap bySymbol.get flatMap {
+          case c: ClassLike => c.transitiveExtends
+        })
+      }
+
+      override def directExtendedBy: Set[ClassLike] = {
+        assertBuildModelFinished()
+        _directExtendedBy
+      }
+
+      override lazy val transitiveExtendedBy: Set[ClassLike] = {
+        directExtendedBy ++ directExtendedBy flatMap (_.transitiveExtendedBy)
+      }
 
       def fullName: String = symbol.toString
 
-      private[builder] override def build: Unit = ()
+      private[builder] override def build: Unit = {
+        super.build
+        directExtends flatMap bySymbol.get foreach {
+          case c: ClassLikeImpl => c._directExtendedBy += this
+        }
+      }
 
       override def xtends[T](implicit cls: ClassTag[T]): Boolean = {
-        //FIXME
-        false
+        //TODO what is the canonocal conversion?
+        xtends(Symbol(cls.runtimeClass.getName.replace('.','/')+"#"))
+      }
+      override def xtends(symbol: Symbol): Boolean = {
+        transitiveExtends.contains(symbol)
       }
     }
 
-    class ClassModelImpl private[ScalaCleanModel](cls: Defn.Class, enclosing: Option[ModelElementImpl], doc: SemanticDocument) extends ClassLikeImpl(cls, enclosing, doc) with ClassModel
+    class ClassModelImpl private[ScalaCleanModel](cls: Defn.Class, enclosing: Option[ModelElementImpl], doc: SemanticDocument) extends ClassLikeImpl(cls, enclosing, doc) with ClassModel {
+      override protected def template: Template = cls.templ
+    }
 
-    class ObjectModelImpl private[ScalaCleanModel](cls: Defn.Object, enclosing: Option[ModelElementImpl], doc: SemanticDocument) extends ClassLikeImpl(cls, enclosing, doc) with ObjectModel
+    class ObjectModelImpl private[ScalaCleanModel](cls: Defn.Object, enclosing: Option[ModelElementImpl], doc: SemanticDocument) extends ClassLikeImpl(cls, enclosing, doc) with ObjectModel{
+      override protected def template: Template = cls.templ
+    }
 
-    class TraitModelImpl private[ScalaCleanModel](cls: Defn.Trait, enclosing: Option[ModelElementImpl], doc: SemanticDocument) extends ClassLikeImpl(cls, enclosing, doc) with TraitModel
+    class TraitModelImpl private[ScalaCleanModel](cls: Defn.Trait, enclosing: Option[ModelElementImpl], doc: SemanticDocument) extends ClassLikeImpl(cls, enclosing, doc) with TraitModel{
+      override protected def template: Template = cls.templ
+    }
 
   }
 

@@ -62,27 +62,31 @@ class ScalaCleanPrivatiserApply extends SemanticRule("ScalaCleanPrivatiserApply"
   }
 
   def calcLevel(element: ModelElement): PrivatiserLevel = {
-    val incoming = {element.internalIncomingReferences map (_._1)}.toSet - element
+    val incoming = {
+      element.internalIncomingReferences map (_._1)
+    }.toSet - element
     println(s"Privatiser for $element START - process ${element.internalIncomingReferences}")
 
     var res: PrivatiserLevel = Initial
     //is it defined by the signature
     element match {
-      case o: ObjectModel if o.xtends[App] => res.combine (NoChange("its an App and needs to be public"))
+      case o: ObjectModel if o.xtends[App] =>
+        res.combine(NoChange("its an App and needs to be public"))
       //      case any: ModelElement if any.hasAnnotation[ExternalAccess] => Some(NoChange(any.getAnnotation[ExternalAccess]))
-//      case method:MethodModel if (method.overidesExternal)=>  res.combine(Level of parent method)
+      //      case method:MethodModel if (method.overidesExternal)=>  res.combine(Level of parent method)
       //probably other cases
       case _ =>
     }
 
 
-      incoming foreach {
-        ref =>
-          val access = Private(findCommonParent(ref.symbol, element.symbol), s"accessed from $ref")
-          res = res.combine(access)
-      }
+    incoming foreach {
+      ref =>
+        val access = Private(findCommonParent(ref.symbol, element.symbol), s"accessed from $ref")
+        res = res.combine(access)
+    }
     //if it is the same as currently assigned
     // res = NoChange(s" no change - calc was $res")
+    //if no access
     println(s"Privatiser for $element END - $res")
     res
   }
