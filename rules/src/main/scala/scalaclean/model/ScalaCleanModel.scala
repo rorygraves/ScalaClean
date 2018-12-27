@@ -1,6 +1,7 @@
 package scalaclean.model
 
-import scalafix.v1.{SemanticDocument, Symbol}
+import scalafix.internal.v1.InternalSemanticDoc
+import scalafix.v1.{SemanticDocument, Symbol, SymbolInformation}
 
 import scala.meta.{Defn, Pkg, Source, Template, Tree}
 import scala.reflect.ClassTag
@@ -21,6 +22,8 @@ sealed trait ModelElement {
 
   def directOverriddenBy: List[ModelElement]
   def transitiveOverriddenBy: List[ModelElement]
+
+  def symbolInfo: SymbolInformation
 
   protected def infoTypeName: String
   protected def infoPosString: String
@@ -119,6 +122,11 @@ class ScalaCleanModel {
     val bySymbol = mutable.Map[Symbol, ModelElementImpl]()
 
     private var enclosing = Option.empty[ModelElementImpl]
+    private[this] val internalAccess = classOf[SemanticDocument].getMethod("internal")
+    def internalDoc(doc: SemanticDocument) =
+      internalAccess.invoke(doc).asInstanceOf[InternalSemanticDoc]
+    def symbolTable(doc: SemanticDocument) =
+      internalDoc(doc).symtab
 
     def analyse(implicit doc: SemanticDocument) = {
       assertBuilding()
@@ -247,6 +255,9 @@ class ScalaCleanModel {
         }
       }
 
+
+      override def symbolInfo: SymbolInformation = doc.info(symbol).get
+
       override lazy val internalOutgoingReferences: List[(ModelElementImpl, Tree)] = {
         assertBuildModelFinished
         for (tree <- _refersTo;
@@ -334,12 +345,25 @@ class ScalaCleanModel {
         case i => i.symbol(doc)
       }) toSet
 
-      override lazy val transitiveExtends: Set[Symbol] = {
+      override def transitiveExtends: Set[Symbol] = {
+        def xtends(classSym: Symbol): Set[Symbol] = {
+          doc.info(classSym) match {
+            case None => ???
+            case Some(info) => info.signature match {
+              case cls: ClassSignature =>
+                cls.parents.flatMap({
+                  case ref: TypeRef => xtends(ref.symbol) + ref.symbol
+                  case _ => ???
+                }) toSet
+              case _ => ???
+            }
+          }
+        }
         assertBuildModelFinished()
-        //FIXME this doesn't cope with inheritance outside the model
-        directExtends ++ (directExtends flatMap bySymbol.get flatMap {
-          case c: ClassLike => c.transitiveExtends
-        })
+        directExtends.foldLeft(directExtends){
+          case (result: Set[Symbol], direct) =>
+            result ++ xtends(direct)
+        }
       }
 
       override def directExtendedBy: Set[ClassLike] = {
@@ -347,7 +371,7 @@ class ScalaCleanModel {
         _directExtendedBy
       }
 
-      override lazy val transitiveExtendedBy: Set[ClassLike] = {
+      override def transitiveExtendedBy: Set[ClassLike] = {
         directExtendedBy ++ directExtendedBy flatMap (_.transitiveExtendedBy)
       }
 
@@ -357,6 +381,7 @@ class ScalaCleanModel {
         super.build
         directExtends flatMap bySymbol.get foreach {
           case c: ClassLikeImpl => c._directExtendedBy += this
+          case _ => ??? //cant happen
         }
       }
 
