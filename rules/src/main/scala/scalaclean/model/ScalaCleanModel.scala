@@ -1,10 +1,16 @@
 package scalaclean.model
 
+import java.net.URLClassLoader
+
 import scalafix.internal.v1.InternalSemanticDoc
 import scalafix.v1.{SemanticDocument, Symbol, SymbolInformation}
 
+import scala.meta.internal.symtab.GlobalSymbolTable
 import scala.meta.{Defn, Pkg, Source, Template, Tree}
 import scala.reflect.ClassTag
+import scala.reflect.api.Mirror
+import scala.reflect.runtime.JavaUniverse
+
 
 sealed trait ModelElement {
   def symbol: Symbol
@@ -122,11 +128,31 @@ class ScalaCleanModel {
     val bySymbol = mutable.Map[Symbol, ModelElementImpl]()
 
     private var enclosing = Option.empty[ModelElementImpl]
-    private[this] val internalAccess = classOf[SemanticDocument].getMethod("internal")
+    private object access {
+      val internalAccess = classOf[SemanticDocument].getMethod("internal")
+      val classpathAccess = classOf[GlobalSymbolTable].getField("classpath")
+    }
     def internalDoc(doc: SemanticDocument) =
-      internalAccess.invoke(doc).asInstanceOf[InternalSemanticDoc]
+      access.internalAccess.invoke(doc).asInstanceOf[InternalSemanticDoc]
     def symbolTable(doc: SemanticDocument) =
       internalDoc(doc).symtab
+    private [this] val cachedClassLoader = new java.util.IdentityHashMap[GlobalSymbolTable, JavaUniverse#JavaMirror]
+
+    def mirror(doc: SemanticDocument): JavaUniverse#JavaMirror = {
+      val symbolTable = internalDoc(doc).symtab.asInstanceOf[GlobalSymbolTable]
+      cachedClassLoader.computeIfAbsent(symbolTable, {
+        symbolTable =>
+
+          import scala.meta.io._
+          val classpath = access.classpathAccess.get(symbolTable).asInstanceOf[Classpath]
+          val urls = classpath.shallow.map {
+            path => path.toURI.toURL
+          }
+          val cl = new URLClassLoader(urls.toArray)
+          val ru = scala.reflect.runtime.universe
+          ru.runtimeMirror(cl).asInstanceOf[JavaUniverse#JavaMirror]
+      })
+    }
 
     def analyse(implicit doc: SemanticDocument) = {
       assertBuilding()
@@ -286,6 +312,21 @@ class ScalaCleanModel {
       override lazy val transitiveOverriddenBy: List[ModelElement] = {
         directOverriddenBy ::: directOverriddenBy flatMap (_.transitiveOverriddenBy)
       }
+      protected def recordOverrides(s: Symbol) = {
+        assertBuilding()
+        _directOverrides ::= s
+      }
+      //record overrides
+      //for a method to override it must have a parent which is a class/trait
+//      enclosing match {
+//        case Some(cls: ClassLikeImpl) =>
+//          val jm = mirror(doc)
+//          val cls = jm.classToScala(jm.classLoader.loadClass(cls.asJavaClassName))
+//          jm.typeOf(TypeTag(jm.classToScala(cls)))
+//          jm.typeToScala(jm.classToScala(cls).)
+//
+//      }
+
       //TODO detect override and update _directOverrides && _directOverrided
 
       enclosing foreach {
