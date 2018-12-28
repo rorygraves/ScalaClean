@@ -6,9 +6,8 @@ import scalafix.internal.v1.InternalSemanticDoc
 import scalafix.v1.{SemanticDocument, Symbol, SymbolInformation}
 
 import scala.meta.internal.symtab.GlobalSymbolTable
-import scala.meta.{Defn, Pkg, Source, Template, Tree}
+import scala.meta.{Defn, Pat, Pkg, Source, Template, Tree}
 import scala.reflect.ClassTag
-import scala.reflect.api.Mirror
 import scala.reflect.runtime.JavaUniverse
 
 
@@ -18,7 +17,9 @@ sealed trait ModelElement {
   var colour : Colour = _
   def name: String
 
-  def enclosing: Option[ModelElement]
+  //usually just one element. Can be >1 for  RHS of a val (a,b,c) = ...
+  //where a,b,c are the enclosing
+  def enclosing: List[ModelElement]
 
   val internalOutgoingReferences: List[(ModelElement, Tree)]
   val internalIncomingReferences: List[(ModelElement, Tree)]
@@ -121,24 +122,25 @@ class ScalaCleanModel {
 
     import collection.mutable
 
-
+    val ru = scala.reflect.runtime.universe
     val allKnownClasses = mutable.Map[String, ClassModelImpl]()
     val allKnownObjects = mutable.Map[String, ObjectModelImpl]()
     val allKnownTraits = mutable.Map[String, TraitModelImpl]()
     val bySymbol = mutable.Map[Symbol, ModelElementImpl]()
 
-    private var enclosing = Option.empty[ModelElementImpl]
+    private var enclosing = List.empty[ModelElementImpl]
     private object access {
       val internalAccess = classOf[SemanticDocument].getMethod("internal")
-      val classpathAccess = classOf[GlobalSymbolTable].getField("classpath")
+      val classpathAccess = classOf[GlobalSymbolTable].getDeclaredField("classpath")
+      classpathAccess.setAccessible(true)
     }
     def internalDoc(doc: SemanticDocument) =
       access.internalAccess.invoke(doc).asInstanceOf[InternalSemanticDoc]
     def symbolTable(doc: SemanticDocument) =
       internalDoc(doc).symtab
-    private [this] val cachedClassLoader = new java.util.IdentityHashMap[GlobalSymbolTable, JavaUniverse#JavaMirror]
+    private [this] val cachedClassLoader = new java.util.IdentityHashMap[GlobalSymbolTable, ru.JavaMirror]
 
-    def mirror(doc: SemanticDocument): JavaUniverse#JavaMirror = {
+    def mirror(doc: SemanticDocument) = {
       val symbolTable = internalDoc(doc).symtab.asInstanceOf[GlobalSymbolTable]
       cachedClassLoader.computeIfAbsent(symbolTable, {
         symbolTable =>
@@ -149,8 +151,7 @@ class ScalaCleanModel {
             path => path.toURI.toURL
           }
           val cl = new URLClassLoader(urls.toArray)
-          val ru = scala.reflect.runtime.universe
-          ru.runtimeMirror(cl).asInstanceOf[JavaUniverse#JavaMirror]
+          ru.runtimeMirror(cl)
       })
     }
 
@@ -163,8 +164,11 @@ class ScalaCleanModel {
         }
 
         private def visitEnclosingChildren(parent: ModelElementImpl, t: Tree): Unit = {
+          visitEnclosingChildren(List(parent), t)
+        }
+        private def visitEnclosingChildren(parent: List[ModelElementImpl], t: Tree): Unit = {
           val prev = enclosing
-          enclosing = Some(parent)
+          enclosing = parent
           visitChildren(t)
           enclosing = prev
         }
@@ -178,7 +182,9 @@ class ScalaCleanModel {
         def visitTree(tree: Tree): Unit = {
 
           tree match {
-            case pkg: Pkg =>
+            case _: Pkg =>
+              visitChildren(tree)
+            case _: Source =>
               visitChildren(tree)
             case obj: Defn.Object =>
               val sym = obj.symbol
@@ -201,35 +207,52 @@ class ScalaCleanModel {
               val parent = new MethodModelImpl(method, enclosing, doc)
               visitEnclosingChildren(parent, tree)
             case valDef: Defn.Val =>
-              val parent = new ValModelImpl(valDef, enclosing, doc)
-              visitEnclosingChildren(parent, tree)
-            case varDef: Defn.Var =>
-              val parent = new VarModelImpl(varDef, enclosing, doc)
-              visitEnclosingChildren(parent, tree)
-            case other: Tree =>
-              handleOther(other)
-              visitChildren(other)
-          }
-        }
-
-        def handleOther(defn: Tree): Boolean = {
-          defn match {
-            case source: Source => //ignore
-            case tree: Tree if tree.symbol.isNone => //ignore
-            case tree =>
-              enclosing match {
-                case Some(parent) if parent.symbol == defn.symbol => //ignore internal refs
-                case Some(parent) =>
-                  parent.addRefersTo(defn)
-                case None =>
-                  val pos = defn.pos
-                  println(s"XXX cant add to parent = ${defn.getClass} ${pos.start} .. ${pos.end} - ${defn.symbol}")
+              //to cope with  val (x,Some(y)) = ....
+              val fields = readVars(valDef.pats)
+              val fieldModels = fields map {
+                new ValModelImpl(valDef, _, enclosing, doc)
               }
+              visitEnclosingChildren(fieldModels, tree)
+            case varDef: Defn.Var =>
+              //to cope with  var (x,Some(y)) = ....
+              val fields = readVars(varDef.pats)
+              val fieldModels = fields map {
+                new VarModelImpl(varDef, _, enclosing, doc)
+              }
+              visitEnclosingChildren(fieldModels, tree)
+            case _ =>
+              if (!tree.symbol.isNone)
+                if (enclosing.isEmpty) {
+                  val pos = tree.pos
+                  println(s"XXX cant add to parent = ${tree.getClass} ${pos.start} .. ${pos.end} - ${tree.symbol}")
+                } else {
+                  enclosing foreach {
+                    _.addRefersTo(tree)
+                  }
+                }
+              visitChildren(tree)
           }
-          true
         }
       }
       analysisVisitor.visitDocument(doc.tree)
+
+      def readVars(pats: List[Pat]): List[Pat.Var] = {
+        object visitor {
+          var res = List.empty[Pat.Var]
+
+          def visitTree(tree: Tree): Unit = {
+            tree match {
+              case field: Pat.Var =>
+                res ::= field
+              case _ =>
+            }
+            tree.children.foreach {visitTree(_)}
+          }
+        }
+        pats foreach visitor.visitTree
+        assert (visitor.res.nonEmpty)
+        visitor.res
+      }
     }
 
     object ModelBuilder {
@@ -251,12 +274,14 @@ class ScalaCleanModel {
     }
 
 
-    sealed abstract class ModelElementImpl(protected val defn: Defn, val enclosing: Option[ModelElementImpl], protected val doc: SemanticDocument) extends ModelElement {
+    sealed abstract class ModelElementImpl(protected val defn: Defn, val enclosing: List[ModelElementImpl], protected val doc: SemanticDocument) extends ModelElement {
       assertBuilding()
-      assert(bySymbol.put(symbol, this).isEmpty)
+      assert(!symbol.isNone)
+      assert(bySymbol.put(symbol, this).isEmpty, s"$symbol enclosing $enclosing this =$this")
 
       def addRefersTo(tree: Tree): Unit = {
-        _refersTo ::= tree
+        if (tree.symbol(doc) != symbol)
+          _refersTo ::= tree
       }
 
       override protected def infoPosString: String = {
@@ -316,16 +341,6 @@ class ScalaCleanModel {
         assertBuilding()
         _directOverrides ::= s
       }
-      //record overrides
-      //for a method to override it must have a parent which is a class/trait
-//      enclosing match {
-//        case Some(cls: ClassLikeImpl) =>
-//          val jm = mirror(doc)
-//          val cls = jm.classToScala(jm.classLoader.loadClass(cls.asJavaClassName))
-//          jm.typeOf(TypeTag(jm.classToScala(cls)))
-//          jm.typeToScala(jm.classToScala(cls).)
-//
-//      }
 
       //TODO detect override and update _directOverrides && _directOverrided
 
@@ -336,31 +351,56 @@ class ScalaCleanModel {
 
       private[ScalaCleanModel] def children = _children
 
-      private[ScalaCleanModel] def enclosingClassLike: Option[ClassLike] = {
-        enclosing match {
-          case None => None
-          case Some(classLike: ClassLike) => Some(classLike)
-          case Some(other: ModelElementImpl) => other.enclosingClassLike
-        }
-      }
-
       override def symbol: Symbol = defn.symbol(doc)
 
       def name = symbol.displayName
 
     }
 
-    abstract class FieldModelImpl(defn: Defn, enclosing: Option[ModelElementImpl], doc: SemanticDocument) extends ModelElementImpl(defn, enclosing, doc) with FieldModel
+    abstract class FieldModelImpl(defn: Defn, field: Pat.Var, enclosing: List[ModelElementImpl], doc: SemanticDocument) extends ModelElementImpl(defn, enclosing, doc) with FieldModel {
+      protected[this] def keyString: String
 
-    class VarModelImpl(vr: Defn.Var, enclosing: Option[ModelElementImpl], doc: SemanticDocument) extends FieldModelImpl(vr, enclosing, doc) with VarModel
+      //record overrides
+      //for a method or field to override it must have a parent which is a class/trait
 
-    class ValModelImpl(vl: Defn.Val, enclosing: Option[ModelElementImpl], doc: SemanticDocument) extends FieldModelImpl(vl, enclosing, doc) with ValModel
+      enclosing.headOption match {
+        case Some(cls: ClassLikeImpl) =>
+          val sym = cls.relectSymbol
+          val wanted = s"$keyString ${field.name.value}"
+          val found = sym.toType.decls.toList.filter {
+            _.toString == wanted
+//            case sym: JavaUniverse#TermSymbol => sym.keyString == keyString && sym.unexpandedName.getterName.decode.toString == field.name.value
+//            case _ => false
+          }
+          found foreach {
+            o=> val x = o.overrides
+              println(s"$o overrides ${o.overrides}")
+              //TODO convert to a scalafix symbol and call
+//              val symbol : Symbol = ???
+//              recordOverrides(symbol)
+          }
+        case _ => // local cant override
 
-    class MethodModelImpl(df: Defn.Def, enclosing: Option[ModelElementImpl], doc: SemanticDocument) extends ModelElementImpl(df, enclosing, doc) with MethodModel {
-      private[builder] override def build: Unit = super.build
+      }
+
+      override def symbol: Symbol = field.symbol(doc)
     }
 
-    abstract sealed class ClassLikeImpl(defn: Defn, enclosing: Option[ModelElementImpl], doc: SemanticDocument) extends ModelElementImpl(defn, enclosing, doc) with ClassLike {
+    class VarModelImpl(vr: Defn.Var, field: Pat.Var, enclosing: List[ModelElementImpl], doc: SemanticDocument) extends FieldModelImpl(vr, field, enclosing, doc) with VarModel {
+      override protected def keyString: String = "variable"
+    }
+
+    class ValModelImpl(vl: Defn.Val, field: Pat.Var, enclosing: List[ModelElementImpl], doc: SemanticDocument) extends FieldModelImpl(vl, field, enclosing, doc) with ValModel {
+      override protected def keyString: String = "value"
+    }
+
+    class MethodModelImpl(df: Defn.Def, enclosing: List[ModelElementImpl], doc: SemanticDocument) extends ModelElementImpl(df, enclosing, doc) with MethodModel {
+      private[builder] override def build: Unit = super.build
+      //TODO record overrides
+
+    }
+
+    abstract sealed class ClassLikeImpl(defn: Defn, enclosing: List[ModelElementImpl], doc: SemanticDocument) extends ModelElementImpl(defn, enclosing, doc) with ClassLike {
       lazy val fields: Map[String, FieldModel] = {
         assertBuildModelFinished
         (children collect {
@@ -433,17 +473,28 @@ class ScalaCleanModel {
       override def xtends(symbol: Symbol): Boolean = {
         transitiveExtends.contains(symbol)
       }
+      def relectSymbol = {
+        val jm = mirror(doc).asInstanceOf[JavaUniverse#Mirror]
+        val javaName = fullName.
+          substring(0, fullName.length-1).
+          replace('#','$').
+          replace('.','$').
+        replace('/','.')
+        val res: JavaUniverse#Symbol = if (this.isInstanceOf[ObjectModelImpl]) jm.getRequiredModule(javaName)
+        else jm.getRequiredClass(javaName)
+        res
+      }
     }
 
-    class ClassModelImpl private[ScalaCleanModel](cls: Defn.Class, enclosing: Option[ModelElementImpl], doc: SemanticDocument) extends ClassLikeImpl(cls, enclosing, doc) with ClassModel {
+    class ClassModelImpl private[ScalaCleanModel](cls: Defn.Class, enclosing: List[ModelElementImpl], doc: SemanticDocument) extends ClassLikeImpl(cls, enclosing, doc) with ClassModel {
       override protected def template: Template = cls.templ
     }
 
-    class ObjectModelImpl private[ScalaCleanModel](cls: Defn.Object, enclosing: Option[ModelElementImpl], doc: SemanticDocument) extends ClassLikeImpl(cls, enclosing, doc) with ObjectModel{
+    class ObjectModelImpl private[ScalaCleanModel](cls: Defn.Object, enclosing: List[ModelElementImpl], doc: SemanticDocument) extends ClassLikeImpl(cls, enclosing, doc) with ObjectModel{
       override protected def template: Template = cls.templ
     }
 
-    class TraitModelImpl private[ScalaCleanModel](cls: Defn.Trait, enclosing: Option[ModelElementImpl], doc: SemanticDocument) extends ClassLikeImpl(cls, enclosing, doc) with TraitModel{
+    class TraitModelImpl private[ScalaCleanModel](cls: Defn.Trait, enclosing: List[ModelElementImpl], doc: SemanticDocument) extends ClassLikeImpl(cls, enclosing, doc) with TraitModel{
       override protected def template: Template = cls.templ
     }
 
