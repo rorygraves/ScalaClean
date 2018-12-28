@@ -5,10 +5,12 @@ DisableSyntax.noReturns = true
 */
 package perceptor
 
-class noReturns {
+class NoReturnRule {
 
-  def abc: Unit = {
+  def withReturnFails: Unit = {
    return () // assert: DisableSyntax.return
   }
+
+  def withImplicitReturnPasses: Unit = () // scalafix: ok
 
 }
