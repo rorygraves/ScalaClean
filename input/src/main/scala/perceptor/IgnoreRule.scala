@@ -4,7 +4,7 @@ rule = DisableSyntax
 
 DisableSyntax.regex = [
   {
-    id = "inore"
+    id = "ignore"
     pattern = "@Ignore\\s*[^(]"
     message = "Must be in format: '@Ignore(<jira url>)'"
   }
@@ -20,13 +20,13 @@ case class Ignore(v: String = "") extends scala.annotation.StaticAnnotation
 class IgnoreRule {
   // scalafix:on
 
-  @Ignore // assert: DisableSyntax.inore
+  @Ignore // assert: DisableSyntax.ignore
   def failOnVanillaIgnore = ()
 
   @Ignore("http://someurl.com/abcd") // scalafix: ok
   def allowWithUrl = ()
 
-  @SuppressWarnings(Array("DisableSyntax.inore"))
+  @SuppressWarnings(Array("DisableSyntax.ignore"))
   @Ignore
   def passWhenSuppressedWithAnnotation = ()
 
