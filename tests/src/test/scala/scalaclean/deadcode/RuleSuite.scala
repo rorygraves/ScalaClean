@@ -17,7 +17,7 @@ class RuleSuite extends SemanticRuleSuite() {
   // the config over which rules to run is defined at the top of the file.
 
   override def runAllTests() = {
-    testsToRun.filter(!_.path.input.toString().contains("perceptor")).foreach(runOn)
+    testsToRun.filter(_.path.input.toString().contains("scalaclean")).foreach(runOn)
   }
 
   runAllTests()
