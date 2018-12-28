@@ -14,7 +14,6 @@ package perceptor
 
 class Logging {
 
-  // add isDebugEnabled example // assert: DisableSyntax.logging
   def print(): Unit = {
     println("This is bad") // assert: DisableSyntax.logging
   }
