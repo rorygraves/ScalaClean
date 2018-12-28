@@ -4,7 +4,7 @@ rule = DisableSyntax
 
 DisableSyntax.regex = [
   {
-    id = "tdo"
+    id = "todo"
     pattern = "(TODO\\s*[^(| =]|FIXME)"
     message = "Must be in format TODO (<jira url>)"
   }
@@ -13,7 +13,7 @@ DisableSyntax.regex = [
 package perceptor
 
 // TODO: Add url into regex between braces
-class TODORule {
+class ToDoRule {
   // scalafix:on
 
  def TODO() = () // scalafix: ok
@@ -22,8 +22,8 @@ class TODORule {
 
   "TODO(http://jira.com/abcd)" // scalafix: ok
 
-  "TODO" // assert: DisableSyntax.tdo
+  "TODO" // assert: DisableSyntax.todo
 
-  "FIXME" // assert: DisableSyntax.tdo
+  "FIXME" // assert: DisableSyntax.todo
 
 }
