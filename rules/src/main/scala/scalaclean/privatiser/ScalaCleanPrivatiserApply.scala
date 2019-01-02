@@ -32,7 +32,7 @@ class ScalaCleanPrivatiserApply extends SemanticRule("ScalaCleanPrivatiserApply"
     }.toSet - element
     println(s"Privatiser for $element START - process ${element.internalIncomingReferences}")
 
-    var res: PrivatiserLevel = Initial
+    var res: PrivatiserLevel = Public
     //is it defined by the signature
     element match {
       case o: ObjectModel if o.xtends[App] =>
@@ -69,20 +69,17 @@ class ScalaCleanPrivatiserApply extends SemanticRule("ScalaCleanPrivatiserApply"
         val prepared = model.fromSymbol[ObjectModel](obj.symbol)
         val change = prepared.colour.asInstanceOf[PrivatiserLevel]
         change match {
-          case NoChange(reason) =>
-            (Patch.empty, true)
-          case Private(scope, reason) =>
-            //TODO -- change me
-            (Patch.empty, true)
-          case Protected(scope, reason) =>
-            // TODO -- change me
-            (Patch.empty, true)
-          case Initial =>
-            throw new IllegalStateException("Found an Initial level, something went terribly wrong!")
+          case NoChange(_) => (Patch.empty, true)
+          case Public => throw new IllegalStateException("Trying to make something public, something went terribly wrong here!")
+          case level: PrivatiserLevel => changeAccessModifier(level)
         }
       }
     }
     tv.visitDocument(doc.tree)
     Patch.empty
   }
+
+  private def changeAccessModifier(level: PrivatiserLevel): (Patch, Boolean) =
+    // TODO -- change me
+    (Patch.empty, true)
 }

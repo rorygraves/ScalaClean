@@ -4,23 +4,24 @@ import scalaclean.model.Colour
 import scalafix.v1.Symbol
 
 private[privatiser] sealed trait PrivatiserLevel extends Colour {
+  def keyword: Option[String] = None
   def reason: String
-  def combine(level: PrivatiserLevelAdd): PrivatiserLevel
+  def combine(level: PrivatiserLevel): PrivatiserLevel
 }
 
-private[privatiser] case object Initial extends PrivatiserLevel {
-  def reason = "initial"
-  override def combine(level: PrivatiserLevelAdd): PrivatiserLevel = level
+private[privatiser] case object Public extends PrivatiserLevel {
+  def reason = "initial assumption: symbol should be public"
+  def combine(level: PrivatiserLevel): PrivatiserLevel = level
 }
 
-private[privatiser] sealed trait PrivatiserLevelAdd extends PrivatiserLevel
-
-private[privatiser] case class NoChange(reason: String) extends PrivatiserLevelAdd {
-  override def combine(level: PrivatiserLevelAdd): PrivatiserLevel = this
+private[privatiser] case class NoChange(reason: String) extends PrivatiserLevel {
+  def combine(level: PrivatiserLevel): PrivatiserLevel = this
 }
 
-private[privatiser] case class Private(scope: Symbol, reason: String) extends PrivatiserLevelAdd with AnalyserUtils {
-  override def combine(level: PrivatiserLevelAdd): PrivatiserLevel = {
+private[privatiser] case class Private(scope: Symbol, reason: String) extends PrivatiserLevel with AnalyserUtils {
+  override val keyword = Some("private")
+
+  def combine(level: PrivatiserLevel): PrivatiserLevel = {
     level match {
       case Private(otherScope, otherReason) =>
         val commonParent = findCommonParent(scope, otherScope)
@@ -32,9 +33,11 @@ private[privatiser] case class Private(scope: Symbol, reason: String) extends Pr
   }
 }
 
-private[privatiser] case class Protected(scope:Symbol, reason: String) extends PrivatiserLevelAdd {
+private[privatiser] case class Protected(scope:Symbol, reason: String) extends PrivatiserLevel {
+  override val keyword: Option[String] = Some("protected")
+
   // TODO - actually implement combine for protected!
-  override def combine(level: PrivatiserLevelAdd): PrivatiserLevel = this
+  def combine(level: PrivatiserLevel): PrivatiserLevel = this
 }
 
 
