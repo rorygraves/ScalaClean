@@ -1,10 +1,10 @@
 package scalaclean.privatiser
 
+import scala.meta.tokens.{Token, Tokens}
 import scalaclean.model._
 import scalaclean.util._
 import scalafix.v1._
-
-import scala.meta.Defn
+import scala.meta.{Defn, Mod}
 
 /**
   * A rule that removes unreferenced classes,
@@ -59,30 +59,49 @@ class ScalaCleanPrivatiserApply extends SemanticRule("ScalaCleanPrivatiserApply"
 
     val tv = new DefaultTreeVisitor {
 
-//      override def handleVar(symbol: Symbol, varDef: Defn.Var, scope: List[Scope]): (Patch, Boolean) = super.handleVar(symbol, varDef, scope)
-//      override def handleVal(symbol: Symbol, valDef: Defn.Val, scope: List[Scope]): (Patch, Boolean) = super.handleVal(symbol, valDef, scope)
-//      override def handleMethod(methodName: Symbol, fullSig: String, method: Defn.Def, scope: List[Scope]): (Patch, Boolean) = super.handleMethod(methodName, fullSig, method, scope)
-//      override def handleClass(clsSymbol: Symbol, cls: Defn.Class, scope: List[Scope]): (Patch, Boolean) = super.handleClass(clsSymbol, cls, scope)
-//      override def handleTrait(trtSymbol: Symbol, cls: Defn.Trait, scope: List[Scope]): (Patch, Boolean) = super.handleTrait(trtSymbol, cls, scope)
+      // TODO - comment these methods once the model is complete
 
-      override def handleObject(objName: Symbol, obj: Defn.Object, scope: List[Scope]): (Patch, Boolean) = {
-        val prepared = model.fromSymbol[ObjectModel](obj.symbol)
+//      override def handleVar(symbol: Symbol, varDef: Defn.Var, scope: List[Scope]): (Patch, Boolean) =
+//        handleDefn(symbol, varDef, scope, traverseChildren = false)
+
+//      override def handleVal(symbol: Symbol, valDef: Defn.Val, scope: List[Scope]): (Patch, Boolean) =
+//        handleDefn(symbol, valDef, scope, traverseChildren = false)
+
+//      override def handleMethod(methodName: Symbol, fullSig: String, method: Defn.Def, scope: List[Scope]): (Patch, Boolean) =
+//        handleDefn(methodName, method, scope, traverseChildren = false)
+
+//      override def handleClass(clsSymbol: Symbol, cls: Defn.Class, scope: List[Scope]): (Patch, Boolean) =
+//        handleDefn(clsSymbol, cls, scope, traverseChildren = true)
+
+      override def handleTrait(trtSymbol: Symbol, cls: Defn.Trait, scope: List[Scope]): (Patch, Boolean) =
+        handleDefn(trtSymbol, cls, scope, traverseChildren = true)
+
+      override def handleObject(objName: Symbol, obj: Defn.Object, scope: List[Scope]): (Patch, Boolean) =
+        handleDefn(objName, obj, scope, traverseChildren = true)
+
+      private def handleDefn[T <: Defn](objName: Symbol, defn: T, scope: List[Scope], traverseChildren: Boolean): (Patch, Boolean) = {
+        val prepared = model.fromSymbol[ObjectModel](defn.symbol)
         val change = prepared.colour.asInstanceOf[PrivatiserLevel]
         change match {
           case NoChange(_, _) => (Patch.empty, true)
-          case Public(_) => throw new IllegalStateException("Trying to make something public, something went terribly wrong here!")
-          case level: PrivatiserLevel => changeAccessModifier(level)
+          case Public(_) =>
+            // TODO - uncomment once all stubs are complete, until then Public can happen
+            //throw new IllegalStateException("Trying to make something public, something went terribly wrong here!")
+            (Patch.empty, true)
+          case level: PrivatiserLevel =>
+            changeAccessModifier(level, defn, traverseChildren)
         }
       }
     }
     tv.visitDocument(doc.tree)
-    Patch.empty
   }
 
-  private def changeAccessModifier(level: PrivatiserLevel): (Patch, Boolean) = {
-    val symbol = level
-
-    // TODO -- change me
-    (Patch.empty, true)
-  }
+  private def changeAccessModifier[T <: Defn](level: PrivatiserLevel, defn: T, traverseChildren: Boolean): (Patch, Boolean) =
+    level.keyword.fold {
+      (Patch.empty, true)
+    } { kwd =>
+      val accessModifiersToRemove = defn.tokens.filter(t => t.isInstanceOf[Token.KwPrivate] || t.isInstanceOf[Token.KwProtected])
+      val patch = Patch.addLeft(defn, s"$kwd ") + Patch.removeTokens(accessModifiersToRemove)
+      (patch, traverseChildren)
+    }
 }
