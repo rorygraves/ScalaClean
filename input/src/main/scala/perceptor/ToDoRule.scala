@@ -20,10 +20,10 @@ class ToDoRule {
 
  def aTODO = () // scalafix: ok
 
-  "TODO(http://jira.com/abcd)" // scalafix: ok
+  val bar = "TODO(http://jira.com/abcd)" // scalafix: ok
 
-  "TODO" // assert: DisableSyntax.todo
+  val foo = "TODO" // assert: DisableSyntax.todo
 
-  "FIXME" // assert: DisableSyntax.todo
+  val baz = "FIXME" // assert: DisableSyntax.todo
 
 }
