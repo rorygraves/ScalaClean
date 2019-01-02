@@ -13,7 +13,25 @@ Methods
 Val/vars
 
  */
+abstract class Parent[I] {
+  def foo(i:I): Unit
 
+  def v1: I
+  def va: I
+  def v2: I
+  def v3: I
+  def v4: AnyRef
+}
+class child extends Parent[Int] {
+  def foo(i:Int) = ()
+
+  def v1 = 0
+  def va() = 0
+  def va(i:Int) = 0
+  val v2 = 1
+  var v3 = 2
+  object v4 extends child
+}
 class OuterClass {
 
   val iAmPrivateVal = 24

@@ -2,11 +2,12 @@ package scalaclean.model
 
 import java.net.URLClassLoader
 
+import scalaclean.model.reflect.GlobalHelper
 import scalafix.internal.v1.InternalSemanticDoc
 import scalafix.v1.{SemanticDocument, Symbol, SymbolInformation}
 
 import scala.meta.internal.symtab.GlobalSymbolTable
-import scala.meta.{Defn, Pat, Pkg, Source, Template, Tree}
+import scala.meta.{Defn, Pat, Pkg, Source, Template, Tree, Term}
 import scala.reflect.ClassTag
 import scala.reflect.runtime.JavaUniverse
 
@@ -123,6 +124,7 @@ class ScalaCleanModel {
     import collection.mutable
 
     val ru = scala.reflect.runtime.universe
+    val globalHelper = new GlobalHelper(ru.asInstanceOf[scala.reflect.runtime.JavaUniverse])
     val allKnownClasses = mutable.Map[String, ClassModelImpl]()
     val allKnownObjects = mutable.Map[String, ObjectModelImpl]()
     val allKnownTraits = mutable.Map[String, TraitModelImpl]()
@@ -354,50 +356,102 @@ class ScalaCleanModel {
       override def symbol: Symbol = defn.symbol(doc)
 
       def name = symbol.displayName
+      def recordFieldOverrides(fieldType: String, name: String) = {
+
+        //record overrides
+        //for a method or field to override it must have a parent which is a class/trait
+
+        enclosing.headOption match {
+          case Some(cls: ClassLikeImpl) =>
+            val sym = cls.relectSymbol
+            val wanted = s"$fieldType ${name}"
+            val found = sym.toType.decls.toList.filter {
+              _.toString == wanted
+              //            case sym: JavaUniverse#TermSymbol => sym.keyString == keyString && sym.unexpandedName.getterName.decode.toString == field.name.value
+              //            case _ => false
+            }
+            found foreach {
+              o =>
+                val overrides = o.overrides
+                println(s"$o overrides ${overrides}")
+                overrides foreach {
+                  parent =>
+                    val metaSymbolString = globalHelper.gSymToMSymString(parent)
+                    recordOverrides(Symbol(metaSymbolString))
+                }
+            }
+          case _ => // local cant override
+
+        }
+      }
 
     }
 
     abstract class FieldModelImpl(defn: Defn, field: Pat.Var, enclosing: List[ModelElementImpl], doc: SemanticDocument) extends ModelElementImpl(defn, enclosing, doc) with FieldModel {
-      protected[this] def keyString: String
 
-      //record overrides
-      //for a method or field to override it must have a parent which is a class/trait
-
-      enclosing.headOption match {
-        case Some(cls: ClassLikeImpl) =>
-          val sym = cls.relectSymbol
-          val wanted = s"$keyString ${field.name.value}"
-          val found = sym.toType.decls.toList.filter {
-            _.toString == wanted
-//            case sym: JavaUniverse#TermSymbol => sym.keyString == keyString && sym.unexpandedName.getterName.decode.toString == field.name.value
-//            case _ => false
-          }
-          found foreach {
-            o=> val x = o.overrides
-              println(s"$o overrides ${o.overrides}")
-              //TODO convert to a scalafix symbol and call
-//              val symbol : Symbol = ???
-//              recordOverrides(symbol)
-          }
-        case _ => // local cant override
-
-      }
 
       override def symbol: Symbol = field.symbol(doc)
     }
 
     class VarModelImpl(vr: Defn.Var, field: Pat.Var, enclosing: List[ModelElementImpl], doc: SemanticDocument) extends FieldModelImpl(vr, field, enclosing, doc) with VarModel {
-      override protected def keyString: String = "variable"
+      recordFieldOverrides("variable", field.name.value)
     }
 
     class ValModelImpl(vl: Defn.Val, field: Pat.Var, enclosing: List[ModelElementImpl], doc: SemanticDocument) extends FieldModelImpl(vl, field, enclosing, doc) with ValModel {
-      override protected def keyString: String = "value"
+      recordFieldOverrides("value", field.name.value)
     }
 
     class MethodModelImpl(df: Defn.Def, enclosing: List[ModelElementImpl], doc: SemanticDocument) extends ModelElementImpl(df, enclosing, doc) with MethodModel {
       private[builder] override def build: Unit = super.build
-      //TODO record overrides
 
+      private def paramsMatch (gSymParamss: List[List[JavaUniverse#Symbol]],metaParamss:  List[List[Term.Param]]) : Boolean = {
+        gSymParamss.size == metaParamss.size &&
+          (gSymParamss zip metaParamss forall {
+            case (gSymParams: List[JavaUniverse#Symbol], metaParams: List[Term.Param]) =>
+              gSymParams.length == metaParams.length &&
+                (gSymParams zip metaParams forall {
+                  case (gSymParam: JavaUniverse#Symbol, metaParam: Term.Param) =>
+                    assert (metaParam.decltpe.isDefined)
+                    //TODO not a great compare
+                    gSymParam.tpe.toString == metaParam.decltpe.get.toString
+                })
+          })
+      }
+
+      //record overrides
+      //for a method to override it must have a parent which is a class/trait
+      //so no locals
+
+      //TODO consider varargs
+      //TODO can we put this in scalafix without the hop to reflection
+
+      enclosing.headOption match {
+        case Some(cls: ClassLikeImpl) =>
+          val sym = cls.relectSymbol
+          val wanted = s"method ${name}"
+          val list = sym.toType.decls.toList
+          val simpleMethodMatch = list.collect {
+            case sym: JavaUniverse#MethodSymbol
+              if !sym.isClassConstructor
+                && sym.name.toString == df.name.toString => sym
+          }
+          val found = simpleMethodMatch filter {
+            case sym => paramsMatch(sym.paramLists, df.paramss)
+          }
+          assert (found.size == 1, s"could not match the method ${df} from $simpleMethodMatch")
+          found foreach {
+            o =>
+              val overrides = o.overrides
+              println(s"$o overrides ${overrides}")
+              overrides foreach {
+                parent =>
+                  val metaSymbolString = globalHelper.gSymToMSymString(parent)
+                  recordOverrides(Symbol(metaSymbolString))
+              }
+          }
+        case _ => // local cant override
+
+      }
     }
 
     abstract sealed class ClassLikeImpl(defn: Defn, enclosing: List[ModelElementImpl], doc: SemanticDocument) extends ModelElementImpl(defn, enclosing, doc) with ClassLike {
@@ -492,6 +546,7 @@ class ScalaCleanModel {
 
     class ObjectModelImpl private[ScalaCleanModel](cls: Defn.Object, enclosing: List[ModelElementImpl], doc: SemanticDocument) extends ClassLikeImpl(cls, enclosing, doc) with ObjectModel{
       override protected def template: Template = cls.templ
+      recordFieldOverrides("object", cls.name.value)
     }
 
     class TraitModelImpl private[ScalaCleanModel](cls: Defn.Trait, enclosing: List[ModelElementImpl], doc: SemanticDocument) extends ClassLikeImpl(cls, enclosing, doc) with TraitModel{
