@@ -4,6 +4,8 @@ rules = [ ScalaCleanPrivatiserAnalysis , ScalaCleanPrivatiserApply ]
 */
 package scalaclean.privatiser
 
+import scala.collection.immutable
+
 /*
 What can be private:
 

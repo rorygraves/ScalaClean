@@ -38,14 +38,14 @@ class ScalaCleanDeadCodeRemover extends SemanticRule("ScalaCleanDeadCodeRemover"
   def markUsed(element: ModelElement): Unit = {
     if (element.colour == NotVisited) {
       element.colour = Visited
-      element match {
-        case method: MethodModel =>
-        //todo recurse based on the type of what is found
-        //  method.body ???
-        case e => throw new IllegalStateException(s"Unknown element $e")
+      element.internalOutgoingReferences foreach {
+        case (element, _) => markUsed(element)
       }
-      //todo recurse based on the enclosing element
-      //markUsed(element.owner)
+      //TODO for the VARs and (non lazy) vals and objects eagerly traverse
+
+      //TODO consider marking the overridded and overrides
+      //TODO consider marking the inherited classes
+      //TODO consider marking the enclosing like markUsed(element.owner)
     }
   }
 
