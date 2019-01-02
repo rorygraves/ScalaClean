@@ -6,15 +6,17 @@ import scalafix.v1.Symbol
 private[privatiser] sealed trait PrivatiserLevel extends Colour {
   def keyword: Option[String] = None
   def reason: String
+  def scope: Symbol
+
   def combine(level: PrivatiserLevel): PrivatiserLevel
 }
 
-private[privatiser] case object Public extends PrivatiserLevel {
+private[privatiser] case class Public(scope: Symbol) extends PrivatiserLevel {
   def reason = "initial assumption: symbol should be public"
   def combine(level: PrivatiserLevel): PrivatiserLevel = level
 }
 
-private[privatiser] case class NoChange(reason: String) extends PrivatiserLevel {
+private[privatiser] case class NoChange(scope: Symbol, reason: String) extends PrivatiserLevel {
   def combine(level: PrivatiserLevel): PrivatiserLevel = this
 }
 
