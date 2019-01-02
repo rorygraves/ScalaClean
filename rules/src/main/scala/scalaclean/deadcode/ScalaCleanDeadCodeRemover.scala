@@ -42,7 +42,7 @@ class ScalaCleanDeadCodeRemover extends SemanticRule("ScalaCleanDeadCodeRemover"
         case method: MethodModel =>
         //todo recurse based on the type of what is found
         //  method.body ???
-
+        case e => throw new IllegalStateException(s"Unknown element $e")
       }
       //todo recurse based on the enclosing element
       //markUsed(element.owner)
