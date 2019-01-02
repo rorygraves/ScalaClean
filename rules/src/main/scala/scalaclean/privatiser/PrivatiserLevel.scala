@@ -3,23 +3,23 @@ package scalaclean.privatiser
 import scalaclean.model.Colour
 import scalafix.v1.Symbol
 
-sealed trait PrivatiserLevel extends Colour {
+private[privatiser] sealed trait PrivatiserLevel extends Colour {
   def reason: String
   def combine(level: PrivatiserLevelAdd): PrivatiserLevel
 }
 
-case object Initial extends PrivatiserLevel {
+private[privatiser] case object Initial extends PrivatiserLevel {
   def reason = "initial"
   override def combine(level: PrivatiserLevelAdd): PrivatiserLevel = level
 }
 
-sealed trait PrivatiserLevelAdd extends PrivatiserLevel
+private[privatiser] sealed trait PrivatiserLevelAdd extends PrivatiserLevel
 
-case class NoChange(reason: String) extends PrivatiserLevelAdd {
+private[privatiser] case class NoChange(reason: String) extends PrivatiserLevelAdd {
   override def combine(level: PrivatiserLevelAdd): PrivatiserLevel = this
 }
 
-case class Private(scope: Symbol, reason: String) extends PrivatiserLevelAdd with AnalyserUtils {
+private[privatiser] case class Private(scope: Symbol, reason: String) extends PrivatiserLevelAdd with AnalyserUtils {
   override def combine(level: PrivatiserLevelAdd): PrivatiserLevel = {
     level match {
       case Private(otherScope, otherReason) =>
@@ -32,7 +32,7 @@ case class Private(scope: Symbol, reason: String) extends PrivatiserLevelAdd wit
   }
 }
 
-case class Protected(scope:Symbol, reason: String) extends PrivatiserLevelAdd {
+private[privatiser] case class Protected(scope:Symbol, reason: String) extends PrivatiserLevelAdd {
   // TODO - actually implement combine for protected!
   override def combine(level: PrivatiserLevelAdd): PrivatiserLevel = this
 }

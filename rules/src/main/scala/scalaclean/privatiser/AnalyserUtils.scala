@@ -2,7 +2,7 @@ package scalaclean.privatiser
 
 import scalafix.v1.Symbol
 
-trait AnalyserUtils {
+private[privatiser] trait AnalyserUtils {
 
   protected def findCommonParent(scope1: Symbol, scope2: Symbol): Symbol = {
     def depth(scope: Symbol): Int = {
