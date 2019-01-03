@@ -2,7 +2,7 @@
 rules = [ ScalaCleanPrivatiserAnalysis , ScalaCleanPrivatiserApply ]
 
 */
-package scalaclean.privatiser.test1
+package scalaclean.privatiser
 
 object PRef1 {
 
@@ -26,6 +26,9 @@ object PRef1 {
   def bar(x: Int): Unit = {
 
   }
+
+  // should be private
+  object Baz
 
 }
 
