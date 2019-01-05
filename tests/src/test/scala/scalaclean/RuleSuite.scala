@@ -1,4 +1,4 @@
-package scalaclean.deadcode
+package scalaclean
 
 import java.nio.charset.StandardCharsets
 
@@ -16,8 +16,9 @@ class RuleSuite extends SemanticRuleSuite() {
   // The logic here looks for all files in the input directory and runs them as tests.
   // the config over which rules to run is defined at the top of the file.
 
+  def rulePath = "scalaclean"
   override def runAllTests() = {
-    testsToRun.filter(_.path.input.toString().contains("scalaclean")).foreach(runOn)
+    testsToRun.filter(_.path.input.toString().contains(rulePath)).foreach(runOn)
   }
 
   runAllTests()
@@ -37,7 +38,7 @@ class RuleSuite extends SemanticRuleSuite() {
   }
 
   // Overridden version of runOn which is hacked ro to run the rules in sequence rather than parallised.
-  // earlier rules results are ignored - i.e. this only works for ScalaCleanDeadCodeAnalysis followed by a proper rule for
+  // earlier rules results are ignored - i.e. this only works for Analysis followed by a proper rule for
   // testing.
   override def runOn(diffTest: RuleTest): Unit = {
     test(diffTest.path.testName) {

@@ -8,9 +8,9 @@ import scala.meta.{Defn, Mod}
 
 /**
   * A rule that removes unreferenced classes,
-  * needs to be run after ScalaCleanPrivatiserAnalysis
+  * needs to be run after Analysis
   */
-class ScalaCleanPrivatiserApply extends SemanticRule("ScalaCleanPrivatiserApply") with AnalyserUtils {
+class ScalaCleanPrivatiserApply extends SemanticRule("ScalaCleanPrivatiserApply") with SymbolUtils {
   var model: ScalaCleanModel = _
 
   override def beforeStart(): Unit = {

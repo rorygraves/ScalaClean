@@ -86,11 +86,11 @@ abstract class TreeVisitor()(implicit doc: SemanticDocument) {
 
   def handlePackage(packageName: Term.Name, pkg: Pkg, scope: List[Scope]): (Patch, Boolean)
 
-  def handleMethod(objName: Symbol, fullSig: String, method: Defn.Def, scope: List[Scope]): (Patch, Boolean)
+  def handleMethod(symbol: Symbol, fullSig: String, method: Defn.Def, scope: List[Scope]): (Patch, Boolean)
 
-  def handleObject(objName: Symbol, obj: Defn.Object, scope: List[Scope]): (Patch, Boolean)
+  def handleObject(symbol: Symbol, obj: Defn.Object, scope: List[Scope]): (Patch, Boolean)
 
-  def handleClass(clsSymbol: Symbol, cls: Defn.Class, scope: List[Scope]): (Patch, Boolean)
+  def handleClass(symbol: Symbol, cls: Defn.Class, scope: List[Scope]): (Patch, Boolean)
 
-  def handleTrait(trtSymbol: Symbol, cls: Defn.Trait, scope: List[Scope]): (Patch, Boolean)
+  def handleTrait(symbol: Symbol, cls: Defn.Trait, scope: List[Scope]): (Patch, Boolean)
 }

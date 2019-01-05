@@ -8,7 +8,7 @@ import scala.meta.Defn
 
 /**
   * A rule that removes unreferenced classes,
-  * needs to be run after ScalaCleanDeadCodeAnalysis
+  * needs to be run after Analysis
   */
 class ScalaCleanDeadCodeRemover extends SemanticRule("ScalaCleanDeadCodeRemover") {
 

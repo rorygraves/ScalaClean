@@ -1,6 +1,7 @@
 package scalaclean.privatiser
 
 import scalaclean.model.Colour
+import scalaclean.util.SymbolUtils
 import scalafix.v1.Symbol
 
 private[privatiser] sealed trait PrivatiserLevel extends Colour {
@@ -20,7 +21,7 @@ private[privatiser] case class NoChange(symbol: Symbol, reason: String) extends 
   def combine(level: PrivatiserLevel): PrivatiserLevel = this
 }
 
-private[privatiser] case class Private(symbol: Symbol, reason: String) extends PrivatiserLevel with AnalyserUtils {
+private[privatiser] case class Private(symbol: Symbol, reason: String) extends PrivatiserLevel with SymbolUtils {
   override val keyword = Some("private")
 
   def combine(level: PrivatiserLevel): PrivatiserLevel = {

@@ -1,8 +1,8 @@
-package scalaclean.privatiser
+package scalaclean.util
 
 import scalafix.v1.Symbol
 
-private[privatiser] trait AnalyserUtils {
+trait SymbolUtils {
 
   protected def findCommonParent(scope1: Symbol, scope2: Symbol): Symbol = {
     def depth(scope: Symbol): Int = {
