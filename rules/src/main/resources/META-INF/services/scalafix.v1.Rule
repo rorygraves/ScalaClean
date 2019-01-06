@@ -2,3 +2,4 @@ scalaclean.deadcode.ScalaCleanDeadCodeRemover
 scalaclean.privatiser.ScalaCleanPrivatiserApply
 scalaclean.Analysis
 scalaclean.test.TestRefers
+scalaclean.test.TestInherits

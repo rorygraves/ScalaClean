@@ -90,6 +90,11 @@ class ScalaCleanModel {
       case Some(x) if tpe.runtimeClass.isInstance(x) => x.asInstanceOf[T]
       case Some(x) => throw new IllegalArgumentException(s"Unexxpected symbol $symbol - found a $x when expecting a ${tpe.runtimeClass}")
     }
+  def getSymbol[T <: ModelElement](symbol: Symbol)(implicit tpe: ClassTag[T]): Option[T] =
+    builder.bySymbol.get(symbol) map {
+      case x if tpe.runtimeClass.isInstance(x) => x.asInstanceOf[T]
+      case x => throw new IllegalArgumentException(s"Unexxpected symbol $symbol - found a $x when expecting a ${tpe.runtimeClass}")
+    }
 
   def printStructure() = allOf[ClassLike] foreach {
     cls => println(s"class ${cls.fullName}")
@@ -436,9 +441,16 @@ class ScalaCleanModel {
                 && sym.name.toString == df.name.toString => sym
           }
           val found = simpleMethodMatch filter {
-            case sym => paramsMatch(sym.paramLists, df.paramss)
+            case sym =>
+              val symParams = sym.paramLists
+              val defnParams = df.paramss
+              (symParams, defnParams) match {
+                case (Nil, List(Nil)) => true
+                case (List(Nil), Nil) => true
+                case _ => paramsMatch(symParams, defnParams)
+              }
           }
-          assert (found.size == 1, s"could not match the method ${df} from $simpleMethodMatch")
+          assert (found.size == 1, s"could not match the method ${df} from $simpleMethodMatch - found=$found")
           found foreach {
             o =>
               val overrides = o.overrides
