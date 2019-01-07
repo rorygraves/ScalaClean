@@ -38,7 +38,7 @@ and publish it locally:
 1. (Within scalafix) Checkout branch ```rule_begin_end```
 1. (Within scalafix) )Run ```sbt publishLocal``` - If this fails, check that JAVA_HOME is set to be a JDK root
 1. Make a note of the version number published, e.g. ```0.9.1+5-6bbf4f13-SNAPSHOT```
-2. In workspace fork and clone ```https://github.com/rorygraves/ScalaClean```
+2. In workspace fork and clone https://github.com/rorygraves/ScalaClean
 2. (in ScalaClean)  - ensure version in project/plugins.sbt matches version above
 3. Open ScalaClean in Intellij)
 4. Run RuleSuite
