@@ -44,14 +44,17 @@ and publish it locally:
 4. Run RuleSuite
 
 ## Overall design
-We structure each feature in two parts: 
+We structure each feature based on a common Analysis and a custom rule: 
 
 #### Analysis
-Using SemanticDB, we generate a graph that represents the key elements of our code and how they interact. 
-This graph is then visited to perform an in-deep analysis of our code and suggest possible improvements 
-such as access modifiers changes, and detection of possibly unused code.
+Using Scalafix, SemanticDB and reflection we generate a graph that represents the syntatic structure of the the code, including cross-references, so  model of our code and how it operates internally and with the libraries that it uses. 
   
-#### Apply
+#### Custom Rule
+We can develop a custom rule, to focus on a specific aspect, or oppertunity for improvement
+The cusom rule can use the analsis model to identify improvements, generally by colouring of the syntax tree withe the results of the analysis
+The rule then traverses the syntax graph and suggests improvements using the ScalaFix toolkit
+such as access modifiers changes, and detection of possibly unused code.
+
 After generating the suggestions, we can use ScalaFix to write rules that can rewrite and adjust our code. 
 
 
