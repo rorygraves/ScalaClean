@@ -1,8 +1,8 @@
 /*
-rules = [ Analysis , TestRefers ]
+rules = [ Analysis , Test_internalIncomingReferences ]
 
 */
-package scalaclean.test
+package scalaclean.test.references.internalIncomingReferences
 
 class Parent {
   def foo: Unit = ()

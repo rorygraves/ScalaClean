@@ -1,5 +1,13 @@
 scalaclean.deadcode.ScalaCleanDeadCodeRemover
 scalaclean.privatiser.ScalaCleanPrivatiserApply
 scalaclean.Analysis
-scalaclean.test.TestRefers
-scalaclean.test.TestInherits
+scalaclean.test.Test_allOutgoingReferences
+scalaclean.test.Test_internalIncomingReferences
+scalaclean.test.Test_internalOutgoingReferences
+scalaclean.test.Test_internalDirectOverrides
+scalaclean.test.Test_internalTransitiveOverrides
+scalaclean.test.Test_allDirectOverrides
+scalaclean.test.Test_allTransitiveOverrides
+scalaclean.test.Test_internalDirectOverriddenBy
+scalaclean.test.Test_internalTransitiveOverriddenBy
+scalaclean.test.Test_nodes

@@ -78,6 +78,8 @@ class RuleSuite extends SemanticRuleSuite() {
 
       val result = compareContents(obtained, expected)
       if (result.nonEmpty) {
+        println("###########> obtained       <###########")
+        println(obtained)
         println("###########> Diff       <###########")
         println(error2message(obtained, expected))
       }

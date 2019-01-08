@@ -1,8 +1,8 @@
 /*
-rules = [ Analysis , TestInherits ]
+rules = [ Analysis , Test_internalDirectOverrides ]
 
 */
-package scalaclean.test
+package scalaclean.test.overrides.internalDirectOverrides
 
 trait GrandParentTrait {
   def d1: Int

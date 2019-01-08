@@ -1,4 +1,8 @@
-package scalaclean.test
+/*
+rules = [ Analysis , Test_internalDirectOverriddenBy ]
+
+*/
+package scalaclean.test.overriddenBy.internalDirectOverriddenBy
 
 trait GrandParentTrait {
   def d1: Int
@@ -11,7 +15,7 @@ trait ParentTrait extends GrandParentTrait {
   def d3(): () => Int = ???
 }
 trait ChildTrait extends ParentTrait {
-  override def d3(): () => Int = ???/* internalDirectOverrides(scalaclean/test/ChildTrait#d3().) - scalaclean/test/ParentTrait#d3(). */
+  override def d3(): () => Int = ???
   def d2a(a:Int) = d2 _
 
 }

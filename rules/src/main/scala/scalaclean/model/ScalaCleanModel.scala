@@ -22,14 +22,18 @@ sealed trait ModelElement {
   //where a,b,c are the enclosing
   def enclosing: List[ModelElement]
 
-  val internalOutgoingReferences: List[(ModelElement, Tree)]
-  val internalIncomingReferences: List[(ModelElement, Tree)]
+  def internalOutgoingReferences: List[(ModelElement, Tree)]
+  def internalIncomingReferences: List[(ModelElement, Tree)]
+  def allOutgoingReferences: List[(Option[ModelElement], Tree, Symbol)]
 
-  def directOverrides: List[Symbol]
-  def transitiveOverrides: List[Symbol]
+  def internalDirectOverrides: List[ModelElement]
+  def internalTransitiveOverrides: List[ModelElement]
 
-  def directOverriddenBy: List[ModelElement]
-  def transitiveOverriddenBy: List[ModelElement]
+  def allDirectOverrides: List[(Option[ModelElement], Symbol)]
+  def allTransitiveOverrides: List[(Option[ModelElement], Symbol)]
+
+  def internalDirectOverriddenBy: List[ModelElement]
+  def internalTransitiveOverriddenBy: List[ModelElement]
 
   def symbolInfo: SymbolInformation
 
@@ -161,6 +165,18 @@ class ScalaCleanModel {
           ru.runtimeMirror(cl)
       })
     }
+    case class SymbolData(val symbol: Symbol, doc:SemanticDocument) {
+      def allTransitiveOverrides: List[SymbolData] = {
+        val local = allLocalOverrides
+        (local ::: local flatMap (_.allTransitiveOverrides)).distinct
+      }
+      def allLocalOverrides: List[SymbolData] = {
+        mirror(doc)
+        ???
+      }
+      def symbolInformation: Option[SymbolInformation] = doc.info(symbol)
+    }
+
 
     def analyse(implicit doc: SemanticDocument) = {
       assertBuilding()
@@ -286,6 +302,10 @@ class ScalaCleanModel {
       assert(!symbol.isNone)
       assert(bySymbol.put(symbol, this).isEmpty, s"$symbol enclosing $enclosing this =$this")
 
+      def symbolData(symbol: Symbol) : SymbolData = {
+???
+      }
+
       def addRefersTo(tree: Tree): Unit = {
         if (tree.symbol(doc) != symbol)
           _refersTo ::= tree
@@ -316,40 +336,65 @@ class ScalaCleanModel {
 
       override def symbolInfo: SymbolInformation = doc.info(symbol).get
 
-      override lazy val internalOutgoingReferences: List[(ModelElementImpl, Tree)] = {
+      override def internalOutgoingReferences: List[(ModelElementImpl, Tree)] = {
         assertBuildModelFinished
         for (tree <- _refersTo;
              ref <- bySymbol.get(tree.symbol(doc))) yield {
           (ref, tree)
         }
       }
-      override lazy val internalIncomingReferences: List[(ModelElementImpl, Tree)] = {
+      override def allOutgoingReferences: List[(Option[ModelElementImpl], Tree, Symbol)] = {
+        assertBuildModelFinished
+        for (tree <- _refersTo) yield {
+          (bySymbol.get(tree.symbol(doc)), tree, tree.symbol(doc))
+        }
+      }
+      override def internalIncomingReferences: List[(ModelElementImpl, Tree)] = {
         assertBuildModelFinished
         _refersFrom
       }
       private var _directOverrides = List.empty[Symbol]
       private var _directOverrided = List.empty[ModelElementImpl]
-      override def directOverrides: List[Symbol] = {
+
+      override def allDirectOverrides: List[(Option[ModelElement], Symbol)] = {
         assertBuildModelFinished()
-        _directOverrides
+        _directOverrides map {
+          sym => (bySymbol.get(sym), sym)
+        }
       }
-      override def transitiveOverrides: List[Symbol] = {
+
+      override def internalDirectOverrides: List[ModelElement] = {
         assertBuildModelFinished()
-        ???
+        _directOverrides flatMap bySymbol.get
       }
-      override def directOverriddenBy: List[ModelElement] = {
+
+      override def internalTransitiveOverrides: List[ModelElement] = {
+        val direct = internalDirectOverrides
+        (direct ::: direct.flatMap (_.internalTransitiveOverrides)).distinct
+      }
+
+      override def allTransitiveOverrides: List[(Option[ModelElement], Symbol)] = {
+        assertBuildModelFinished()
+        symbolData(symbol).allTransitiveOverrides map {
+          data =>
+            val sym = data.symbol
+            (bySymbol.get(sym), sym)
+        }
+      }
+
+      override def internalDirectOverriddenBy: List[ModelElement] = {
         assertBuildModelFinished()
         _directOverrided
       }
-      override lazy val transitiveOverriddenBy: List[ModelElement] = {
-        directOverriddenBy ::: directOverriddenBy flatMap (_.transitiveOverriddenBy)
+
+      override def internalTransitiveOverriddenBy: List[ModelElement] = {
+        internalDirectOverriddenBy ::: internalDirectOverriddenBy.flatMap (_.internalTransitiveOverriddenBy)
       }
+
       protected def recordOverrides(s: Symbol) = {
         assertBuilding()
         _directOverrides ::= s
       }
-
-      //TODO detect override and update _directOverrides && _directOverrided
 
       enclosing foreach {
         _._children ::= this
@@ -368,7 +413,7 @@ class ScalaCleanModel {
 
         enclosing.headOption match {
           case Some(cls: ClassLikeImpl) =>
-            val sym = cls.relectSymbol
+            val sym = cls.reflectSymbol
             val wanted = s"$fieldType ${name}"
             val found = sym.toType.decls.toList.filter {
               _.toString == wanted
@@ -432,7 +477,7 @@ class ScalaCleanModel {
 
       enclosing.headOption match {
         case Some(cls: ClassLikeImpl) =>
-          val sym = cls.relectSymbol
+          val sym = cls.reflectSymbol
           val wanted = s"method ${name}"
           val list = sym.toType.decls.toList
           val simpleMethodMatch = list.collect {
@@ -539,7 +584,7 @@ class ScalaCleanModel {
       override def xtends(symbol: Symbol): Boolean = {
         transitiveExtends.contains(symbol)
       }
-      def relectSymbol = {
+      def reflectSymbol = {
         val jm = mirror(doc).asInstanceOf[JavaUniverse#Mirror]
         val javaName = fullName.
           substring(0, fullName.length-1).
@@ -566,5 +611,4 @@ class ScalaCleanModel {
     }
 
   }
-
 }
