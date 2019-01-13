@@ -12,7 +12,7 @@ trait ParentTrait extends GrandParentTrait {
   def d3(): () => Int = ???
 }
 trait ChildTrait extends ParentTrait {
-  override def d3(): () => Int = ???/* internalDirectOverrides(scalaclean/test/overrides/internalDirectOverrides/ChildTrait#d3().) - def d3 [14:2 - 14:27]  */
+  override def d3(): () => Int = ???/* internalDirectOverrides(scalaclean/test/overrides/internalDirectOverrides/ChildTrait#d3().) - MethodModel d3 [14:2 - 14:27]  */
   def d2a(a:Int) = d2 _
 
 }

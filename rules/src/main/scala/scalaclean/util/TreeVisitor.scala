@@ -74,7 +74,7 @@ abstract class TreeVisitor()(implicit doc: SemanticDocument) {
         val newScope = Scope.ValScope(varDef.symbol.displayName) :: scope
         processHandler(varDef, handleVar(varDef.symbol, varDef, scope), newScope)
       case _ =>
-        println(s"Visiting ${tree.getClass} ${tree.symbol}")
+//        println(s"Visiting ${tree.getClass} ${tree.symbol}")
         visitChildren(tree, scope)
     }
   }

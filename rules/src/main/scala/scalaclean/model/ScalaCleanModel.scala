@@ -7,7 +7,7 @@ import scalafix.internal.v1.InternalSemanticDoc
 import scalafix.v1.{SemanticDocument, Symbol, SymbolInformation}
 
 import scala.meta.internal.symtab.GlobalSymbolTable
-import scala.meta.{Defn, Pat, Pkg, Source, Template, Tree, Term}
+import scala.meta.{Defn, Mod, Pat, Pkg, Source, Template, Term, Tree}
 import scala.reflect.ClassTag
 import scala.reflect.runtime.JavaUniverse
 
@@ -62,29 +62,29 @@ sealed trait ClassLike extends ModelElement {
 }
 
 sealed trait ClassModel extends ClassLike {
-  override protected def infoTypeName: String = "class"
+  override protected final def infoTypeName: String = "ClassModel"
 }
 sealed trait ObjectModel extends ClassLike{
-
-  override protected def infoTypeName: String = "object"
+  override protected final def infoTypeName: String = "ObjectModel"
 }
 
 sealed trait TraitModel extends ClassLike{
-  override protected def infoTypeName: String = "trait"
+  override protected final def infoTypeName: String = "TraitModel"
 }
 
 sealed trait MethodModel extends ModelElement {
-  override protected def infoTypeName: String = "def"
+  override protected final def infoTypeName: String = "MethodModel"
 }
 
 sealed trait FieldModel extends ModelElement
 
 sealed trait ValModel extends FieldModel{
-  override protected def infoTypeName: String = "val"
+  def isLazy: Boolean
+  override protected final def infoTypeName: String = "ValModel"
 }
 
 sealed trait VarModel extends FieldModel{
-  override protected def infoTypeName: String = "var"
+  override protected final def infoTypeName: String = "VarModel"
 }
 
 class ScalaCleanModel {
@@ -132,6 +132,7 @@ class ScalaCleanModel {
 
     import collection.mutable
 
+    def debug(s: => String) = if (false) println(s)
     val ru = scala.reflect.runtime.universe
     val globalHelper = new GlobalHelper(ru.asInstanceOf[scala.reflect.runtime.JavaUniverse])
     val allKnownClasses = mutable.Map[String, ClassModelImpl]()
@@ -212,17 +213,17 @@ class ScalaCleanModel {
             case obj: Defn.Object =>
               val sym = obj.symbol
               val parent = allKnownObjects.getOrElseUpdate(sym.toString, new ObjectModelImpl(obj, enclosing, doc))
-              println(s"object = ${parent.fullName}")
+              debug(s"object = ${parent.fullName}")
               visitEnclosingChildren(parent, tree)
             case cls: Defn.Class =>
               val sym = cls.symbol
               val parent = allKnownClasses.getOrElseUpdate(sym.toString, new ClassModelImpl(cls, enclosing, doc))
-              println(s"class = ${parent.fullName}")
+              debug(s"class = ${parent.fullName}")
               visitEnclosingChildren(parent, tree)
             case cls: Defn.Trait =>
               val sym = cls.symbol
               val parent = allKnownTraits.getOrElseUpdate(sym.toString, new TraitModelImpl(cls, enclosing, doc))
-              println(s"trait = ${parent.fullName}")
+              debug(s"trait = ${parent.fullName}")
               visitEnclosingChildren(parent, tree)
             case method: Defn.Def =>
               val typeSigs = method.paramss.map(_.map(v => v.decltpe.get)).toString
@@ -247,7 +248,7 @@ class ScalaCleanModel {
               if (!tree.symbol.isNone)
                 if (enclosing.isEmpty) {
                   val pos = tree.pos
-                  println(s"XXX cant add to parent = ${tree.getClass} ${pos.start} .. ${pos.end} - ${tree.symbol}")
+                  debug(s"cant add to parent = ${tree.getClass} ${pos.start} .. ${pos.end} - ${tree.symbol}")
                 } else {
                   enclosing foreach {
                     _.addRefersTo(tree)
@@ -449,6 +450,10 @@ class ScalaCleanModel {
 
     class ValModelImpl(vl: Defn.Val, field: Pat.Var, enclosing: List[ModelElementImpl], doc: SemanticDocument) extends FieldModelImpl(vl, field, enclosing, doc) with ValModel {
       recordFieldOverrides("value", field.name.value)
+
+      override protected def infoDetail: String = s"lazy=$isLazy"
+
+      override def isLazy: Boolean = vl.mods.exists(_.isInstanceOf[Mod.Lazy])
     }
 
     class MethodModelImpl(df: Defn.Def, enclosing: List[ModelElementImpl], doc: SemanticDocument) extends ModelElementImpl(df, enclosing, doc) with MethodModel {
@@ -478,7 +483,6 @@ class ScalaCleanModel {
       enclosing.headOption match {
         case Some(cls: ClassLikeImpl) =>
           val sym = cls.reflectSymbol
-          val wanted = s"method ${name}"
           val list = sym.toType.decls.toList
           val simpleMethodMatch = list.collect {
             case sym: JavaUniverse#MethodSymbol
@@ -499,7 +503,7 @@ class ScalaCleanModel {
           found foreach {
             o =>
               val overrides = o.overrides
-              println(s"$o overrides ${overrides}")
+              debug(s"$o overrides ${overrides}")
               overrides foreach {
                 parent =>
                   val metaSymbolString = globalHelper.gSymToMSymString(parent)
