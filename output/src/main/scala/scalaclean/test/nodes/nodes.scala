@@ -1,11 +1,10 @@
-
 package scalaclean.test.nodes
 
 trait GrandParentTrait {
-  def d1: Int
-  def d2(a:Int): Int
-  def d2a(a:Int)(b:Int): Int
-  def d3()(): Int
+  def d1: Int/* MethodModel d1 [7:2 - 7:13]  */
+  def d2(a:Int): Int/* MethodModel d2 [8:2 - 8:20]  */
+  def d2a(a:Int)(b:Int): Int/* MethodModel d2a [9:2 - 9:28]  */
+  def d3()(): Int/* MethodModel d3 [10:2 - 10:17]  */
 
 }/* TraitModel GrandParentTrait [6:0 - 12:1]  */
 trait ParentTrait extends GrandParentTrait {
@@ -89,3 +88,14 @@ object Object_ChildTrait extends ParentTrait {
 //  new Child().foo
 //  new Child().bar(1)
 //}
+
+object TestVarVal {
+  val x1:Int = 5/* ValModel x1 [96:2 - 96:16] lazy=false */
+  var x2:Int = 5/* VarModel x2 [97:2 - 97:16]  */
+  lazy val x3:Int = 5/* ValModel x3 [98:2 - 98:21] lazy=true */
+
+  val (x10, x11) = (1,2)/* ValModel x11 [100:2 - 100:24] lazy=false*//*ValModel x10 [100:2 - 100:24] lazy=false */
+  var (x20, x21) = (1,2)/* VarModel x21 [101:2 - 101:24] *//*VarModel x20 [101:2 - 101:24]  */
+  lazy val (x30, x31) = (1,2)/* ValModel x31 [102:2 - 102:29] lazy=true*//*ValModel x30 [102:2 - 102:29] lazy=true */
+
+}/* ObjectModel TestVarVal [95:0 - 104:1]  */

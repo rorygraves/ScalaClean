@@ -12,11 +12,21 @@ trait GrandParentTrait {
 
 }
 trait ParentTrait extends GrandParentTrait {
+  def d1: Int
+  def d2(a: Int): Int = ???
   def d3(): () => Int = ???
 }
 trait ChildTrait extends ParentTrait {
+  def d1: Int = 1
+  override def d2(a: Int): Int = ???
   override def d3(): () => Int = ???
   def d2a(a:Int) = d2 _
+
+}
+trait GChildTrait extends ChildTrait {
+  override def d1: Int = 1
+  override def d2(a: Int): Int = ???
+  override def d3(): () => Int = () => 1
 
 }
 trait Trait_ChildTrait extends ParentTrait {

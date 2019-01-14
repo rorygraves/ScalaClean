@@ -3,7 +3,7 @@ package scalaclean.util
 import scalafix.patch.Patch
 import scalafix.v1._
 
-import scala.meta.{Defn, Pkg, Term, Tree}
+import scala.meta.{Decl, Defn, Pkg, Term, Tree}
 
 object Scope {
 
@@ -67,9 +67,20 @@ abstract class TreeVisitor()(implicit doc: SemanticDocument) {
         val fullSig = s"${method.symbol}:$typeSigs"
         val newScope = Scope.MethodScope(fullSig) :: scope
         processHandler(method, handleMethod(method.symbol, fullSig, method, scope), newScope)
+      case method: Decl.Def =>
+        val typeSigs = method.paramss.map(_.map(v => v.decltpe.get)).toString
+        val fullSig = s"${method.symbol}:$typeSigs"
+        val newScope = Scope.MethodScope(fullSig) :: scope
+        processHandler(method, handleMethod(method.symbol, fullSig, method, scope), newScope)
       case valDef: Defn.Val =>
         val newScope = Scope.ValScope(valDef.symbol.displayName) :: scope
         processHandler(valDef, handleVal(valDef.symbol, valDef, scope), newScope)
+      case valDef: Decl.Val =>
+        val newScope = Scope.ValScope(valDef.symbol.displayName) :: scope
+        processHandler(valDef, handleVal(valDef.symbol, valDef, scope), newScope)
+      case varDef: Decl.Var =>
+        val newScope = Scope.ValScope(varDef.symbol.displayName) :: scope
+        processHandler(varDef, handleVar(varDef.symbol, varDef, scope), newScope)
       case varDef: Defn.Var =>
         val newScope = Scope.ValScope(varDef.symbol.displayName) :: scope
         processHandler(varDef, handleVar(varDef.symbol, varDef, scope), newScope)
@@ -81,12 +92,15 @@ abstract class TreeVisitor()(implicit doc: SemanticDocument) {
 
 
   def handleVar(symbol: Symbol, varDef: Defn.Var, scope: List[Scope]): (Patch, Boolean)
+  def handleVar(symbol: Symbol, varDef: Decl.Var, scope: List[Scope]): (Patch, Boolean)
 
   def handleVal(symbol: Symbol, valDef: Defn.Val, scope: List[Scope]): (Patch, Boolean)
+  def handleVal(symbol: Symbol, valDef: Decl.Val, scope: List[Scope]): (Patch, Boolean)
 
   def handlePackage(packageName: Term.Name, pkg: Pkg, scope: List[Scope]): (Patch, Boolean)
 
   def handleMethod(symbol: Symbol, fullSig: String, method: Defn.Def, scope: List[Scope]): (Patch, Boolean)
+  def handleMethod(symbol: Symbol, fullSig: String, method: Decl.Def, scope: List[Scope]): (Patch, Boolean)
 
   def handleObject(symbol: Symbol, obj: Defn.Object, scope: List[Scope]): (Patch, Boolean)
 

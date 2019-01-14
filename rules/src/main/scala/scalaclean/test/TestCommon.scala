@@ -15,4 +15,11 @@ abstract class TestCommon(name: String) extends TestBase(name) {
   override def visitClass(element: ClassModel): String = visit(element)
 
   override def visitTrait(element: TraitModel): String = visit(element)
+
+  def withSymbols(elements: Seq[ModelElement]): Seq[String] = {
+    elements map withSymbol
+  }
+  def withSymbol(element: ModelElement): String = {
+      s"$element(${element.symbol.value})"
+  }
 }

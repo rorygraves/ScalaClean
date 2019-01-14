@@ -92,3 +92,14 @@ object Object_ChildTrait extends ParentTrait {
 //  new Child().foo
 //  new Child().bar(1)
 //}
+
+object TestVarVal {
+  val x1:Int = 5
+  var x2:Int = 5
+  lazy val x3:Int = 5
+
+  val (x10, x11) = (1,2)
+  var (x20, x21) = (1,2)
+  lazy val (x30, x31) = (1,2)
+
+}

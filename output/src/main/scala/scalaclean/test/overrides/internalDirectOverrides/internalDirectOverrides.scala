@@ -1,4 +1,3 @@
-
 package scalaclean.test.overrides.internalDirectOverrides
 
 trait GrandParentTrait {
@@ -9,11 +8,21 @@ trait GrandParentTrait {
 
 }
 trait ParentTrait extends GrandParentTrait {
+  def d1: Int/* internalDirectOverrides(scalaclean/test/overrides/internalDirectOverrides/ParentTrait#d1().) - MethodModel d1 [7:2 - 7:13] (scalaclean/test/overrides/internalDirectOverrides/GrandParentTrait#d1().) */
+  def d2(a: Int): Int = ???/* internalDirectOverrides(scalaclean/test/overrides/internalDirectOverrides/ParentTrait#d2().) - MethodModel d2 [8:2 - 8:20] (scalaclean/test/overrides/internalDirectOverrides/GrandParentTrait#d2().) */
   def d3(): () => Int = ???
 }
 trait ChildTrait extends ParentTrait {
-  override def d3(): () => Int = ???/* internalDirectOverrides(scalaclean/test/overrides/internalDirectOverrides/ChildTrait#d3().) - MethodModel d3 [14:2 - 14:27]  */
+  def d1: Int = 1/* internalDirectOverrides(scalaclean/test/overrides/internalDirectOverrides/ChildTrait#d1().) - MethodModel d1 [14:2 - 14:13] (scalaclean/test/overrides/internalDirectOverrides/ParentTrait#d1().) */
+  override def d2(a: Int): Int = ???/* internalDirectOverrides(scalaclean/test/overrides/internalDirectOverrides/ChildTrait#d2().) - MethodModel d2 [15:2 - 15:27] (scalaclean/test/overrides/internalDirectOverrides/ParentTrait#d2().) */
+  override def d3(): () => Int = ???/* internalDirectOverrides(scalaclean/test/overrides/internalDirectOverrides/ChildTrait#d3().) - MethodModel d3 [16:2 - 16:27] (scalaclean/test/overrides/internalDirectOverrides/ParentTrait#d3().) */
   def d2a(a:Int) = d2 _
+
+}
+trait GChildTrait extends ChildTrait {
+  override def d1: Int = 1/* internalDirectOverrides(scalaclean/test/overrides/internalDirectOverrides/GChildTrait#d1().) - MethodModel d1 [19:2 - 19:17] (scalaclean/test/overrides/internalDirectOverrides/ChildTrait#d1().) */
+  override def d2(a: Int): Int = ???/* internalDirectOverrides(scalaclean/test/overrides/internalDirectOverrides/GChildTrait#d2().) - MethodModel d2 [20:2 - 20:36] (scalaclean/test/overrides/internalDirectOverrides/ChildTrait#d2().) */
+  override def d3(): () => Int = () => 1/* internalDirectOverrides(scalaclean/test/overrides/internalDirectOverrides/GChildTrait#d3().) - MethodModel d3 [21:2 - 21:36] (scalaclean/test/overrides/internalDirectOverrides/ChildTrait#d3().) */
 
 }
 trait Trait_ChildTrait extends ParentTrait {
@@ -27,13 +36,13 @@ trait Trait_ChildTrait extends ParentTrait {
 
   override def hashCode(): Int = super.hashCode()
 
-  override def d1: Int = ???
+  override def d1: Int = ???/* internalDirectOverrides(scalaclean/test/overrides/internalDirectOverrides/Trait_ChildTrait#d1().) - MethodModel d1 [14:2 - 14:13] (scalaclean/test/overrides/internalDirectOverrides/ParentTrait#d1().) */
 
-  override def d2(a: Int): Int = ???
+  override def d2(a: Int): Int = ???/* internalDirectOverrides(scalaclean/test/overrides/internalDirectOverrides/Trait_ChildTrait#d2().) - MethodModel d2 [15:2 - 15:27] (scalaclean/test/overrides/internalDirectOverrides/ParentTrait#d2().) */
 
-  override def d2a(a: Int)(b: Int): Int = ???
+  override def d2a(a: Int)(b: Int): Int = ???/* internalDirectOverrides(scalaclean/test/overrides/internalDirectOverrides/Trait_ChildTrait#d2a().) - MethodModel d2a [9:2 - 9:28] (scalaclean/test/overrides/internalDirectOverrides/GrandParentTrait#d2a().) */
 
-  override def d3()(): Int = ???
+  override def d3()(): Int = ???/* internalDirectOverrides(scalaclean/test/overrides/internalDirectOverrides/Trait_ChildTrait#d3().) - MethodModel d3 [10:2 - 10:17] (scalaclean/test/overrides/internalDirectOverrides/GrandParentTrait#d3().) */
 }
 class Class_ChildTrait extends ParentTrait {
   override def equals(obj: Any): Boolean = super.equals(obj)
@@ -46,13 +55,13 @@ class Class_ChildTrait extends ParentTrait {
 
   override def hashCode(): Int = super.hashCode()
 
-  override def d1: Int = ???
+  override def d1: Int = ???/* internalDirectOverrides(scalaclean/test/overrides/internalDirectOverrides/Class_ChildTrait#d1().) - MethodModel d1 [14:2 - 14:13] (scalaclean/test/overrides/internalDirectOverrides/ParentTrait#d1().) */
 
-  override def d2(a: Int): Int = ???
+  override def d2(a: Int): Int = ???/* internalDirectOverrides(scalaclean/test/overrides/internalDirectOverrides/Class_ChildTrait#d2().) - MethodModel d2 [15:2 - 15:27] (scalaclean/test/overrides/internalDirectOverrides/ParentTrait#d2().) */
 
-  override def d2a(a: Int)(b: Int): Int = ???
+  override def d2a(a: Int)(b: Int): Int = ???/* internalDirectOverrides(scalaclean/test/overrides/internalDirectOverrides/Class_ChildTrait#d2a().) - MethodModel d2a [9:2 - 9:28] (scalaclean/test/overrides/internalDirectOverrides/GrandParentTrait#d2a().) */
 
-  override def d3()(): Int = ???
+  override def d3()(): Int = ???/* internalDirectOverrides(scalaclean/test/overrides/internalDirectOverrides/Class_ChildTrait#d3().) - MethodModel d3 [10:2 - 10:17] (scalaclean/test/overrides/internalDirectOverrides/GrandParentTrait#d3().) */
 }
 object Object_ChildTrait extends ParentTrait {
   override def equals(obj: Any): Boolean = super.equals(obj)
@@ -65,13 +74,13 @@ object Object_ChildTrait extends ParentTrait {
 
   override def hashCode(): Int = super.hashCode()
 
-  override def d1: Int = ???
+  override def d1: Int = ???/* internalDirectOverrides(scalaclean/test/overrides/internalDirectOverrides/Object_ChildTrait.d1().) - MethodModel d1 [14:2 - 14:13] (scalaclean/test/overrides/internalDirectOverrides/ParentTrait#d1().) */
 
-  override def d2(a: Int): Int = ???
+  override def d2(a: Int): Int = ???/* internalDirectOverrides(scalaclean/test/overrides/internalDirectOverrides/Object_ChildTrait.d2().) - MethodModel d2 [15:2 - 15:27] (scalaclean/test/overrides/internalDirectOverrides/ParentTrait#d2().) */
 
-  override def d2a(a: Int)(b: Int): Int = ???
+  override def d2a(a: Int)(b: Int): Int = ???/* internalDirectOverrides(scalaclean/test/overrides/internalDirectOverrides/Object_ChildTrait.d2a().) - MethodModel d2a [9:2 - 9:28] (scalaclean/test/overrides/internalDirectOverrides/GrandParentTrait#d2a().) */
 
-  override def d3()(): Int = ???
+  override def d3()(): Int = ???/* internalDirectOverrides(scalaclean/test/overrides/internalDirectOverrides/Object_ChildTrait.d3().) - MethodModel d3 [10:2 - 10:17] (scalaclean/test/overrides/internalDirectOverrides/GrandParentTrait#d3().) */
 }
 
 

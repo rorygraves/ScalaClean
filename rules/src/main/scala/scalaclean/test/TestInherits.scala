@@ -10,7 +10,7 @@ class Test_internalDirectOverrides extends TestCommon("Test_internalDirectOverri
     val overrides = modelElement.internalDirectOverrides
     overrides match {
       case Nil => ""
-      case refs => refs.mkString(s"internalDirectOverrides(${modelElement.symbol.value}) - ", " :: ", "")
+      case refs => withSymbols(refs).mkString(s"internalDirectOverrides(${modelElement.symbol.value}) - ", " :: ", "")
     }
   }
 }
@@ -22,7 +22,7 @@ class Test_internalTransitiveOverrides extends TestCommon("Test_internalTransiti
     val overrides = modelElement.internalTransitiveOverrides
     overrides match {
       case Nil => ""
-      case refs => refs.mkString(s"internalTransitiveOverrides(${modelElement.symbol.value}) - ", " :: ", "")
+      case refs => withSymbols(refs).mkString(s"internalTransitiveOverrides(${modelElement.symbol.value}) - ", " :: ", "")
     }
   }
 }
@@ -58,7 +58,7 @@ class Test_internalDirectOverriddenBy extends TestCommon("Test_internalDirectOve
     val overrides = modelElement.internalDirectOverriddenBy
     overrides match {
       case Nil => ""
-      case refs => refs.mkString(s"internalDirectOverriddenBy(${modelElement.symbol.value}) - ", " :: ", "")
+      case refs => withSymbols(refs).mkString(s"internalDirectOverriddenBy(${modelElement.symbol.value}) - ", " :: ", "")
     }
   }
 }
@@ -67,10 +67,10 @@ class Test_internalDirectOverriddenBy extends TestCommon("Test_internalDirectOve
   */
 class Test_internalTransitiveOverriddenBy extends TestCommon("Test_internalTransitiveOverriddenBy") {
   def visit(modelElement: ModelElement): String = {
-    val overrides = modelElement.internalTransitiveOverrides
+    val overrides = modelElement.internalTransitiveOverriddenBy
     overrides match {
       case Nil => ""
-      case refs => refs.mkString(s"internalTransitiveOverriddenBy(${modelElement.symbol.value}) - ", " :: ", "")
+      case refs => withSymbols(refs).mkString(s"internalTransitiveOverriddenBy(${modelElement.symbol.value}) - ", " :: ", "")
     }
   }
 }

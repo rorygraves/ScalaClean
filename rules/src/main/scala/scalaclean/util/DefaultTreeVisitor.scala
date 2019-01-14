@@ -3,7 +3,7 @@ package scalaclean.util
 import scalafix.patch.Patch
 import scalafix.v1._
 
-import scala.meta.{Defn, Pkg, Term}
+import scala.meta.{Decl, Defn, Pkg, Term}
 
 class DefaultTreeVisitor()(implicit doc: SemanticDocument) extends TreeVisitor {
   private val continue = (Patch.empty, true)
@@ -13,7 +13,16 @@ class DefaultTreeVisitor()(implicit doc: SemanticDocument) extends TreeVisitor {
     continue
   }
 
+  def handleVar(symbol: Symbol, varDef: Decl.Var,scope: List[Scope]): (Patch, Boolean) = {
+    println(s"handleVar $symbol - scope $scope")
+    continue
+  }
+
   def handleVal(symbol: Symbol, valDef: Defn.Val,scope: List[Scope]): (Patch, Boolean) = {
+    println(s"handleVal $symbol - scope $scope")
+    continue
+  }
+  def handleVal(symbol: Symbol, valDef: Decl.Val,scope: List[Scope]): (Patch, Boolean) = {
     println(s"handleVal $symbol - scope $scope")
     continue
   }
@@ -24,6 +33,10 @@ class DefaultTreeVisitor()(implicit doc: SemanticDocument) extends TreeVisitor {
   }
 
   override def handleMethod(methodName: Symbol, fullSig: String, method: Defn.Def,scope: List[Scope]): (Patch, Boolean) = {
+    println(s"handleMethod $fullSig - scope $scope")
+    continue
+  }
+  override def handleMethod(methodName: Symbol, fullSig: String, method: Decl.Def,scope: List[Scope]): (Patch, Boolean) = {
     println(s"handleMethod $fullSig - scope $scope")
     continue
   }

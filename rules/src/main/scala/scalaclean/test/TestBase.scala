@@ -4,7 +4,7 @@ import scalaclean.model._
 import scalaclean.util._
 import scalafix.v1._
 
-import scala.meta.{Defn, Pkg, Term}
+import scala.meta.{Decl, Defn, Pat, Pkg, Stat, Term}
 
 /**
   * A rule use to test the that incloming references ar set correctly,
@@ -35,27 +35,52 @@ abstract class TestBase(name: String) extends SemanticRule(name) with SymbolUtil
 
     object visiter extends TreeVisitor {
 
-      def toPatch(str: String, defn: Defn): (Patch, Boolean) = {
+      def toPatch(str: String, stat: Stat): (Patch, Boolean) = {
         if ((str eq null) || str.isEmpty) {
           (Patch.empty, true)
         } else {
-          (Patch.addRight(defn, s"/* $str */"), true)
+          (Patch.addRight(stat, s"/* $str */"), true)
         }
       }
 
       override def handleVar(symbol: Symbol, varDef: Defn.Var, scope: List[Scope]): (Patch, Boolean) = {
-        toPatch(visitVar( model.fromSymbol[VarModel](symbol)), varDef)
+        handleVar(symbol, varDef, scope,varDef.pats )
+      }
+      override def handleVar(symbol: Symbol, varDef: Decl.Var, scope: List[Scope]): (Patch, Boolean) = {
+        handleVar(symbol, varDef, scope,varDef.pats )
+      }
+      def handleVar(symbol: Symbol, varDef: Stat, scope: List[Scope], pats: List[Pat]): (Patch, Boolean) = {
+        val patches = Utils.readVars(pats).map{
+          varPattern =>
+            val varModel = model.fromSymbol[VarModel](varPattern.symbol)
+            visitVar( varModel)
+        }
+        toPatch(patches.filter(!_.isEmpty).mkString("*//*"), varDef)
       }
 
       override def handleVal(symbol: Symbol, valDef: Defn.Val, scope: List[Scope]): (Patch, Boolean) = {
-        toPatch(visitVal(model.fromSymbol[ValModel](symbol)), valDef)
+        handleVal(symbol, valDef, scope, valDef.pats )
       }
-
+      override def handleVal(symbol: Symbol, valDef: Decl.Val, scope: List[Scope]): (Patch, Boolean) = {
+        handleVal(symbol, valDef, scope,valDef.pats )
+      }
+      def handleVal(symbol: Symbol, valDef: Stat, scope: List[Scope], pats: List[Pat]): (Patch, Boolean) = {
+        val patches = Utils.readVars(pats).map{
+          valPattern =>
+            val valModel = model.fromSymbol[ValModel](valPattern.symbol)
+            visitVal( valModel)
+        }
+        toPatch(patches.filter(!_.isEmpty).mkString("*//*"), valDef)
+      }
       override def handlePackage(packageName: Term.Name, pkg: Pkg, scope: List[Scope]): (Patch, Boolean) = {
         (Patch.empty, true)
       }
 
       override def handleMethod(symbol: Symbol, fullSig: String, method: Defn.Def, scope: List[Scope]): (Patch, Boolean) = {
+        toPatch(visitMethod(model.fromSymbol[MethodModel](symbol)), method)
+      }
+
+      override def handleMethod(symbol: Symbol, fullSig: String, method: Decl.Def, scope: List[Scope]): (Patch, Boolean) = {
         toPatch(visitMethod(model.fromSymbol[MethodModel](symbol)), method)
       }
 

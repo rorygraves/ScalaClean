@@ -61,14 +61,23 @@ class ScalaCleanPrivatiserApply extends SemanticRule("ScalaCleanPrivatiserApply"
 
       // TODO - comment these methods once the model is complete
 
-//      override def handleVar(symbol: Symbol, varDef: Defn.Var, scope: List[Scope]): (Patch, Boolean) =
-//        handleDefn(symbol, varDef, scope, traverseChildren = false)
+      //      override def handleVar(symbol: Symbol, varDef: Defn.Var, scope: List[Scope]): (Patch, Boolean) =
+      //        handleDefn(symbol, varDef, scope, traverseChildren = false)
 
-//      override def handleVal(symbol: Symbol, valDef: Defn.Val, scope: List[Scope]): (Patch, Boolean) =
-//        handleDefn(symbol, valDef, scope, traverseChildren = false)
+      //      override def handleVal(symbol: Symbol, valDef: Defn.Val, scope: List[Scope]): (Patch, Boolean) =
+      //        handleDefn(symbol, valDef, scope, traverseChildren = false)
 
-//      override def handleMethod(methodName: Symbol, fullSig: String, method: Defn.Def, scope: List[Scope]): (Patch, Boolean) =
-//        handleDefn(methodName, method, scope, traverseChildren = false)
+      //      override def handleMethod(methodName: Symbol, fullSig: String, method: Defn.Def, scope: List[Scope]): (Patch, Boolean) =
+      //        handleDefn(methodName, method, scope, traverseChildren = false)
+
+      //      override def handleVar(symbol: Symbol, varDef: Decl.Var, scope: List[Scope]): (Patch, Boolean) =
+      //        handleDefn(symbol, varDef, scope, traverseChildren = false)
+
+      //      override def handleVal(symbol: Symbol, valDef: Decl.Val, scope: List[Scope]): (Patch, Boolean) =
+      //        handleDefn(symbol, valDef, scope, traverseChildren = false)
+
+      //      override def handleMethod(methodName: Symbol, fullSig: String, method: Decl.Def, scope: List[Scope]): (Patch, Boolean) =
+      //        handleDefn(methodName, method, scope, traverseChildren = false)
 
 //      override def handleClass(clsSymbol: Symbol, cls: Defn.Class, scope: List[Scope]): (Patch, Boolean) =
 //        handleDefn(clsSymbol, cls, scope, traverseChildren = true)
