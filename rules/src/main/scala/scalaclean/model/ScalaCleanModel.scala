@@ -453,10 +453,12 @@ class ScalaCleanModel {
 
     }
 
-    abstract class FieldModelImpl(defn: Stat, field: Pat.Var, enclosing: List[ModelElementImpl], doc: SemanticDocument) extends ModelElementImpl(defn, enclosing, doc) with FieldModel {
+    abstract class FieldModelImpl(defn: Stat, field: Pat.Var, enclosing: List[ModelElementImpl], doc: SemanticDocument) extends ModelElementImpl(defn, enclosing, doc) {
+      self: FieldModel  =>
       override def symbol: Symbol = field.symbol(doc)
 
       override def infoName: String = field.name.toString
+      def asField: FieldModel = this
       def isAbstract: Boolean
     }
     abstract class VarModelImpl(vr: Stat, field: Pat.Var, enclosing: List[ModelElementImpl], doc: SemanticDocument) extends FieldModelImpl(vr, field, enclosing, doc) with VarModel {
@@ -542,6 +544,10 @@ class ScalaCleanModel {
       def method_paramss : List[List[Term.Param]]
       def method_decltpe : Option[Type]
       def isAbstract: Boolean
+
+      def paramsType = method_paramss map (_.map {
+        param: Term.Param => param.symbol(doc)
+      })
     }
     class MethodModelDefn(val defn: Defn.Def, enclosing: List[ModelElementImpl], doc: SemanticDocument) extends MethodModelImpl(defn, enclosing, doc) {
       def method_mods = defn.mods
@@ -565,7 +571,7 @@ class ScalaCleanModel {
       lazy val fields: Map[String, FieldModel] = {
         assertBuildModelFinished
         (children collect {
-          case field: FieldModelImpl => field.symbol.displayName -> field
+          case field: FieldModelImpl => field.symbol.displayName -> field.asField
         }).toMap
       }
       lazy val methods: List[MethodModel] = {

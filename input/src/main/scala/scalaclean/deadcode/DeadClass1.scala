@@ -1,5 +1,5 @@
 /*
-rules = [ ScalaCleanDeadCodeAnalysis , ScalaCleanDeadCodeRemover ]
+rules = [ Analysis , ScalaCleanDeadCodeRemover ]
 
 */
 package scalaclean.deadcode
