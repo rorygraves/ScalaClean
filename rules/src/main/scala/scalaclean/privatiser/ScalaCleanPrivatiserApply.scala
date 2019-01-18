@@ -4,7 +4,8 @@ import scala.meta.tokens.{Token, Tokens}
 import scalaclean.model._
 import scalaclean.util._
 import scalafix.v1._
-import scala.meta.{Defn, Mod}
+
+import scala.meta.{Decl, Defn, Mod}
 
 /**
   * A rule that removes unreferenced classes,
@@ -81,6 +82,14 @@ class ScalaCleanPrivatiserApply extends SemanticRule("ScalaCleanPrivatiserApply"
 
 //      override def handleClass(clsSymbol: Symbol, cls: Defn.Class, scope: List[Scope]): (Patch, Boolean) =
 //        handleDefn(clsSymbol, cls, scope, traverseChildren = true)
+
+      override def handleVar(varDef: Defn.Var, scope: List[Scope]): (Patch, Boolean) = ???
+
+      override def handleVar(varDef: Decl.Var, scope: List[Scope]): (Patch, Boolean) = ???
+
+      override def handleVal(valDef: Defn.Val, scope: List[Scope]): (Patch, Boolean) = ???
+
+      override def handleVal(valDef: Decl.Val, scope: List[Scope]): (Patch, Boolean) = ???
 
       override def handleTrait(trtSymbol: Symbol, cls: Defn.Trait, scope: List[Scope]): (Patch, Boolean) =
         handleDefn(trtSymbol, cls, scope, traverseChildren = true)

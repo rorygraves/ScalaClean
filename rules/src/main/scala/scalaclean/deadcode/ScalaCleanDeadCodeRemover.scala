@@ -4,7 +4,7 @@ import scalaclean.model._
 import scalaclean.util.{Scope, SymbolTreeVisitor, TokenHelper}
 import scalafix.v1._
 
-import scala.meta.{Defn, Stat}
+import scala.meta.{Defn, Pat, Stat}
 
 /**
   * A rule that removes unreferenced classes,
@@ -81,6 +81,26 @@ class ScalaCleanDeadCodeRemover extends SemanticRule("ScalaCleanDeadCodeRemover"
   //  }
 
   def markUsed(element: ModelElement, purpose: Purpose): Unit = {
+    def markRhs(element: ModelElement): Unit = {
+      element.fields foreach {
+        case valDef: ValModel => if (!valDef.isLazy) {
+          valDef.internalOutgoingReferences foreach {
+            case (ref, _) => markUsed(ref, purpose)
+          }
+          markRhs(valDef)
+        }
+        case varDef: VarModel =>
+          varDef.internalOutgoingReferences foreach {
+            case (ref, _) => markUsed(ref, purpose)
+          }
+          markRhs(varDef)
+        case obj: ObjectModel =>
+          obj.internalOutgoingReferences foreach {
+            case (ref, _) => markUsed(ref, purpose)
+          }
+          markRhs(obj)
+      }
+    }
     val current = element.colour.asInstanceOf[Usage]
 
     if (!current.hasPurpose(purpose)) {
@@ -88,19 +108,7 @@ class ScalaCleanDeadCodeRemover extends SemanticRule("ScalaCleanDeadCodeRemover"
       element.internalOutgoingReferences foreach {
         case (ref, _) => markUsed(ref, purpose)
       }
-      element match {
-        case cls: ClassLike => cls.fields.values foreach {
-          case valDef: ValModel => if (!valDef.isLazy)
-            valDef.internalOutgoingReferences foreach {
-              case (ref, _) => markUsed(ref, purpose)
-            }
-          case varDef: VarModel =>
-            varDef.internalOutgoingReferences foreach {
-              case (ref, _) => markUsed(ref, purpose)
-            }
-        }
-        case _ =>
-      }
+      markRhs(element)
       //TODO for the VARs and (non lazy) vals and objects eagerly traverse
 
       //TODO consider marking the overridded and overrides
@@ -133,6 +141,28 @@ class ScalaCleanDeadCodeRemover extends SemanticRule("ScalaCleanDeadCodeRemover"
           (Patch.removeTokens(TokenHelper.whitespaceTokensBefore(firstToken, doc.tokens)) + Patch.removeTokens(tokens), false)
         } else
           (Patch.empty, true)
+      }
+
+      override protected def handlerPats(pats: Seq[Pat.Var], stat: Stat, scope: List[Scope]): (Patch, Boolean) = {
+        val declarationsByUsage: Map[Usage, Seq[(Pat.Var,ModelElement)]] =
+          pats map (p => (p,model.fromSymbol[ModelElement](p.symbol))) groupBy(m => m._2.colour.asInstanceOf[Usage])
+        declarationsByUsage.get(Usage.unused) match {
+          case Some(_) if declarationsByUsage.size == 1 =>
+            //we can remove the whole declaration
+            val tokens = stat.tokens
+            val firstToken = tokens.head
+            (Patch.removeTokens(TokenHelper.whitespaceTokensBefore(firstToken, doc.tokens)) + Patch.removeTokens(tokens), false)
+          case Some(unused)  =>
+            val combinedPatch = unused.foldLeft(Patch.empty){
+              case (patch, (pat, model)) =>
+                patch + Patch.replaceToken(pat.tokens.head, "_")
+            }
+            (combinedPatch, true)
+          case _ =>
+            (Patch.empty, true)
+
+        }
+
       }
     }
     tv.visitDocument(doc.tree)

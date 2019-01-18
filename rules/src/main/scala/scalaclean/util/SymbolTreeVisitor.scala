@@ -1,28 +1,29 @@
 package scalaclean.util
 
+import scalaclean.model.Utils
 import scalafix.patch.Patch
 import scalafix.v1._
 
-import scala.meta.{Decl, Defn, Pkg, Stat, Term}
+import scala.meta.{Decl, Defn, Pat, Pkg, Stat, Term}
 
 abstract class SymbolTreeVisitor()(implicit doc: SemanticDocument) extends TreeVisitor {
 
   protected def handlerSymbol(symbol: Symbol, stat: Stat, scope: List[Scope]): (Patch, Boolean)
-  def handleVar(symbol: Symbol, varDef: Defn.Var,scope: List[Scope]): (Patch, Boolean) = {
-    handlerSymbol(symbol, varDef, scope)
+  protected def handlerPats(pats: Seq[Pat.Var], stat: Stat, scope: List[Scope]): (Patch, Boolean)
+  def handleVar(varDef: Defn.Var,scope: List[Scope]) = {
+    handlerPats(Utils.readVars(varDef.pats), varDef, scope)
   }
 
-
-  override def handleVar(symbol: Symbol, varDef: Decl.Var, scope: List[Scope]): (Patch, Boolean) =  {
-    handlerSymbol(symbol, varDef, scope)
+  override def handleVar(varDef: Decl.Var, scope: List[Scope]) =  {
+    handlerPats(Utils.readVars(varDef.pats), varDef, scope)
   }
 
-  override def handleVal(symbol: Symbol, valDef: Decl.Val, scope: List[Scope]): (Patch, Boolean) =  {
-    handlerSymbol(symbol, valDef, scope)
+  override def handleVal(valDef: Decl.Val, scope: List[Scope]) =  {
+    handlerPats(Utils.readVars(valDef.pats), valDef, scope)
   }
 
-  def handleVal(symbol: Symbol, valDef: Defn.Val,scope: List[Scope]): (Patch, Boolean) = {
-    handlerSymbol(symbol, valDef, scope)
+  override def handleVal(valDef: Defn.Val,scope: List[Scope]) = {
+    handlerPats(Utils.readVars(valDef.pats), valDef, scope)
   }
 
   override def handlePackage(packageName: Term.Name, pkg: Pkg,scope: List[Scope]): (Patch, Boolean) = {

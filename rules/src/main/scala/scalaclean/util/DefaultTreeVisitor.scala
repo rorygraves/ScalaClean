@@ -8,22 +8,22 @@ import scala.meta.{Decl, Defn, Pkg, Term}
 class DefaultTreeVisitor()(implicit doc: SemanticDocument) extends TreeVisitor {
   private val continue = (Patch.empty, true)
 
-  def handleVar(symbol: Symbol, varDef: Defn.Var,scope: List[Scope]): (Patch, Boolean) = {
-    println(s"handleVar $symbol - scope $scope")
+  def handleVar(varDef: Defn.Var,scope: List[Scope]): (Patch, Boolean) = {
+    println(s"handleVar $varDef - scope $scope")
     continue
   }
 
-  def handleVar(symbol: Symbol, varDef: Decl.Var,scope: List[Scope]): (Patch, Boolean) = {
-    println(s"handleVar $symbol - scope $scope")
+  def handleVar(varDef: Decl.Var,scope: List[Scope]): (Patch, Boolean) = {
+    println(s"handleVar $varDef - scope $scope")
     continue
   }
 
-  def handleVal(symbol: Symbol, valDef: Defn.Val,scope: List[Scope]): (Patch, Boolean) = {
-    println(s"handleVal $symbol - scope $scope")
+  def handleVal(valDef: Defn.Val,scope: List[Scope]): (Patch, Boolean) = {
+    println(s"handleVal $valDef - scope $scope")
     continue
   }
-  def handleVal(symbol: Symbol, valDef: Decl.Val,scope: List[Scope]): (Patch, Boolean) = {
-    println(s"handleVal $symbol - scope $scope")
+  def handleVal(valDef: Decl.Val,scope: List[Scope]): (Patch, Boolean) = {
+    println(s"handleVal $valDef - scope $scope")
     continue
   }
 

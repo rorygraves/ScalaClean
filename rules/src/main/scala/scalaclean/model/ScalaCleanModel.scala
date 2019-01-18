@@ -37,6 +37,21 @@ sealed trait ModelElement {
 
   def symbolInfo: SymbolInformation
 
+  //any block may contain many val of the same name!
+//  val foo = {
+//    if (1 == 1) {
+//      val x = 2
+//      x
+//    } else {
+//      val x = 3
+//      x
+//    }
+//  }
+  def fields: List[FieldModel]
+  def methods:  List[MethodModel]
+  def innerClassLike: Seq[ClassLike]
+
+
   protected def infoTypeName: String
   protected def infoPosString: String
   protected def infoDetail = ""
@@ -48,9 +63,6 @@ sealed trait ModelElement {
 sealed trait ClassLike extends ModelElement {
   def fullName: String
 
-  def methods: List[MethodModel]
-
-  def fields: Map[String, FieldModel]
   def xtends[T](implicit cls: ClassTag[T]): Boolean
   def xtends(symbol: Symbol): Boolean
 
@@ -64,8 +76,10 @@ sealed trait ClassLike extends ModelElement {
 sealed trait ClassModel extends ClassLike {
   override protected final def infoTypeName: String = "ClassModel"
 }
-sealed trait ObjectModel extends ClassLike{
+sealed trait ObjectModel extends ClassLike with FieldModel{
   override protected final def infoTypeName: String = "ObjectModel"
+  final override def otherFieldsInSameDeclaration = Nil
+  type fieldType  = ObjectModel
 }
 
 sealed trait TraitModel extends ClassLike{
@@ -76,14 +90,19 @@ sealed trait MethodModel extends ModelElement {
   override protected final def infoTypeName: String = "MethodModel"
 }
 
-sealed trait FieldModel extends ModelElement
+sealed trait FieldModel extends ModelElement{
+  type fieldType <: FieldModel
+  def otherFieldsInSameDeclaration: Seq[fieldType]
+}
 
 sealed trait ValModel extends FieldModel{
   def isLazy: Boolean
+  type fieldType = ValModel
   override protected final def infoTypeName: String = "ValModel"
 }
 
 sealed trait VarModel extends FieldModel{
+  type fieldType = VarModel
   override protected final def infoTypeName: String = "VarModel"
 }
 
@@ -228,28 +247,28 @@ class ScalaCleanModel {
               //to cope with  val (x,Some(y)) = ....
               val fields = Utils.readVars(valDef.pats)
               val fieldModels = fields map {
-                new ValModelDefn(valDef, _, enclosing, doc)
+                new ValModelDefn(valDef, _, fields, enclosing, doc)
               }
               visitEnclosingChildren(fieldModels, tree)
             case valDef: Decl.Val =>
               //to cope with  val (x,Some(y)) = ....
               val fields = Utils.readVars(valDef.pats)
               val fieldModels = fields map {
-                new ValModelDecl(valDef, _, enclosing, doc)
+                new ValModelDecl(valDef, _, fields, enclosing, doc)
               }
               visitEnclosingChildren(fieldModels, tree)
             case varDef: Defn.Var =>
               //to cope with  var (x,Some(y)) = ....
               val fields = Utils.readVars(varDef.pats)
               val fieldModels = fields map {
-                new VarModelDefn(varDef, _, enclosing, doc)
+                new VarModelDefn(varDef, _, fields, enclosing, doc)
               }
               visitEnclosingChildren(fieldModels, tree)
             case varDef: Decl.Var =>
               //to cope with  var (x,Some(y)) = ....
               val fields = Utils.readVars(varDef.pats)
               val fieldModels = fields map {
-                new VarModelDecl(varDef, _, enclosing, doc)
+                new VarModelDecl(varDef, _, fields, enclosing, doc)
               }
               visitEnclosingChildren(fieldModels, tree)
             case _ =>
@@ -309,6 +328,28 @@ class ScalaCleanModel {
 
       assertBuilding
       elements += this
+
+      override final def fields:List[FieldModel] = {
+        assertBuildModelFinished
+
+        children.collect {
+          case field: FieldModel => field
+        }
+      }
+      override final def methods: List[MethodModel] = {
+        assertBuildModelFinished
+        children collect {
+          case m: MethodModel => m
+        }
+      }
+      override final def innerClassLike: Seq[ClassLike] = {
+        assertBuildModelFinished
+        children collect {
+          case m: ClassModel => m
+        }
+      }
+
+
 
       private[builder] def build: Unit = {
         _refersTo foreach {
@@ -453,27 +494,43 @@ class ScalaCleanModel {
 
     }
 
-    abstract class FieldModelImpl(defn: Stat, field: Pat.Var, enclosing: List[ModelElementImpl], doc: SemanticDocument) extends ModelElementImpl(defn, enclosing, doc) {
-      self: FieldModel  =>
+    abstract class FieldModelImpl(defn: Stat, field: Pat.Var, allFields: Seq[Pat.Var],
+                                  enclosing: List[ModelElementImpl], doc: SemanticDocument) extends
+      ModelElementImpl(defn, enclosing, doc) {
+      self: FieldModel =>
       override def symbol: Symbol = field.symbol(doc)
 
       override def infoName: String = field.name.toString
+
       def asField: FieldModel = this
+
       def isAbstract: Boolean
+
+      final override def otherFieldsInSameDeclaration: Seq[fieldType] =
+        (allFields.filter(_ == field)) map (f => bySymbol(f.symbol(doc)).asInstanceOf[fieldType])
+
     }
-    abstract class VarModelImpl(vr: Stat, field: Pat.Var, enclosing: List[ModelElementImpl], doc: SemanticDocument) extends FieldModelImpl(vr, field, enclosing, doc) with VarModel {
+    abstract class VarModelImpl(vr: Stat, field: Pat.Var, allFields: Seq[Pat.Var],
+                                enclosing: List[ModelElementImpl], doc: SemanticDocument) extends
+      FieldModelImpl(vr, field, allFields, enclosing, doc) with VarModel {
       recordFieldOverrides("variable", field.name.value)
     }
-    class VarModelDefn(vr: Defn.Var, field: Pat.Var, enclosing: List[ModelElementImpl], doc: SemanticDocument) extends VarModelImpl(vr, field, enclosing, doc) {
+    class VarModelDefn(vr: Defn.Var, field: Pat.Var, allFields: Seq[Pat.Var],
+                       enclosing: List[ModelElementImpl], doc: SemanticDocument) extends
+      VarModelImpl(vr, field, allFields, enclosing, doc) {
 
       override def isAbstract: Boolean = false
     }
-    class VarModelDecl(vr: Decl.Var, field: Pat.Var, enclosing: List[ModelElementImpl], doc: SemanticDocument) extends VarModelImpl(vr, field, enclosing, doc) {
+    class VarModelDecl(vr: Decl.Var, field: Pat.Var, allFields: Seq[Pat.Var],
+                       enclosing: List[ModelElementImpl], doc: SemanticDocument) extends
+      VarModelImpl(vr, field, allFields, enclosing, doc) {
 
       override def isAbstract: Boolean = true
     }
 
-    abstract class ValModelImpl(vl: Stat, field: Pat.Var, enclosing: List[ModelElementImpl], doc: SemanticDocument) extends FieldModelImpl(vl, field, enclosing, doc) with ValModel {
+    abstract class ValModelImpl(vl: Stat, field: Pat.Var, allFields: Seq[Pat.Var],
+                                enclosing: List[ModelElementImpl], doc: SemanticDocument) extends
+      FieldModelImpl(vl, field, allFields, enclosing, doc) with ValModel {
       recordFieldOverrides("value", field.name.value)
 
       override protected def infoDetail: String = s"lazy=$isLazy"
@@ -481,11 +538,15 @@ class ScalaCleanModel {
       override def isLazy: Boolean = val_mods.exists(_.isInstanceOf[Mod.Lazy])
       def val_mods: List[Mod]
     }
-    class ValModelDefn(val valDef: Defn.Val, field: Pat.Var, enclosing: List[ModelElementImpl], doc: SemanticDocument) extends ValModelImpl(valDef, field, enclosing, doc){
+    class ValModelDefn(val valDef: Defn.Val, field: Pat.Var, allFields: Seq[Pat.Var],
+                       enclosing: List[ModelElementImpl], doc: SemanticDocument) extends
+      ValModelImpl(valDef, field, allFields, enclosing, doc){
       override def val_mods = valDef.mods
       override def isAbstract: Boolean = false
     }
-    class ValModelDecl(val valDecl: Decl.Val, field: Pat.Var, enclosing: List[ModelElementImpl], doc: SemanticDocument) extends ValModelImpl(valDecl, field, enclosing, doc){
+    class ValModelDecl(val valDecl: Decl.Val, field: Pat.Var,  allFields: Seq[Pat.Var],
+                       enclosing: List[ModelElementImpl], doc: SemanticDocument) extends
+      ValModelImpl(valDecl, field, allFields, enclosing, doc){
       override def val_mods = valDecl.mods
       override def isAbstract: Boolean = true
     }
@@ -568,24 +629,6 @@ class ScalaCleanModel {
     }
 
     abstract sealed class ClassLikeImpl(defn: Defn, enclosing: List[ModelElementImpl], doc: SemanticDocument) extends ModelElementImpl(defn, enclosing, doc) with ClassLike {
-      lazy val fields: Map[String, FieldModel] = {
-        assertBuildModelFinished
-        (children collect {
-          case field: FieldModelImpl => field.symbol.displayName -> field.asField
-        }).toMap
-      }
-      lazy val methods: List[MethodModel] = {
-        assertBuildModelFinished
-        children collect {
-          case m: MethodModel => m
-        }
-      }
-      lazy val innerClassLike: Seq[ClassLike] = {
-        assertBuildModelFinished
-        children collect {
-          case m: ClassModel => m
-        }
-      }
       private var _directExtendedBy = Set.empty[ClassLike]
       protected def template: Template
 

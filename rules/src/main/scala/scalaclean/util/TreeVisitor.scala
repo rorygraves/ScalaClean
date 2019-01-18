@@ -74,16 +74,16 @@ abstract class TreeVisitor()(implicit doc: SemanticDocument) {
         processHandler(method, handleMethod(method.symbol, fullSig, method, scope), newScope)
       case valDef: Defn.Val =>
         val newScope = Scope.ValScope(valDef.symbol.displayName) :: scope
-        processHandler(valDef, handleVal(valDef.symbol, valDef, scope), newScope)
+        processHandler(valDef, handleVal(valDef, scope), newScope)
       case valDef: Decl.Val =>
         val newScope = Scope.ValScope(valDef.symbol.displayName) :: scope
-        processHandler(valDef, handleVal(valDef.symbol, valDef, scope), newScope)
+        processHandler(valDef, handleVal(valDef, scope), newScope)
       case varDef: Decl.Var =>
         val newScope = Scope.ValScope(varDef.symbol.displayName) :: scope
-        processHandler(varDef, handleVar(varDef.symbol, varDef, scope), newScope)
+        processHandler(varDef, handleVar(varDef, scope), newScope)
       case varDef: Defn.Var =>
         val newScope = Scope.ValScope(varDef.symbol.displayName) :: scope
-        processHandler(varDef, handleVar(varDef.symbol, varDef, scope), newScope)
+        processHandler(varDef, handleVar(varDef, scope), newScope)
       case _ =>
 //        println(s"Visiting ${tree.getClass} ${tree.symbol}")
         visitChildren(tree, scope)
@@ -91,11 +91,11 @@ abstract class TreeVisitor()(implicit doc: SemanticDocument) {
   }
 
 
-  def handleVar(symbol: Symbol, varDef: Defn.Var, scope: List[Scope]): (Patch, Boolean)
-  def handleVar(symbol: Symbol, varDef: Decl.Var, scope: List[Scope]): (Patch, Boolean)
+  def handleVar(varDef: Defn.Var, scope: List[Scope]): (Patch, Boolean)
+  def handleVar(varDef: Decl.Var, scope: List[Scope]): (Patch, Boolean)
 
-  def handleVal(symbol: Symbol, valDef: Defn.Val, scope: List[Scope]): (Patch, Boolean)
-  def handleVal(symbol: Symbol, valDef: Decl.Val, scope: List[Scope]): (Patch, Boolean)
+  def handleVal(valDef: Defn.Val, scope: List[Scope]): (Patch, Boolean)
+  def handleVal(valDef: Decl.Val, scope: List[Scope]): (Patch, Boolean)
 
   def handlePackage(packageName: Term.Name, pkg: Pkg, scope: List[Scope]): (Patch, Boolean)
 

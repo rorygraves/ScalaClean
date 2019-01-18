@@ -43,13 +43,13 @@ abstract class TestBase(name: String) extends SemanticRule(name) with SymbolUtil
         }
       }
 
-      override def handleVar(symbol: Symbol, varDef: Defn.Var, scope: List[Scope]): (Patch, Boolean) = {
-        handleVar(symbol, varDef, scope,varDef.pats )
+      override def handleVar(varDef: Defn.Var, scope: List[Scope]): (Patch, Boolean) = {
+        handleVar(varDef, scope,varDef.pats )
       }
-      override def handleVar(symbol: Symbol, varDef: Decl.Var, scope: List[Scope]): (Patch, Boolean) = {
-        handleVar(symbol, varDef, scope,varDef.pats )
+      override def handleVar(varDef: Decl.Var, scope: List[Scope]): (Patch, Boolean) = {
+        handleVar(varDef, scope,varDef.pats )
       }
-      def handleVar(symbol: Symbol, varDef: Stat, scope: List[Scope], pats: List[Pat]): (Patch, Boolean) = {
+      def handleVar(varDef: Stat, scope: List[Scope], pats: List[Pat]): (Patch, Boolean) = {
         val patches = Utils.readVars(pats).map{
           varPattern =>
             val varModel = model.fromSymbol[VarModel](varPattern.symbol)
@@ -58,13 +58,13 @@ abstract class TestBase(name: String) extends SemanticRule(name) with SymbolUtil
         toPatch(patches.filter(!_.isEmpty).mkString("*//*"), varDef)
       }
 
-      override def handleVal(symbol: Symbol, valDef: Defn.Val, scope: List[Scope]): (Patch, Boolean) = {
-        handleVal(symbol, valDef, scope, valDef.pats )
+      override def handleVal(valDef: Defn.Val, scope: List[Scope]): (Patch, Boolean) = {
+        handleVal(valDef, scope, valDef.pats )
       }
-      override def handleVal(symbol: Symbol, valDef: Decl.Val, scope: List[Scope]): (Patch, Boolean) = {
-        handleVal(symbol, valDef, scope,valDef.pats )
+      override def handleVal(valDef: Decl.Val, scope: List[Scope]): (Patch, Boolean) = {
+        handleVal(valDef, scope,valDef.pats )
       }
-      def handleVal(symbol: Symbol, valDef: Stat, scope: List[Scope], pats: List[Pat]): (Patch, Boolean) = {
+      def handleVal(valDef: Stat, scope: List[Scope], pats: List[Pat]): (Patch, Boolean) = {
         val patches = Utils.readVars(pats).map{
           valPattern =>
             val valModel = model.fromSymbol[ValModel](valPattern.symbol)
