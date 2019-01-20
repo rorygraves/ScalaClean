@@ -1,10 +1,14 @@
-package scalaclean.deadcode.dead1
+package scalaclean.deadcode.deadmain
+
+import scalaclean.deadcode.deadmain.Outer.Inner3
+//unused
+import scalaclean.deadcode.deadmain.Outer.NotUsed
 
 object AppWithMain1 {
   def main(args: Array[String]): Unit = {
     val used = Used1
     println(used.aMethod())
-    Outer
+    Outer.Inner1
   }
 }
 object Used1 {
@@ -16,7 +20,7 @@ object AppWithMain2 {
   def main(): Unit = {
     val used = Used2
     println(used.aMethod())
-    Inner
+    Inner2
   }
 }
 object Used2 {
@@ -24,20 +28,18 @@ object Used2 {
 }
 
 object App1 extends App {
-  def main(): Unit = {
-    val used = Used3
-    println(used.aMethod())
-  }
+  val used = Used3
+  println(used.aMethod())
+  Inner3
 }
 object Used3 {
   def aMethod(): Unit = {}
 }
 object Outer {
-  object Inner {
-    lazy val (_,_,_, (d3,_)) = (1,2,3,(4,referred3))
-    d3
-  }
-  object referred1
-  object referred2
-  object referred3
+  //referenced by AppWithMain1
+  object Inner1
+  //referenced by AppWithMain2
+  object Inner2
+  //referenced by App1
+  object Inner3
 }
