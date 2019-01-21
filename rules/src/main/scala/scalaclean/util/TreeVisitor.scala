@@ -3,7 +3,7 @@ package scalaclean.util
 import scalafix.patch.Patch
 import scalafix.v1._
 
-import scala.meta.{Decl, Defn, Pkg, Term, Tree}
+import scala.meta.{Decl, Defn, Import, Pkg, Term, Tree}
 
 object Scope {
 
@@ -24,9 +24,12 @@ object Scope {
 }
 
 trait Scope
-
+object TreeVisitor {
+  val continue = (Patch.empty, true)
+}
 abstract class TreeVisitor()(implicit doc: SemanticDocument) {
 
+  protected final def continue = TreeVisitor.continue
   final def visitDocument(tree: Tree): Patch = {
 
     visitTree(tree, Nil)
@@ -81,12 +84,11 @@ abstract class TreeVisitor()(implicit doc: SemanticDocument) {
       case varDef: Decl.Var =>
         val newScope = Scope.ValScope(varDef.symbol.displayName) :: scope
         processHandler(varDef, handleVar(varDef, scope), newScope)
-      case varDef: Defn.Var =>
-        val newScope = Scope.ValScope(varDef.symbol.displayName) :: scope
-        processHandler(varDef, handleVar(varDef, scope), newScope)
+      case importStat : Import =>
+        processHandler(importStat, handleImport(importStat, scope), scope)
       case _ =>
 //        println(s"Visiting ${tree.getClass} ${tree.symbol}")
-        visitChildren(tree, scope)
+        processHandler(tree, handleOther(tree, scope), scope)
     }
   }
 
@@ -97,8 +99,6 @@ abstract class TreeVisitor()(implicit doc: SemanticDocument) {
   def handleVal(valDef: Defn.Val, scope: List[Scope]): (Patch, Boolean)
   def handleVal(valDef: Decl.Val, scope: List[Scope]): (Patch, Boolean)
 
-  def handlePackage(packageName: Term.Name, pkg: Pkg, scope: List[Scope]): (Patch, Boolean)
-
   def handleMethod(symbol: Symbol, fullSig: String, method: Defn.Def, scope: List[Scope]): (Patch, Boolean)
   def handleMethod(symbol: Symbol, fullSig: String, method: Decl.Def, scope: List[Scope]): (Patch, Boolean)
 
@@ -107,4 +107,9 @@ abstract class TreeVisitor()(implicit doc: SemanticDocument) {
   def handleClass(symbol: Symbol, cls: Defn.Class, scope: List[Scope]): (Patch, Boolean)
 
   def handleTrait(symbol: Symbol, cls: Defn.Trait, scope: List[Scope]): (Patch, Boolean)
+
+  //non model entries
+  def handleImport(importStatement: Import, scope: List[Scope]): (Patch, Boolean)
+  def handlePackage(packageName: Term.Name, pkg: Pkg, scope: List[Scope]): (Patch, Boolean)
+  def handleOther(tree: Tree, scope: List[Scope]): (Patch, Boolean)
 }

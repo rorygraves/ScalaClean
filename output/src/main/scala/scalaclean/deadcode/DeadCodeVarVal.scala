@@ -2,6 +2,7 @@ package scalaclean.deadcode.varval
 
 object App1 extends App {
   Outer.Inner
+  ()
 }
 object Outer {
   object Inner {
@@ -20,12 +21,11 @@ object Outer {
     r20
     r21
     r22
+    ()
 
   }
   object referred10
   object referred11
-  object referred12
-
   object referred20
   object referred21
   object referred22
@@ -34,6 +34,5 @@ object Outer {
   object referred2
   object referred3
   object referred4
-  object referred5
   object referred6
 }

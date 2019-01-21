@@ -5,14 +5,13 @@ rules = [ Analysis , ScalaCleanDeadCodeRemover ]
 package scalaclean.deadcode.deadmain
 
 import scalaclean.deadcode.deadmain.Outer.Inner3
-//unused
-import scalaclean.deadcode.deadmain.Outer.NotUsed
 
 object AppWithMain1 {
   def main(args: Array[String]): Unit = {
     val used = Used1
     println(used.aMethod())
     Outer.Inner1
+    ()
   }
 }
 object Used1 {
@@ -27,6 +26,7 @@ object AppWithMain2 {
     val used = Used2
     println(used.aMethod())
     Inner2
+    ()
   }
 }
 object Used2 {
@@ -39,6 +39,7 @@ object App1 extends App {
   val used = Used3
   println(used.aMethod())
   Inner3
+  ()
 }
 object Used3 {
   def aMethod(): Unit = {}

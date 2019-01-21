@@ -101,11 +101,11 @@ class ScalaCleanPrivatiserApply extends SemanticRule("ScalaCleanPrivatiserApply"
         val prepared = model.fromSymbol[ObjectModel](defn.symbol)
         val change = prepared.colour.asInstanceOf[PrivatiserLevel]
         change match {
-          case NoChange(_, _) => (Patch.empty, true)
+          case NoChange(_, _) => continue
           case Public(_) =>
             // TODO - uncomment once all stubs are complete, until then Public can happen
             //throw new IllegalStateException("Trying to make something public, something went terribly wrong here!")
-            (Patch.empty, true)
+            continue
           case level: PrivatiserLevel =>
             changeAccessModifier(level, defn, traverseChildren)
         }

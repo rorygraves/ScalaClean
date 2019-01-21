@@ -4,7 +4,7 @@ import scalaclean.model.Utils
 import scalafix.patch.Patch
 import scalafix.v1._
 
-import scala.meta.{Decl, Defn, Pat, Pkg, Stat, Term}
+import scala.meta.{Decl, Defn, Pat, Pkg, Stat, Term, Tree}
 
 abstract class SymbolTreeVisitor()(implicit doc: SemanticDocument) extends TreeVisitor {
 
@@ -27,7 +27,7 @@ abstract class SymbolTreeVisitor()(implicit doc: SemanticDocument) extends TreeV
   }
 
   override def handlePackage(packageName: Term.Name, pkg: Pkg,scope: List[Scope]): (Patch, Boolean) = {
-    (Patch.empty, true)
+    continue
   }
 
   override def handleMethod(symbol: Symbol, fullSig: String, method: Decl.Def, scope: List[Scope]): (Patch, Boolean) =  {
@@ -49,4 +49,6 @@ abstract class SymbolTreeVisitor()(implicit doc: SemanticDocument) extends TreeV
   override def handleTrait(trtSymbol: Symbol, cls: Defn.Trait, scope: List[Scope]): (Patch, Boolean) = {
     handlerSymbol(trtSymbol, cls, scope)
   }
+
+  override def handleOther(tree: Tree, scope: List[Scope]): (Patch, Boolean) = (Patch.empty, true)
 }

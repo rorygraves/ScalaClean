@@ -4,7 +4,7 @@ import scalaclean.model._
 import scalaclean.util._
 import scalafix.v1._
 
-import scala.meta.{Decl, Defn, Pat, Pkg, Stat, Term}
+import scala.meta.{Decl, Defn, Import, Pat, Pkg, Stat, Term, Tree}
 
 /**
   * A rule use to test the that incloming references ar set correctly,
@@ -37,7 +37,7 @@ abstract class TestBase(name: String) extends SemanticRule(name) with SymbolUtil
 
       def toPatch(str: String, stat: Stat): (Patch, Boolean) = {
         if ((str eq null) || str.isEmpty) {
-          (Patch.empty, true)
+          continue
         } else {
           (Patch.addRight(stat, s"/* $str */"), true)
         }
@@ -73,7 +73,7 @@ abstract class TestBase(name: String) extends SemanticRule(name) with SymbolUtil
         toPatch(patches.filter(!_.isEmpty).mkString("*//*"), valDef)
       }
       override def handlePackage(packageName: Term.Name, pkg: Pkg, scope: List[Scope]): (Patch, Boolean) = {
-        (Patch.empty, true)
+        continue
       }
 
       override def handleMethod(symbol: Symbol, fullSig: String, method: Defn.Def, scope: List[Scope]): (Patch, Boolean) = {
@@ -95,6 +95,11 @@ abstract class TestBase(name: String) extends SemanticRule(name) with SymbolUtil
       override def handleTrait(symbol: Symbol, cls: Defn.Trait, scope: List[Scope]): (Patch, Boolean) = {
         toPatch(visitTrait(model.fromSymbol[TraitModel](symbol)), cls)
       }
+
+
+      override def handleImport(importStatement: Import, scope: List[Scope]): (Patch, Boolean) = continue
+
+      override def handleOther(tree: Tree, scope: List[Scope]): (Patch, Boolean) = continue
     }
     visiter.visitDocument(doc.tree)
   }

@@ -212,6 +212,9 @@ class ScalaCleanModel {
         }
 
         def visitTree(tree: Tree): Unit = {
+          val sym = tree.symbol(doc)
+          if (!sym.isNone)
+            println(s"${tree.pos.startLine}:${tree.pos.startColumn} - ${tree.pos.endLine}:${tree.pos.endColumn} ${tree.symbol(doc)}")
 
           tree match {
             case _: Pkg =>
@@ -272,11 +275,13 @@ class ScalaCleanModel {
               }
               visitEnclosingChildren(fieldModels, tree)
             case _ =>
-              if (!tree.symbol.isNone)
+              val thisTreeSymbol = tree.symbol
+              if (!thisTreeSymbol.isNone)
                 if (enclosing.isEmpty) {
                   val pos = tree.pos
-                  debug(s"cant add to parent = ${tree.getClass} ${pos.start} .. ${pos.end} - ${tree.symbol}")
+                  debug(s"cant add to parent = ${tree.getClass} ${pos.start} .. ${pos.end} - ${thisTreeSymbol}")
                 } else {
+                  if (enclosing.forall(_.symbol != thisTreeSymbol))
                   enclosing foreach {
                     _.addRefersTo(tree)
                   }
@@ -361,10 +366,10 @@ class ScalaCleanModel {
             }
         }
         _directOverrides flatMap bySymbol.get foreach {
-          _._directOverrided ::= this
+          _._directOverridden ::= this
         }
         _transitiveOverrides flatMap bySymbol.get foreach {
-          _._transitiveOverrided ::= this
+          _._transitiveOverridden ::= this
         }
 
       }
@@ -391,8 +396,8 @@ class ScalaCleanModel {
       }
       private var _directOverrides = List.empty[Symbol]
       private var _transitiveOverrides = List.empty[Symbol]
-      private var _directOverrided = List.empty[ModelElementImpl]
-      private var _transitiveOverrided = List.empty[ModelElementImpl]
+      private var _directOverridden = List.empty[ModelElementImpl]
+      private var _transitiveOverridden = List.empty[ModelElementImpl]
 
       override def allDirectOverrides: List[(Option[ModelElement], Symbol)] = {
         assertBuildModelFinished()
@@ -421,12 +426,12 @@ class ScalaCleanModel {
 
       override def internalDirectOverriddenBy: List[ModelElement] = {
         assertBuildModelFinished()
-        _directOverrided
+        _directOverridden
       }
 
       override def internalTransitiveOverriddenBy: List[ModelElement] = {
         assertBuildModelFinished()
-        _transitiveOverrided
+        _transitiveOverridden
       }
 
       protected def recordOverrides(directOverides: List[Symbol], transitiveOverrides: List[Symbol]) = {

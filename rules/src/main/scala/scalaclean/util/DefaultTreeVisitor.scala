@@ -3,10 +3,9 @@ package scalaclean.util
 import scalafix.patch.Patch
 import scalafix.v1._
 
-import scala.meta.{Decl, Defn, Pkg, Term}
+import scala.meta.{Decl, Defn, Import, Pkg, Term, Tree}
 
 class DefaultTreeVisitor()(implicit doc: SemanticDocument) extends TreeVisitor {
-  private val continue = (Patch.empty, true)
 
   def handleVar(varDef: Defn.Var,scope: List[Scope]): (Patch, Boolean) = {
     println(s"handleVar $varDef - scope $scope")
@@ -55,4 +54,13 @@ class DefaultTreeVisitor()(implicit doc: SemanticDocument) extends TreeVisitor {
     println(s"handleTrait $trtSymbol - scope $scope")
     continue
   }
+
+  override def handleImport(importStatement: Import, scope: List[Scope]): (Patch, Boolean) = {
+    continue
+  }
+
+  override def handleOther(tree: Tree, scope: List[Scope]): (Patch, Boolean) = {
+    continue
+  }
+
 }
