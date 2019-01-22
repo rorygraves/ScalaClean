@@ -170,12 +170,15 @@ class ScalaCleanDeadCodeRemover extends SemanticRule("ScalaCleanDeadCodeRemover"
       }
 
       override def handleImport(importStatement: Import, scope: List[Scope]): (Patch, Boolean) = {
+        assert (importStatement.importers.size == 1)
+        //TODO - need to ensure that all symbols related are the same import are of the same status
+
         val importers = importStatement.importers
-        assert (importers.size == 1)
         val importees = importers.head.importees
         val byUsage = importees.groupBy{
           i=>
-            model.getSymbol[ModelElement](i.symbol(doc)).map( _.colour.asInstanceOf[Usage])
+            val symbol = i.symbol(doc)
+            model.getSymbol[ModelElement](symbol).map( _.colour.asInstanceOf[Usage])
         }
         byUsage.get(Some(Usage.unused)) match {
           case Some(_) if byUsage.size == 1 =>

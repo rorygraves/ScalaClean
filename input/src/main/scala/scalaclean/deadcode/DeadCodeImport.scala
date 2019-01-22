@@ -16,6 +16,9 @@ import Outer.{NotUsed, Inner}
 import Outer.{Inner, NotUsed}
 import Outer.{Inner, NotUsed => nu}
 
+import Outer.overloaded
+import Outer.overloadedUnused
+
 object App1 extends App {
   Outer.Inner
   I2
@@ -25,4 +28,14 @@ object Outer {
   object Inner
   object Inner2
   object NotUsed
+
+  println(overloaded(1))
+
+  def overloaded() = 1
+  def overloaded(i: Int) = 1
+  def overloaded(i: String) = Nil
+
+  def overloadedUnused() = 1
+  def overloadedUnused(i: Int) = 1
+  def overloadedUnused(i: String) = Nil
 }

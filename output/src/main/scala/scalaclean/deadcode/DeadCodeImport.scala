@@ -10,6 +10,8 @@ import Outer.Inner
 import Outer.Inner
 import Outer.Inner
 
+import Outer.overloaded
+
 object App1 extends App {
   Outer.Inner
   I2
@@ -18,4 +20,7 @@ object App1 extends App {
 object Outer {
   object Inner
   object Inner2
+
+  println(overloaded(1))
+  def overloaded(i: Int) = 1
 }
