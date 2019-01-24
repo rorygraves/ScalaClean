@@ -1,4 +1,4 @@
-package scalaclean.privatiser
+package scalaclean.rules.privatiser
 
 /*
 What can be private:

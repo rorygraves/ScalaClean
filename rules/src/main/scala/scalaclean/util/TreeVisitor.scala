@@ -81,6 +81,9 @@ abstract class TreeVisitor()(implicit doc: SemanticDocument) {
       case valDef: Decl.Val =>
         val newScope = Scope.ValScope(valDef.symbol.displayName) :: scope
         processHandler(valDef, handleVal(valDef, scope), newScope)
+      case varDef: Defn.Var =>
+        val newScope = Scope.ValScope(varDef.symbol.displayName) :: scope
+        processHandler(varDef, handleVar(varDef, scope), newScope)
       case varDef: Decl.Var =>
         val newScope = Scope.ValScope(varDef.symbol.displayName) :: scope
         processHandler(varDef, handleVar(varDef, scope), newScope)

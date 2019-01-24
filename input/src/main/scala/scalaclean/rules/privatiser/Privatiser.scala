@@ -2,7 +2,7 @@
 rules = [ ScalaCleanPrivatiserAnalysis , ScalaCleanPrivatiserApply ]
 
 */
-package scalaclean.privatiser
+package scalaclean.rules.privatiser
 
 import scala.collection.immutable
 

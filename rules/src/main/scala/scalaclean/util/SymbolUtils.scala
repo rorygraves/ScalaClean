@@ -6,16 +6,15 @@ trait SymbolUtils {
 
   protected def findCommonParent(scope1: Symbol, scope2: Symbol): Symbol = {
     def depth(scope: Symbol): Int = {
-      if (scope.isNone) 0 else depth(scope.owner)
+      if (scope.isNone) 0 else depth(scope.owner) +1
     }
-
-    val depth2 = depth(scope2)
 
     def parent(scope: Symbol, level: Int): Symbol = {
       if (level == 0) scope else parent(scope.owner, level - 1)
     }
 
     val depth1 = depth(scope1)
+    val depth2 = depth(scope2)
     if (depth1 > depth2) {
       findCommonParent(parent(scope1, depth1 - depth2), scope2)
     } else if (depth2 > depth1) {

@@ -1,24 +1,34 @@
-package scalaclean.privatiser
+package scalaclean.rules.privatiser
 
-import scalaclean.model.Colour
+import scalaclean.model.{Mark}
 import scalaclean.util.SymbolUtils
 import scalafix.v1.Symbol
 
-private[privatiser] sealed trait PrivatiserLevel extends Colour {
+private[privatiser] sealed trait PrivatiserLevel extends Mark {
   def keyword: Option[String] = None
   def reason: String
-  def symbol: Symbol
+  def asText: Option[String]
 
   def combine(level: PrivatiserLevel): PrivatiserLevel
 }
 
-private[privatiser] case class Public(symbol: Symbol) extends PrivatiserLevel {
-  def reason = "initial assumption: symbol should be public"
+private[privatiser] case class Public(symbol: Symbol, reason:String) extends PrivatiserLevel {
   def combine(level: PrivatiserLevel): PrivatiserLevel = level
+
+  override def asText: Option[String] = None
 }
 
 private[privatiser] case class NoChange(symbol: Symbol, reason: String) extends PrivatiserLevel {
   def combine(level: PrivatiserLevel): PrivatiserLevel = this
+  override def asText: Option[String] = None
+}
+
+private[privatiser] case class Undefined(symbol: Symbol) extends PrivatiserLevel {
+
+  override def reason: String = "Initial"
+
+  def combine(level: PrivatiserLevel): PrivatiserLevel = level
+  override def asText: Option[String] = ???
 }
 
 private[privatiser] case class Private(symbol: Symbol, reason: String) extends PrivatiserLevel with SymbolUtils {
@@ -34,6 +44,8 @@ private[privatiser] case class Private(symbol: Symbol, reason: String) extends P
       case _ => level
     }
   }
+  override def asText: Option[String] = Some(s"private[$symbol]")
+
 }
 
 private[privatiser] case class Protected(symbol:Symbol, reason: String) extends PrivatiserLevel {
@@ -41,6 +53,7 @@ private[privatiser] case class Protected(symbol:Symbol, reason: String) extends 
 
   // TODO - actually implement combine for protected!
   def combine(level: PrivatiserLevel): PrivatiserLevel = this
+  override def asText: Option[String] = Some(s"protected[$symbol]")
 }
 
 

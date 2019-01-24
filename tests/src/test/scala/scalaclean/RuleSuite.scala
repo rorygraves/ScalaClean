@@ -1,5 +1,6 @@
 package scalaclean
 
+import java.io.File
 import java.nio.charset.StandardCharsets
 
 import org.scalatest.exceptions.TestFailedException
@@ -16,9 +17,11 @@ class RuleSuite extends SemanticRuleSuite() {
   // The logic here looks for all files in the input directory and runs them as tests.
   // the config over which rules to run is defined at the top of the file.
 
+  protected val sep = File.separator
   def rulePath = "scalaclean"
   override def runAllTests() = {
-    testsToRun.filter(_.path.input.toString().contains(rulePath)).foreach(runOn)
+    val path = rulePath
+    testsToRun.filter(_.path.input.toString().contains(path)).foreach(runOn)
   }
 
   runAllTests()

@@ -1,4 +1,8 @@
-package scalaclean.privatiser
+/*
+rules = [ ScalaCleanPrivatiserAnalysis , ScalaCleanPrivatiserApply ]
+
+*/
+package scalaclean.rules.privatiser
 
 object PRef1 {
 
@@ -19,12 +23,12 @@ object PRef1 {
   }
 
   // should be private
-  private def bar(x: Int): Unit = {
+  def bar(x: Int): Unit = {
 
   }
 
   // should be private
-  private object Baz
+  object Baz
 
 }
 

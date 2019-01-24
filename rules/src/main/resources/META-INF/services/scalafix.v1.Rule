@@ -1,5 +1,5 @@
-scalaclean.deadcode.ScalaCleanDeadCodeRemover
-scalaclean.privatiser.ScalaCleanPrivatiserApply
+scalaclean.rules.deadcode.ScalaCleanDeadCodeRemover
+scalaclean.rules.privatiser.Privatiser
 scalaclean.Analysis
 scalaclean.test.Test_allOutgoingReferences
 scalaclean.test.Test_internalIncomingReferences

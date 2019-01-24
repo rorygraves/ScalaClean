@@ -11,11 +11,11 @@ import scala.meta.{Decl, Defn, Member, Mod, Pat, Pkg, Source, Stat, Template, Te
 import scala.reflect.ClassTag
 import scala.reflect.runtime.JavaUniverse
 
-
+trait Mark
 sealed trait ModelElement {
   def symbol: Symbol
 
-  var colour : Colour = _
+  var mark : Mark = _
   def name: String
 
   //usually just one element. Can be >1 for  RHS of a val (a,b,c) = ...
@@ -138,9 +138,10 @@ class ScalaCleanModel {
     ModelBuilder.elements.result()
   }
 
-  def allOf[T <: ModelElement](implicit cls: ClassTag[T]): List[T] = {
+  def allOf[T <: ModelElement: ClassTag]: List[T] = {
+    val cls = implicitly[ClassTag[T]].runtimeClass
     all collect {
-      case wanted if cls.runtimeClass.isInstance(wanted) => wanted.asInstanceOf[T]
+      case wanted if cls.isInstance(wanted) => wanted.asInstanceOf[T]
     }
   }
 

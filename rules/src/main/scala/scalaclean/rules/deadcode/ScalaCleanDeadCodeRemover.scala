@@ -1,18 +1,20 @@
-package scalaclean.deadcode
+package scalaclean.rules.deadcode
 
 import scalaclean.model._
+import scalaclean.rules.AbstractRule
 import scalaclean.util.{Scope, SymbolTreeVisitor, TokenHelper}
 import scalafix.v1._
 
 import scala.meta.Importee.Name
-import scala.meta.{Defn, Import, Importee, Pat, Stat}
+import scala.meta.{Defn, Import, Importee, Mod, Pat, Stat}
 
 /**
   * A rule that removes unreferenced classes,
   * needs to be run after Analysis
   */
-class ScalaCleanDeadCodeRemover extends SemanticRule("ScalaCleanDeadCodeRemover") {
+class ScalaCleanDeadCodeRemover extends AbstractRule("ScalaCleanDeadCodeRemover") {
 
+  type Colour = Usage
   sealed trait Purpose {
     def id: Int
 
@@ -34,7 +36,7 @@ class ScalaCleanDeadCodeRemover extends SemanticRule("ScalaCleanDeadCodeRemover"
     val unused = usages(0)
   }
 
-  case class Usage(purposes: Int) extends Colour {
+  case class Usage(purposes: Int) extends Mark {
     def withPurpose(purpose: Purpose): Usage = {
       Usage.usages(purposes | purpose.id)
     }
@@ -47,13 +49,8 @@ class ScalaCleanDeadCodeRemover extends SemanticRule("ScalaCleanDeadCodeRemover"
     }
   }
 
-  var model: ScalaCleanModel = _
-
-
-  def markInitial = {
-    model.allOf[ModelElement].foreach {
-      e => e.colour = Usage.unused
-    }
+  override def markInitial = {
+    markAll(Usage.unused)
   }
 
   def allMainEntryPoints = {
@@ -122,13 +119,8 @@ class ScalaCleanDeadCodeRemover extends SemanticRule("ScalaCleanDeadCodeRemover"
     }
   }
 
-  override def beforeStart(): Unit = {
-    println(s"$name beforeStart")
-    // load the model from the helper class
-    this.model = ModelHelper.model.getOrElse(throw new IllegalStateException("No model to work from"))
 
-    markInitial
-
+  override def runRule(): Unit = {
     allMainEntryPoints foreach ( e=> markUsed(e, Main, e :: Nil))
   }
 
@@ -136,7 +128,7 @@ class ScalaCleanDeadCodeRemover extends SemanticRule("ScalaCleanDeadCodeRemover"
 
     val tv = new SymbolTreeVisitor {
 
-      override protected def handlerSymbol(symbol: Symbol, stat: Stat, scope: List[Scope]): (Patch, Boolean) = {
+      override protected def handlerSymbol(symbol: Symbol, mods: Seq[Mod], stat: Stat, scope: List[Scope]): (Patch, Boolean) = {
         val modelElement = model.fromSymbol[ModelElement](symbol)
         val usage = modelElement.colour.asInstanceOf[Usage]
         if (usage.isUnused) {
@@ -148,7 +140,7 @@ class ScalaCleanDeadCodeRemover extends SemanticRule("ScalaCleanDeadCodeRemover"
           continue
       }
 
-      override protected def handlerPats(pats: Seq[Pat.Var], stat: Stat, scope: List[Scope]): (Patch, Boolean) = {
+      override protected def handlerPats(pats: Seq[Pat.Var], mods: Seq[Mod], stat: Stat, scope: List[Scope]): (Patch, Boolean) = {
         val declarationsByUsage: Map[Usage, Seq[(Pat.Var,ModelElement)]] =
           pats map (p => (p,model.fromSymbol[ModelElement](p.symbol))) groupBy(m => m._2.colour.asInstanceOf[Usage])
         declarationsByUsage.get(Usage.unused) match {
