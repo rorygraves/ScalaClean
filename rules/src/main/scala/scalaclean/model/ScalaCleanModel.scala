@@ -600,7 +600,7 @@ class ScalaCleanModel {
                 case _ => paramsMatch(symParams, defnParams)
               }
           }
-          assert (found.size == 1, s"could not match the method ${stat} from $simpleMethodMatch - found=$found")
+          assert (found.size == 1, s"could not match the method ${stat} from $simpleMethodMatch - found=$found - orig = $list")
           recordInheritance(found)
         case _ => // local cant override
 
@@ -693,8 +693,8 @@ class ScalaCleanModel {
         val jm = mirror(doc)//.asInstanceOf[JavaUniverse#Mirror]
         val javaName = fullName.
           substring(0, fullName.length-1).
-          replace('#','$').
-          replace('.','$').
+          replace('#','.').
+          replace('.','.').
         replace('/','.')
         val res = if (this.isInstanceOf[ObjectModelImpl]) jm.getRequiredModule(javaName)
         else jm.getRequiredClass(javaName)

@@ -72,7 +72,7 @@ class Privatiser extends AbstractRule("Privatiser") with SymbolUtils {
           case Public(_,_) =>
             continue
           case Undefined(_) =>
-            ???
+            (Patch.addLeft(stat, s"/* missed this one!! */"), false)
           case level: PrivatiserLevel =>
             (changeAccessModifier(level, mods, stat), true)
         }
