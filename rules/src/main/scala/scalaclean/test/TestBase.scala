@@ -10,7 +10,7 @@ import scala.meta.{Decl, Defn, Import, Pat, Pkg, Stat, Term, Tree}
   * A rule use to test the that incloming references ar set correctly,
   * needs to be run after ScalaCleanTestAnalysis
   */
-abstract class TestBase(name: String) extends SemanticRule(name) with SymbolUtils {
+abstract class TestBase(name: String) extends SemanticRule(name) {
   var model: ScalaCleanModel = _
 
   override def beforeStart(): Unit = {

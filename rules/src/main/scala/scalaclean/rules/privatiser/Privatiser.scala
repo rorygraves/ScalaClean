@@ -9,7 +9,8 @@ import scalafix.v1.SemanticDocument
 import scala.meta.tokens.Token
 import scala.meta.{Import, Mod, Pat, Stat}
 
-class Privatiser extends AbstractRule("Privatiser") with SymbolUtils {
+class Privatiser extends AbstractRule("Privatiser") {
+  import SymbolUtils._
   type Colour = PrivatiserLevel
 
   override def markInitial(): Unit = {
@@ -41,7 +42,7 @@ class Privatiser extends AbstractRule("Privatiser") with SymbolUtils {
     }
 
     incoming foreach { ref =>
-      val access = Private(findCommonParent(ref.symbol, element.symbol), s"accessed from $ref")
+      val access = Private(SymbolUtils.findCommonParent(ref.symbol, element.symbol), s"accessed from $ref")
       res = res.combine(access)
     }
 
@@ -74,7 +75,8 @@ class Privatiser extends AbstractRule("Privatiser") with SymbolUtils {
           case Undefined(_) =>
             (Patch.addLeft(stat, s"/* missed this one!! */"), false)
           case level: PrivatiserLevel =>
-            (changeAccessModifier(level, mods, stat), true)
+            val patch = changeAccessModifier(level, mods, stat, prepared)
+            (patch, true)
         }
       }
 
@@ -86,16 +88,26 @@ class Privatiser extends AbstractRule("Privatiser") with SymbolUtils {
 
         val access = pats map (p => (model.fromSymbol[ModelElement](p.symbol)).colour)
         val combined = access.fold[PrivatiserLevel](Undefined(null))((l, r) => l.combine(r))
-        (changeAccessModifier(combined, mods, stat), false)
+        combined match {
+          case NoChange(_, _) => continue
+          case Public(_,_) =>
+            continue
+          case Undefined(_) =>
+            (Patch.addLeft(stat, s"/* missed this one!! */"), false)
+          case level: PrivatiserLevel =>
+            val patch = changeAccessModifier(level, mods, stat,  model.fromSymbol[ModelElement](pats.head.symbol))
+            //we never need to recurse into RHS of decls as they are not externally visible
+            (patch, false)
+        }
       }
 
       override def handleImport(importStatement: Import, scope: List[Scope]): (Patch, Boolean) = continue
 
-      private def changeAccessModifier(level: PrivatiserLevel, mods: Seq[Mod], defn: Stat): Patch =
+      private def changeAccessModifier(level: PrivatiserLevel, mods: Seq[Mod], defn: Stat, aModel: ModelElement): Patch =
         (mods.collectFirst {
           case s@Mod.Private(scope) => s
           case s@Mod.Protected(scope) => s
-        }, level.asText) match {
+        }, level.asText(aModel)) match {
           case (_, None) => Patch.empty
           case (None, Some(toReplace)) => Patch.addLeft(defn, s"$toReplace ")
           case (Some(existing), Some(toReplace)) => Patch.replaceTree(existing, s"$toReplace ")

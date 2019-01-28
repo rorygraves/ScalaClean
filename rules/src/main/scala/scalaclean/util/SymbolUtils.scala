@@ -2,9 +2,9 @@ package scalaclean.util
 
 import scalafix.v1.Symbol
 
-trait SymbolUtils {
+object SymbolUtils {
 
-  protected def findCommonParent(scope1: Symbol, scope2: Symbol): Symbol = {
+  def findCommonParent(scope1: Symbol, scope2: Symbol): Symbol = {
     def depth(scope: Symbol): Int = {
       if (scope.isNone) 0 else depth(scope.owner) +1
     }
