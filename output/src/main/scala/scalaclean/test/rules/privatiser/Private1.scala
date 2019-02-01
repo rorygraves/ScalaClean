@@ -2,17 +2,17 @@ package scalaclean.test.rules.privatiser.p1
 
 object Private1 extends App {
   //some private[this] elements
+  //can't detect [this] though so should be private
 
-  private[this] val a = 1
-  private[this] def b = 2
-  private[this] var c = 3
-
+  private val a = 1
+  private def b = 2
+  private var c = 3
   a+b+c
 
 
-  private[this] val d = 1
-  private[this] def e = 2
-  private[this] var f = 3
+  private val d = 1
+  private def e = 2
+  private var f = 3
   d+e+f
 }
 

@@ -2,7 +2,7 @@
 rules = [ Analysis , ScalaCleanDeadCodeRemover ]
 
 */
-package scalaclean.rules.deadcode.deadannotation
+package scalaclean.test.rules.deadcode.deadannotation
 
 object App1 extends App {}
 case class UnusedClass(value: String)

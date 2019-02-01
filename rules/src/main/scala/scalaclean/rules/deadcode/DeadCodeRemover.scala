@@ -5,14 +5,13 @@ import scalaclean.rules.AbstractRule
 import scalaclean.util.{Scope, SymbolTreeVisitor, TokenHelper}
 import scalafix.v1._
 
-import scala.meta.Importee.Name
-import scala.meta.{Defn, Import, Importee, Mod, Pat, Stat}
+import scala.meta.{Import, Mod, Pat, Stat}
 
 /**
   * A rule that removes unreferenced classes,
   * needs to be run after Analysis
   */
-class ScalaCleanDeadCodeRemover extends AbstractRule("ScalaCleanDeadCodeRemover") {
+class DeadCodeRemover extends AbstractRule("ScalaCleanDeadCodeRemover") {
 
   type Colour = Usage
   sealed trait Purpose {
@@ -50,7 +49,7 @@ class ScalaCleanDeadCodeRemover extends AbstractRule("ScalaCleanDeadCodeRemover"
   }
 
   override def markInitial = {
-    markAll(Usage.unused)
+    markAll[ModelElement](Usage.unused)
   }
 
   def allMainEntryPoints = {
@@ -101,7 +100,7 @@ class ScalaCleanDeadCodeRemover extends AbstractRule("ScalaCleanDeadCodeRemover"
           markRhs(obj, obj :: path)
       }
     }
-    val current = element.colour.asInstanceOf[Usage]
+    val current = element.colour
 
     if (!current.hasPurpose(purpose)) {
       println(s"mark ${element} as used for $purpose due to ${path.mkString("->")}")
@@ -130,7 +129,7 @@ class ScalaCleanDeadCodeRemover extends AbstractRule("ScalaCleanDeadCodeRemover"
 
       override protected def handlerSymbol(symbol: Symbol, mods: Seq[Mod], stat: Stat, scope: List[Scope]): (Patch, Boolean) = {
         val modelElement = model.fromSymbol[ModelElement](symbol)
-        val usage = modelElement.colour.asInstanceOf[Usage]
+        val usage = modelElement.colour
         if (usage.isUnused) {
           val tokens = stat.tokens
           val firstToken = tokens.head
@@ -142,7 +141,7 @@ class ScalaCleanDeadCodeRemover extends AbstractRule("ScalaCleanDeadCodeRemover"
 
       override protected def handlerPats(pats: Seq[Pat.Var], mods: Seq[Mod], stat: Stat, scope: List[Scope]): (Patch, Boolean) = {
         val declarationsByUsage: Map[Usage, Seq[(Pat.Var,ModelElement)]] =
-          pats map (p => (p,model.fromSymbol[ModelElement](p.symbol))) groupBy(m => m._2.colour.asInstanceOf[Usage])
+          pats map (p => (p,model.fromSymbol[ModelElement](p.symbol))) groupBy(m => m._2.colour)
         declarationsByUsage.get(Usage.unused) match {
           case Some(_) if declarationsByUsage.size == 1 =>
             //we can remove the whole declaration
@@ -170,7 +169,7 @@ class ScalaCleanDeadCodeRemover extends AbstractRule("ScalaCleanDeadCodeRemover"
         val byUsage = importees.groupBy{
           i=>
             val symbol = i.symbol(doc)
-            model.getSymbol[ModelElement](symbol).map( _.colour.asInstanceOf[Usage])
+            model.getSymbol[ModelElement](symbol).map( _.colour)
         }
         byUsage.get(Some(Usage.unused)) match {
           case Some(_) if byUsage.size == 1 =>

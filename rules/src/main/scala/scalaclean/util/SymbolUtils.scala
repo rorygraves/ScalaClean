@@ -19,7 +19,7 @@ object SymbolUtils {
       findCommonParent(parent(scope1, depth1 - depth2), scope2)
     } else if (depth2 > depth1) {
       findCommonParent(scope1, parent(scope2, depth2 - depth1))
-    } else if (scope1 == scope2) scope1
+    } else if (scope1 == scope2) if (scope1.isNone) Symbol.RootPackage else scope1
     else findCommonParent(scope1.owner, scope2.owner)
   }
 

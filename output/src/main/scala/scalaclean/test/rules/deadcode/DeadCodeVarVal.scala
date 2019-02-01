@@ -1,4 +1,4 @@
-package scalaclean.rules.deadcode.varval
+package scalaclean.test.rules.deadcode.varval
 
 object App1 extends App {
   Outer.Inner

@@ -5,71 +5,97 @@ import scalaclean.util.SymbolUtils
 import scalafix.v1.Symbol
 
 private[privatiser] sealed trait PrivatiserLevel extends Mark {
-  def keyword: Option[String] = None
+  def shouldReplace(aModel: ModelElement): Boolean
+
   def reason: String
+
   def asText(context: ModelElement): Option[String]
 
-  def combine(level: PrivatiserLevel): PrivatiserLevel
+  def widen(level: PrivatiserLevel): PrivatiserLevel
 }
 
-private[privatiser] case class Public(symbol: Symbol, reason:String) extends PrivatiserLevel {
-  def combine(level: PrivatiserLevel): PrivatiserLevel = level
+private[privatiser] case class Public(reason: String) extends PrivatiserLevel {
+  override def shouldReplace(aModel: ModelElement) = true
+
+  def widen(level: PrivatiserLevel) = this
 
   override def asText(context: ModelElement): Option[String] = None
 }
 
-private[privatiser] case class NoChange(symbol: Symbol, reason: String) extends PrivatiserLevel {
-  def combine(level: PrivatiserLevel): PrivatiserLevel = this
+private[privatiser] case class NoChange(reason: String) extends PrivatiserLevel {
+  override def shouldReplace(aModel: ModelElement) = false
+
+  def widen(level: PrivatiserLevel) = this
+
   override def asText(context: ModelElement): Option[String] = None
 }
 
-private[privatiser] case class Undefined(symbol: Symbol) extends PrivatiserLevel {
+private[privatiser] case object Undefined extends PrivatiserLevel {
 
   override def reason: String = "Initial"
 
-  def combine(level: PrivatiserLevel): PrivatiserLevel = level
+  override def shouldReplace(aModel: ModelElement) = false
+
+  def widen(level: PrivatiserLevel) = level
+
   override def asText(context: ModelElement): Option[String] = Some("/* cant detect usage !! */")
 }
 
-sealed abstract class Qualified extends PrivatiserLevel {
-  def scope: Symbol
-  protected def name: String
+private[privatiser] object AccessScope {
+  val None = AccessScope(Symbol.None, "")
+}
 
+private[privatiser] final case class AccessScope(symbol: Symbol, reason: String) {
+  def print(name: String) = if (symbol.isNone) s"$name <not found>" else s"$name $symbol $reason"
+
+  def widen(other: AccessScope) =
+    if (symbol.isNone) other
+    else if (other.symbol.isNone) this
+    else AccessScope(SymbolUtils.findCommonParent(symbol, other.symbol), s"$reason AND ${other.reason}")
+}
+
+private[privatiser] object Scoped {
+  def Private(scope: Symbol, reason: String) = Scoped(AccessScope(scope, reason), AccessScope.None, false)
+
+  def Protected(scope: Symbol, reason: String, forceProtected: Boolean ) = Scoped(AccessScope.None, AccessScope(scope, reason), forceProtected)
+}
+
+private[privatiser] final case class Scoped(privateScope: AccessScope, protectedScope: AccessScope, forceProtected: Boolean ) extends PrivatiserLevel {
+  def isProtected = {
+    def commonParentScope =
+      if (protectedScope.symbol.isNone) privateScope.symbol
+      else SymbolUtils.findCommonParent(protectedScope.symbol, privateScope.symbol)
+
+    forceProtected || privateScope.symbol.isNone || commonParentScope != privateScope.symbol
+  }
+
+  def scope: Symbol = privateScope.symbol
+  def scopeOrDefault(default: Symbol): Symbol =  privateScope.symbol.asNonEmpty.getOrElse(default)
   override def asText(context: ModelElement): Option[String] = {
+    val name = if (isProtected) "protected" else "private"
     context.enclosing.headOption match {
-      case Some(enclosing) if enclosing.symbol == scope => Some(name)
-      case _ => Some(s"$name[$scope]")
+      case Some(enclosing) if scopeOrDefault(enclosing.symbol) == enclosing.symbol => Some(name)
+      case _ => Some(s"$name[${privateScope.symbol.displayName}]")
     }
   }
 
-}
-private[privatiser] case class Private(scope: Symbol, reason: String) extends Qualified {
-  override val keyword = Some("private")
+  override def shouldReplace(aModel: ModelElement) = true
 
-  def combine(level: PrivatiserLevel): PrivatiserLevel = {
-    level match {
-      case Private(otherScope, otherReason) =>
-        val commonParent = SymbolUtils.findCommonParent(scope, otherScope)
-        if (commonParent == scope) this
-        else if (commonParent == otherScope) level
-        else Private(commonParent, s"common parent of '$reason' and '$otherReason'")
-      case _ => level
-    }
+  override def toString = s"Scoped[${privateScope.print("private")} -- ${protectedScope.print("protected")}}"
+
+  override def reason: String = {
+    if (privateScope.symbol.isNone) protectedScope.reason
+    else if (protectedScope.symbol.isNone) privateScope.reason
+    else s"private due to (${privateScope.reason}), protected access from (${protectedScope.reason})"
   }
 
-  override protected def name: String = "private"
+  def widen(level: PrivatiserLevel) = level match {
+    case p: Public => p
+    case n: NoChange => n
+    case Undefined => this
+    case other: Scoped =>
+      val privateWidened = this.privateScope.widen(other.privateScope)
+      if (privateWidened.symbol == Symbol.RootPackage) Public(privateWidened.reason)
+      else Scoped(privateWidened,protectedScope.widen(other.protectedScope), forceProtected || other.forceProtected)
+  }
 }
-
-private[privatiser] case class Protected(scope:Symbol, reason: String) extends Qualified {
-  override val keyword = Some("protected")
-
-  // TODO - actually implement combine for protected!
-  def combine(level: PrivatiserLevel): PrivatiserLevel = this
-
-  override protected def name: String = "protected"
-}
-
-
-
-
-

@@ -21,6 +21,7 @@ sealed trait ModelElement {
   //usually just one element. Can be >1 for  RHS of a val (a,b,c) = ...
   //where a,b,c are the enclosing
   def enclosing: List[ModelElement]
+  def classOrEnclosing: ClassLike
 
   def internalOutgoingReferences: List[(ModelElement, Tree)]
   def internalIncomingReferences: List[(ModelElement, Tree)]
@@ -36,6 +37,7 @@ sealed trait ModelElement {
   def internalTransitiveOverriddenBy: List[ModelElement]
 
   def symbolInfo: SymbolInformation
+  def symbolInfo(anotherSymbol: Symbol): SymbolInformation
 
   //any block may contain many val of the same name!
 //  val foo = {
@@ -215,7 +217,7 @@ class ScalaCleanModel {
         def visitTree(tree: Tree): Unit = {
           val sym = tree.symbol(doc)
           if (!sym.isNone)
-            println(s"${tree.pos.startLine}:${tree.pos.startColumn} - ${tree.pos.endLine}:${tree.pos.endColumn} ${tree.symbol(doc)}")
+            debug(s"${tree.pos.startLine}:${tree.pos.startColumn} - ${tree.pos.endLine}:${tree.pos.endColumn} ${tree.symbol(doc)}")
 
           tree match {
             case _: Pkg =>
@@ -377,6 +379,7 @@ class ScalaCleanModel {
 
 
       override def symbolInfo: SymbolInformation = doc.info(symbol).get
+      override def symbolInfo(anotherSymbol: Symbol): SymbolInformation = doc.info(anotherSymbol).get
 
       override def internalOutgoingReferences: List[(ModelElementImpl, Tree)] = {
         assertBuildModelFinished
@@ -504,6 +507,8 @@ class ScalaCleanModel {
                                   enclosing: List[ModelElementImpl], doc: SemanticDocument) extends
       ModelElementImpl(defn, enclosing, doc) {
       self: FieldModel =>
+      require (allFields.nonEmpty)
+
       override def symbol: Symbol = field.symbol(doc)
 
       override def infoName: String = field.name.toString
@@ -515,6 +520,7 @@ class ScalaCleanModel {
       final override def otherFieldsInSameDeclaration: Seq[fieldType] =
         (allFields.filter(_ == field)) map (f => bySymbol(f.symbol(doc)).asInstanceOf[fieldType])
 
+      override def classOrEnclosing: ClassLike = enclosing.head.classOrEnclosing
     }
     abstract class VarModelImpl(vr: Stat, field: Pat.Var, allFields: Seq[Pat.Var],
                                 enclosing: List[ModelElementImpl], doc: SemanticDocument) extends
@@ -615,6 +621,7 @@ class ScalaCleanModel {
       def paramsType = method_paramss map (_.map {
         param: Term.Param => param.symbol(doc)
       })
+      override def classOrEnclosing: ClassLike = enclosing.head.classOrEnclosing
     }
     class MethodModelDefn(val defn: Defn.Def, enclosing: List[ModelElementImpl], doc: SemanticDocument) extends MethodModelImpl(defn, enclosing, doc) {
       def method_mods = defn.mods
@@ -700,6 +707,8 @@ class ScalaCleanModel {
         else jm.getRequiredClass(javaName)
         res
       }
+
+      override def classOrEnclosing: ClassLike = this
     }
 
     class ClassModelImpl private[ScalaCleanModel](cls: Defn.Class, enclosing: List[ModelElementImpl], doc: SemanticDocument) extends ClassLikeImpl(cls, enclosing, doc) with ClassModel {

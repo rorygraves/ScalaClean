@@ -1,4 +1,4 @@
-scalaclean.rules.deadcode.ScalaCleanDeadCodeRemover
+scalaclean.rules.deadcode.DeadCodeRemover
 scalaclean.rules.privatiser.Privatiser
 scalaclean.Analysis
 scalaclean.test.Test_allOutgoingReferences

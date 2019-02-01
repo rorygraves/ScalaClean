@@ -15,7 +15,7 @@ object Private2 extends App {
 }
 private[p2] object Other {
 
-  def used = {
+  private[p2] def used = {
     //content should be unaffected inside a def
     //as the values are not visible
     val x = 1
@@ -29,12 +29,12 @@ private[p2] object Other {
     x+y+z
   }
 
-  object usedAndVisible1 extends AnyRef {
+  private[p2] object usedAndVisible1 extends AnyRef {
     //content should be affected inside an object
     //as the values are not visible
-    private[this] val x = 1
-    private[this] var y = 1
-    private[this] def z = 1
+    private val x = 1
+    private var y = 1
+    private def z = 1
 
     /* cant detect usage !! */ val a = 1
     /* cant detect usage !! */ var b = 1
@@ -43,12 +43,12 @@ private[p2] object Other {
     x+y+z
   }
 
-  class usedAndVisible2 extends AnyRef {
+  private[p2] class usedAndVisible2 extends AnyRef {
     //content should be affected inside a class
     //as the values are not visible
-    private[this] val x = 1
-    private[this] var y = 1
-    private[this] def z = 1
+    private val x = 1
+    private var y = 1
+    private def z = 1
 
     /* cant detect usage !! */ val a = 1
     /* cant detect usage !! */ var b = 1
@@ -57,12 +57,12 @@ private[p2] object Other {
     x+y+z
   }
 
-  trait usedAndVisible3 extends AnyRef {
+  private[p2] trait usedAndVisible3 extends AnyRef {
     //content should be affected inside a trait
     //as the values are not visible
-    private[this] val x = 1
-    private[this] var y = 1
-    private[this] def z = 1
+    private val x = 1
+    private var y = 1
+    private def z = 1
 
     /* cant detect usage !! */ val a = 1
     /* cant detect usage !! */ var b = 1
@@ -74,19 +74,19 @@ private[p2] object Other {
   //some declarations wit internal structure
   //should not be traversed as the content is not visible
 
-  private[this] val a = {
+  private val a = {
     val x = 1
     def y = 1
     var z = 0
     x+y+z
   }
-  private[this] def b = {
+  private def b = {
     val x = 1
     def y = 1
     var z = 0
     x+y+z
   }
-  private[this] var c = {
+  private var c = {
     val x = 1
     def y = 1
     var z = 0

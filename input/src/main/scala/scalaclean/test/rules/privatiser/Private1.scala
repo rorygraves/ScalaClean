@@ -6,6 +6,7 @@ package scalaclean.test.rules.privatiser.p1
 
 object Private1 extends App {
   //some private[this] elements
+  //can't detect [this] though so should be private
 
   val a = 1
   def b = 2

@@ -2,7 +2,7 @@
 rules = [ Analysis , ScalaCleanDeadCodeRemover ]
 
 */
-package scalaclean.rules.deadcode.Import
+package scalaclean.test.rules.deadcode.Import
 
 import scala.collection.mutable.HashEntry
 import scala.collection.mutable.{HashSet, HashEntry}

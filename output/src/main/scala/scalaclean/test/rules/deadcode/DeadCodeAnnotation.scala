@@ -1,0 +1,3 @@
+package scalaclean.test.rules.deadcode.deadannotation
+
+object App1 extends App {}

@@ -2,9 +2,9 @@
 rules = [ Analysis , ScalaCleanDeadCodeRemover ]
 
 */
-package scalaclean.rules.deadcode.deadmain
+package scalaclean.test.rules.deadcode.deadmain
 
-import scalaclean.rules.deadcode.deadmain.Outer.Inner3
+import scalaclean.test.rules.deadcode.deadmain.Outer.Inner3
 
 object AppWithMain1 {
   def main(args: Array[String]): Unit = {
