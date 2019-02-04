@@ -594,7 +594,7 @@ class ScalaCleanModel {
           val simpleMethodMatch = list.collect {
             case sym: ru.MethodSymbol
               if !sym.isClassConstructor
-                && sym.name.toString == method_name.toString => sym
+                && sym.nameString == method_name.toString => sym
           }
           val found = simpleMethodMatch filter {
             case sym =>

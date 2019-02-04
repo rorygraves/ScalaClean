@@ -36,6 +36,7 @@ object App1 extends App {
 object Used3 {
   def aMethod(): Unit = {}
 }
+
 object Outer {
   //referenced by AppWithMain1
   object Inner1

@@ -15,12 +15,12 @@ object Outer {
     val (_,_,_, (d4,_)) = (1,2,3,(4,referred4))
 
     lazy val (_,_,_, (d6,_)) = (1,2,3,(4,referred6))
-    d2
-    d4
-    d6
-    r20
-    r21
-    r22
+    println(d2)
+    println(d4)
+    println(d6)
+    println(r20)
+    println(r21)
+    println(r22)
     ()
 
   }

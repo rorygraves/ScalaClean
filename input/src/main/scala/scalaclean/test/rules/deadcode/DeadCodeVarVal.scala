@@ -32,13 +32,12 @@ object Outer {
 
     lazy val (a5,b5,c5, (d5,e5)) = (1,2,3,(4,referred5))
     lazy val (a6,b6,c6, (d6,e6)) = (1,2,3,(4,referred6))
-//    d2
-//    d4
-    d6
-//    r20
-//    r21
-//    r22
-
+    println(d2)
+    println(d4)
+    println(d6)
+    println(r20)
+    println(r21)
+    println(r22)
     ()
 
   }

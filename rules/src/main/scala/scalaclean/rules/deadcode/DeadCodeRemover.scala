@@ -134,7 +134,9 @@ class DeadCodeRemover extends AbstractRule("ScalaCleanDeadCodeRemover") {
           val tokens = stat.tokens
           val firstToken = tokens.head
 
-          (Patch.removeTokens(TokenHelper.whitespaceTokensBefore(firstToken, doc.tokens)) + Patch.removeTokens(tokens), false)
+          val removedTokens = TokenHelper.whitespaceOrCommentsBefore(firstToken, doc.tokens) ++ tokens
+          val patch = Patch.removeTokens(removedTokens)
+          (patch, false)
         } else
           continue
       }
@@ -147,7 +149,7 @@ class DeadCodeRemover extends AbstractRule("ScalaCleanDeadCodeRemover") {
             //we can remove the whole declaration
             val tokens = stat.tokens
             val firstToken = tokens.head
-            (Patch.removeTokens(TokenHelper.whitespaceTokensBefore(firstToken, doc.tokens)) + Patch.removeTokens(tokens), false)
+            (Patch.removeTokens(TokenHelper.whitespaceOrCommentsBefore(firstToken, doc.tokens)) + Patch.removeTokens(tokens), false)
           case Some(unused)  =>
             val combinedPatch = unused.foldLeft(Patch.empty){
               case (patch, (pat, model)) =>

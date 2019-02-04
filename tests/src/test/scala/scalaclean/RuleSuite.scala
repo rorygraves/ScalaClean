@@ -83,6 +83,8 @@ class RuleSuite extends SemanticRuleSuite() {
       if (result.nonEmpty) {
         println("###########> obtained       <###########")
         println(obtained)
+        println("###########> expected       <###########")
+        println(expected)
         println("###########> Diff       <###########")
         println(error2message(obtained, expected))
       }
