@@ -11,9 +11,9 @@ object Outer {
     var r20 = referred20
     val r21 = referred21
     lazy val r22 = referred22
-    var (_,_,_, (d2,_)) = (1,2,3,(4,referred2))
-    val (_,_,_, (d4,_)) = (1,2,3,(4,referred4))
-    lazy val (_,_,_, (d6,_)) = (1,2,3,(4,referred6))
+    /* *** SCALA CLEAN consider rewriting pattern as 4 values are not used */var (_,_,_, (d2,_)) = (1,2,3,(4,referred2))
+    /* *** SCALA CLEAN consider rewriting pattern as 4 values are not used */val (_,_,_, (d4,_)) = (1,2,3,(4,referred4))
+    /* *** SCALA CLEAN consider rewriting pattern as 4 values are not used */lazy val (_,_,_, (d6,_)) = (1,2,3,(4,referred6))
     println(d2)
     println(d4)
     println(d6)

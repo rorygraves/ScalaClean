@@ -14,6 +14,7 @@ import scala.meta.{Import, Mod, Pat, Stat}
 class DeadCodeRemover extends AbstractRule("ScalaCleanDeadCodeRemover") {
 
   type Colour = Usage
+
   sealed trait Purpose {
     def id: Int
 
@@ -100,6 +101,7 @@ class DeadCodeRemover extends AbstractRule("ScalaCleanDeadCodeRemover") {
           markRhs(obj, obj :: path)
       }
     }
+
     val current = element.colour
 
     if (!current.hasPurpose(purpose)) {
@@ -120,7 +122,7 @@ class DeadCodeRemover extends AbstractRule("ScalaCleanDeadCodeRemover") {
 
 
   override def runRule(): Unit = {
-    allMainEntryPoints foreach ( e=> markUsed(e, Main, e :: Nil))
+    allMainEntryPoints foreach (e => markUsed(e, Main, e :: Nil))
   }
 
   override def fix(implicit doc: SemanticDocument): Patch = {
@@ -142,20 +144,21 @@ class DeadCodeRemover extends AbstractRule("ScalaCleanDeadCodeRemover") {
       }
 
       override protected def handlerPats(pats: Seq[Pat.Var], mods: Seq[Mod], stat: Stat, scope: List[Scope]): (Patch, Boolean) = {
-        val declarationsByUsage: Map[Usage, Seq[(Pat.Var,ModelElement)]] =
-          pats map (p => (p,model.fromSymbol[ModelElement](p.symbol))) groupBy(m => m._2.colour)
+        val declarationsByUsage: Map[Usage, Seq[(Pat.Var, ModelElement)]] =
+          pats map (p => (p, model.fromSymbol[ModelElement](p.symbol))) groupBy (m => m._2.colour)
         declarationsByUsage.get(Usage.unused) match {
           case Some(_) if declarationsByUsage.size == 1 =>
             //we can remove the whole declaration
             val tokens = stat.tokens
             val firstToken = tokens.head
             (Patch.removeTokens(TokenHelper.whitespaceOrCommentsBefore(firstToken, doc.tokens)) + Patch.removeTokens(tokens), false)
-          case Some(unused)  =>
-            val combinedPatch = unused.foldLeft(Patch.empty){
+          case Some(unused) =>
+            val combinedPatch = unused.foldLeft(Patch.empty) {
               case (patch, (pat, model)) =>
                 patch + Patch.replaceToken(pat.tokens.head, "_")
             }
-            (combinedPatch, true)
+            val comment = Patch.addLeft(stat.tokens.head, s"/* *** SCALA CLEAN consider rewriting pattern as ${unused.size} values are not used */")
+            (combinedPatch + comment, true)
           case _ =>
             continue
 
@@ -163,15 +166,15 @@ class DeadCodeRemover extends AbstractRule("ScalaCleanDeadCodeRemover") {
       }
 
       override def handleImport(importStatement: Import, scope: List[Scope]): (Patch, Boolean) = {
-        assert (importStatement.importers.size == 1)
+        assert(importStatement.importers.size == 1)
         //TODO - need to ensure that all symbols related are the same import are of the same status
 
         val importers = importStatement.importers
         val importees = importers.head.importees
-        val byUsage = importees.groupBy{
-          i=>
+        val byUsage = importees.groupBy {
+          i =>
             val symbol = i.symbol(doc)
-            model.getSymbol[ModelElement](symbol).map( _.colour)
+            model.getSymbol[ModelElement](symbol).map(_.colour)
         }
         byUsage.get(Some(Usage.unused)) match {
           case Some(_) if byUsage.size == 1 =>
