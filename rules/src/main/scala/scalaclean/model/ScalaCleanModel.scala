@@ -503,7 +503,7 @@ class ScalaCleanModel {
 
     }
 
-    abstract class FieldModelImpl(defn: Stat, field: Pat.Var, allFields: Seq[Pat.Var],
+    abstract sealed class FieldModelImpl(defn: Stat, field: Pat.Var, allFields: Seq[Pat.Var],
                                   enclosing: List[ModelElementImpl], doc: SemanticDocument) extends
       ModelElementImpl(defn, enclosing, doc) {
       self: FieldModel =>
