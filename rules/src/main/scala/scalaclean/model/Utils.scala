@@ -5,6 +5,9 @@ import scalafix.v1.Patch
 import scala.meta.{Pat, Stat, Tree}
 
 object Utils {
+  def addError(stat: Stat, message: String) =
+    Patch.addLeft(stat.tokens.head, s"/* *** SCALA CLEAN ERROR $message */")
+
   def addMarker(stat: Stat, message: String) =
     Patch.addLeft(stat.tokens.head, s"/* *** SCALA CLEAN $message */")
 

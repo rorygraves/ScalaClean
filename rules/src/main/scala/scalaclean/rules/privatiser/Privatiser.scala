@@ -153,7 +153,7 @@ class Privatiser extends AbstractRule("Privatiser") {
         val proposed = level.asText(aModel)
 
         val structuredPatch = if (isWiderThanExisting(level, aModel, mod))
-          Patch.addLeft(defn, s"/* error - cant widen to $proposed from $existing */")
+          Utils.addError(defn, s" cant widen to $proposed from $existing */")
         else (mod, level.shouldReplace(aModel), proposed) match {
           case (_, _, None) => Patch.empty
           case (None, _, Some(toReplace)) => Patch.addLeft(defn, s"$toReplace ")
