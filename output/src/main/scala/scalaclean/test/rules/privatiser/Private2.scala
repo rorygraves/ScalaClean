@@ -3,10 +3,10 @@ package scalaclean.test.rules.privatiser.p2
 object Private2 extends App {
 
   //not used element should be flagged with comments
-  /* cant detect usage !! */ def notUsed1 = ???
+  /* *** SCALA CLEAN can't detect usage */def notUsed1 = ???
 
-  /* cant detect usage !! */ val notUsed2 = ???
-  /* cant detect usage !! */ var notUsed3 = ???
+  /* *** SCALA CLEAN can't detect usage */val notUsed2 = ???
+  /* *** SCALA CLEAN can't detect usage */var notUsed3 = ???
 
   Other.used
   Other.usedAndVisible1
@@ -36,9 +36,9 @@ private[p2] object Other {
     private var y = 1
     private def z = 1
 
-    /* cant detect usage !! */ val a = 1
-    /* cant detect usage !! */ var b = 1
-    /* cant detect usage !! */ def c = 1
+    /* *** SCALA CLEAN can't detect usage */val a = 1
+    /* *** SCALA CLEAN can't detect usage */var b = 1
+    /* *** SCALA CLEAN can't detect usage */def c = 1
 
     x+y+z
   }
@@ -50,9 +50,9 @@ private[p2] object Other {
     private var y = 1
     private def z = 1
 
-    /* cant detect usage !! */ val a = 1
-    /* cant detect usage !! */ var b = 1
-    /* cant detect usage !! */ def c = 1
+    /* *** SCALA CLEAN can't detect usage */val a = 1
+    /* *** SCALA CLEAN can't detect usage */var b = 1
+    /* *** SCALA CLEAN can't detect usage */def c = 1
 
     x+y+z
   }
@@ -64,9 +64,9 @@ private[p2] object Other {
     private var y = 1
     private def z = 1
 
-    /* cant detect usage !! */ val a = 1
-    /* cant detect usage !! */ var b = 1
-    /* cant detect usage !! */ def c = 1
+    /* *** SCALA CLEAN can't detect usage */val a = 1
+    /* *** SCALA CLEAN can't detect usage */var b = 1
+    /* *** SCALA CLEAN can't detect usage */def c = 1
 
     x+y+z
   }

@@ -505,7 +505,7 @@ class ScalaCleanModel {
 
     abstract sealed class FieldModelImpl(defn: Stat, field: Pat.Var, allFields: Seq[Pat.Var],
                                   enclosing: List[ModelElementImpl], doc: SemanticDocument) extends
-      ModelElementImpl(defn, enclosing, doc) {
+      ModelElementImpl(defn, enclosing, doc) with FieldModel {
       self: FieldModel =>
       require (allFields.nonEmpty)
 

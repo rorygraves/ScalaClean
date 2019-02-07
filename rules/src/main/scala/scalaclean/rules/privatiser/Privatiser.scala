@@ -11,7 +11,9 @@ import scala.meta.tokens.Token
 import scala.meta.{Import, Mod, Pat, Stat}
 
 class Privatiser extends AbstractRule("Privatiser") {
+
   import SymbolUtils._
+
   type Colour = PrivatiserLevel
 
   override def markInitial(): Unit = {
@@ -32,7 +34,7 @@ class Privatiser extends AbstractRule("Privatiser") {
       val incoming = {
         element.internalIncomingReferences map (_._1)
       }.toSet - element
-//      println(s"Privatiser for $element START - process ${element.internalIncomingReferences}")
+      //      println(s"Privatiser for $element START - process ${element.internalIncomingReferences}")
 
       val enclosing = element.classOrEnclosing
 
@@ -46,18 +48,13 @@ class Privatiser extends AbstractRule("Privatiser") {
         case _ => Undefined
       }
 
-      if (element.symbol.isLocal) {
-        //caused by a limitation in the val and var processing in semanticdb
-        res = res.widen(NoChange("its a var/val with a local symbol - so we cant detect access"))
-      } else {
-        incoming foreach { ref: ModelElement =>
-          val isFromChild = ref.classOrEnclosing.xtends(enclosing.symbol)
-          val access = if (isFromChild)
-            Scoped.Protected(ref.symbol, s"accessed from $ref", false)
-          else
-            Scoped.Private(SymbolUtils.findCommonParent(ref.symbol, element.symbol), s"accessed from $ref")
-          res = res.widen(access)
-        }
+      incoming foreach { ref: ModelElement =>
+        val isFromChild = ref.classOrEnclosing.xtends(enclosing.symbol)
+        val access = if (isFromChild)
+          Scoped.Protected(ref.symbol, s"accessed from $ref", false)
+        else
+          Scoped.Private(SymbolUtils.findCommonParent(ref.symbol, element.symbol), s"accessed from $ref")
+        res = res.widen(access)
       }
       //we must be visible to anything that overrides us
       element.internalDirectOverriddenBy foreach {
@@ -100,7 +97,7 @@ class Privatiser extends AbstractRule("Privatiser") {
 
       override protected def handlerSymbol(symbol: Symbol, mods: Seq[Mod], stat: Stat, scope: List[Scope]): (Patch, Boolean) = {
         val modelElement = model.fromSymbol[ModelElement](symbol)
-        val patch = changeAccessModifier(modelElement.colour, mods, stat,  modelElement)
+        val patch = changeAccessModifier(modelElement.colour, mods, stat, modelElement)
         //do we need to recurse into implementation?
         val rewriteContent = modelElement match {
           case _: ClassLike => true
@@ -118,7 +115,7 @@ class Privatiser extends AbstractRule("Privatiser") {
 
         val access = pats map (p => (model.fromSymbol[ModelElement](p.symbol)).colour)
         val combined = access.fold[PrivatiserLevel](Undefined)((l, r) => l.widen(r))
-        val patch = changeAccessModifier(combined, mods, stat,  model.fromSymbol[ModelElement](pats.head.symbol))
+        val patch = changeAccessModifier(combined, mods, stat, model.fromSymbol[ModelElement](pats.head.symbol))
         //we never need to recurse into RHS of decls as they are not externally visible
         (patch, false)
       }
@@ -127,7 +124,7 @@ class Privatiser extends AbstractRule("Privatiser") {
 
       private def isWiderThanExisting(level: PrivatiserLevel, element: ModelElement, existing: Option[Mod]): Boolean = {
         level match {
-          case scoped @ Scoped(privateScope, _, _) =>
+          case scoped@Scoped(privateScope, _, _) =>
             existing match {
               case None => false
               case Some(Mod.Private(scope)) =>
@@ -144,7 +141,7 @@ class Privatiser extends AbstractRule("Privatiser") {
       }
 
       def existingAccess(mods: Seq[Mod]): (Option[Mod], PrivatiserLevel) = {
-        val res : Option[(Option[Mod], PrivatiserLevel)] = mods.collectFirst {
+        val res: Option[(Option[Mod], PrivatiserLevel)] = mods.collectFirst {
           case s@Mod.Private(scope) => (Some(s), Scoped.Private(scope.symbol, "existing"))
           case s@Mod.Protected(scope) => (Some(s), Scoped.Protected(scope.symbol, "existing", false))
         }
@@ -153,16 +150,17 @@ class Privatiser extends AbstractRule("Privatiser") {
 
       private def changeAccessModifier(level: PrivatiserLevel, mods: Seq[Mod], defn: Stat, aModel: ModelElement): Patch = {
         val (mod, existing) = existingAccess(mods)
-        val proposed =  level.asText(aModel)
+        val proposed = level.asText(aModel)
 
-        if (isWiderThanExisting(level, aModel, mod ))
+        val structuredPatch = if (isWiderThanExisting(level, aModel, mod))
           Patch.addLeft(defn, s"/* error - cant widen to $proposed from $existing */")
         else (mod, level.shouldReplace(aModel), proposed) match {
-          case (_,_, None) => Patch.empty
+          case (_, _, None) => Patch.empty
           case (None, _, Some(toReplace)) => Patch.addLeft(defn, s"$toReplace ")
           case (_, false, Some(toReplace)) => Patch.addLeft(defn, s"$toReplace ")
           case (Some(existing), true, Some(toReplace)) => Patch.replaceTree(existing, s"$toReplace")
         }
+        structuredPatch + level.marker(defn)
       }
     }
 

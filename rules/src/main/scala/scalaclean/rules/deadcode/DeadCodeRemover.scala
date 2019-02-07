@@ -157,8 +157,8 @@ class DeadCodeRemover extends AbstractRule("ScalaCleanDeadCodeRemover") {
               case (patch, (pat, model)) =>
                 patch + Patch.replaceToken(pat.tokens.head, "_")
             }
-            val comment = Patch.addLeft(stat.tokens.head, s"/* *** SCALA CLEAN consider rewriting pattern as ${unused.size} values are not used */")
-            (combinedPatch + comment, true)
+            val marker = Utils.addMarker(stat, s"consider rewriting pattern as ${unused.size} values are not used")
+            (combinedPatch + marker, true)
           case _ =>
             continue
 

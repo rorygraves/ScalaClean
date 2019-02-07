@@ -1,8 +1,13 @@
 package scalaclean.model
 
-import scala.meta.{Pat, Tree}
+import scalafix.v1.Patch
+
+import scala.meta.{Pat, Stat, Tree}
 
 object Utils {
+  def addMarker(stat: Stat, message: String) =
+    Patch.addLeft(stat.tokens.head, s"/* *** SCALA CLEAN $message */")
+
   def readVars(pats: List[Pat]): List[Pat.Var] = {
     object visitor {
       var res = List.empty[Pat.Var]

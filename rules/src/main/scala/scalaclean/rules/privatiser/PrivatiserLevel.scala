@@ -1,8 +1,11 @@
 package scalaclean.rules.privatiser
 
-import scalaclean.model.{Mark, ModelElement}
+import scalaclean.model.{Mark, ModelElement, Utils}
 import scalaclean.util.SymbolUtils
+import scalafix.patch.Patch
 import scalafix.v1.Symbol
+
+import scala.meta.Stat
 
 private[privatiser] sealed trait PrivatiserLevel extends Mark {
   def shouldReplace(aModel: ModelElement): Boolean
@@ -12,6 +15,8 @@ private[privatiser] sealed trait PrivatiserLevel extends Mark {
   def asText(context: ModelElement): Option[String]
 
   def widen(level: PrivatiserLevel): PrivatiserLevel
+
+  def marker(stat: Stat): Patch = Patch.empty
 }
 
 private[privatiser] case class Public(reason: String) extends PrivatiserLevel {
@@ -38,7 +43,9 @@ private[privatiser] case object Undefined extends PrivatiserLevel {
 
   def widen(level: PrivatiserLevel) = level
 
-  override def asText(context: ModelElement): Option[String] = Some("/* cant detect usage !! */")
+  override def asText(context: ModelElement): Option[String] = None
+
+  override def marker(stat: Stat): Patch = Utils.addMarker(stat, "can't detect usage")
 }
 
 private[privatiser] object AccessScope {
@@ -95,7 +102,9 @@ private[privatiser] final case class Scoped(privateScope: AccessScope, protected
     case Undefined => this
     case other: Scoped =>
       val privateWidened = this.privateScope.widen(other.privateScope)
-      if (privateWidened.symbol == Symbol.RootPackage) Public(privateWidened.reason)
+      if (privateWidened.symbol.displayName == "_root_")
+        print()
+      if (privateWidened.symbol.isRootPackage) Public(privateWidened.reason)
       else Scoped(privateWidened,protectedScope.widen(other.protectedScope), forceProtected || other.forceProtected)
   }
 }
