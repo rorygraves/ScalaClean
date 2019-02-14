@@ -1,4 +1,3 @@
-
 package scalaclean.test.references.allOutgoingReferences
 
 class Parent {
@@ -15,7 +14,7 @@ object Special {
   def myVar2_=(i: Int) = ()/* allOutgoingReferences(scalaclean/test/references/allOutgoingReferences/Special.`myVar2_=`().) - scala/Int# :: scalaclean/test/references/allOutgoingReferences/Special.`myVar2_=`().(i) */
 
   def apply() = 7
-  def unapply(a:Any) = Some(1,2)/* allOutgoingReferences(scalaclean/test/references/allOutgoingReferences/Special.unapply().) - scala/Any# :: scala/Some. :: scalaclean/test/references/allOutgoingReferences/Special.unapply().(a) */
+  def unapply(a:Any) = Some(1,2)/* allOutgoingReferences(scalaclean/test/references/allOutgoingReferences/Special.unapply().) - scala/Any# :: scala/Int# :: scala/Some. :: scala/Some.apply(). :: scala/Tuple2# :: scala/Tuple2.apply(). :: scalaclean/test/references/allOutgoingReferences/Special.unapply().(a) */
 
   def update(i: Int, j: Int) = ()/* allOutgoingReferences(scalaclean/test/references/allOutgoingReferences/Special.update().) - scala/Int# :: scalaclean/test/references/allOutgoingReferences/Special.update().(i) :: scalaclean/test/references/allOutgoingReferences/Special.update().(j) */
 
@@ -38,4 +37,4 @@ object XX {
   }
 
   Special(1) = 7
-}/* allOutgoingReferences(scalaclean/test/references/allOutgoingReferences/XX.) - local0 :: local1 :: local2 :: scala/Int# :: scala/Int#`+`(+4). :: scala/Predef.`???`(). :: scala/Predef.println(+1). :: scalaclean/test/references/allOutgoingReferences/Child# :: scalaclean/test/references/allOutgoingReferences/Child#`<init>`(). :: scalaclean/test/references/allOutgoingReferences/Child#bar(). :: scalaclean/test/references/allOutgoingReferences/Parent#foo(). :: scalaclean/test/references/allOutgoingReferences/Special. :: scalaclean/test/references/allOutgoingReferences/Special.`myVar1_=`(). :: scalaclean/test/references/allOutgoingReferences/Special.`myVar2_=`(). :: scalaclean/test/references/allOutgoingReferences/Special.myVar2(). :: scalaclean/test/references/allOutgoingReferences/Special.update(). :: scalaclean/test/references/allOutgoingReferences/XX.x. */
+}/* allOutgoingReferences(scalaclean/test/references/allOutgoingReferences/XX.) - local0 :: local1 :: local2 :: scala/Int# :: scala/Int#`+`(+4). :: scala/Predef.`???`(). :: scala/Predef.println(+1). :: scalaclean/test/references/allOutgoingReferences/Child# :: scalaclean/test/references/allOutgoingReferences/Child#`<init>`(). :: scalaclean/test/references/allOutgoingReferences/Child#bar(). :: scalaclean/test/references/allOutgoingReferences/Parent#foo(). :: scalaclean/test/references/allOutgoingReferences/Special. :: scalaclean/test/references/allOutgoingReferences/Special.`myVar1_=`(). :: scalaclean/test/references/allOutgoingReferences/Special.`myVar2_=`(). :: scalaclean/test/references/allOutgoingReferences/Special.apply(). :: scalaclean/test/references/allOutgoingReferences/Special.myVar2(). :: scalaclean/test/references/allOutgoingReferences/Special.unapply(). :: scalaclean/test/references/allOutgoingReferences/Special.update(). :: scalaclean/test/references/allOutgoingReferences/XX.x. */

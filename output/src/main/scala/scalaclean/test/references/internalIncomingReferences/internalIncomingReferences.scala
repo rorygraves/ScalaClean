@@ -13,8 +13,8 @@ object Special {
   def myVar2 = 1/* internalIncomingReferences(scalaclean/test/references/internalIncomingReferences/Special.myVar2().) - scalaclean/test/references/internalIncomingReferences/XX. */
   def myVar2_=(i: Int) = ()/* internalIncomingReferences(scalaclean/test/references/internalIncomingReferences/Special.`myVar2_=`().) - scalaclean/test/references/internalIncomingReferences/XX. */
 
-  def apply() = 7 /* MISSING*/
-  def unapply(a:Any) = Some(1,2)/* MISSING*/
+  def apply() = 7/* internalIncomingReferences(scalaclean/test/references/internalIncomingReferences/Special.apply().) - scalaclean/test/references/internalIncomingReferences/XX. */
+  def unapply(a:Any) = Some(1,2)/* internalIncomingReferences(scalaclean/test/references/internalIncomingReferences/Special.unapply().) - scalaclean/test/references/internalIncomingReferences/XX. */
 
   def update(i: Int, j: Int) = ()/* internalIncomingReferences(scalaclean/test/references/internalIncomingReferences/Special.update().) - scalaclean/test/references/internalIncomingReferences/XX. */
 

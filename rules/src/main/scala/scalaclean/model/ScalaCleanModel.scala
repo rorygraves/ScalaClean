@@ -7,7 +7,7 @@ import scalafix.internal.v1.InternalSemanticDoc
 import scalafix.v1.{SemanticDocument, Symbol, SymbolInformation}
 
 import scala.meta.internal.symtab.GlobalSymbolTable
-import scala.meta.{Decl, Defn, Member, Mod, Pat, Pkg, Source, Stat, Template, Term, Tree, Type}
+import scala.meta.{Decl, Defn, Member, Mod, Pat, Pkg, Position, Source, Stat, Template, Term, Tree, Type}
 import scala.reflect.ClassTag
 import scala.reflect.runtime.JavaUniverse
 
@@ -23,9 +23,9 @@ sealed trait ModelElement {
   def enclosing: List[ModelElement]
   def classOrEnclosing: ClassLike
 
-  def internalOutgoingReferences: List[(ModelElement, Tree)]
-  def internalIncomingReferences: List[(ModelElement, Tree)]
-  def allOutgoingReferences: List[(Option[ModelElement], Tree, Symbol)]
+  def internalOutgoingReferences: List[(ModelElement, RefersTo)]
+  def internalIncomingReferences: List[(ModelElement, RefersTo)]
+  def allOutgoingReferences: List[(Option[ModelElement], RefersTo)]
 
   def internalDirectOverrides: List[ModelElement]
   def internalTransitiveOverrides: List[ModelElement]
@@ -200,6 +200,7 @@ class ScalaCleanModel {
         private def visitEnclosingChildren(parent: ModelElementImpl, tree: Tree): Unit = {
           visitEnclosingChildren(List(parent), tree)
         }
+
         private def visitEnclosingChildren(parent: List[ModelElementImpl], tree: Tree): Unit = {
           val prev = enclosing
           enclosing = parent
@@ -279,18 +280,131 @@ class ScalaCleanModel {
               visitEnclosingChildren(fieldModels, tree)
             case _ =>
               val thisTreeSymbol = tree.symbol
-              if (!thisTreeSymbol.isNone)
-                if (enclosing.isEmpty) {
-                  val pos = tree.pos
-                  debug(s"cant add to parent = ${tree.getClass} ${pos.start} .. ${pos.end} - ${thisTreeSymbol}")
-                } else {
-                  if (enclosing.forall(_.symbol != thisTreeSymbol))
-                  enclosing foreach {
-                    _.addRefersTo(tree)
-                  }
-                }
+              foundSymbol(tree.symbol, tree)
               visitChildren(tree)
           }
+          //and synthetics
+          tree match {
+            case term: Term =>
+              term.synthetic foreach (visitSynthetic(_, term))
+            case _ => //ignore
+          }
+        }
+
+        def foundSymbol(symbol: Symbol, tree: Tree): Unit = {
+          if (!symbol.isNone)
+            if (enclosing.isEmpty) {
+              debug(s"cant add to parent  ${tree.getClass} ${tree.pos.start} .. ${tree.pos.end} synthetic:$inSynthetic - ${symbol}")
+            } else {
+              if (enclosing.forall(_.symbol != symbol))
+                enclosing foreach {
+                  _.addRefersTo(tree, symbol, inSynthetic)
+                }
+            }
+        }
+
+        var inSynthetic = false
+
+        def visitSynthetic(tree: SemanticTree, orig: Tree): Unit = {
+          val wasInSynthetic = inSynthetic
+          inSynthetic = true
+          tree match {
+            case NoTree =>
+            case LiteralTree(constant: Constant) =>
+
+            case IdTree(info: SymbolInformation) =>
+              foundSymbol(info.symbol, orig)
+
+            case SelectTree(qualifier: SemanticTree, id: IdTree) =>
+              visitSynthetic(qualifier, orig)
+              visitSynthetic(id, orig)
+
+            case ApplyTree(function: SemanticTree, arguments: List[SemanticTree]) =>
+              visitSynthetic(function, orig)
+              arguments foreach (visitSynthetic(_, orig))
+
+            case TypeApplyTree(function: SemanticTree, typeArguments: List[SemanticType]) =>
+              visitSynthetic(function, orig)
+              typeArguments foreach (visitType(_, orig))
+
+            case FunctionTree(parameters: List[IdTree], body: SemanticTree) =>
+              parameters foreach (visitSynthetic(_, orig))
+              visitSynthetic(body, orig)
+
+            case MacroExpansionTree(beforeExpansion: SemanticTree, tpe: SemanticType) =>
+              visitSynthetic(beforeExpansion, orig)
+              visitType(tpe, orig)
+
+            case OriginalSubTree(tree: scala.meta.Tree) =>
+            // we don't visit the original tree - that how we got here
+            //  so we have traversed it already
+            // or will when we return the the tree traversal
+            // visitTree(tree)
+            case OriginalTree(tree: scala.meta.Tree) =>
+            // we don't visit the original tree - that how we got here
+            //  so we have traversed it already
+            // or will when we return the the tree traversal
+            // visitTree(tree)
+          }
+          inSynthetic = wasInSynthetic
+        }
+
+        def visitType(tpe: SemanticType, tree: Tree): Unit = tpe match {
+
+          case TypeRef(prefix: SemanticType, symbol: Symbol, typeArguments: List[SemanticType]) =>
+            visitType(prefix, tree)
+            foundSymbol(symbol, tree)
+            typeArguments foreach {
+              visitType(_, tree)
+            }
+          case SingleType(prefix: SemanticType, symbol: Symbol) =>
+            visitType(prefix, tree)
+            foundSymbol(symbol, tree)
+          case ThisType(symbol: Symbol) =>
+            foundSymbol(symbol, tree)
+          case SuperType(prefix: SemanticType, symbol: Symbol) =>
+            visitType(prefix, tree)
+            foundSymbol(symbol, tree)
+          case ConstantType(constant: Constant) =>
+          case IntersectionType(types: List[SemanticType]) =>
+            types foreach {
+              visitType(_, tree)
+            }
+          case UnionType(types: List[SemanticType]) =>
+            types foreach {
+              visitType(_, tree)
+            }
+          case WithType(types: List[SemanticType]) =>
+            types foreach {
+              visitType(_, tree)
+            }
+          case StructuralType(tpe: SemanticType, declarations: List[SymbolInformation]) =>
+            visitType(tpe, tree)
+            //not sure it it worth visiting these
+            declarations foreach {
+              i =>
+                foundSymbol(i.symbol, tree)
+            }
+          case AnnotatedType(annotations: List[Annotation], tpe: SemanticType) =>
+            annotations foreach { a => visitType(a.tpe, tree) }
+            visitType(tpe, tree)
+          case ExistentialType(tpe: SemanticType, declarations: List[SymbolInformation]) =>
+            visitType(tpe, tree)
+            declarations foreach {
+              i =>
+                foundSymbol(i.symbol, tree)
+            }
+          case UniversalType(typeParameters: List[SymbolInformation], tpe: SemanticType) =>
+            typeParameters foreach {
+              i =>
+                foundSymbol(i.symbol, tree)
+            }
+            visitType(tpe, tree)
+          case ByNameType(tpe: SemanticType) =>
+            visitType(tpe, tree)
+          case RepeatedType(tpe: SemanticType) =>
+            visitType(tpe, tree)
+          case NoType =>
         }
       }
       analysisVisitor.visitDocument(doc.tree)
@@ -321,9 +435,8 @@ class ScalaCleanModel {
       assert(!symbol.isNone)
       assert(bySymbol.put(symbol, this).isEmpty, s"$symbol enclosing $enclosing this =$this")
 
-      def addRefersTo(tree: Tree): Unit = {
-        if (tree.symbol(doc) != symbol)
-          _refersTo ::= tree
+      def addRefersTo(tree: Tree, symbol: Symbol, isSynthetic: Boolean): Unit = {
+        _refersTo ::= RefersTo(tree, symbol, isSynthetic)
       }
 
       override protected def infoPosString: String = {
@@ -331,8 +444,8 @@ class ScalaCleanModel {
         s"${pos.startLine}:${pos.startColumn} - ${pos.endLine}:${pos.endColumn}"
       }
 
-      private var _refersTo = List.empty[Tree]
-      private var _refersFrom = List.empty[(ModelElementImpl, Tree)]
+      private var _refersTo = List.empty[RefersTo]
+      private var _refersFrom = List.empty[(ModelElementImpl, RefersTo)]
 
       assertBuilding
       elements += this
@@ -361,11 +474,10 @@ class ScalaCleanModel {
 
       private[builder] def build: Unit = {
         _refersTo foreach {
-          ref =>
-            val referred = ref.symbol(doc)
+          case r @RefersTo(ref, referred, isSynthetic)  =>
             val symToRef = bySymbol.get(referred)
             symToRef foreach {
-              _._refersFrom ::= (this, ref)
+              _._refersFrom ::= (this, r)
             }
         }
         _directOverrides flatMap bySymbol.get foreach {
@@ -381,20 +493,20 @@ class ScalaCleanModel {
       override def symbolInfo: SymbolInformation = doc.info(symbol).get
       override def symbolInfo(anotherSymbol: Symbol): SymbolInformation = doc.info(anotherSymbol).get
 
-      override def internalOutgoingReferences: List[(ModelElementImpl, Tree)] = {
+      override def internalOutgoingReferences: List[(ModelElementImpl, RefersTo)] = {
         assertBuildModelFinished
-        for (tree <- _refersTo;
-             ref <- bySymbol.get(tree.symbol(doc))) yield {
-          (ref, tree)
+        for (refersTo <- _refersTo;
+             ref <- bySymbol.get(refersTo.symbol)) yield {
+          (ref, refersTo)
         }
       }
-      override def allOutgoingReferences: List[(Option[ModelElementImpl], Tree, Symbol)] = {
+      override def allOutgoingReferences: List[(Option[ModelElementImpl], RefersTo)] = {
         assertBuildModelFinished
-        for (tree <- _refersTo) yield {
-          (bySymbol.get(tree.symbol(doc)), tree, tree.symbol(doc))
+        for (refersTo <- _refersTo) yield {
+          (bySymbol.get(refersTo.symbol), refersTo)
         }
       }
-      override def internalIncomingReferences: List[(ModelElementImpl, Tree)] = {
+      override def internalIncomingReferences: List[(ModelElementImpl, RefersTo)] = {
         assertBuildModelFinished
         _refersFrom
       }

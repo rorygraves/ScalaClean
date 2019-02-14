@@ -29,6 +29,7 @@ lazy val rules = project.settings(
 lazy val input = project.settings(
   addCompilerPlugin(scalafixSemanticdb),
   libraryDependencies += "org.scalaz" %% "scalaz-core" % "7.2.27",
+  scalacOptions += "-P:semanticdb:synthetics:on",
   skip in publish := true
 )
 

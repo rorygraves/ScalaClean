@@ -34,7 +34,6 @@ class Privatiser extends AbstractRule("Privatiser") {
       val incoming = {
         element.internalIncomingReferences map (_._1)
       }.toSet - element
-      //      println(s"Privatiser for $element START - process ${element.internalIncomingReferences}")
 
       val enclosing = element.classOrEnclosing
 
@@ -84,7 +83,6 @@ class Privatiser extends AbstractRule("Privatiser") {
           res = res.widen(parentVis)
       }
 
-      println(s"Privatiser for $element END - $res")
       res
     }
   }
