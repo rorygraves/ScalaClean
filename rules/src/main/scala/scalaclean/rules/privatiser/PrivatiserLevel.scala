@@ -102,8 +102,6 @@ private[privatiser] final case class Scoped(privateScope: AccessScope, protected
     case Undefined => this
     case other: Scoped =>
       val privateWidened = this.privateScope.widen(other.privateScope)
-      if (privateWidened.symbol.displayName == "_root_")
-        print()
       if (privateWidened.symbol.isRootPackage) Public(privateWidened.reason)
       else Scoped(privateWidened,protectedScope.widen(other.protectedScope), forceProtected || other.forceProtected)
   }

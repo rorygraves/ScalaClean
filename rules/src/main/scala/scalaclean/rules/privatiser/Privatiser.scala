@@ -7,7 +7,6 @@ import scalafix.patch.Patch
 import scalafix.v1
 import scalafix.v1.SemanticDocument
 
-import scala.meta.tokens.Token
 import scala.meta.{Import, Mod, Pat, Stat}
 
 class Privatiser extends AbstractRule("Privatiser") {
@@ -52,7 +51,7 @@ class Privatiser extends AbstractRule("Privatiser") {
         val access = if (isFromChild)
           Scoped.Protected(ref.symbol, s"accessed from $ref", false)
         else
-          Scoped.Private(SymbolUtils.findCommonParent(ref.symbol, element.symbol), s"accessed from $ref")
+          Scoped.Private(ref.symbol, s"accessed from $ref").widen( Scoped.Private(element.symbol, s"accessed from $ref"))
         res = res.widen(access)
       }
       //we must be visible to anything that overrides us
