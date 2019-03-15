@@ -26,6 +26,14 @@ lazy val rules = project.settings(
   libraryDependencies += "ch.epfl.scala" %% "scalafix-core" % V.scalafixVersion
 )
 
+lazy val command = project
+  .dependsOn(rules) 
+  .settings(
+    moduleName := "command",
+    libraryDependencies += "args4j" % "args4j" % "2.0.23", 
+    libraryDependencies += "ch.epfl.scala" %% "scalafix-core" % V.scalafixVersion
+  )
+
 lazy val input = project.settings(
   addCompilerPlugin(scalafixSemanticdb),
   libraryDependencies += "org.scalaz" %% "scalaz-core" % "7.2.27",
