@@ -102,7 +102,6 @@ sealed trait VarModel extends FieldModel{
 }
 //hooks for migration
 package impl {
-  type me  = ModelElement
   trait ModelElementHook extends ModelElement
   trait ClassLikeHook extends ClassLike with ModelElementHook
   trait ClassModelHook extends ClassModel with ClassLikeHook
