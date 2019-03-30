@@ -1,129 +1,44 @@
-package scalaclean.model
+package scalaclean.model.impl.v1
 
 import java.net.URLClassLoader
 
+import scalaclean.model
+import scalaclean.model.{RefersTo, ScalaCleanModel, Utils}
 import scalaclean.model.reflect.GlobalHelper
 import scalafix.internal.v1.InternalSemanticDoc
-import scalafix.v1.{SemanticDocument, Symbol, SymbolInformation}
+import scalafix.v1.{SemanticDocument, Symbol}
 
 import scala.meta.internal.symtab.GlobalSymbolTable
-import scala.meta.{Decl, Defn, Member, Mod, Pat, Pkg, Position, Source, Stat, Template, Term, Tree, Type}
+import scala.meta.{Decl, Defn, Mod, Pat, Pkg, Source, Stat, Template, Term, Tree, Type}
 import scala.reflect.ClassTag
 import scala.reflect.runtime.JavaUniverse
+import scalaclean.model.impl._
 
-trait Mark
-sealed trait ModelElement {
-  def symbol: Symbol
-
-  var mark : Mark = _
-  def name: String
-
-  //usually just one element. Can be >1 for  RHS of a val (a,b,c) = ...
-  //where a,b,c are the enclosing
-  def enclosing: List[ModelElement]
-  def classOrEnclosing: ClassLike
-
-  def internalOutgoingReferences: List[(ModelElement, RefersTo)]
-  def internalIncomingReferences: List[(ModelElement, RefersTo)]
-  def allOutgoingReferences: List[(Option[ModelElement], RefersTo)]
-
-  def internalDirectOverrides: List[ModelElement]
-  def internalTransitiveOverrides: List[ModelElement]
-
-  def allDirectOverrides: List[(Option[ModelElement], Symbol)]
-  def allTransitiveOverrides: List[(Option[ModelElement], Symbol)]
-
-  def internalDirectOverriddenBy: List[ModelElement]
-  def internalTransitiveOverriddenBy: List[ModelElement]
-
-  def symbolInfo: SymbolInformation
-  def symbolInfo(anotherSymbol: Symbol): SymbolInformation
-
-  //any block may contain many val of the same name!
-//  val foo = {
-//    if (1 == 1) {
-//      val x = 2
-//      x
-//    } else {
-//      val x = 3
-//      x
-//    }
-//  }
-  def fields: List[FieldModel]
-  def methods:  List[MethodModel]
-  def innerClassLike: Seq[ClassLike]
-
-
-  protected def infoTypeName: String
-  protected def infoPosString: String
-  protected def infoDetail = ""
-  protected def infoName = symbol.displayName
-
-  override def toString: String = s"$infoTypeName $infoName [$infoPosString] $infoDetail"
+object ModelHooks {
+  type ModelElement = ModelElementHook
+  type ClassLike = ClassLikeHook
+  type ClassModel = ClassModelHook
+  type ObjectModel = ObjectModelHook
+  type TraitModel = TraitModelHook
+  type MethodModel = MethodModelHook
+  type FieldModel = FieldModelHook
+  type ValModel = ValModelHook
+  type VarModel = VarModelHook
 }
-
-sealed trait ClassLike extends ModelElement {
-  def fullName: String
-
-  def xtends[T](implicit cls: ClassTag[T]): Boolean
-  def xtends(symbol: Symbol): Boolean
-
-  def directExtends: Set[Symbol]
-  def transitiveExtends: Set[Symbol]
-
-  def directExtendedBy: Set[ClassLike]
-  def transitiveExtendedBy: Set[ClassLike]
-}
-
-sealed trait ClassModel extends ClassLike {
-  override protected final def infoTypeName: String = "ClassModel"
-}
-sealed trait ObjectModel extends ClassLike with FieldModel{
-  override protected final def infoTypeName: String = "ObjectModel"
-  final override def otherFieldsInSameDeclaration = Nil
-  type fieldType  = ObjectModel
-}
-
-sealed trait TraitModel extends ClassLike{
-  override protected final def infoTypeName: String = "TraitModel"
-}
-
-sealed trait MethodModel extends ModelElement {
-  override protected final def infoTypeName: String = "MethodModel"
-}
-
-sealed trait FieldModel extends ModelElement{
-  type fieldType <: FieldModel
-  def otherFieldsInSameDeclaration: Seq[fieldType]
-}
-
-sealed trait ValModel extends FieldModel{
-  def isLazy: Boolean
-  type fieldType = ValModel
-  override protected final def infoTypeName: String = "ValModel"
-}
-
-sealed trait VarModel extends FieldModel{
-  type fieldType = VarModel
-  override protected final def infoTypeName: String = "VarModel"
-}
-
-class ScalaCleanModel {
-  def fromSymbol[T <: ModelElement](symbol: Symbol)(implicit tpe: ClassTag[T]): T =
+class ScalaCleanModelImpl extends ScalaCleanModel{
+  import ModelHooks._
+  def fromSymbol[T <: model.ModelElement](symbol: Symbol)(implicit tpe: ClassTag[T]): T =
     builder.bySymbol.get(symbol) match {
       case None => throw new IllegalArgumentException(s"Unknown symbol $symbol")
       case Some(x) if tpe.runtimeClass.isInstance(x) => x.asInstanceOf[T]
       case Some(x) => throw new IllegalArgumentException(s"Unexxpected symbol $symbol - found a $x when expecting a ${tpe.runtimeClass}")
     }
-  def getSymbol[T <: ModelElement](symbol: Symbol)(implicit tpe: ClassTag[T]): Option[T] =
+
+  def getSymbol[T <: model.ModelElement](symbol: Symbol)(implicit tpe: ClassTag[T]): Option[T] =
     builder.bySymbol.get(symbol) map {
       case x if tpe.runtimeClass.isInstance(x) => x.asInstanceOf[T]
       case x => throw new IllegalArgumentException(s"Unexxpected symbol $symbol - found a $x when expecting a ${tpe.runtimeClass}")
     }
-
-  def printStructure() = allOf[ClassLike] foreach {
-    cls => println(s"class ${cls.fullName}")
-  }
 
   def analyse(implicit doc: SemanticDocument) = builder.analyse
 
@@ -140,7 +55,7 @@ class ScalaCleanModel {
     ModelBuilder.elements.result()
   }
 
-  def allOf[T <: ModelElement: ClassTag]: List[T] = {
+  def allOf[T <: model.ModelElement : ClassTag]: List[T] = {
     val cls = implicitly[ClassTag[T]].runtimeClass
     all collect {
       case wanted if cls.isInstance(wanted) => wanted.asInstanceOf[T]
@@ -155,6 +70,7 @@ class ScalaCleanModel {
     import collection.mutable
 
     def debug(s: => String) = if (false) println(s)
+
     val ru = scala.reflect.runtime.universe.asInstanceOf[scala.reflect.runtime.JavaUniverse]
     val globalHelper = new GlobalHelper(ru.asInstanceOf[scala.reflect.runtime.JavaUniverse])
     val allKnownClasses = mutable.Map[String, ClassModelImpl]()
@@ -163,16 +79,20 @@ class ScalaCleanModel {
     val bySymbol = mutable.Map[Symbol, ModelElementImpl]()
 
     private var enclosing = List.empty[ModelElementImpl]
+
     private object access {
       val internalAccess = classOf[SemanticDocument].getMethod("internal")
       val classpathAccess = classOf[GlobalSymbolTable].getDeclaredField("classpath")
       classpathAccess.setAccessible(true)
     }
+
     def internalDoc(doc: SemanticDocument) =
       access.internalAccess.invoke(doc).asInstanceOf[InternalSemanticDoc]
+
     def symbolTable(doc: SemanticDocument) =
       internalDoc(doc).symtab
-    private [this] val cachedClassLoader = new java.util.IdentityHashMap[GlobalSymbolTable, ru.JavaMirror]
+
+    private[this] val cachedClassLoader = new java.util.IdentityHashMap[GlobalSymbolTable, ru.JavaMirror]
 
     def mirror(doc: SemanticDocument) = {
       val symbolTable = internalDoc(doc).symtab.asInstanceOf[GlobalSymbolTable]
@@ -425,7 +345,7 @@ class ScalaCleanModel {
         elements.result() foreach (_.build)
       }
 
-      private[ScalaCleanModel] val elements = List.newBuilder[ModelElementImpl]
+      private[ScalaCleanModelImpl] val elements = List.newBuilder[ModelElementImpl]
 
     }
 
@@ -450,19 +370,21 @@ class ScalaCleanModel {
       assertBuilding
       elements += this
 
-      override final def fields:List[FieldModel] = {
+      override final def fields: List[FieldModel] = {
         assertBuildModelFinished
 
         children.collect {
           case field: FieldModel => field
         }
       }
+
       override final def methods: List[MethodModel] = {
         assertBuildModelFinished
         children collect {
           case m: MethodModel => m
         }
       }
+
       override final def innerClassLike: Seq[ClassLike] = {
         assertBuildModelFinished
         children collect {
@@ -471,10 +393,9 @@ class ScalaCleanModel {
       }
 
 
-
       private[builder] def build: Unit = {
         _refersTo foreach {
-          case r @RefersTo(ref, referred, isSynthetic)  =>
+          case r@RefersTo(ref, referred, isSynthetic) =>
             val symToRef = bySymbol.get(referred)
             symToRef foreach {
               _._refersFrom ::= (this, r)
@@ -491,6 +412,7 @@ class ScalaCleanModel {
 
 
       override def symbolInfo: SymbolInformation = doc.info(symbol).get
+
       override def symbolInfo(anotherSymbol: Symbol): SymbolInformation = doc.info(anotherSymbol).get
 
       override def internalOutgoingReferences: List[(ModelElementImpl, RefersTo)] = {
@@ -500,16 +422,19 @@ class ScalaCleanModel {
           (ref, refersTo)
         }
       }
+
       override def allOutgoingReferences: List[(Option[ModelElementImpl], RefersTo)] = {
         assertBuildModelFinished
         for (refersTo <- _refersTo) yield {
           (bySymbol.get(refersTo.symbol), refersTo)
         }
       }
+
       override def internalIncomingReferences: List[(ModelElementImpl, RefersTo)] = {
         assertBuildModelFinished
         _refersFrom
       }
+
       private var _directOverrides = List.empty[Symbol]
       private var _transitiveOverrides = List.empty[Symbol]
       private var _directOverridden = List.empty[ModelElementImpl]
@@ -552,8 +477,8 @@ class ScalaCleanModel {
 
       protected def recordOverrides(directOverides: List[Symbol], transitiveOverrides: List[Symbol]) = {
         assertBuilding()
-        assert (_directOverrides eq Nil)
-        assert (_transitiveOverrides eq Nil)
+        assert(_directOverrides eq Nil)
+        assert(_transitiveOverrides eq Nil)
         _directOverrides = directOverides.distinct
         _transitiveOverrides = transitiveOverrides.distinct
       }
@@ -563,7 +488,7 @@ class ScalaCleanModel {
       }
       private var _children = List.empty[ModelElementImpl]
 
-      private[ScalaCleanModel] def children = _children
+      private[ScalaCleanModelImpl] def children = _children
 
       override def symbol: Symbol = stat.symbol(doc)
 
@@ -613,13 +538,14 @@ class ScalaCleanModel {
         }
       }
 
+      override def classOrEnclosing: ClassLike
     }
 
     abstract sealed class FieldModelImpl(defn: Stat, field: Pat.Var, allFields: Seq[Pat.Var],
-                                  enclosing: List[ModelElementImpl], doc: SemanticDocument) extends
+                                         enclosing: List[ModelElementImpl], doc: SemanticDocument) extends
       ModelElementImpl(defn, enclosing, doc) with FieldModel {
       self: FieldModel =>
-      require (allFields.nonEmpty)
+      require(allFields.nonEmpty)
 
       override def symbol: Symbol = field.symbol(doc)
 
@@ -632,19 +558,24 @@ class ScalaCleanModel {
       final override def otherFieldsInSameDeclaration: Seq[fieldType] =
         (allFields.filter(_ == field)) map (f => bySymbol(f.symbol(doc)).asInstanceOf[fieldType])
 
-      override def classOrEnclosing: ClassLike = enclosing.head.classOrEnclosing
+      override def classOrEnclosing: ClassLike = {
+        enclosing.head.classOrEnclosing
+      }
     }
+
     abstract class VarModelImpl(vr: Stat, field: Pat.Var, allFields: Seq[Pat.Var],
                                 enclosing: List[ModelElementImpl], doc: SemanticDocument) extends
       FieldModelImpl(vr, field, allFields, enclosing, doc) with VarModel {
       recordFieldOverrides("variable", field.name.value)
     }
+
     class VarModelDefn(vr: Defn.Var, field: Pat.Var, allFields: Seq[Pat.Var],
                        enclosing: List[ModelElementImpl], doc: SemanticDocument) extends
       VarModelImpl(vr, field, allFields, enclosing, doc) {
 
       override def isAbstract: Boolean = false
     }
+
     class VarModelDecl(vr: Decl.Var, field: Pat.Var, allFields: Seq[Pat.Var],
                        enclosing: List[ModelElementImpl], doc: SemanticDocument) extends
       VarModelImpl(vr, field, allFields, enclosing, doc) {
@@ -660,32 +591,37 @@ class ScalaCleanModel {
       override protected def infoDetail: String = s"lazy=$isLazy"
 
       override def isLazy: Boolean = val_mods.exists(_.isInstanceOf[Mod.Lazy])
+
       def val_mods: List[Mod]
     }
+
     class ValModelDefn(val valDef: Defn.Val, field: Pat.Var, allFields: Seq[Pat.Var],
                        enclosing: List[ModelElementImpl], doc: SemanticDocument) extends
-      ValModelImpl(valDef, field, allFields, enclosing, doc){
+      ValModelImpl(valDef, field, allFields, enclosing, doc) {
       override def val_mods = valDef.mods
+
       override def isAbstract: Boolean = false
     }
-    class ValModelDecl(val valDecl: Decl.Val, field: Pat.Var,  allFields: Seq[Pat.Var],
+
+    class ValModelDecl(val valDecl: Decl.Val, field: Pat.Var, allFields: Seq[Pat.Var],
                        enclosing: List[ModelElementImpl], doc: SemanticDocument) extends
-      ValModelImpl(valDecl, field, allFields, enclosing, doc){
+      ValModelImpl(valDecl, field, allFields, enclosing, doc) {
       override def val_mods = valDecl.mods
+
       override def isAbstract: Boolean = true
     }
 
     abstract class MethodModelImpl(stat: Stat, enclosing: List[ModelElementImpl], doc: SemanticDocument) extends
       ModelElementImpl(stat, enclosing, doc) with MethodModel {
 
-      private def paramsMatch (gSymParamss: List[List[JavaUniverse#Symbol]],metaParamss:  List[List[Term.Param]]) : Boolean = {
+      private def paramsMatch(gSymParamss: List[List[JavaUniverse#Symbol]], metaParamss: List[List[Term.Param]]): Boolean = {
         gSymParamss.size == metaParamss.size &&
           (gSymParamss zip metaParamss forall {
             case (gSymParams: List[JavaUniverse#Symbol], metaParams: List[Term.Param]) =>
               gSymParams.length == metaParams.length &&
                 (gSymParams zip metaParams forall {
                   case (gSymParam: JavaUniverse#Symbol, metaParam: Term.Param) =>
-                    assert (metaParam.decltpe.isDefined)
+                    assert(metaParam.decltpe.isDefined)
                     //TODO not a great compare
                     gSymParam.tpe.toString == metaParam.decltpe.get.toString
                 })
@@ -718,43 +654,62 @@ class ScalaCleanModel {
                 case _ => paramsMatch(symParams, defnParams)
               }
           }
-          assert (found.size == 1, s"could not match the method ${stat} from $simpleMethodMatch - found=$found - orig = $list")
+          assert(found.size == 1, s"could not match the method ${stat} from $simpleMethodMatch - found=$found - orig = $list")
           recordInheritance(found)
         case _ => // local cant override
 
       }
-      def method_mods : List[Mod]
-      def method_name : Term.Name
-      def method_tparams : List[Type.Param]
-      def method_paramss : List[List[Term.Param]]
-      def method_decltpe : Option[Type]
+
+      def method_mods: List[Mod]
+
+      def method_name: Term.Name
+
+      def method_tparams: List[Type.Param]
+
+      def method_paramss: List[List[Term.Param]]
+
+      def method_decltpe: Option[Type]
+
       def isAbstract: Boolean
 
       def paramsType = method_paramss map (_.map {
         param: Term.Param => param.symbol(doc)
       })
+
       override def classOrEnclosing: ClassLike = enclosing.head.classOrEnclosing
     }
+
     class MethodModelDefn(val defn: Defn.Def, enclosing: List[ModelElementImpl], doc: SemanticDocument) extends MethodModelImpl(defn, enclosing, doc) {
       def method_mods = defn.mods
+
       def method_name = defn.name
+
       def method_tparams = defn.tparams
-      def method_paramss  = defn.paramss
-      def method_decltpe =defn.decltpe
+
+      def method_paramss = defn.paramss
+
+      def method_decltpe = defn.decltpe
+
       def isAbstract = false
     }
 
     class MethodModelDecl(val decl: Decl.Def, enclosing: List[ModelElementImpl], doc: SemanticDocument) extends MethodModelImpl(decl, enclosing, doc) {
       def method_mods = decl.mods
+
       def method_name = decl.name
+
       def method_tparams = decl.tparams
-      def method_paramss  = decl.paramss
-      def method_decltpe =Some(decl.decltpe)
-      def isAbstract= true
+
+      def method_paramss = decl.paramss
+
+      def method_decltpe = Some(decl.decltpe)
+
+      def isAbstract = true
     }
 
     abstract sealed class ClassLikeImpl(defn: Defn, enclosing: List[ModelElementImpl], doc: SemanticDocument) extends ModelElementImpl(defn, enclosing, doc) with ClassLike {
-      private var _directExtendedBy = Set.empty[ClassLike]
+      private var _directExtendedBy = Set.empty[model.ClassLike]
+
       protected def template: Template
 
       override val directExtends: Set[Symbol] = (template.inits collect {
@@ -775,19 +730,20 @@ class ScalaCleanModel {
             }
           }
         }
+
         assertBuildModelFinished()
-        directExtends.foldLeft(directExtends){
+        directExtends.foldLeft(directExtends) {
           case (result: Set[Symbol], direct) =>
             result ++ xtends(direct)
         }
       }
 
-      override def directExtendedBy: Set[ClassLike] = {
+      override def directExtendedBy: Set[model.ClassLike] = {
         assertBuildModelFinished()
         _directExtendedBy
       }
 
-      override def transitiveExtendedBy: Set[ClassLike] = {
+      override def transitiveExtendedBy: Set[model.ClassLike] = {
         directExtendedBy ++ directExtendedBy flatMap (_.transitiveExtendedBy)
       }
 
@@ -803,18 +759,21 @@ class ScalaCleanModel {
 
       override def xtends[T](implicit cls: ClassTag[T]): Boolean = {
         //TODO what is the canonocal conversion?
-        xtends(Symbol(cls.runtimeClass.getName.replace('.','/')+"#"))
+        xtends(Symbol(cls.runtimeClass.getName.replace('.', '/') + "#"))
       }
+
       override def xtends(symbol: Symbol): Boolean = {
         transitiveExtends.contains(symbol)
       }
+
       def reflectSymbol = {
-        val jm = mirror(doc)//.asInstanceOf[JavaUniverse#Mirror]
+        val jm = mirror(doc)
+        //.asInstanceOf[JavaUniverse#Mirror]
         val javaName = fullName.
-          substring(0, fullName.length-1).
-          replace('#','.').
-          replace('.','.').
-        replace('/','.')
+          substring(0, fullName.length - 1).
+          replace('#', '.').
+          replace('.', '.').
+          replace('/', '.')
         val res = if (this.isInstanceOf[ObjectModelImpl]) jm.getRequiredModule(javaName)
         else jm.getRequiredClass(javaName)
         res
@@ -823,18 +782,20 @@ class ScalaCleanModel {
       override def classOrEnclosing: ClassLike = this
     }
 
-    class ClassModelImpl private[ScalaCleanModel](cls: Defn.Class, enclosing: List[ModelElementImpl], doc: SemanticDocument) extends ClassLikeImpl(cls, enclosing, doc) with ClassModel {
+    class ClassModelImpl private[ScalaCleanModelImpl](cls: Defn.Class, enclosing: List[ModelElementImpl], doc: SemanticDocument) extends ClassLikeImpl(cls, enclosing, doc) with ClassModel {
       override protected def template: Template = cls.templ
     }
 
-    class ObjectModelImpl private[ScalaCleanModel](cls: Defn.Object, enclosing: List[ModelElementImpl], doc: SemanticDocument) extends ClassLikeImpl(cls, enclosing, doc) with ObjectModel{
+    class ObjectModelImpl private[ScalaCleanModelImpl](cls: Defn.Object, enclosing: List[ModelElementImpl], doc: SemanticDocument) extends ClassLikeImpl(cls, enclosing, doc) with ObjectModel {
       override protected def template: Template = cls.templ
+
       recordFieldOverrides("object", cls.name.value)
     }
 
-    class TraitModelImpl private[ScalaCleanModel](cls: Defn.Trait, enclosing: List[ModelElementImpl], doc: SemanticDocument) extends ClassLikeImpl(cls, enclosing, doc) with TraitModel{
+    class TraitModelImpl private[ScalaCleanModelImpl](cls: Defn.Trait, enclosing: List[ModelElementImpl], doc: SemanticDocument) extends ClassLikeImpl(cls, enclosing, doc) with TraitModel {
       override protected def template: Template = cls.templ
     }
 
   }
+
 }

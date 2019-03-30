@@ -99,6 +99,8 @@ class DeadCodeRemover extends AbstractRule("ScalaCleanDeadCodeRemover") {
             case (ref, _) => markUsed(ref, purpose, obj :: path)
           }
           markRhs(obj, obj :: path)
+          //remove this after migration
+        case _ : impl.FieldModelHook => ???
       }
     }
 

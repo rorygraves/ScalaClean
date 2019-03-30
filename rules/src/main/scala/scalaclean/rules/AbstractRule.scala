@@ -1,10 +1,10 @@
 package scalaclean.rules
 
-import scalaclean.model.{Mark, ModelElement, ModelHelper, ScalaCleanModel}
+import scalaclean.model._
 import scalafix.v1.SemanticRule
 
 abstract class AbstractRule(name:String) extends SemanticRule(name) {
-  var model: ScalaCleanModel = _
+  var model: ProjectModel = _
   type Colour <: Mark
 
   final override def beforeStart(): Unit = {

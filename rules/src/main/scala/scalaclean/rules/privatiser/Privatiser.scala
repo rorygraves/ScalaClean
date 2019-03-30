@@ -100,6 +100,8 @@ class Privatiser extends AbstractRule("Privatiser") {
           case _: ClassLike => true
           case _: MethodModel => false
           case _: FieldModel => throw new IllegalStateException(s"handlerPats should be called - $modelElement")
+          //remove this after migration
+          case _ : impl.ModelElementHook => ???
         }
         (patch, rewriteContent)
       }

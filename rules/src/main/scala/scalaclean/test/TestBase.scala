@@ -11,7 +11,7 @@ import scala.meta.{Decl, Defn, Import, Pat, Pkg, Stat, Term, Tree}
   * needs to be run after ScalaCleanTestAnalysis
   */
 abstract class TestBase(name: String) extends SemanticRule(name) {
-  var model: ScalaCleanModel = _
+  var model: ProjectModel = _
 
   override def beforeStart(): Unit = {
     println(s"Test Rule $name beforeStart START")
