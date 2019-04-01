@@ -164,7 +164,7 @@ abstract sealed class ParsedClassLike(defn: Defn, enclosing: List[ParsedElement]
 
 }
 
-class ParsedClass(cls: Defn.Class, enclosing: List[ParsedElement], doc: SemanticDocument) extends ParsedClassLike(cls, enclosing, doc) {
+class ParsedClassImpl(cls: Defn.Class, enclosing: List[ParsedElement], doc: SemanticDocument) extends ParsedClassLike(cls, enclosing, doc) {
   override protected def template: Template = cls.templ
 }
 

@@ -13,7 +13,7 @@ class ExtraParsedData(parser: ParserImpl) {
       case v: ParsedObjectImpl => recordFieldOverrides(element, "object", v.cls.name.value)
       case m: ParsedMethod => recordMethodOverrides(m)
       case t: ParsedTraitImpl =>
-      case t: ParsedClass =>
+      case t: ParsedClassImpl =>
     }
   }
   import parser.internalAccess.ru

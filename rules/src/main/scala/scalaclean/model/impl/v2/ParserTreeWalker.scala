@@ -52,7 +52,7 @@ class ParserTreeWalker(parser: ParserImpl, implicit val doc: SemanticDocument) {
         recordAndVisitChildren(parent, tree)
       case cls: Defn.Class =>
         val sym = cls.symbol
-        val parent = new ParsedClass(cls, enclosing, doc)
+        val parent = new ParsedClassImpl(cls, enclosing, doc)
         recordAndVisitChildren(parent, tree)
       case cls: Defn.Trait =>
         val sym = cls.symbol
