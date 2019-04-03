@@ -3,7 +3,7 @@ package scalaclean.model.impl.v1
 import java.net.URLClassLoader
 
 import scalaclean.model
-import scalaclean.model.{RefersTo, ScalaCleanModel, Utils}
+import scalaclean.model.{Refers, ScalaCleanModel, Utils}
 import scalaclean.model.reflect.GlobalHelper
 import scalafix.internal.v1.InternalSemanticDoc
 import scalafix.v1.{SemanticDocument, Symbol}
@@ -356,7 +356,7 @@ class ScalaCleanModelImpl extends ScalaCleanModel{
       assert(bySymbol.put(symbol, this).isEmpty, s"$symbol enclosing $enclosing this =$this")
 
       def addRefersTo(tree: Tree, symbol: Symbol, isSynthetic: Boolean): Unit = {
-        _refersTo ::= RefersTo(tree, symbol, isSynthetic)
+        _refersTo ::= new RefersImpl(this.symbol, symbol, isSynthetic)
       }
 
       override protected def infoPosString: String = {
@@ -364,8 +364,8 @@ class ScalaCleanModelImpl extends ScalaCleanModel{
         s"${pos.startLine}:${pos.startColumn} - ${pos.endLine}:${pos.endColumn}"
       }
 
-      private var _refersTo = List.empty[RefersTo]
-      private var _refersFrom = List.empty[(ModelElementImpl, RefersTo)]
+      private var _refersTo = List.empty[Refers]
+      private var _refersFrom = List.empty[(ModelElementImpl, Refers)]
 
       assertBuilding
       elements += this
@@ -395,10 +395,10 @@ class ScalaCleanModelImpl extends ScalaCleanModel{
 
       private[builder] def build: Unit = {
         _refersTo foreach {
-          case r@RefersTo(ref, referred, isSynthetic) =>
-            val symToRef = bySymbol.get(referred)
+          case ref: Refers=>
+            val symToRef = bySymbol.get(ref.toSymbol)
             symToRef foreach {
-              _._refersFrom ::= (this, r)
+              _._refersFrom ::= (this, ref)
             }
         }
         _directOverrides flatMap bySymbol.get foreach {
@@ -415,22 +415,22 @@ class ScalaCleanModelImpl extends ScalaCleanModel{
 
       override def symbolInfo(anotherSymbol: Symbol): SymbolInformation = doc.info(anotherSymbol).get
 
-      override def internalOutgoingReferences: List[(ModelElementImpl, RefersTo)] = {
+      override def internalOutgoingReferences: List[(ModelElementImpl, Refers)] = {
         assertBuildModelFinished
         for (refersTo <- _refersTo;
-             ref <- bySymbol.get(refersTo.symbol)) yield {
+             ref <- bySymbol.get(refersTo.toSymbol)) yield {
           (ref, refersTo)
         }
       }
 
-      override def allOutgoingReferences: List[(Option[ModelElementImpl], RefersTo)] = {
+      override def allOutgoingReferences: List[(Option[ModelElementImpl], Refers)] = {
         assertBuildModelFinished
         for (refersTo <- _refersTo) yield {
-          (bySymbol.get(refersTo.symbol), refersTo)
+          (bySymbol.get(refersTo.toSymbol), refersTo)
         }
       }
 
-      override def internalIncomingReferences: List[(ModelElementImpl, RefersTo)] = {
+      override def internalIncomingReferences: List[(ModelElementImpl, Refers)] = {
         assertBuildModelFinished
         _refersFrom
       }

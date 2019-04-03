@@ -33,7 +33,7 @@ class Test_internalOutgoingReferences extends TestCommon("Test_internalOutgoingR
   */
 class Test_allOutgoingReferences extends TestCommon("Test_allOutgoingReferences") {
   def visit(modelElement: ModelElement): String = {
-    modelElement.allOutgoingReferences.map(_._2.symbol.value).distinct.sorted match  {
+    modelElement.allOutgoingReferences.map(_._2.toSymbol.value).distinct.sorted match  {
       case Nil => ""
       case refs => refs.mkString(s"allOutgoingReferences(${modelElement.symbol.value}) - "," :: ", "")
     }

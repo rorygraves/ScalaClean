@@ -1,6 +1,6 @@
 package scalaclean.model.impl.v2
 
-import scalaclean.model.RefersTo
+import scalaclean.model.Refers
 import scalafix.v1._
 
 import scala.meta.{Decl, Defn, Mod, Pat, Stat, Template, Term, Tree, Type}
@@ -9,7 +9,7 @@ sealed abstract class ParsedElement(val stat: Stat, val enclosing: List[ParsedEl
   assert(!symbol.isNone)
 
   def addRefersTo(tree: Tree, symbol: Symbol, isSynthetic: Boolean): Unit = {
-    _refersTo ::= RefersTo(tree, symbol, isSynthetic)
+    _refersTo ::= (symbol, isSynthetic)
   }
 
   def infoPosString: String = {
@@ -17,14 +17,19 @@ sealed abstract class ParsedElement(val stat: Stat, val enclosing: List[ParsedEl
     s"${pos.startLine}:${pos.startColumn} - ${pos.endLine}:${pos.endColumn}"
   }
 
-  private var _refersTo = List.empty[RefersTo]
+  private var _refersTo = List.empty[(Symbol, Boolean)]
+  def refersTo = _refersTo
 
   private var _directOverrides = List.empty[Symbol]
+  private var _transitiveOverrides = List.empty[Symbol]
 
   def recordOverrides(directOverides: List[Symbol], transitiveOverrides: List[Symbol]) = {
     assert(_directOverrides eq Nil)
     _directOverrides = directOverides.distinct
+    _transitiveOverrides = (transitiveOverrides ++ directOverides).distinct
   }
+  def directOverrides = _directOverrides
+  def transitiveOverrides = _transitiveOverrides
 
   def symbol: Symbol = stat.symbol(doc)
 }

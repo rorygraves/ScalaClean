@@ -7,9 +7,9 @@ import scala.meta.inputs.Input
 
 
 class ParsedWriter(path: Path, projectRoot: Path) {
-  val elementsFile = Files.newBufferedWriter(path.resolve("scalaclean-elements.csv"),
+  val elementsFile = Files.newBufferedWriter(path.resolve(IoTokens.fileElements),
     StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.WRITE)
-  val relationshipsFile = Files.newBufferedWriter(path.resolve("scalaclean-elements.csv"),
+  val relationshipsFile = Files.newBufferedWriter(path.resolve(IoTokens.fileRelationships ),
     StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.WRITE)
 
   def writeElement(element: ParsedElement): Unit = {
@@ -57,7 +57,18 @@ class ParsedWriter(path: Path, projectRoot: Path) {
     elementsFile.write(s"$typeId,${e.symbol.value},${inputFile},${e.stat.pos.start},${e.stat.pos.end}")
 
     e.enclosing foreach { parent =>
-      relationshipsFile.write(s"${e.symbol.value},${IoTokens.relChild},${parent.symbol.value}}")
+      relationshipsFile.write(s"${e.symbol.value},${IoTokens.relWithin},${parent.symbol.value}}")
+      relationshipsFile.newLine()
+    }
+    e.refersTo foreach { case (to, synthetic) =>
+      relationshipsFile.write(s"${e.symbol.value},${IoTokens.relRefers},${to.value}},${synthetic}}")
+      relationshipsFile.newLine()
+    }
+    val directOverrides = e.directOverrides
+    val transOverrides = e.transitiveOverrides
+    transOverrides foreach { over =>
+      val isDirect = directOverrides.contains(over)
+      relationshipsFile.write(s"${e.symbol.value},${IoTokens.relOverrides},${over.value}},$isDirect")
       relationshipsFile.newLine()
     }
   }

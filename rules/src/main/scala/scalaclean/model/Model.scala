@@ -1,5 +1,6 @@
 package scalaclean.model
 
+import scalaclean.model.impl.OverridesImpl
 import scalaclean.model.impl.v1.ScalaCleanModelImpl
 import scalafix.v1.{SemanticDocument, Symbol, SymbolInformation}
 
@@ -19,9 +20,21 @@ sealed trait ModelElement extends Ordered[ModelElement]{
   def enclosing: List[ModelElement]
   def classOrEnclosing: ClassLike
 
-  def internalOutgoingReferences: List[(ModelElement, RefersTo)]
-  def internalIncomingReferences: List[(ModelElement, RefersTo)]
-  def allOutgoingReferences: List[(Option[ModelElement], RefersTo)]
+  //start target APIs
+  def outgoingReferences: Iterable[Refers] = allOutgoingReferences map (_._2)
+  def overrides: Iterable[Overrides] = {
+    val direct = (allDirectOverrides map (_._2)).toSet
+    val thisSym = symbol
+    allTransitiveOverrides map {
+      case (_, sym) => new OverridesImpl(thisSym, sym, direct.contains(sym))
+    }
+  }
+  //end target APIs
+
+  //start old APIs
+  def internalOutgoingReferences: List[(ModelElement, Refers)]
+  def internalIncomingReferences: List[(ModelElement, Refers)]
+  def allOutgoingReferences: List[(Option[ModelElement], Refers)]
 
   def internalDirectOverrides: List[ModelElement]
   def internalTransitiveOverrides: List[ModelElement]
@@ -31,6 +44,7 @@ sealed trait ModelElement extends Ordered[ModelElement]{
 
   def internalDirectOverriddenBy: List[ModelElement]
   def internalTransitiveOverriddenBy: List[ModelElement]
+  //end old APIs
 
   def symbolInfo: SymbolInformation
   def symbolInfo(anotherSymbol: Symbol): SymbolInformation
