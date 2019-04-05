@@ -141,11 +141,14 @@ private[v2] trait LegacyExtends {
 
   override def directExtendedBy: Set[model.ClassLike] = {
     (extendedBy collect {
-      case e if e.isDirect => e.toElement.get
+      case e if e.isDirect => e.fromElement
     }) toSet
   }
 
-  override def transitiveExtendedBy: Set[model.ClassLike] = ???
+  override def transitiveExtendedBy: Set[model.ClassLike] = {
+    (extendedBy map {_.fromElement
+    }) toSet
+  }
 
 }
 
