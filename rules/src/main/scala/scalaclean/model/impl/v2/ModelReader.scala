@@ -63,7 +63,7 @@ object ModelReader {
 
         val basicInfo = BasicElementInfo(symbol,src,start,end)
 
-        var idx = 5
+        val idx = 5
         val ele:ElementModelImpl = typeId match {
           case IoTokens.typeObject =>
             new ObjectModelImpl(basicInfo, relationships)
@@ -72,11 +72,19 @@ object ModelReader {
           case IoTokens.typeClass =>
             new ClassModelImpl(basicInfo, relationships)
           case IoTokens.typeVal =>
-            new ValModelImpl(basicInfo, relationships)
+            val isAbstract = tokens(idx).toBoolean
+            val valName = tokens(idx+1).intern()
+            val isLazy = tokens(idx).toBoolean
+            new ValModelImpl(basicInfo, relationships, valName, isAbstract, isLazy)
           case IoTokens.typeVar=>
-            new VarModelImpl(basicInfo, relationships)
+            val isAbstract = tokens(idx).toBoolean
+            val varName = tokens(idx+1).intern()
+            new VarModelImpl(basicInfo, relationships, varName, isAbstract)
           case IoTokens.typeDef =>
-            new MethodModelImpl(basicInfo, relationships)
+            val isAbstract = tokens(idx).toBoolean
+            val methodName = tokens(idx+1).intern()
+            val hasDeclaredType = tokens(idx+2).toBoolean
+            new MethodModelImpl(basicInfo, relationships, methodName, isAbstract, hasDeclaredType)
           case other =>
             throw new IllegalArgumentException("other")
         }
