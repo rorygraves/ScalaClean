@@ -2,6 +2,7 @@ package scalaclean.model
 
 import scalaclean.model.impl.OverridesImpl
 import scalaclean.model.impl.v1.ScalaCleanModelImpl
+import scalaclean.model.impl.v2.ParserImpl
 import scalafix.v1.{SemanticDocument, Symbol, SymbolInformation}
 
 import scala.reflect.ClassTag
@@ -130,12 +131,15 @@ package impl {
   trait VarModelHook extends VarModel with FieldModelHook
 }
 object ScalaCleanModel {
-  private val version = 1
-  def createParseModel: ParseModel = new ScalaCleanModelImpl
+  private val version = 2
+  def createParseModel: ParseModel =
+    if (version == 1) new ScalaCleanModelImpl
+    else new ParserImpl
 }
 trait ParseModel {
   def analyse(implicit doc: SemanticDocument): Unit
   def finishedParsing(): Unit
+  //FIXME only a short term API
   def asProjectModel: ProjectModel
 }
 trait ProjectModel {
@@ -144,12 +148,10 @@ trait ProjectModel {
   def getSymbol[T <: ModelElement](symbol: Symbol)(implicit tpe: ClassTag[T]): Option[T]
 
   def size: Int
-  def allOf[T <: ModelElement : ClassTag]: List[T]
+  def allOf[T <: ModelElement : ClassTag]: Iterator[T]
   def printStructure() = allOf[ClassLike] foreach {
     cls => println(s"class ${cls.fullName}")
   }
-
-
 }
 trait ScalaCleanModel extends ParseModel with ProjectModel {
   def asProjectModel: ProjectModel = this

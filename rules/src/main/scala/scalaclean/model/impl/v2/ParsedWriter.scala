@@ -1,16 +1,23 @@
 package scalaclean.model.impl.v2
 
 import java.io.BufferedWriter
-import java.nio.file.{Files, Path, StandardOpenOption}
+import java.nio.file.{Files, Path, Paths, StandardOpenOption}
 
 import scala.meta.inputs.Input
 
 
 class ParsedWriter(path: Path, projectRoot: Path) {
-  val elementsFile = Files.newBufferedWriter(path.resolve(IoTokens.fileElements),
-    StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.WRITE)
-  val relationshipsFile = Files.newBufferedWriter(path.resolve(IoTokens.fileRelationships ),
-    StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.WRITE)
+  val dir = projectRoot.resolve(path).toAbsolutePath
+  println(s" writing to dir $dir")
+  Files.createDirectories(dir)
+  val ele = dir.resolve(IoTokens.fileElements).toAbsolutePath
+  val rels= dir.resolve(IoTokens.fileRelationships ).toAbsolutePath
+  println(s" writing elements $ele")
+  val elementsFile = Files.newBufferedWriter(ele,
+    StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.WRITE, StandardOpenOption.CREATE)
+  println(s" writing relationships $rels")
+  val relationshipsFile = Files.newBufferedWriter(rels,
+    StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.WRITE, StandardOpenOption.CREATE)
 
   def writeElement(element: ParsedElement): Unit = {
     element match {
@@ -25,21 +32,21 @@ class ParsedWriter(path: Path, projectRoot: Path) {
         writeTraitImpl(e)
         writeEnd()
       case e: ParsedClassImpl =>
-        writeElementImpl(e, IoTokens.typeTrait)
+        writeElementImpl(e, IoTokens.typeClass)
         writeClassLike(e)
         writeClassImpl(e)
         writeEnd()
       case e: ParsedMethod =>
-        writeElementImpl(e, IoTokens.typeTrait)
+        writeElementImpl(e, IoTokens.typeMethod)
         writeMethod(e)
         writeEnd()
       case e: ParsedVal =>
-        writeElementImpl(e, IoTokens.typeTrait)
+        writeElementImpl(e, IoTokens.typeVal)
         writeField(e)
         writeVal(e)
         writeEnd()
       case e: ParsedVar =>
-        writeElementImpl(e, IoTokens.typeTrait)
+        writeElementImpl(e, IoTokens.typeVar)
         writeField(e)
         writeVar(e)
         writeEnd()
@@ -52,23 +59,25 @@ class ParsedWriter(path: Path, projectRoot: Path) {
   private def writeElementImpl(e: ParsedElement, typeId: String): Unit = {
     val inputFile = e.doc.input match {
       case file: Input.File => file.path.toNIO.toAbsolutePath.relativize(projectRoot)
-      case _  => ???
+      case file: Input.VirtualFile => Paths.get(file.path)
+      case x  =>
+        throw new IllegalStateException(s"unexpected input type ${x.getClass}")
     }
     elementsFile.write(s"$typeId,${e.symbol.value},${inputFile},${e.stat.pos.start},${e.stat.pos.end}")
 
     e.enclosing foreach { parent =>
-      relationshipsFile.write(s"${e.symbol.value},${IoTokens.relWithin},${parent.symbol.value}}")
+      relationshipsFile.write(s"${e.symbol.value},${IoTokens.relWithin},${parent.symbol.value}")
       relationshipsFile.newLine()
     }
     e.refersTo foreach { case (to, synthetic) =>
-      relationshipsFile.write(s"${e.symbol.value},${IoTokens.relRefers},${to.value}},${synthetic}}")
+      relationshipsFile.write(s"${e.symbol.value},${IoTokens.relRefers},${to.value},$synthetic")
       relationshipsFile.newLine()
     }
     val directOverrides = e.directOverrides
     val transOverrides = e.transitiveOverrides
     transOverrides foreach { over =>
       val isDirect = directOverrides.contains(over)
-      relationshipsFile.write(s"${e.symbol.value},${IoTokens.relOverrides},${over.value}},$isDirect")
+      relationshipsFile.write(s"${e.symbol.value},${IoTokens.relOverrides},${over.value},$isDirect")
       relationshipsFile.newLine()
     }
   }
@@ -80,7 +89,7 @@ class ParsedWriter(path: Path, projectRoot: Path) {
     transExtends foreach {
       ext =>
         val isDirect = directExtends.contains(ext)
-        relationshipsFile.write(s"${c.symbol.value},${IoTokens.relExtends},${ext.value}},$isDirect")
+        relationshipsFile.write(s"${c.symbol.value},${IoTokens.relExtends},${ext.value},$isDirect")
         relationshipsFile.newLine()
     }
 
@@ -89,13 +98,13 @@ class ParsedWriter(path: Path, projectRoot: Path) {
   private def writeTraitImpl(o: ParsedTraitImpl): Unit = {}
   private def writeClassImpl(o: ParsedClassImpl): Unit = {}
   private def writeMethod(o: ParsedMethod): Unit = {
-    elementsFile.write(s",${o.isAbstract}},${o.method_name}},${o.method_decltpe.isDefined}}")
+    elementsFile.write(s",${o.isAbstract},${o.method_name},${o.method_decltpe.isDefined}")
   }
   private def writeField(o: ParsedField): Unit = {
-    elementsFile.write(s",${o.isAbstract}},${o.field.name}}")
+    elementsFile.write(s",${o.isAbstract},${o.field.name}")
   }
   private def writeVal(o: ParsedVal): Unit = {
-    elementsFile.write(s",${o.isLazy}}")
+    elementsFile.write(s",${o.isLazy}")
   }
   private def writeVar(o: ParsedVar): Unit = {}
 

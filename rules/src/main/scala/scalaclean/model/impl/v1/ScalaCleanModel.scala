@@ -55,9 +55,9 @@ class ScalaCleanModelImpl extends ScalaCleanModel{
     ModelBuilder.elements.result()
   }
 
-  def allOf[T <: model.ModelElement : ClassTag]: List[T] = {
+  def allOf[T <: model.ModelElement : ClassTag]: Iterator[T] = {
     val cls = implicitly[ClassTag[T]].runtimeClass
-    all collect {
+    all.iterator collect {
       case wanted if cls.isInstance(wanted) => wanted.asInstanceOf[T]
     }
   }

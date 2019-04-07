@@ -1,6 +1,6 @@
 package scalaclean.model.impl.v2
 
-import java.nio.file.Path
+import java.nio.file.{Path, Paths}
 
 import scalaclean.model._
 import scalafix.v1.{SemanticDocument, Symbol}
@@ -18,7 +18,13 @@ class ParserImpl extends ParseModel {
     writer.close()
   }
 
-  override def asProjectModel: ProjectModel = ???
+  override def asProjectModel: ProjectModel = {
+    val projectsRoot = Paths.get("s:/temp")
+    val myPath = Paths.get("input/src/main/scala")
+    writeToFile(myPath, projectsRoot)
+
+    new Projects(projectsRoot,myPath)
+  }
 
   private[v2] val internalAccess = new InternalAccess()
   private[v2] val additionalDataBuilder = new ExtraParsedData(this)

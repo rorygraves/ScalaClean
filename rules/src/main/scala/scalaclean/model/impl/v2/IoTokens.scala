@@ -12,7 +12,7 @@ private[v2] object IoTokens {
   val typeObject = "object"
   val typeClass = "class"
   val typeTrait = "trait"
-  val typeDef = "def"
+  val typeMethod = "def"
   val typeVal = "val"
   val typeVar = "var"
 

@@ -5,6 +5,7 @@ import scalaclean.model.impl.{ExtendsImpl, OverridesImpl, RefersImpl, WithinImpl
 import scalaclean.model.{Extends, Overrides, Reference, Refers}
 import scalafix.v1.{Symbol, SymbolInformation}
 
+import scala.meta.{Decl, Defn, Tree}
 import scala.reflect.ClassTag
 
 
@@ -31,6 +32,9 @@ private[v2] case class BasicRelationshipInfo(
                                               within: Map[Symbol, List[WithinImpl]]) {
   def complete(elements: Map[Symbol, ElementModelImpl]): Unit ={
     refers.values.foreach(_.foreach(_.complete(elements)))
+    extnds.values.foreach(_.foreach(_.complete(elements)))
+    overrides.values.foreach(_.foreach(_.complete(elements)))
+    within.values.foreach(_.foreach(_.complete(elements)))
   }
 
   def byTo = {
@@ -163,7 +167,7 @@ private[impl] abstract class ElementModelImpl(info: BasicElementInfo, relationsh
       _.fromElement.asInstanceOf[ElementModelImpl]
     }
     children = relsTo.within.getOrElse(symbol, Nil) map {
-      _.toElement.asInstanceOf[ElementModelImpl]
+      _.toElement.get.asInstanceOf[ElementModelImpl]
     }
     refersTo = relsFrom.refers.getOrElse(symbol, Nil)
     refersFrom = relsTo.refers.getOrElse(symbol, Nil)
@@ -195,9 +199,9 @@ private[impl] abstract class ElementModelImpl(info: BasicElementInfo, relationsh
 
   override def classOrEnclosing: ClassLike = enclosing.head.classOrEnclosing
 
-  override def symbolInfo: SymbolInformation = project.symbolInfo(symbol)
+  override def symbolInfo: SymbolInformation = project.symbolInfo(this, symbol)
 
-  override def symbolInfo(anotherSymbol: Symbol): SymbolInformation = project.symbolInfo(anotherSymbol)
+  override def symbolInfo(anotherSymbol: Symbol): SymbolInformation = project.symbolInfo(this, anotherSymbol)
 
   override def fields: List[model.FieldModel] = children collect {
     case f: FieldModelImpl => f
@@ -210,10 +214,20 @@ private[impl] abstract class ElementModelImpl(info: BasicElementInfo, relationsh
   override def innerClassLike: Seq[model.ClassLike] = children collect {
     case c: ClassLikeModelImpl => c
   }
+  protected def typeName: String
 
-  override protected def infoTypeName: String = ???
+  def treeType: ClassTag[ _ <: Tree]
+  def tree = {
+    val tag = treeType
+    source.treeAt(offsetStart, offsetEnd)(tag)
+  }
+  private val offsetStart = info.startPos
+  private val offsetEnd = info.endPos
+  override protected def infoPosString: String = {
+    val pos = tree.pos
+    s"${pos.startLine}:${pos.startColumn} - ${pos.endLine}:${pos.endColumn}"
 
-  override protected def infoPosString: String = ???
+  }
 }
 
 abstract class ClassLikeModelImpl(info: BasicElementInfo, relationships: BasicRelationshipInfo) extends ElementModelImpl(info, relationships)
@@ -251,26 +265,77 @@ abstract class FieldModelImpl(info: BasicElementInfo, relationships: BasicRelati
   override def otherFieldsInSameDeclaration: Seq[fieldType] = ???
 }
 
+object ClassModelImpl {
+  val treeType = ClassTag[Defn.Class](classOf[Defn.Class])
+}
 class ClassModelImpl(info: BasicElementInfo, relationships: BasicRelationshipInfo)
-  extends ClassLikeModelImpl(info, relationships) with ClassModel
+  extends ClassLikeModelImpl(info, relationships) with ClassModel {
+  override protected def typeName: String = "class"
 
+  override def treeType: ClassTag[Defn.Class] = ClassModelImpl.treeType
+}
+
+object ObjectModelImpl {
+  val treeType = ClassTag[Defn.Object](classOf[Defn.Object])
+}
 class ObjectModelImpl(info: BasicElementInfo, relationships: BasicRelationshipInfo)
-  extends ClassLikeModelImpl(info, relationships) with ObjectModel
+  extends ClassLikeModelImpl(info, relationships) with ObjectModel{
+  override protected def typeName: String = "object"
 
+  override def treeType: ClassTag[Defn.Object] = ObjectModelImpl.treeType
+}
+
+object TraitModelImpl {
+  val treeType = ClassTag[Defn.Trait](classOf[Defn.Trait])
+}
 class TraitModelImpl(info: BasicElementInfo, relationships: BasicRelationshipInfo)
-  extends ClassLikeModelImpl(info, relationships) with TraitModel
+  extends ClassLikeModelImpl(info, relationships) with TraitModel{
+  override protected def typeName: String = "trait"
 
+  override def treeType: ClassTag[Defn.Trait] = TraitModelImpl.treeType
+}
+
+object MethodModelImpl {
+  val treeAbstractType = ClassTag[Decl.Def](classOf[Decl.Def])
+  val treeConcreteType = ClassTag[Defn.Def](classOf[Defn.Def])
+}
 class MethodModelImpl(info: BasicElementInfo, relationships: BasicRelationshipInfo,
                       val methodName: String, val isAbstract: Boolean, val hasDeclaredType: Boolean)
-  extends ElementModelImpl(info, relationships) with MethodModel
+  extends ElementModelImpl(info, relationships) with MethodModel{
+  override protected def typeName: String = "def"
 
+  override def treeType: ClassTag[_ <: Tree] =
+    if (isAbstract) MethodModelImpl.treeAbstractType
+    else MethodModelImpl.treeConcreteType
+}
+
+object ValModelImpl {
+  val treeAbstractType = ClassTag[Decl.Val](classOf[Decl.Val])
+  val treeConcreteType = ClassTag[Defn.Val](classOf[Defn.Val])
+}
 class ValModelImpl(info: BasicElementInfo, relationships: BasicRelationshipInfo,
                    fieldName: String, isAbstract: Boolean, val isLazy: Boolean)
   extends FieldModelImpl(info, relationships, fieldName, isAbstract) with ValModel {
+  override protected def typeName: String = "trait"
 
+  protected override def infoDetail = s"${super.infoDetail}lazy=$isLazy"
+
+  override def treeType: ClassTag[_ <: Tree] =
+    if (isAbstract) ValModelImpl.treeAbstractType
+    else ValModelImpl.treeConcreteType
 }
 
+object VarModelImpl {
+  val treeAbstractType = ClassTag[Decl.Var](classOf[Decl.Var])
+  val treeConcreteType = ClassTag[Defn.Var](classOf[Defn.Var])
+}
 class VarModelImpl(info: BasicElementInfo, relationships: BasicRelationshipInfo,
                    fieldName: String, isAbstract: Boolean)
-  extends FieldModelImpl(info, relationships, fieldName, isAbstract) with VarModel
+  extends FieldModelImpl(info, relationships, fieldName, isAbstract) with VarModel{
+  override protected def typeName: String = "var"
+
+  override def treeType: ClassTag[_ <: Tree] =
+    if (isAbstract) VarModelImpl.treeAbstractType
+    else VarModelImpl.treeConcreteType
+}
 

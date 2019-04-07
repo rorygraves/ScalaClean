@@ -21,7 +21,7 @@ private[impl] sealed class ReferenceImpl[From <: ModelElement, To<: ModelElement
   }
 
   def fromSymbol = symbol(_from)
-  def toSymbol = symbol(_from)
+  def toSymbol = symbol(_to)
 
   private[impl] def complete(elements: Map[Symbol, ElementModelImpl]) = {
     _from = elements(fromSymbol)
@@ -42,5 +42,12 @@ private[impl] final class ExtendsImpl(from:Symbol, to:Symbol, val isDirect: Bool
 /*private[impl]*/ final class OverridesImpl(from:Symbol, to:Symbol, val isDirect: Boolean)
   extends ReferenceImpl(from,to) with Overrides
 private[impl] final class WithinImpl(from:Symbol, to:Symbol) extends ReferenceImpl(from,to)
-  with Within
+  with Within {
+  override private[impl] def complete(elements: Map[Symbol, ElementModelImpl]): Unit = {
+    super.complete(elements)
+    assert(fromElement.isInstanceOf[ElementModelImpl])
+    assert(toElement.isDefined)
+  }
+
+}
 

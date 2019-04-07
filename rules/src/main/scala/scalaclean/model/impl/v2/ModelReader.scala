@@ -15,7 +15,12 @@ object ModelReader {
     val extendsB = List.newBuilder[ExtendsImpl]
     val overridesB = List.newBuilder[OverridesImpl]
     val withinB = List.newBuilder[WithinImpl]
-    Files.lines(path.resolve(IoTokens.fileRelationships)) forEach {
+
+    val dir = projectRoot.resolve(path).toAbsolutePath
+    val relsPath = dir.resolve(IoTokens.fileRelationships)
+    println(s"reading relationships from $relsPath")
+
+    Files.lines(relsPath) forEach {
       line =>
         val tokens = line.split(",")
 
@@ -49,9 +54,11 @@ object ModelReader {
     within
     )
 
+    val elePath = dir.resolve(IoTokens.fileElements)
+    println(s"reading elements from $elePath")
 
     val builder = Vector.newBuilder[ElementModelImpl]
-    Files.lines(path.resolve(IoTokens.fileElements)) forEach {
+    Files.lines(elePath) forEach {
       line =>
         val tokens = line.split(",")
 
@@ -74,13 +81,13 @@ object ModelReader {
           case IoTokens.typeVal =>
             val isAbstract = tokens(idx).toBoolean
             val valName = tokens(idx+1).intern()
-            val isLazy = tokens(idx).toBoolean
+            val isLazy = tokens(idx+2).toBoolean
             new ValModelImpl(basicInfo, relationships, valName, isAbstract, isLazy)
           case IoTokens.typeVar=>
             val isAbstract = tokens(idx).toBoolean
             val varName = tokens(idx+1).intern()
             new VarModelImpl(basicInfo, relationships, varName, isAbstract)
-          case IoTokens.typeDef =>
+          case IoTokens.typeMethod =>
             val isAbstract = tokens(idx).toBoolean
             val methodName = tokens(idx+1).intern()
             val hasDeclaredType = tokens(idx+2).toBoolean
