@@ -15,7 +15,7 @@ private[impl] sealed class ReferenceImpl[From <: ModelElement, To<: ModelElement
   }
 
   def fromElement = _from.asInstanceOf[From]
-  def toElement = _from match {
+  def toElement = _to match {
     case s: Symbol => None
     case m: ModelElement => Some(m.asInstanceOf[To])
   }

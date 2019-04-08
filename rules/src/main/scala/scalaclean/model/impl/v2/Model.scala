@@ -86,7 +86,7 @@ private[v2] trait LegacyReferences {
   }
 
   override def allOutgoingReferences: List[(Option[model.ModelElement], Refers)] = {
-    refersFrom map {
+    refersTo map {
       r => (r.toElement, r)
     }
   }
@@ -119,15 +119,13 @@ private[v2] trait LegacyOverrides {
   }
 
   override def internalDirectOverriddenBy: List[model.ModelElement] =  {
-    overrides collect {
+    overriden collect {
       case o if o.isDirect => o.fromElement
     }
   }
 
   override def internalTransitiveOverriddenBy: List[model.ModelElement] =  {
-    overrides collect {
-      case o if o.toElement.isDefined => o.toElement.get
-    }
+    overriden map {_.fromElement}
   }
 }
 private[v2] trait LegacyExtends {
@@ -164,10 +162,10 @@ private[impl] abstract class ElementModelImpl(info: BasicElementInfo, relationsh
                relsFrom: BasicRelationshipInfo,
                relsTo: BasicRelationshipInfo): Unit = {
     within = relsFrom.within.getOrElse(symbol, Nil) map {
-      _.fromElement.asInstanceOf[ElementModelImpl]
+      _.toElement.get.asInstanceOf[ElementModelImpl]
     }
     children = relsTo.within.getOrElse(symbol, Nil) map {
-      _.toElement.get.asInstanceOf[ElementModelImpl]
+      _.fromElement.asInstanceOf[ElementModelImpl]
     }
     refersTo = relsFrom.refers.getOrElse(symbol, Nil)
     refersFrom = relsTo.refers.getOrElse(symbol, Nil)
