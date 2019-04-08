@@ -7,7 +7,7 @@ import scalaclean.model._
   */
 class Test_internalDirectOverrides extends TestCommon("Test_internalDirectOverrides") {
   def visit(modelElement: ModelElement): String = {
-    val overrides = modelElement.internalDirectOverrides
+    val overrides = modelElement.internalDirectOverrides.sorted
     overrides match {
       case Nil => ""
       case refs => withSymbols(refs).mkString(s"internalDirectOverrides(${modelElement.symbol.value}) - ", " :: ", "")
@@ -19,7 +19,7 @@ class Test_internalDirectOverrides extends TestCommon("Test_internalDirectOverri
   */
 class Test_internalTransitiveOverrides extends TestCommon("Test_internalTransitiveOverrides") {
   def visit(modelElement: ModelElement): String = {
-    val overrides = modelElement.internalTransitiveOverrides
+    val overrides = modelElement.internalTransitiveOverrides.sorted
     overrides match {
       case Nil => ""
       case refs => withSymbols(refs).mkString(s"internalTransitiveOverrides(${modelElement.symbol.value}) - ", " :: ", "")
@@ -31,7 +31,7 @@ class Test_internalTransitiveOverrides extends TestCommon("Test_internalTransiti
   */
 class Test_allDirectOverrides extends TestCommon("Test_allDirectOverrides") {
   def visit(modelElement: ModelElement): String = {
-    val overrides = modelElement.allDirectOverrides map (_._2)
+    val overrides = (modelElement.allDirectOverrides map (_._2)).sortBy(_.value)
     overrides match {
       case Nil => ""
       case refs => refs.mkString(s"allDirectOverrides(${modelElement.symbol.value}) - ", " :: ", "")
@@ -43,7 +43,7 @@ class Test_allDirectOverrides extends TestCommon("Test_allDirectOverrides") {
   */
 class Test_allTransitiveOverrides extends TestCommon("Test_allTransitiveOverrides") {
   def visit(modelElement: ModelElement): String = {
-    val overrides = modelElement.allTransitiveOverrides map (_._2)
+    val overrides = (modelElement.allTransitiveOverrides map (_._2)).sortBy(_.value)
     overrides match {
       case Nil => ""
       case refs => refs.mkString(s"allTransitiveOverrides(${modelElement.symbol.value}) - ", " :: ", "")
@@ -55,7 +55,7 @@ class Test_allTransitiveOverrides extends TestCommon("Test_allTransitiveOverride
   */
 class Test_internalDirectOverriddenBy extends TestCommon("Test_internalDirectOverriddenBy") {
   def visit(modelElement: ModelElement): String = {
-    val overrides = modelElement.internalDirectOverriddenBy
+    val overrides = modelElement.internalDirectOverriddenBy.sorted
     overrides match {
       case Nil => ""
       case refs => withSymbols(refs).mkString(s"internalDirectOverriddenBy(${modelElement.symbol.value}) - ", " :: ", "")
@@ -67,7 +67,7 @@ class Test_internalDirectOverriddenBy extends TestCommon("Test_internalDirectOve
   */
 class Test_internalTransitiveOverriddenBy extends TestCommon("Test_internalTransitiveOverriddenBy") {
   def visit(modelElement: ModelElement): String = {
-    val overrides = modelElement.internalTransitiveOverriddenBy
+    val overrides = modelElement.internalTransitiveOverriddenBy.sorted
     overrides match {
       case Nil => ""
       case refs => withSymbols(refs).mkString(s"internalTransitiveOverriddenBy(${modelElement.symbol.value}) - ", " :: ", "")

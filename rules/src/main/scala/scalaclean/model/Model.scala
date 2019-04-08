@@ -5,7 +5,10 @@ import scalafix.v1.{SemanticDocument, Symbol, SymbolInformation}
 
 import scala.reflect.ClassTag
 
-sealed trait ModelElement {
+sealed trait ModelElement extends Ordered[ModelElement]{
+
+  override def compare(that: ModelElement): Int = symbol.value.compare(that.symbol.value)
+
   def symbol: Symbol
 
   var mark : Mark = _

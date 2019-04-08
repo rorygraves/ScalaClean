@@ -22,14 +22,13 @@ import Outer.overloadedUnused
 object App1 extends App {
   Outer.Inner
   I2
+  println(overloaded(1))
   println()
 }
 object Outer {
   object Inner
   object Inner2
   object NotUsed
-
-  println(overloaded(1))
 
   def overloaded() = 1
   def overloaded(i: Int) = 1

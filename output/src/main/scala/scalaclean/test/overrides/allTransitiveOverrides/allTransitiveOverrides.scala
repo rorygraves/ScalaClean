@@ -13,15 +13,15 @@ trait ParentTrait extends GrandParentTrait {
   def d3(): () => Int = ???
 }
 trait ChildTrait extends ParentTrait {
-  def d1: Int = 1/* allTransitiveOverrides(scalaclean/test/overrides/allTransitiveOverrides/ChildTrait#d1().) - scalaclean/test/overrides/allTransitiveOverrides/ParentTrait#d1(). :: scalaclean/test/overrides/allTransitiveOverrides/GrandParentTrait#d1(). */
-  override def d2(a: Int): Int = ???/* allTransitiveOverrides(scalaclean/test/overrides/allTransitiveOverrides/ChildTrait#d2().) - scalaclean/test/overrides/allTransitiveOverrides/ParentTrait#d2(). :: scalaclean/test/overrides/allTransitiveOverrides/GrandParentTrait#d2(). */
+  def d1: Int = 1/* allTransitiveOverrides(scalaclean/test/overrides/allTransitiveOverrides/ChildTrait#d1().) - scalaclean/test/overrides/allTransitiveOverrides/GrandParentTrait#d1(). :: scalaclean/test/overrides/allTransitiveOverrides/ParentTrait#d1(). */
+  override def d2(a: Int): Int = ???/* allTransitiveOverrides(scalaclean/test/overrides/allTransitiveOverrides/ChildTrait#d2().) - scalaclean/test/overrides/allTransitiveOverrides/GrandParentTrait#d2(). :: scalaclean/test/overrides/allTransitiveOverrides/ParentTrait#d2(). */
   override def d3(): () => Int = ???/* allTransitiveOverrides(scalaclean/test/overrides/allTransitiveOverrides/ChildTrait#d3().) - scalaclean/test/overrides/allTransitiveOverrides/ParentTrait#d3(). */
   def d2a(a:Int) = d2 _
 
 }
 trait GChildTrait extends ChildTrait {
-  override def d1: Int = 1/* allTransitiveOverrides(scalaclean/test/overrides/allTransitiveOverrides/GChildTrait#d1().) - scalaclean/test/overrides/allTransitiveOverrides/ChildTrait#d1(). :: scalaclean/test/overrides/allTransitiveOverrides/ParentTrait#d1(). :: scalaclean/test/overrides/allTransitiveOverrides/GrandParentTrait#d1(). */
-  override def d2(a: Int): Int = ???/* allTransitiveOverrides(scalaclean/test/overrides/allTransitiveOverrides/GChildTrait#d2().) - scalaclean/test/overrides/allTransitiveOverrides/ChildTrait#d2(). :: scalaclean/test/overrides/allTransitiveOverrides/ParentTrait#d2(). :: scalaclean/test/overrides/allTransitiveOverrides/GrandParentTrait#d2(). */
+  override def d1: Int = 1/* allTransitiveOverrides(scalaclean/test/overrides/allTransitiveOverrides/GChildTrait#d1().) - scalaclean/test/overrides/allTransitiveOverrides/ChildTrait#d1(). :: scalaclean/test/overrides/allTransitiveOverrides/GrandParentTrait#d1(). :: scalaclean/test/overrides/allTransitiveOverrides/ParentTrait#d1(). */
+  override def d2(a: Int): Int = ???/* allTransitiveOverrides(scalaclean/test/overrides/allTransitiveOverrides/GChildTrait#d2().) - scalaclean/test/overrides/allTransitiveOverrides/ChildTrait#d2(). :: scalaclean/test/overrides/allTransitiveOverrides/GrandParentTrait#d2(). :: scalaclean/test/overrides/allTransitiveOverrides/ParentTrait#d2(). */
   override def d3(): () => Int = () => 1/* allTransitiveOverrides(scalaclean/test/overrides/allTransitiveOverrides/GChildTrait#d3().) - scalaclean/test/overrides/allTransitiveOverrides/ChildTrait#d3(). :: scalaclean/test/overrides/allTransitiveOverrides/ParentTrait#d3(). */
 
 }
@@ -36,9 +36,9 @@ trait Trait_ChildTrait extends ParentTrait {
 
   override def hashCode(): Int = super.hashCode()/* allTransitiveOverrides(scalaclean/test/overrides/allTransitiveOverrides/Trait_ChildTrait#hashCode().) - java/lang/Object#hashCode(). :: scala/Any#hashCode(). */
 
-  override def d1: Int = ???/* allTransitiveOverrides(scalaclean/test/overrides/allTransitiveOverrides/Trait_ChildTrait#d1().) - scalaclean/test/overrides/allTransitiveOverrides/ParentTrait#d1(). :: scalaclean/test/overrides/allTransitiveOverrides/GrandParentTrait#d1(). */
+  override def d1: Int = ???/* allTransitiveOverrides(scalaclean/test/overrides/allTransitiveOverrides/Trait_ChildTrait#d1().) - scalaclean/test/overrides/allTransitiveOverrides/GrandParentTrait#d1(). :: scalaclean/test/overrides/allTransitiveOverrides/ParentTrait#d1(). */
 
-  override def d2(a: Int): Int = ???/* allTransitiveOverrides(scalaclean/test/overrides/allTransitiveOverrides/Trait_ChildTrait#d2().) - scalaclean/test/overrides/allTransitiveOverrides/ParentTrait#d2(). :: scalaclean/test/overrides/allTransitiveOverrides/GrandParentTrait#d2(). */
+  override def d2(a: Int): Int = ???/* allTransitiveOverrides(scalaclean/test/overrides/allTransitiveOverrides/Trait_ChildTrait#d2().) - scalaclean/test/overrides/allTransitiveOverrides/GrandParentTrait#d2(). :: scalaclean/test/overrides/allTransitiveOverrides/ParentTrait#d2(). */
 
   override def d2a(a: Int)(b: Int): Int = ???/* allTransitiveOverrides(scalaclean/test/overrides/allTransitiveOverrides/Trait_ChildTrait#d2a().) - scalaclean/test/overrides/allTransitiveOverrides/GrandParentTrait#d2a(). */
 
@@ -55,9 +55,9 @@ class Class_ChildTrait extends ParentTrait {
 
   override def hashCode(): Int = super.hashCode()/* allTransitiveOverrides(scalaclean/test/overrides/allTransitiveOverrides/Class_ChildTrait#hashCode().) - java/lang/Object#hashCode(). :: scala/Any#hashCode(). */
 
-  override def d1: Int = ???/* allTransitiveOverrides(scalaclean/test/overrides/allTransitiveOverrides/Class_ChildTrait#d1().) - scalaclean/test/overrides/allTransitiveOverrides/ParentTrait#d1(). :: scalaclean/test/overrides/allTransitiveOverrides/GrandParentTrait#d1(). */
+  override def d1: Int = ???/* allTransitiveOverrides(scalaclean/test/overrides/allTransitiveOverrides/Class_ChildTrait#d1().) - scalaclean/test/overrides/allTransitiveOverrides/GrandParentTrait#d1(). :: scalaclean/test/overrides/allTransitiveOverrides/ParentTrait#d1(). */
 
-  override def d2(a: Int): Int = ???/* allTransitiveOverrides(scalaclean/test/overrides/allTransitiveOverrides/Class_ChildTrait#d2().) - scalaclean/test/overrides/allTransitiveOverrides/ParentTrait#d2(). :: scalaclean/test/overrides/allTransitiveOverrides/GrandParentTrait#d2(). */
+  override def d2(a: Int): Int = ???/* allTransitiveOverrides(scalaclean/test/overrides/allTransitiveOverrides/Class_ChildTrait#d2().) - scalaclean/test/overrides/allTransitiveOverrides/GrandParentTrait#d2(). :: scalaclean/test/overrides/allTransitiveOverrides/ParentTrait#d2(). */
 
   override def d2a(a: Int)(b: Int): Int = ???/* allTransitiveOverrides(scalaclean/test/overrides/allTransitiveOverrides/Class_ChildTrait#d2a().) - scalaclean/test/overrides/allTransitiveOverrides/GrandParentTrait#d2a(). */
 
@@ -74,9 +74,9 @@ object Object_ChildTrait extends ParentTrait {
 
   override def hashCode(): Int = super.hashCode()/* allTransitiveOverrides(scalaclean/test/overrides/allTransitiveOverrides/Object_ChildTrait.hashCode().) - java/lang/Object#hashCode(). :: scala/Any#hashCode(). */
 
-  override def d1: Int = ???/* allTransitiveOverrides(scalaclean/test/overrides/allTransitiveOverrides/Object_ChildTrait.d1().) - scalaclean/test/overrides/allTransitiveOverrides/ParentTrait#d1(). :: scalaclean/test/overrides/allTransitiveOverrides/GrandParentTrait#d1(). */
+  override def d1: Int = ???/* allTransitiveOverrides(scalaclean/test/overrides/allTransitiveOverrides/Object_ChildTrait.d1().) - scalaclean/test/overrides/allTransitiveOverrides/GrandParentTrait#d1(). :: scalaclean/test/overrides/allTransitiveOverrides/ParentTrait#d1(). */
 
-  override def d2(a: Int): Int = ???/* allTransitiveOverrides(scalaclean/test/overrides/allTransitiveOverrides/Object_ChildTrait.d2().) - scalaclean/test/overrides/allTransitiveOverrides/ParentTrait#d2(). :: scalaclean/test/overrides/allTransitiveOverrides/GrandParentTrait#d2(). */
+  override def d2(a: Int): Int = ???/* allTransitiveOverrides(scalaclean/test/overrides/allTransitiveOverrides/Object_ChildTrait.d2().) - scalaclean/test/overrides/allTransitiveOverrides/GrandParentTrait#d2(). :: scalaclean/test/overrides/allTransitiveOverrides/ParentTrait#d2(). */
 
   override def d2a(a: Int)(b: Int): Int = ???/* allTransitiveOverrides(scalaclean/test/overrides/allTransitiveOverrides/Object_ChildTrait.d2a().) - scalaclean/test/overrides/allTransitiveOverrides/GrandParentTrait#d2a(). */
 
