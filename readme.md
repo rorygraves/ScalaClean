@@ -29,19 +29,8 @@ In development - not yet working.
 
 ## Setup instructions
 
-We rely on a tweaked version of ScalaFix at the moment, so you need to clone it
-and publish it locally:
+Open in Intellij - not all tests are passing at this point
 
-1. Fork and clone: https://github.com/rorygraves/scalafix
-    1. This will create a package scalafix
-         
-1. (Within scalafix) Checkout branch ```rule_begin_end```
-1. (Within scalafix) )Run ```sbt publishLocal``` - If this fails, check that JAVA_HOME is set to be a JDK root
-1. Make a note of the version number published, e.g. ```0.9.1+5-6bbf4f13-SNAPSHOT```
-2. In workspace fork and clone https://github.com/rorygraves/ScalaClean
-2. (in ScalaClean)  - ensure version in project/plugins.sbt matches version above
-3. Open ScalaClean in Intellij)
-4. Run RuleSuite
 
 ## Overall design
 We structure each feature based on a common Analysis and a custom rule: 
