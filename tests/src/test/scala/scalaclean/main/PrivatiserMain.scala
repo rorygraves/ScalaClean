@@ -1,25 +1,43 @@
-package scalaclean
+package scalaclean.main
 
 import java.io.File
 import java.nio.charset.StandardCharsets
 
 import org.scalatest.exceptions.TestFailedException
+import scalaclean.PrivateSuite
 import scalafix.internal.patch.PatchInternals
 import scalafix.internal.testkit.{AssertDiff, CommentAssertion}
 import scalafix.lint.RuleDiagnostic
-import scalafix.testkit.{RuleTest, SemanticRuleSuite, TestkitProperties}
+import scalafix.testkit.{RuleTest, SemanticRuleSuite}
 import scalafix.v1.{Rule, SemanticDocument, SemanticRule}
 
 import scala.meta._
 import scala.meta.internal.io.FileIO
 
-class RuleSuite extends SemanticRuleSuite() {
+
+object PrivatiserMain {
+  def main(args: Array[String]): Unit = {
+//    val path = "scalafix-testkit.properties"
+//    val in = TestkitProperties.getClass.getClassLoader.getResourceAsStream(path)
+//    assert(in != null)
+    new NewRuleSuite().execute()
+  }
+
+}
+
+
+class NewRuleSuite extends SemanticRuleSuite() {
   // The logic here looks for all files in the input directory and runs them as tests.
   // the config over which rules to run is defined at the top of the file.
 
   protected val sep = File.separator
-  def rulePath = "scalaclean"
+  def rulePath: String = {
+
+    s"scalaclean${sep}test${sep}rules${sep}privatiser${sep}Private1"
+  }
+
   override def runAllTests() = {
+
     val path = rulePath
     testsToRun.filter(_.path.input.toString().contains(path)).foreach(runOn)
   }
@@ -27,10 +45,10 @@ class RuleSuite extends SemanticRuleSuite() {
   runAllTests()
 
   def semanticPatch(
-    rule: Rule,
-    sdoc: SemanticDocument,
-    suppress: Boolean
-  ): (String, List[RuleDiagnostic]) = {
+                     rule: Rule,
+                     sdoc: SemanticDocument,
+                     suppress: Boolean
+                   ): (String, List[RuleDiagnostic]) = {
     val fixes = (rule match {
       case rule: SemanticRule =>
         Some(rule.name -> rule.fix(sdoc))

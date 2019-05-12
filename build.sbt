@@ -27,7 +27,7 @@ lazy val rules = project.settings(
 )
 
 lazy val command = project
-  .dependsOn(rules) 
+  .dependsOn(rules, tests)
   .settings(
     moduleName := "command",
     libraryDependencies += "args4j" % "args4j" % "2.0.23", 

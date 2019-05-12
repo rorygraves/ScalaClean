@@ -19,7 +19,7 @@ class ParserImpl extends ParseModel {
   }
 
   override def asProjectModel: ProjectModel = {
-    val projectsRoot = Paths.get("s:/temp")
+    val projectsRoot = Paths.get("/home/rory/Downloads/temp")
     val myPath = Paths.get("input/src/main/scala")
     writeToFile(myPath, projectsRoot)
 
