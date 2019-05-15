@@ -1,7 +1,3 @@
-/*
-rules = [ Analysis , Privatiser ]
-
-*/
 package scalaclean.test.rules.privatiser.p1
 
 object Private1 extends App {

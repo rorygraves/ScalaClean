@@ -1,54 +1,49 @@
-package scalaclean.main
+package scalafix.scalaclean.main
 
-import java.io.File
 import java.nio.charset.StandardCharsets
 
 import org.scalatest.exceptions.TestFailedException
-import scalaclean.PrivateSuite
+import scalaclean.Analysis
+import scalaclean.rules.privatiser.Privatiser
+import scalafix.internal.config.ScalafixConfig
+import scalafix.internal.diff.DiffDisable
 import scalafix.internal.patch.PatchInternals
-import scalafix.internal.testkit.{AssertDiff, CommentAssertion}
+import scalafix.internal.reflect.ClasspathOps
+import scalafix.internal.v1.LazyValue
 import scalafix.lint.RuleDiagnostic
-import scalafix.testkit.{RuleTest, SemanticRuleSuite}
+import scalafix.testkit.DiffAssertions
+import scalafix.v1
 import scalafix.v1.{Rule, SemanticDocument, SemanticRule}
 
 import scala.meta._
+import scala.meta.inputs.Input
 import scala.meta.internal.io.FileIO
+import scala.meta.internal.symtab.SymbolTable
 
 
 object PrivatiserMain {
   def main(args: Array[String]): Unit = {
-//    val path = "scalafix-testkit.properties"
-//    val in = TestkitProperties.getClass.getClassLoader.getResourceAsStream(path)
-//    assert(in != null)
-    new NewRuleSuite().execute()
+    new PrivatiserMain().run
   }
 
 }
 
 
-class NewRuleSuite extends SemanticRuleSuite() {
-  // The logic here looks for all files in the input directory and runs them as tests.
-  // the config over which rules to run is defined at the top of the file.
+class PrivatiserMain extends DiffAssertions {
 
-  protected val sep = File.separator
-  def rulePath: String = {
-
-    s"scalaclean${sep}test${sep}rules${sep}privatiser${sep}Private1"
-  }
-
-  override def runAllTests() = {
-
-    val path = rulePath
-    testsToRun.filter(_.path.input.toString().contains(path)).foreach(runOn)
-  }
-
-  runAllTests()
+  val targetFile = RelativePath("scalaclean/test/rules/privatiser/Private1.scala")
+  val inputClasspath = Classpath("/workspace/ScalaClean/input/target/scala-2.12/classes:/Users/rorygraves/.ivy2/cache/org.scala-lang/scala-library/jars/scala-library-2.12.8.jar:/Users/rorygraves/.ivy2/cache/org.scalaz/scalaz-core_2.12/bundles/scalaz-core_2.12-7.2.27.jar")
+  val sourceroot = AbsolutePath("/workspace/ScalaClean")
+  val scalacOptions = List("-Yrangepos")
+  val outputSourceDirectories: List[AbsolutePath] = Classpath("/workspace/ScalaClean/output/src/main/scala").entries
+  val inputSourceDirectories: List[AbsolutePath] = Classpath("/workspace/ScalaClean/input/src/main/scala").entries
+  val scalaVersionStr = "2.12.8"
 
   def semanticPatch(
-                     rule: Rule,
-                     sdoc: SemanticDocument,
-                     suppress: Boolean
-                   ): (String, List[RuleDiagnostic]) = {
+    rule: Rule,
+    sdoc: SemanticDocument,
+    suppress: Boolean
+  ): (String, List[RuleDiagnostic]) = {
     val fixes = (rule match {
       case rule: SemanticRule =>
         Some(rule.name -> rule.fix(sdoc))
@@ -58,58 +53,76 @@ class NewRuleSuite extends SemanticRuleSuite() {
     PatchInternals.semantic(fixes, sdoc, suppress)
   }
 
-  // Overridden version of runOn which is hacked ro to run the rules in sequence rather than parallised.
-  // earlier rules results are ignored - i.e. this only works for Analysis followed by a proper rule for
-  // testing.
-  override def runOn(diffTest: RuleTest): Unit = {
-    test(diffTest.path.testName) {
-      val (rule, sdoc) = diffTest.run.apply()
+  def run: Unit = {
 
-      var fixed: String = ""
-      var messages: List[RuleDiagnostic] = Nil
-      rule.rules.foreach { r =>
-        r.beforeStart()
-        val res = semanticPatch(r, sdoc, suppress = false)
-        fixed = res._1
-        messages = res._2
-        r.afterComplete()
-      }
+    val symtab = ClasspathOps.newSymbolTable(inputClasspath)
+    val classLoader = ClasspathOps.toClassLoader(inputClasspath)
 
-      val tokens = fixed.tokenize.get
-      val obtained = SemanticRuleSuite.stripTestkitComments(tokens)
-      val expected = diffTest.path.resolveOutput(props) match {
-        case Right(file) =>
-          FileIO.slurp(file, StandardCharsets.UTF_8)
-        case Left(err) =>
-          if (fixed == sdoc.input.text) {
-            // rule is a linter, no need for an output file.
-            obtained
-          } else {
-            fail(err)
-          }
-      }
+    // run analysis
+    val analysis = new Analysis
+//    analysis.beforeStart() - does nothing
+    val sdoc1 = readSemanticDoc(classLoader, symtab)
+    semanticPatch(analysis, sdoc1, suppress = false)
+    analysis.afterComplete()
 
-      val expectedLintMessages = CommentAssertion.extract(sdoc.tokens)
-      val diff = AssertDiff(messages, expectedLintMessages)
+    // run privatiser
+    val privatiser = new Privatiser()
+    privatiser.beforeStart()
+    val sdoc2 = readSemanticDoc(classLoader, symtab)
+    val (fixed, messages) = semanticPatch(privatiser, sdoc2, suppress = false)
+//    privatiser.afterComplete() - does nothing
 
-      if (diff.isFailure) {
-        println("###########> Lint       <###########")
-        println(diff.toString)
-      }
+    // compare results
+    val tokens = fixed.tokenize.get
+    val obtained = tokens.mkString
 
-      val result = compareContents(obtained, expected)
-      if (result.nonEmpty) {
-        println("###########> obtained       <###########")
-        println(obtained)
-        println("###########> expected       <###########")
-        println(expected)
-        println("###########> Diff       <###########")
-        println(error2message(obtained, expected))
-      }
+    val outputSourceDirectory = outputSourceDirectories.head
+    val outputFile = outputSourceDirectory.resolve(targetFile)
+    val expected = FileIO.slurp(outputFile, StandardCharsets.UTF_8)
 
-      if (result.nonEmpty || diff.isFailure) {
-        throw new TestFailedException("see above", 0)
-      }
+    val diff = DiffAssertions.compareContents(obtained, expected)
+    if (diff.nonEmpty) {
+      println("###########> obtained       <###########")
+      println(obtained)
+      println("###########> expected       <###########")
+      println(expected)
+      println("###########> Diff       <###########")
+      println(error2message(obtained, expected))
     }
+
+    if (diff.nonEmpty) {
+      throw new TestFailedException("see above", 0)
+    }
+  }
+
+  def readSemanticDoc(
+    //test: TestkitPath,
+    classLoader: ClassLoader,
+    symtab: SymbolTable): v1.SemanticDocument = {
+
+    val sourceDirectory = inputSourceDirectories.head
+    val testPath = targetFile
+    val inputPath = sourceDirectory.resolve(testPath)
+    val semanticdbPath = inputPath.toRelative(sourceroot)
+//    val test = new TestkitPath(inputPath, testPath, semanticdbPath)
+
+    val testInput = Input.VirtualFile(targetFile.toString, FileIO.slurp(inputPath, StandardCharsets.UTF_8))
+
+    val input = testInput
+    val tree = input.parse[Source].get
+    val scalafixConfig = ScalafixConfig()
+    val doc = v1.SyntacticDocument(
+      tree.pos.input,
+      LazyValue.now(tree),
+      DiffDisable.empty,
+      scalafixConfig
+    )
+
+    v1.SemanticDocument.fromPath(
+      doc,
+      semanticdbPath,
+      classLoader,
+      symtab)
+
   }
 }
