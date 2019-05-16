@@ -1,19 +1,16 @@
 package scalafix.scalaclean.main
+//package scalaclean.cli
 
 import java.nio.charset.StandardCharsets
 
-import org.scalatest.exceptions.TestFailedException
 import scalaclean.Analysis
 import scalaclean.rules.privatiser.Privatiser
-import scalafix.internal.config.ScalafixConfig
-import scalafix.internal.diff.DiffDisable
 import scalafix.internal.patch.PatchInternals
 import scalafix.internal.reflect.ClasspathOps
-import scalafix.internal.v1.LazyValue
 import scalafix.lint.RuleDiagnostic
 import scalafix.testkit.DiffAssertions
 import scalafix.v1
-import scalafix.v1.{Rule, SemanticDocument, SemanticRule}
+import scalafix.v1.{Rule, SemanticDocument, SemanticRule, SyntacticDocument}
 
 import scala.meta._
 import scala.meta.inputs.Input
@@ -60,7 +57,7 @@ class PrivatiserMain extends DiffAssertions {
 
     // run analysis
     val analysis = new Analysis
-//    analysis.beforeStart() - does nothing
+    //    analysis.beforeStart() - does nothing
     val sdoc1 = readSemanticDoc(classLoader, symtab)
     semanticPatch(analysis, sdoc1, suppress = false)
     analysis.afterComplete()
@@ -70,7 +67,7 @@ class PrivatiserMain extends DiffAssertions {
     privatiser.beforeStart()
     val sdoc2 = readSemanticDoc(classLoader, symtab)
     val (fixed, messages) = semanticPatch(privatiser, sdoc2, suppress = false)
-//    privatiser.afterComplete() - does nothing
+    //    privatiser.afterComplete() - does nothing
 
     // compare results
     val tokens = fixed.tokenize.get
@@ -91,7 +88,7 @@ class PrivatiserMain extends DiffAssertions {
     }
 
     if (diff.nonEmpty) {
-      throw new TestFailedException("see above", 0)
+      throw new IllegalStateException("see above")
     }
   }
 
@@ -104,19 +101,11 @@ class PrivatiserMain extends DiffAssertions {
     val testPath = targetFile
     val inputPath = sourceDirectory.resolve(testPath)
     val semanticdbPath = inputPath.toRelative(sourceroot)
-//    val test = new TestkitPath(inputPath, testPath, semanticdbPath)
 
     val testInput = Input.VirtualFile(targetFile.toString, FileIO.slurp(inputPath, StandardCharsets.UTF_8))
 
     val input = testInput
-    val tree = input.parse[Source].get
-    val scalafixConfig = ScalafixConfig()
-    val doc = v1.SyntacticDocument(
-      tree.pos.input,
-      LazyValue.now(tree),
-      DiffDisable.empty,
-      scalafixConfig
-    )
+    val doc = SyntacticDocument.fromInput(input)
 
     v1.SemanticDocument.fromPath(
       doc,

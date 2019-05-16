@@ -1,3 +1,5 @@
+import sbt.Keys.libraryDependencies
+
 lazy val V = _root_.scalafix.sbt.BuildInfo
 inThisBuild(
   List(
@@ -31,8 +33,11 @@ lazy val command = project
   .settings(
     moduleName := "command",
     libraryDependencies += "args4j" % "args4j" % "2.0.23", 
-    libraryDependencies += "ch.epfl.scala" %% "scalafix-core" % V.scalafixVersion
-  )
+    libraryDependencies += "ch.epfl.scala" %% "scalafix-core" % V.scalafixVersion,
+    libraryDependencies += "ch.epfl.scala" % "scalafix-testkit_2.12.8" % V.scalafixVersion
+      //libraryDependencies += "ch.epfl.scala" %% "scalafix-testkit" % V.scalafixVersion,
+
+)
 
 lazy val input = project.settings(
   addCompilerPlugin(scalafixSemanticdb),

@@ -1,4 +1,4 @@
-package scalalean.cli
+package scalaclean.cli
 
 object NewPrivatiser {
   def main(args: Array[String]): Unit = {
