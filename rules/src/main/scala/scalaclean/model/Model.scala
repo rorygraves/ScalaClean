@@ -1,7 +1,6 @@
 package scalaclean.model
 
 import scalaclean.model.impl.OverridesImpl
-import scalaclean.model.impl.v1.ScalaCleanModelImpl
 import scalaclean.model.impl.v2.ParserImpl
 import scalafix.v1.{SemanticDocument, Symbol, SymbolInformation}
 
@@ -131,10 +130,7 @@ package impl {
   trait VarModelHook extends VarModel with FieldModelHook
 }
 object ScalaCleanModel {
-  private val version = 2
-  def createParseModel: ParseModel =
-    if (version == 1) new ScalaCleanModelImpl
-    else new ParserImpl
+  def createParseModel: ParseModel = new ParserImpl
 }
 trait ParseModel {
   def analyse(implicit doc: SemanticDocument): Unit
