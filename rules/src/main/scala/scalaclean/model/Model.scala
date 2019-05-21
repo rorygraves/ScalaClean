@@ -136,9 +136,11 @@ trait ParseModel {
   def analyse(implicit doc: SemanticDocument): Unit
   def finishedParsing(): Unit
   //FIXME only a short term API
-  def asProjectModel: ProjectModel
+  def asProjectModel(storagePath: String, projectName: String, classpath: String, outputDir: String, relSource: String, absSource: String): ProjectModel
 }
 trait ProjectModel {
+  def save: Unit
+
   def fromSymbol[T <: ModelElement](symbol: Symbol)(implicit tpe: ClassTag[T]): T
 
   def getSymbol[T <: ModelElement](symbol: Symbol)(implicit tpe: ClassTag[T]): Option[T]

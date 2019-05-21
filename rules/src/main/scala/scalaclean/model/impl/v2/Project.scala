@@ -5,7 +5,7 @@ import java.nio.file.{Files, Path, Paths}
 import java.util.Properties
 import java.util.concurrent.ConcurrentHashMap
 
-import scalaclean.model.{ModelElement, ProjectModel, Refers, Within}
+import scalaclean.model.{ModelElement, ProjectModel}
 import scalafix.v1.{Symbol, SymbolInformation}
 
 import scala.collection.immutable
@@ -13,11 +13,12 @@ import scala.meta.internal.symtab.{GlobalSymbolTable, SymbolTable}
 import scala.meta.io.Classpath
 import scala.reflect.ClassTag
 
-class Project(path: Path, val projects: Projects) {
+class Project(name: String, path: Path, val projects: Projects) {
   val (classPath, outputPath, src) = {
     val props = new Properties()
-    //TODO should be rel to project
-      props.load(Files.newBufferedReader(projects.projectRoot.resolve("build.properties")))
+    val propsPath = projects.projectRoot.resolve(s"$name.properties")
+    println("PropsPath = " + propsPath)
+    props.load(Files.newBufferedReader(propsPath))
     val cp = props.getProperty("classpath")
     val output = props.getProperty("outputDir")
     val src = props.getProperty("src")
@@ -27,6 +28,7 @@ class Project(path: Path, val projects: Projects) {
   }
   def symbolTable: SymbolTable = GlobalSymbolTable(classPath, true)
 
+  println("OUTPUTPATH = " + outputPath)
   lazy val classloader: ClassLoader = new URLClassLoader(Array(new URL("file:"+outputPath)), null)
 
   def relativePath = if (path.isAbsolute) path.relativize((projects.projectRoot)) else path
@@ -46,8 +48,8 @@ class Project(path: Path, val projects: Projects) {
   }
 
 }
-class Projects(val projectRoot: Path, projectPaths: Path *) extends ProjectModel {
-  val projects = projectPaths.toList map {new Project(_, this)}
+class Projects(val projectRoot: Path, projectPaths: (String,Path) *) extends ProjectModel {
+  val projects = projectPaths.toList map { p => new Project(p._1, p._2, this)}
 
   val elements: Map[Symbol, ElementModelImpl] = {
     val (elements, rels: immutable.Seq[BasicRelationshipInfo]) = projects.map(_.read) unzip
@@ -87,4 +89,6 @@ class Projects(val projectRoot: Path, projectPaths: Path *) extends ProjectModel
       case x:T => x
     }
   }
+
+  def save: Unit = ???
 }

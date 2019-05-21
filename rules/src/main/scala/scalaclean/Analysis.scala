@@ -1,24 +1,21 @@
 package scalaclean
 
-import scalaclean.model.{ModelHelper, ScalaCleanModel}
+import scalaclean.model.{ModelHelper, ParseModel, ScalaCleanModel}
 import scalafix.v1._
 
-class Analysis extends SemanticRule("Analysis")  {
-  val model =  ScalaCleanModel.createParseModel
 
-  override def beforeStart(): Unit = {
-    println("Analysis BEFORE START")
-  }
+class Analysis(storagePath: String, projectName: String, classpath: String, outputDir: String, relSrc: String, absSrc: String) {
+  val model: ParseModel =  ScalaCleanModel.createParseModel
 
-  override def afterComplete(): Unit = {
+  def afterComplete(): Unit = {
     model.finishedParsing()
-    val projectModel = model.asProjectModel
+    val projectModel = model.asProjectModel(storagePath, projectName, classpath, outputDir, relSrc,absSrc)
+
     ModelHelper.model = Some(projectModel)
     println(s"Analysis AFTER COMPLETE size = ${projectModel.size}")
   }
 
-  override def fix(implicit doc: SemanticDocument): Patch = {
+  def analyse(implicit doc: SemanticDocument): Unit = {
     model.analyse(doc)
-    Patch.empty
   }
 }

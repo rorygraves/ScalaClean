@@ -9,8 +9,8 @@ import scalafix.v1.{SemanticDocument, SyntacticDocument}
 
 import scala.meta.inputs.Input
 import scala.meta.internal.semanticdb.TextDocuments
-import scala.meta.internal.symtab.{GlobalSymbolTable, SymbolTable}
-import scala.meta.io.{AbsolutePath, Classpath, RelativePath}
+import scala.meta.internal.symtab.SymbolTable
+import scala.meta.io.{AbsolutePath, RelativePath}
 
 object FixUtils {
 

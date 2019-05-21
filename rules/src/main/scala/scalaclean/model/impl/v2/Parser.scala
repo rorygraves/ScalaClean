@@ -1,6 +1,7 @@
 package scalaclean.model.impl.v2
 
-import java.nio.file.{Path, Paths}
+import java.nio.file.{Files, Path, Paths}
+import java.util.Properties
 
 import scalaclean.model._
 import scalafix.v1.{SemanticDocument, Symbol}
@@ -18,15 +19,23 @@ class ParserImpl extends ParseModel {
     writer.close()
   }
 
-  override def asProjectModel: ProjectModel = {
+  override def asProjectModel(storagePath: String, projectName: String, classpath: String, outputDir: String, relSource: String, absSource: String): ProjectModel = {
 
 
-//    val projectsRoot = Paths.get("/home/rory/Downloads/temp")
-    val projectsRoot = Paths.get("/Users/rorygraves/Downloads/temp")
-    val myPath = Paths.get("input/src/main/scala")
-    writeToFile(myPath, projectsRoot)
+    val projectsRoot = Paths.get(storagePath)
+    val projectPath = Paths.get(relSource) // privatiser-test-input/src/main/scala
 
-    new Projects(projectsRoot,myPath)
+    writeToFile(projectPath, projectsRoot)
+
+    val props = new Properties
+    props.put("classpath", classpath)
+    props.put("outputDir", outputDir)
+    props.put("src", absSource)
+
+    val propsFile = projectsRoot.resolve(s"$projectName.properties")
+    println("Writing props file " + propsFile)
+    props.store(Files.newBufferedWriter(propsFile),"")
+    new Projects(projectsRoot,("privatiser-test-input", projectPath))
   }
 
   private[v2] val internalAccess = new InternalAccess()

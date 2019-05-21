@@ -34,12 +34,22 @@ lazy val command = project
     moduleName := "command",
     libraryDependencies += "args4j" % "args4j" % "2.0.23", 
     libraryDependencies += "ch.epfl.scala" %% "scalafix-core" % V.scalafixVersion,
-    libraryDependencies += "ch.epfl.scala" % "scalafix-testkit_2.12.8" % V.scalafixVersion
+    libraryDependencies += "ch.epfl.scala" % "scalafix-testkit_2.12.8" % V.scalafixVersion,
       //libraryDependencies += "ch.epfl.scala" %% "scalafix-testkit" % V.scalafixVersion,
+
+    compile.in(Compile) :=
+      compile.in(Compile).dependsOn(compile.in(privatiserTestInput, Compile)).value,
 
 )
 
 lazy val input = project.settings(
+  addCompilerPlugin(scalafixSemanticdb),
+  libraryDependencies += "org.scalaz" %% "scalaz-core" % "7.2.27",
+  scalacOptions += "-P:semanticdb:synthetics:on",
+  skip in publish := true
+)
+
+lazy val privatiserTestInput = project.in(file("privatiser-test-input")).settings(
   addCompilerPlugin(scalafixSemanticdb),
   libraryDependencies += "org.scalaz" %% "scalaz-core" % "7.2.27",
   scalacOptions += "-P:semanticdb:synthetics:on",

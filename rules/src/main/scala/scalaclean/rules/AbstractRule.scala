@@ -1,18 +1,19 @@
 package scalaclean.rules
 
 import scalaclean.model._
-import scalafix.v1.SemanticRule
+import scalafix.patch.Patch
+import scalafix.v1.SemanticDocument
 
-abstract class AbstractRule(name:String) extends SemanticRule(name) {
+abstract class AbstractRule(val name:String) {
   var model: ProjectModel = _
   type Colour <: Mark
 
-  final override def beforeStart(): Unit = {
+  final def beforeStart(): Unit = {
     println(s"$name start beforeStart")
     // load the model from the helper class
     this.model = ModelHelper.model.getOrElse(throw new IllegalStateException("No model to work from"))
 
-    markInitial
+    markInitial()
 
     runRule()
 
@@ -21,6 +22,8 @@ abstract class AbstractRule(name:String) extends SemanticRule(name) {
   def markInitial(): Unit
 
   def runRule() : Unit
+
+  def fix(implicit doc: SemanticDocument): Patch
 
   def markAll[T <: ModelElement: Manifest](colour: => Colour) = {
     model.allOf[T].foreach {
