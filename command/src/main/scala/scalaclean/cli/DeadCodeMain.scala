@@ -22,8 +22,12 @@ object DeadCodeMain {
 }
 
 class DeadCodeMain extends DiffAssertions {
+  import scalaclean.cli.FileHelper.toPlatform
 
   val projectName = "deadCodeProject1"
+//  val scalaCleanWorkspace = "."
+//  val ivyDir = "$HOME$/.ivy2/cache"
+//  val storagePath = "$HOME$/Downloads/temp3"
   val scalaCleanWorkspace = "/workspace/ScalaClean"
   val ivyDir = "/Users/rorygraves/.ivy2/cache"
   val storagePath = "/Users/rorygraves/Downloads/temp3"
@@ -34,11 +38,16 @@ class DeadCodeMain extends DiffAssertions {
     RelativePath("scalaclean/test/rules/deadcode/DeadCodeMain.scala"),
     RelativePath("scalaclean/test/rules/deadcode/DeadCodeVarVal.scala")
   )
+  val sourceRoot = AbsolutePath(scalaCleanWorkspace)
+//  val outputClassDir: String = toPlatform(s"/workspace/ScalaClean/testProjects/$projectName/target/scala-2.12/classes/")
+//  val inputClasspath = Classpath(toPlatform(s"$outputClassDir:$ivyDir/org.scala-lang/scala-library/jars/scala-library-2.12.8.jar:$ivyDir/org.scalaz/scalaz-core_2.12/bundles/scalaz-core_2.12-7.2.27.jar"))
+//  val outputSourceDirectories: List[AbsolutePath] = Classpath(toPlatform(s"$scalaCleanWorkspace/output/src/main/scala")).entries
+//  val inputSourceDirectories: List[AbsolutePath] = Classpath(toPlatform(s"$scalaCleanWorkspace/testProjects/$projectName/src/main/scala")).entries
   val outputClassDir: String = s"/workspace/ScalaClean/testProjects/$projectName/target/scala-2.12/classes/"
   val inputClasspath = Classpath(s"$outputClassDir:$ivyDir/org.scala-lang/scala-library/jars/scala-library-2.12.8.jar:$ivyDir/org.scalaz/scalaz-core_2.12/bundles/scalaz-core_2.12-7.2.27.jar")
-  val sourceRoot = AbsolutePath(scalaCleanWorkspace)
   val outputSourceDirectories: List[AbsolutePath] = Classpath(s"$scalaCleanWorkspace/output/src/main/scala").entries
   val inputSourceDirectories: List[AbsolutePath] = Classpath(s"$scalaCleanWorkspace/testProjects/$projectName/src/main/scala").entries
+
 
   def semanticPatch(
     rule: AbstractRule,
