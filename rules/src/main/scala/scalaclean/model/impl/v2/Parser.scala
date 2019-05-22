@@ -35,7 +35,7 @@ class ParserImpl extends ParseModel {
     val propsFile = projectsRoot.resolve(s"$projectName.properties")
     println("Writing props file " + propsFile)
     props.store(Files.newBufferedWriter(propsFile),"")
-    new Projects(projectsRoot,("privatiser-test-input", projectPath))
+    new Projects(projectsRoot,(projectName, projectPath))
   }
 
   private[v2] val internalAccess = new InternalAccess()

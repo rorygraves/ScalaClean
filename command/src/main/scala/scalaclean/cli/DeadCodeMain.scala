@@ -3,7 +3,7 @@ package scalaclean.cli
 import java.nio.charset.StandardCharsets
 
 import scalaclean.rules.AbstractRule
-import scalaclean.rules.privatiser.Privatiser
+import scalaclean.rules.deadcode.DeadCodeRemover
 import scalafix.internal.patch.PatchInternals
 import scalafix.internal.reflect.ClasspathOps
 import scalafix.lint.RuleDiagnostic
@@ -15,24 +15,24 @@ import scalafix.v1.SemanticDocument
 import scala.meta._
 import scala.meta.internal.io.FileIO
 
-object PrivatiserMain {
+object DeadCodeMain {
   def main(args: Array[String]): Unit = {
-    new PrivatiserMain().run
+    new DeadCodeMain().run
   }
 }
 
-class PrivatiserMain extends DiffAssertions {
+class DeadCodeMain extends DiffAssertions {
 
-  val projectName = "privatiserProject1"
+  val projectName = "deadCodeProject1"
   val scalaCleanWorkspace = "/workspace/ScalaClean"
   val ivyDir = "/Users/rorygraves/.ivy2/cache"
   val storagePath = "/Users/rorygraves/Downloads/temp3"
 
   val targetFiles = List(
-    RelativePath("scalaclean/test/rules/privatiser/Private1.scala"),
-    RelativePath("scalaclean/test/rules/privatiser/Private2.scala"),
-//    RelativePath("scalaclean/test/rules/privatiser/PrivateInnerVarValPatterns.scala"),
-//    RelativePath("scalaclean/test/rules/privatiser/PrivateMakePublic.scala")
+    RelativePath("scalaclean/test/rules/deadcode/DeadCodeAnnotation.scala"),
+    RelativePath("scalaclean/test/rules/deadcode/DeadCodeImport.scala"),
+    RelativePath("scalaclean/test/rules/deadcode/DeadCodeMain.scala"),
+    RelativePath("scalaclean/test/rules/deadcode/DeadCodeVarVal.scala")
   )
   val outputClassDir: String = s"/workspace/ScalaClean/testProjects/$projectName/target/scala-2.12/classes/"
   val inputClasspath = Classpath(s"$outputClassDir:$ivyDir/org.scala-lang/scala-library/jars/scala-library-2.12.8.jar:$ivyDir/org.scalaz/scalaz-core_2.12/bundles/scalaz-core_2.12-7.2.27.jar")
@@ -52,22 +52,22 @@ class PrivatiserMain extends DiffAssertions {
   def run: Unit = {
 
     AnalysisHelper.runAnalysis(projectName, inputClasspath, sourceRoot,  inputSourceDirectories, outputClassDir, storagePath, targetFiles)
-    runPrivatiser()
+    runDeadCode()
   }
 
-  def runPrivatiser(): Unit = {
+  def runDeadCode(): Unit = {
 
     val symtab = ClasspathOps.newSymbolTable(inputClasspath)
     val classLoader = ClasspathOps.toClassLoader(inputClasspath)
     val outputSourceDirectory = outputSourceDirectories.head
 
     println("---------------------------------------------------------------------------------------------------")
-    // run privatiser
-    val privatiser = new Privatiser()
-    privatiser.beforeStart()
+    // run DeadCode
+    val deadCode = new DeadCodeRemover()
+    deadCode.beforeStart()
     targetFiles.foreach { targetFile =>
       val sdoc = DocHelper.readSemanticDoc(classLoader, symtab, inputSourceDirectories.head, sourceRoot, targetFile)
-      val (fixed, messages) = semanticPatch(privatiser, sdoc, suppress = false)
+      val (fixed, messages) = semanticPatch(deadCode, sdoc, suppress = false)
 
       // compare results
       val tokens = fixed.tokenize.get

@@ -38,7 +38,7 @@ lazy val command = project
       //libraryDependencies += "ch.epfl.scala" %% "scalafix-testkit" % V.scalafixVersion,
 
     compile.in(Compile) :=
-      compile.in(Compile).dependsOn(compile.in(privatiserTestInput, Compile)).value,
+      compile.in(Compile).dependsOn(compile.in(privatiserProject1, Compile)).value,
 
 )
 
@@ -49,7 +49,14 @@ lazy val input = project.settings(
   skip in publish := true
 )
 
-lazy val privatiserTestInput = project.in(file("privatiser-test-input")).settings(
+lazy val privatiserProject1 = project.in(file("testProjects/privatiserProject1")).settings(
+  addCompilerPlugin(scalafixSemanticdb),
+  libraryDependencies += "org.scalaz" %% "scalaz-core" % "7.2.27",
+  scalacOptions += "-P:semanticdb:synthetics:on",
+  skip in publish := true
+)
+
+lazy val deadCodeProject1 = project.in(file("testProjects/deadCodeProject1")).settings(
   addCompilerPlugin(scalafixSemanticdb),
   libraryDependencies += "org.scalaz" %% "scalaz-core" % "7.2.27",
   scalacOptions += "-P:semanticdb:synthetics:on",
