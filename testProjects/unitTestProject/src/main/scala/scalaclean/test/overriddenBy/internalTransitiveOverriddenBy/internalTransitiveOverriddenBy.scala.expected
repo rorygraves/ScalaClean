@@ -1,0 +1,90 @@
+package scalaclean.test.overriddenBy.internalTransitiveOverriddenBy
+
+trait GrandParentTrait {
+  def d1: Int/* internalTransitiveOverriddenBy(scalaclean/test/overriddenBy/internalTransitiveOverriddenBy/GrandParentTrait#d1().) - MethodModel d1 [47:2 - 47:28] (scalaclean/test/overriddenBy/internalTransitiveOverriddenBy/Class_ChildTrait#d1().) :: MethodModel d1 [66:2 - 66:28] (scalaclean/test/overriddenBy/internalTransitiveOverriddenBy/Object_ChildTrait.d1().) :: MethodModel d1 [28:2 - 28:28] (scalaclean/test/overriddenBy/internalTransitiveOverriddenBy/Trait_ChildTrait#d1().) */
+  def d2(a:Int): Int/* internalTransitiveOverriddenBy(scalaclean/test/overriddenBy/internalTransitiveOverriddenBy/GrandParentTrait#d2().) - MethodModel d2 [49:2 - 49:36] (scalaclean/test/overriddenBy/internalTransitiveOverriddenBy/Class_ChildTrait#d2().) :: MethodModel d2 [68:2 - 68:36] (scalaclean/test/overriddenBy/internalTransitiveOverriddenBy/Object_ChildTrait.d2().) :: MethodModel d2 [30:2 - 30:36] (scalaclean/test/overriddenBy/internalTransitiveOverriddenBy/Trait_ChildTrait#d2().) */
+  def d2a(a:Int)(b:Int): Int/* internalTransitiveOverriddenBy(scalaclean/test/overriddenBy/internalTransitiveOverriddenBy/GrandParentTrait#d2a().) - MethodModel d2a [51:2 - 51:45] (scalaclean/test/overriddenBy/internalTransitiveOverriddenBy/Class_ChildTrait#d2a().) :: MethodModel d2a [70:2 - 70:45] (scalaclean/test/overriddenBy/internalTransitiveOverriddenBy/Object_ChildTrait.d2a().) :: MethodModel d2a [32:2 - 32:45] (scalaclean/test/overriddenBy/internalTransitiveOverriddenBy/Trait_ChildTrait#d2a().) */
+  def d3()(): Int/* internalTransitiveOverriddenBy(scalaclean/test/overriddenBy/internalTransitiveOverriddenBy/GrandParentTrait#d3().) - MethodModel d3 [53:2 - 53:32] (scalaclean/test/overriddenBy/internalTransitiveOverriddenBy/Class_ChildTrait#d3().) :: MethodModel d3 [72:2 - 72:32] (scalaclean/test/overriddenBy/internalTransitiveOverriddenBy/Object_ChildTrait.d3().) :: MethodModel d3 [34:2 - 34:32] (scalaclean/test/overriddenBy/internalTransitiveOverriddenBy/Trait_ChildTrait#d3().) */
+
+}
+trait ParentTrait extends GrandParentTrait {
+  def d3(): () => Int = ???/* internalTransitiveOverriddenBy(scalaclean/test/overriddenBy/internalTransitiveOverriddenBy/ParentTrait#d3().) - MethodModel d3 [13:2 - 13:36] (scalaclean/test/overriddenBy/internalTransitiveOverriddenBy/ChildTrait#d3().) */
+}
+trait ChildTrait extends ParentTrait {
+  override def d3(): () => Int = ???
+  def d2a(a:Int) = d2 _
+
+}
+trait Trait_ChildTrait extends ParentTrait {
+  override def equals(obj: Any): Boolean = super.equals(obj)
+
+  override def clone(): AnyRef = super.clone()
+
+  override def toString: String = super.toString
+
+  override def finalize(): Unit = super.finalize()
+
+  override def hashCode(): Int = super.hashCode()
+
+  override def d1: Int = ???
+
+  override def d2(a: Int): Int = ???
+
+  override def d2a(a: Int)(b: Int): Int = ???
+
+  override def d3()(): Int = ???
+}
+class Class_ChildTrait extends ParentTrait {
+  override def equals(obj: Any): Boolean = super.equals(obj)
+
+  override def clone(): AnyRef = super.clone()
+
+  override def toString: String = super.toString
+
+  override def finalize(): Unit = super.finalize()
+
+  override def hashCode(): Int = super.hashCode()
+
+  override def d1: Int = ???
+
+  override def d2(a: Int): Int = ???
+
+  override def d2a(a: Int)(b: Int): Int = ???
+
+  override def d3()(): Int = ???
+}
+object Object_ChildTrait extends ParentTrait {
+  override def equals(obj: Any): Boolean = super.equals(obj)
+
+  override def clone(): AnyRef = super.clone()
+
+  override def toString: String = super.toString
+
+  override def finalize(): Unit = super.finalize()
+
+  override def hashCode(): Int = super.hashCode()
+
+  override def d1: Int = ???
+
+  override def d2(a: Int): Int = ???
+
+  override def d2a(a: Int)(b: Int): Int = ???
+
+  override def d3()(): Int = ???
+}
+
+
+//class GrandParentClass {
+//
+//  def foo: Unit = ()
+//}
+//class ParentClass extends GrandParentClass {
+//}
+//class ChildClass extends ParentClass{
+//  def bar(x:Any): Unit = ()
+//}
+//
+//object ClildObject extends ChildClass {
+//  new Child().foo
+//  new Child().bar(1)
+//}

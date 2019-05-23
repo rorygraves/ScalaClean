@@ -1,0 +1,101 @@
+package scalaclean.test.nodes
+
+trait GrandParentTrait {
+  def d1: Int/* MethodModel d1 [3:2 - 3:13]  */
+  def d2(a:Int): Int/* MethodModel d2 [4:2 - 4:20]  */
+  def d2a(a:Int)(b:Int): Int/* MethodModel d2a [5:2 - 5:28]  */
+  def d3()(): Int/* MethodModel d3 [6:2 - 6:17]  */
+
+}/* TraitModel GrandParentTrait [2:0 - 8:1]  */
+trait ParentTrait extends GrandParentTrait {
+  def d3(): () => Int = ???/* MethodModel d3 [10:2 - 10:27]  */
+}/* TraitModel ParentTrait [9:0 - 11:1]  */
+trait ChildTrait extends ParentTrait {
+  override def d3(): () => Int = ???/* MethodModel d3 [13:2 - 13:36]  */
+  def d2a(a:Int) = d2 _/* MethodModel d2a [14:2 - 14:23]  */
+
+}/* TraitModel ChildTrait [12:0 - 16:1]  */
+trait Trait_ChildTrait extends ParentTrait {
+  override def equals(obj: Any): Boolean = super.equals(obj)/* MethodModel equals [18:2 - 18:60]  */
+
+  override def clone(): AnyRef = super.clone()/* MethodModel clone [20:2 - 20:46]  */
+
+  override def toString: String = super.toString/* MethodModel toString [22:2 - 22:48]  */
+
+  override def finalize(): Unit = super.finalize()/* MethodModel finalize [24:2 - 24:50]  */
+
+  override def hashCode(): Int = super.hashCode()/* MethodModel hashCode [26:2 - 26:49]  */
+
+  override def d1: Int = ???/* MethodModel d1 [28:2 - 28:28]  */
+
+  override def d2(a: Int): Int = ???/* MethodModel d2 [30:2 - 30:36]  */
+
+  override def d2a(a: Int)(b: Int): Int = ???/* MethodModel d2a [32:2 - 32:45]  */
+
+  override def d3()(): Int = ???/* MethodModel d3 [34:2 - 34:32]  */
+}/* TraitModel Trait_ChildTrait [17:0 - 35:1]  */
+class Class_ChildTrait extends ParentTrait {
+  override def equals(obj: Any): Boolean = super.equals(obj)/* MethodModel equals [37:2 - 37:60]  */
+
+  override def clone(): AnyRef = super.clone()/* MethodModel clone [39:2 - 39:46]  */
+
+  override def toString: String = super.toString/* MethodModel toString [41:2 - 41:48]  */
+
+  override def finalize(): Unit = super.finalize()/* MethodModel finalize [43:2 - 43:50]  */
+
+  override def hashCode(): Int = super.hashCode()/* MethodModel hashCode [45:2 - 45:49]  */
+
+  override def d1: Int = ???/* MethodModel d1 [47:2 - 47:28]  */
+
+  override def d2(a: Int): Int = ???/* MethodModel d2 [49:2 - 49:36]  */
+
+  override def d2a(a: Int)(b: Int): Int = ???/* MethodModel d2a [51:2 - 51:45]  */
+
+  override def d3()(): Int = ???/* MethodModel d3 [53:2 - 53:32]  */
+}/* ClassModel Class_ChildTrait [36:0 - 54:1]  */
+object Object_ChildTrait extends ParentTrait {
+  override def equals(obj: Any): Boolean = super.equals(obj)/* MethodModel equals [56:2 - 56:60]  */
+
+  override def clone(): AnyRef = super.clone()/* MethodModel clone [58:2 - 58:46]  */
+
+  override def toString: String = super.toString/* MethodModel toString [60:2 - 60:48]  */
+
+  override def finalize(): Unit = super.finalize()/* MethodModel finalize [62:2 - 62:50]  */
+
+  override def hashCode(): Int = super.hashCode()/* MethodModel hashCode [64:2 - 64:49]  */
+
+  override def d1: Int = ???/* MethodModel d1 [66:2 - 66:28]  */
+
+  override def d2(a: Int): Int = ???/* MethodModel d2 [68:2 - 68:36]  */
+
+  override def d2a(a: Int)(b: Int): Int = ???/* MethodModel d2a [70:2 - 70:45]  */
+
+  override def d3()(): Int = ???/* MethodModel d3 [72:2 - 72:32]  */
+}/* ObjectModel Object_ChildTrait [55:0 - 73:1]  */
+
+
+//class GrandParentClass {
+//
+//  def foo: Unit = ()
+//}
+//class ParentClass extends GrandParentClass {
+//}
+//class ChildClass extends ParentClass{
+//  def bar(x:Any): Unit = ()
+//}
+//
+//object ClildObject extends ChildClass {
+//  new Child().foo
+//  new Child().bar(1)
+//}
+
+object TestVarVal {
+  val x1:Int = 5/* ValModel x1 [92:2 - 92:16] lazy=false */
+  var x2:Int = 5/* VarModel x2 [93:2 - 93:16]  */
+  lazy val x3:Int = 5/* ValModel x3 [94:2 - 94:21] lazy=true */
+
+  val (x10, x11) = (1,2)/* ValModel x11 [96:2 - 96:24] lazy=false*//*ValModel x10 [96:2 - 96:24] lazy=false */
+  var (x20, x21) = (1,2)/* VarModel x21 [97:2 - 97:24] *//*VarModel x20 [97:2 - 97:24]  */
+  lazy val (x30, x31) = (1,2)/* ValModel x31 [98:2 - 98:29] lazy=true*//*ValModel x30 [98:2 - 98:29] lazy=true */
+
+}/* ObjectModel TestVarVal [91:0 - 100:1]  */
