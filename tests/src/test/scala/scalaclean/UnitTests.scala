@@ -20,6 +20,10 @@ import scala.meta.internal.io.FileIO
 
 class UnitTests extends AssertionsForJUnit with DiffAssertions {
 
+  @Test def akkaTimeoutTest() {
+    runTest("scalaclean/test/akka/Timeout.scala", new Test_allTransitiveOverrides(), overwrite = true)
+  }
+
   @Test def nodesTest() {
     runTest("scalaclean/test/nodes/nodes.scala", new Test_nodes())
   }
