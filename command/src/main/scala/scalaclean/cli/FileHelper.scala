@@ -14,7 +14,7 @@ object FileHelper {
     var res = fileOrPath
 
     res = res.replace("/", fileSep)
-    res = res.replace(":", pathSep)
+    res = res.replace("|", pathSep)
     res = res.replace("$HOME$", home)
 
     res

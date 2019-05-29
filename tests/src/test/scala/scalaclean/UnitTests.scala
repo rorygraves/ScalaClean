@@ -67,17 +67,17 @@ class UnitTests extends AssertionsForJUnit with DiffAssertions {
 
   def runTest(file: String, rule: TestCommon, overwrite: Boolean = false): Unit = {
     val projectName = "unitTestProject"
-    val scalaCleanWorkspace = "."
+    val scalaCleanWorkspace = ".."
     val ivyDir = toPlatform("$HOME$/.ivy2/cache")
     val storagePath = toPlatform("$HOME$/Downloads/temp3")
 
     val targetFiles = List(
       RelativePath(file),
     )
-    val outputClassDir: String = s"/workspace/ScalaClean/testProjects/$projectName/target/scala-2.12/classes/"
-    val inputClasspath = Classpath(s"$outputClassDir:$ivyDir/org.scala-lang/scala-library/jars/scala-library-2.12.8.jar:$ivyDir/org.scalaz/scalaz-core_2.12/bundles/scalaz-core_2.12-7.2.27.jar")
+    val outputClassDir: String = toPlatform(s"$scalaCleanWorkspace/testProjects/$projectName/target/scala-2.12/classes/")
+    val inputClasspath = Classpath(toPlatform(s"$outputClassDir|$ivyDir/org.scala-lang/scala-library/jars/scala-library-2.12.8.jar|$ivyDir/org.scalaz/scalaz-core_2.12/bundles/scalaz-core_2.12-7.2.27.jar"))
     val sourceRoot = AbsolutePath(scalaCleanWorkspace)
-    val inputSourceDirectories: List[AbsolutePath] = Classpath(s"$scalaCleanWorkspace/testProjects/$projectName/src/main/scala").entries
+    val inputSourceDirectories: List[AbsolutePath] = Classpath(toPlatform(s"$scalaCleanWorkspace/testProjects/$projectName/src/main/scala")).entries
 
     def semanticPatch(
       rule: TestCommon,
