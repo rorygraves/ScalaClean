@@ -2,6 +2,7 @@ package scalafix.scalaclean.cli
 
 import java.nio.charset.StandardCharsets
 
+import scalafix.scalaclean.FixUtils
 import scalafix.v1
 import scalafix.v1.SyntacticDocument
 
@@ -26,7 +27,7 @@ object DocHelper {
     val input = Input.VirtualFile(targetFile.toString, FileIO.slurp(inputPath, StandardCharsets.UTF_8))
     val doc = SyntacticDocument.fromInput(input)
 
-    v1.SemanticDocument.fromPath(
+    FixUtils.fromPath(
       doc,
       semanticdbPath,
       classLoader,

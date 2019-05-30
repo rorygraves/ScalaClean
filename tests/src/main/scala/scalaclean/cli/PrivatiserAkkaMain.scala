@@ -25,7 +25,7 @@ object PrivatiserAkkaMain {
 class PrivatiserAkkaMain extends DiffAssertions {
 
   val projectName = "akka-actor"
-  val akkaWorkspace = "/workspace/akka"
+  val akkaWorkspace = toPlatform("../akka/akka/")
   val ivyDir = toPlatform("$HOME$/.ivy2/cache")
   val storagePath = toPlatform("$HOME$/Downloads/temp3")
 
@@ -35,10 +35,10 @@ class PrivatiserAkkaMain extends DiffAssertions {
 
 // /workspace/akka/akka-actor/target/classes/META-INF/semanticdb/akka-actor/src/main/scala/akka/actor/Timers.scala.semanticdb
 // /workspace/akka/akka-actor/target/classes/META-INF/semanticdb/akka-actor/src/main/scala/akka/actor/Timers.scala.semanticdb
-  val outputClassDir: String = s"/workspace/akka/akka-actor/target/classes/"
-  val inputClasspath = Classpath(s"$outputClassDir:/Library/Java/JavaVirtualMachines/jdk1.8.0_151.jdk/Contents/Home/jre/lib/resources.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_151.jdk/Contents/Home/jre/lib/rt.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_151.jdk/Contents/Home/jre/lib/sunrsasign.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_151.jdk/Contents/Home/jre/lib/jsse.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_151.jdk/Contents/Home/jre/lib/jce.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_151.jdk/Contents/Home/jre/lib/charsets.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_151.jdk/Contents/Home/jre/lib/jfr.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_151.jdk/Contents/Home/jre/classes:/Users/rorygraves/.ivy2/cache/org.scala-lang/scala-library/jars/scala-library-2.12.8.jar:/workspace/akka/akka-actor/target/classes:/Users/rorygraves/.ivy2/cache/com.typesafe/config/bundles/config-1.3.3.jar:/Users/rorygraves/.ivy2/cache/org.scala-lang.modules/scala-java8-compat_2.12/bundles/scala-java8-compat_2.12-0.8.0.jar")
+  val outputClassDir: String = toPlatform(s"$akkaWorkspace/akka-actor/target/classes/")
+  val inputClasspath = Classpath(toPlatform(s"$outputClassDir|/Library/Java/JavaVirtualMachines/jdk1.8.0_151.jdk/Contents/Home/jre/lib/resources.jar|/Library/Java/JavaVirtualMachines/jdk1.8.0_151.jdk/Contents/Home/jre/lib/rt.jar|/Library/Java/JavaVirtualMachines/jdk1.8.0_151.jdk/Contents/Home/jre/lib/sunrsasign.jar|/Library/Java/JavaVirtualMachines/jdk1.8.0_151.jdk/Contents/Home/jre/lib/jsse.jar|/Library/Java/JavaVirtualMachines/jdk1.8.0_151.jdk/Contents/Home/jre/lib/jce.jar|/Library/Java/JavaVirtualMachines/jdk1.8.0_151.jdk/Contents/Home/jre/lib/charsets.jar|/Library/Java/JavaVirtualMachines/jdk1.8.0_151.jdk/Contents/Home/jre/lib/jfr.jar|/Library/Java/JavaVirtualMachines/jdk1.8.0_151.jdk/Contents/Home/jre/classes|/Users/rorygraves/.ivy2/cache/org.scala-lang/scala-library/jars/scala-library-2.12.8.jar|/workspace/akka/akka-actor/target/classes|/Users/rorygraves/.ivy2/cache/com.typesafe/config/bundles/config-1.3.3.jar|/Users/rorygraves/.ivy2/cache/org.scala-lang.modules/scala-java8-compat_2.12/bundles/scala-java8-compat_2.12-0.8.0.jar"))
   val sourceRoot = AbsolutePath(akkaWorkspace)
-  val inputSourceDirectories: List[AbsolutePath] = Classpath(s"$akkaWorkspace/akka-actor/src/main/scala").entries
+  val inputSourceDirectories: List[AbsolutePath] = Classpath(toPlatform(s"$akkaWorkspace/akka-actor/src/main/scala")).entries
 
   def semanticPatch(
     rule: AbstractRule,
