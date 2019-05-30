@@ -44,7 +44,8 @@ class ParserImpl extends ParseModel {
 
   private val bySymbol = mutable.Map[Symbol, ParsedElement]()
   private[v2] def record( element: ParsedElement): Unit = {
-    assert(bySymbol.put(element.symbol, element).isEmpty, s"${element.symbol} enclosing ${element.enclosing} and =$element")
+    bySymbol.get(element.symbol) foreach {e => assert(false, s"$element --- ${element.symbol} enclosing ${element.enclosing}\n matches $e --- ${e.symbol} enclosing ${e.enclosing}")}
+    bySymbol.put(element.symbol, element)
   }
 
 }

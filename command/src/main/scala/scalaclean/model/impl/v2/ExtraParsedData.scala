@@ -61,7 +61,22 @@ class ExtraParsedData(parser: ParserImpl) {
     element.recordOverrides(directSyms, allSyms)
   }
 
-  private def paramsMatch(gSymParamss: List[List[JavaUniverse#Symbol]], metaParamss: List[List[Term.Param]]): Boolean = {
+  private def paramsMatchName(gSymParamss: List[List[JavaUniverse#Symbol]], metaParamss: List[List[Term.Param]]): Boolean = {
+    gSymParamss.size == metaParamss.size &&
+      (gSymParamss zip metaParamss forall {
+        case (gSymParams: List[JavaUniverse#Symbol], metaParams: List[Term.Param]) =>
+          gSymParams.length == metaParams.length &&
+            (gSymParams zip metaParams forall {
+              case (gSymParam: JavaUniverse#Symbol, metaParam: Term.Param) =>
+                assert(metaParam.decltpe.isDefined)
+                val gName = gSymParam.nameString
+                val mName = metaParam.name.toString()
+
+                gName == mName
+            })
+      })
+  }
+  private def paramsMatchType(gSymParamss: List[List[JavaUniverse#Symbol]], metaParamss: List[List[Term.Param]]): Boolean = {
     gSymParamss.size == metaParamss.size &&
       (gSymParamss zip metaParamss forall {
         case (gSymParams: List[JavaUniverse#Symbol], metaParams: List[Term.Param]) =>
@@ -70,7 +85,17 @@ class ExtraParsedData(parser: ParserImpl) {
               case (gSymParam: JavaUniverse#Symbol, metaParam: Term.Param) =>
                 assert(metaParam.decltpe.isDefined)
                 //TODO not a great compare
-                gSymParam.tpe.toString == metaParam.decltpe.get.toString
+                //strip spaces Foo[A, B] -->  Foo[A,B]
+                //strip FQ outer names in generic params Foo[a.b.A, c.d.B] --> Foo[A,B]
+                //regex
+                // 1. capture as $1 a '[' or ','
+                // 2. match anything except '[' ']' and ',' followed by a '.'
+                // 3. replace with $1
+
+                val gType = gSymParam.tpe.toString.replace(" ", "")replaceAll("([\\,\\[])[^,\\[\\]]+\\.", "$1")
+                val mType = metaParam.decltpe.get.toString.replace(" ", "")replaceAll("([\\,\\[])[^,\\[\\]]+\\.", "$1")
+
+                (gType == mType || gType.endsWith(s".$mType"))
             })
       })
   }
@@ -87,19 +112,29 @@ class ExtraParsedData(parser: ParserImpl) {
       case Some(cls: ParsedClassLike) =>
         val sym = reflectSymbol(cls)
         val list = sym.toType.decls.toList
+        val methodName = m.method_name.toString
+        val methodParamss = m.method_paramss
         val simpleMethodMatch = list.collect {
           case sym: parser.internalAccess.ru.MethodSymbol
             if !sym.isClassConstructor
-              && sym.nameString == m.method_name.toString => sym
+              && sym.nameString == methodName => sym
         }
-        val found = simpleMethodMatch filter {
+        val foundNamesMatch = simpleMethodMatch filter {
           case sym =>
             val symParams = sym.paramLists
-            val defnParams = m.method_paramss
-            (symParams, defnParams) match {
+            (symParams, methodParamss) match {
               case (Nil, List(Nil)) => true
               case (List(Nil), Nil) => true
-              case _ => paramsMatch(symParams, defnParams)
+              case _ => paramsMatchName(symParams, methodParamss)
+            }
+        }
+        val found = if (foundNamesMatch.size <= 1) foundNamesMatch else foundNamesMatch filter {
+          case sym =>
+            val symParams = sym.paramLists
+            (symParams, methodParamss) match {
+              case (Nil, List(Nil)) => true
+              case (List(Nil), Nil) => true
+              case _ => paramsMatchType(symParams, methodParamss)
             }
         }
         assert(found.size == 1, s"could not match the method ${m.stat} from $simpleMethodMatch - found=$found - orig = $list")

@@ -32,6 +32,9 @@ sealed abstract class ParsedElement(val stat: Stat, val enclosing: List[ParsedEl
   def transitiveOverrides = _transitiveOverrides
 
   def symbol: Symbol = stat.symbol(doc)
+
+  override def toString = s"${getClass.getSimpleName} $stat$extra"
+  protected def extra = ""
 }
 
 abstract sealed class ParsedField(defn: Stat, val field: Pat.Var, allFields: Seq[Pat.Var],
@@ -42,6 +45,8 @@ abstract sealed class ParsedField(defn: Stat, val field: Pat.Var, allFields: Seq
   override def symbol: Symbol = field.symbol(doc)
 
   def isAbstract: Boolean
+
+  override protected def extra: String = s"${super.extra} ${field.name}"
 }
 
 abstract class ParsedVar(vr: Stat, field: Pat.Var, allFields: Seq[Pat.Var],
@@ -106,6 +111,7 @@ abstract class ParsedMethod(stat: Stat, enclosing: List[ParsedElement], doc: Sem
   def paramsType = method_paramss map (_.map {
     param: Term.Param => param.symbol(doc)
   })
+  override protected def extra: String = s"${super.extra} ${method_name}"
 
 }
 
