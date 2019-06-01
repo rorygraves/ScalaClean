@@ -25,7 +25,7 @@ object PrivatiserAkkaMain {
 class PrivatiserAkkaMain extends DiffAssertions {
 
   val projectName = "akka-actor"
-  val akkaWorkspace = toPlatform("../akka/akka/")
+  val akkaWorkspace = toPlatform("../akka/")
   val ivyDir = toPlatform("$HOME$/.ivy2/cache")
   val storagePath = toPlatform("$HOME$/Downloads/temp3")
 
@@ -52,8 +52,39 @@ class PrivatiserAkkaMain extends DiffAssertions {
   def run: Unit = {
 
     val sd = inputSourceDirectories.head
-    val targetFiles = FileIO.listAllFilesRecursively(sd).filter(f => f.isFile  && f.toFile.getAbsolutePath.endsWith(".scala")).map(_.toRelative(sd)).toList
-    AnalysisHelper.runAnalysis(projectName, inputClasspath, sourceRoot,  inputSourceDirectories, outputClassDir, storagePath, targetFiles)
+    val targetFiles: List[RelativePath] = FileIO.listAllFilesRecursively(sd).filter(f => f.isFile  && f.toFile.getAbsolutePath.endsWith(".scala")).map(_.toRelative(sd)).toList
+
+    val filteredFiles = targetFiles filter {
+      case RelativePath(nio) =>
+        val path = nio.toString
+        ! path.endsWith("ActorPath.scala") && // no symbol
+          ! path.endsWith("ActorRef.scala") && // no symbol
+          ! path.endsWith("ActorSystem.scala") && // no symbol
+          ! path.endsWith("CoordinatedShutdown.scala") && // no symbol
+          ! path.endsWith("Children.scala") && // no symbol
+          ! path.endsWith("ChildrenContainer.scala") && // no symbol
+          ! path.endsWith("DeathWatch.scala") && // no symbol
+          ! path.endsWith("FaultHandling.scala") && // no symbol
+          ! path.endsWith("LightArrayRevolverScheduler.scala") && // no symbol
+          ! path.endsWith("AbstractDispatcher.scala") && // no symbol
+          ! path.endsWith("AffinityPool.scala") && // no symbol
+          ! path.endsWith("Future.scala") && // no symbol
+          ! path.endsWith("ActorRefProvider.scala") && // cant find method  - recordOverrides
+          ! path.endsWith("DynamicAccess.scala") && // cant find method  - recordOverrides
+          ! path.endsWith("Props.scala") && // cant find method  - recordOverrides
+          ! path.endsWith("ActorSystemSetup.scala") && // cant find method  - recordOverrides
+          ! path.endsWith("TypedActor.scala") && // cant find method  - recordOverrides
+          ! path.endsWith("Creators.scala") && // recordOverrides  --- build issue ? MissingRequirementError:
+          ! path.endsWith("Inbox.scala") && // recordOverrides  --- build issue ? MissingRequirementError:
+          ! path.endsWith("FSM.scala") && // recordOverrides  --- build issue ? MissingRequirementError:
+          ! path.endsWith("Dispatcher.scala") && // recordOverrides  --- build issue ? MissingRequirementError:
+          ! path.endsWith("BalancingDispatcher.scala") && // recordOverrides  --- build issue ? MissingRequirementError:
+          ! path.endsWith("BatchingExecutor.scala") && // recordOverrides  --- build issue ? MissingRequirementError:
+          ! path.endsWith("ForkJoinExecutorConfigurator.scala") && // recordOverrides  --- build issue ? MissingRequirementError:
+          ! path.endsWith("CachingConfig.scala") && // recordOverrides  --- unsafe issue
+      true
+    }
+    AnalysisHelper.runAnalysis(projectName, inputClasspath, sourceRoot,  inputSourceDirectories, outputClassDir, storagePath, filteredFiles)
     runPrivatiser(targetFiles)
   }
 

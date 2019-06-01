@@ -1,6 +1,6 @@
 package scalaclean.model.impl.v2
 
-import scalaclean.model.Utils
+import scalaclean.model.{ModelKey, Utils}
 import scalafix.v1._
 
 import scala.meta.{Decl, Defn, Pkg, Source, Term, Tree}
@@ -114,9 +114,11 @@ class ParserTreeWalker(parser: ParserImpl, implicit val doc: SemanticDocument) {
       if (enclosing.isEmpty) {
         debug(s"cant add to parent  ${tree.getClass} ${tree.pos.start} .. ${tree.pos.end} synthetic:$inSynthetic - ${symbol}")
       } else {
-        if (enclosing.forall(_.symbol != symbol))
+        // if sym is local then our tree must be ok, if not it doesdnt matter
+        val toKey = ModelKey(symbol, tree.pos.input)
+        if (enclosing.forall(_.key != toKey))
           enclosing foreach {
-            _.addRefersTo(tree, symbol, inSynthetic)
+            _.addRefersTo(tree, toKey, inSynthetic)
           }
       }
   }

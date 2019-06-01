@@ -1,14 +1,14 @@
 package scalaclean.model.impl.v2
 
-import scalaclean.model.Refers
+import scalaclean.model.{ModelKey, Refers}
 import scalafix.v1._
 
 import scala.meta.{Decl, Defn, Mod, Pat, Stat, Template, Term, Tree, Type}
 
 sealed abstract class ParsedElement(val stat: Stat, val enclosing: List[ParsedElement], val doc: SemanticDocument) {
-  assert(!symbol.isNone)
+  assert(!rawSymbol.isNone)
 
-  def addRefersTo(tree: Tree, symbol: Symbol, isSynthetic: Boolean): Unit = {
+  def addRefersTo(tree: Tree, symbol: ModelKey, isSynthetic: Boolean): Unit = {
     _refersTo ::= (symbol, isSynthetic)
   }
 
@@ -17,13 +17,13 @@ sealed abstract class ParsedElement(val stat: Stat, val enclosing: List[ParsedEl
     s"${pos.startLine}:${pos.startColumn} - ${pos.endLine}:${pos.endColumn}"
   }
 
-  private var _refersTo = List.empty[(Symbol, Boolean)]
+  private var _refersTo = List.empty[(ModelKey, Boolean)]
   def refersTo = _refersTo
 
-  private var _directOverrides = List.empty[Symbol]
-  private var _transitiveOverrides = List.empty[Symbol]
+  private var _directOverrides = List.empty[ModelKey]
+  private var _transitiveOverrides = List.empty[ModelKey]
 
-  def recordOverrides(directOverides: List[Symbol], transitiveOverrides: List[Symbol]) = {
+  def recordOverrides(directOverides: List[ModelKey], transitiveOverrides: List[ModelKey]) = {
     assert(_directOverrides eq Nil)
     _directOverrides = directOverides.distinct
     _transitiveOverrides = (transitiveOverrides ++ directOverides).distinct
@@ -31,7 +31,9 @@ sealed abstract class ParsedElement(val stat: Stat, val enclosing: List[ParsedEl
   def directOverrides = _directOverrides
   def transitiveOverrides = _transitiveOverrides
 
-  def symbol: Symbol = stat.symbol(doc)
+  protected def rawSymbol: Symbol = stat.symbol(doc)
+
+  lazy val key: ModelKey = ModelKey(rawSymbol, stat.pos.input)
 
   override def toString = s"${getClass.getSimpleName} $stat$extra"
   protected def extra = ""
@@ -42,7 +44,7 @@ abstract sealed class ParsedField(defn: Stat, val field: Pat.Var, allFields: Seq
   ParsedElement(defn, enclosing, doc) {
   require(allFields.nonEmpty)
 
-  override def symbol: Symbol = field.symbol(doc)
+  override protected def rawSymbol: Symbol = field.symbol(doc)
 
   def isAbstract: Boolean
 
@@ -144,13 +146,22 @@ class ParsedMethodDecl(val decl: Decl.Def, enclosing: List[ParsedElement], doc: 
 }
 
 abstract sealed class ParsedClassLike(defn: Defn, enclosing: List[ParsedElement], doc: SemanticDocument) extends ParsedElement(defn, enclosing, doc) {
+  def globalSsmbol = key match {
+    case ModelKey.GlobalSymbolKey(sym) =>sym
+  }
+
   protected def template: Template
 
-  val directExtends: Set[Symbol] = (template.inits collect {
-    case i => i.symbol(doc)
+  val directExtends: Set[ModelKey] = direct map ModelKey.fromGlobal
+
+  private def direct: Set[Symbol] = (template.inits collect {
+    case i =>
+      var res = i.symbol(doc)
+      assert (res.isGlobal)
+      res
   }) toSet
 
-  def transitiveExtends: Set[Symbol] = {
+  def transitiveExtends: Set[ModelKey] = {
     def xtends(classSym: Symbol): Set[Symbol] = {
       doc.info(classSym) match {
         case None => ???
@@ -165,13 +176,14 @@ abstract sealed class ParsedClassLike(defn: Defn, enclosing: List[ParsedElement]
       }
     }
 
-    directExtends.foldLeft(directExtends) {
+
+    direct.foldLeft(direct) {
       case (result: Set[Symbol], direct) =>
         result ++ xtends(direct)
-    }
+    } map ModelKey.fromGlobal
   }
 
-  def fullName: String = symbol.toString
+  def fullName: String = key.toString
 
 }
 

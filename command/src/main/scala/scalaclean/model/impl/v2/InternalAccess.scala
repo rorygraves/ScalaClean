@@ -15,7 +15,7 @@ import scala.reflect.runtime
   */
 class InternalAccess {
   def reflectSymbol(cls: ParsedClassLike) = {
-    val symbol = cls.symbol
+    val symbol = cls.globalSsmbol
       val doc = cls.doc
     val jm = mirror(doc)
     val fullName = symbol.toString

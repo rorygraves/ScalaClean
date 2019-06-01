@@ -1,5 +1,6 @@
 package scalaclean.model.impl.v2
 
+import scalaclean.model.ModelKey
 import scalafix.v1.Symbol
 
 import scala.meta.Term
@@ -53,8 +54,8 @@ class ExtraParsedData(parser: ParserImpl) {
         allParents.headOption foreach (direct += _)
         all ++= allParents
     }
-    val directSyms = direct.result map (rsym => Symbol(globalHelper.gSymToMSymString(rsym)))
-    val allSyms = all.result map (rsym => Symbol(globalHelper.gSymToMSymString(rsym)))
+    val directSyms = direct.result map (rsym => ModelKey.fromGlobal(Symbol(globalHelper.gSymToMSymString(rsym))))
+    val allSyms = all.result map (rsym => ModelKey.fromGlobal(Symbol(globalHelper.gSymToMSymString(rsym))))
     if (directSyms.mkString contains "<no symbol>") {
       println("")
     }

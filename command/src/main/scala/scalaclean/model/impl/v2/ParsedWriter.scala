@@ -63,21 +63,22 @@ class ParsedWriter(path: Path, projectRoot: Path) {
       case x  =>
         throw new IllegalStateException(s"unexpected input type ${x.getClass}")
     }
-    elementsFile.write(s"$typeId,${e.symbol.value},${inputFile},${e.stat.pos.start},${e.stat.pos.end}")
+    val source = e.key.toCsv
+    elementsFile.write(s"$typeId,${source},${inputFile},${e.stat.pos.start},${e.stat.pos.end}")
 
     e.enclosing foreach { parent =>
-      relationshipsFile.write(s"${e.symbol.value},${IoTokens.relWithin},${parent.symbol.value}")
+      relationshipsFile.write(s"${source},${IoTokens.relWithin},${parent.key.toCsv}")
       relationshipsFile.newLine()
     }
     e.refersTo foreach { case (to, synthetic) =>
-      relationshipsFile.write(s"${e.symbol.value},${IoTokens.relRefers},${to.value},$synthetic")
+      relationshipsFile.write(s"${source},${IoTokens.relRefers},${to.toCsv},$synthetic")
       relationshipsFile.newLine()
     }
     val directOverrides = e.directOverrides
     val transOverrides = e.transitiveOverrides
     transOverrides foreach { over =>
       val isDirect = directOverrides.contains(over)
-      relationshipsFile.write(s"${e.symbol.value},${IoTokens.relOverrides},${over.value},$isDirect")
+      relationshipsFile.write(s"${source},${IoTokens.relOverrides},${over.toCsv},$isDirect")
       relationshipsFile.newLine()
     }
   }
@@ -89,7 +90,7 @@ class ParsedWriter(path: Path, projectRoot: Path) {
     transExtends foreach {
       ext =>
         val isDirect = directExtends.contains(ext)
-        relationshipsFile.write(s"${c.symbol.value},${IoTokens.relExtends},${ext.value},$isDirect")
+        relationshipsFile.write(s"${c.key.toCsv},${IoTokens.relExtends},${ext.toCsv},$isDirect")
         relationshipsFile.newLine()
     }
 

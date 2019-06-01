@@ -42,10 +42,10 @@ class ParserImpl extends ParseModel {
   private[v2] val additionalDataBuilder = new ExtraParsedData(this)
 
 
-  private val bySymbol = mutable.Map[Symbol, ParsedElement]()
+  private val bySymbol = mutable.Map[ModelKey, ParsedElement]()
   private[v2] def record( element: ParsedElement): Unit = {
-    bySymbol.get(element.symbol) foreach {e => assert(false, s"$element --- ${element.symbol} enclosing ${element.enclosing}\n matches $e --- ${e.symbol} enclosing ${e.enclosing}")}
-    bySymbol.put(element.symbol, element)
+    bySymbol.get(element.key) foreach {e => assert(false, s"$element --- ${element.key} enclosing ${element.enclosing}\n matches $e --- ${e.key} enclosing ${e.enclosing}")}
+    bySymbol.put(element.key, element)
   }
 
 }
