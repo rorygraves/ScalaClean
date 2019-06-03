@@ -1,12 +1,12 @@
 package scalaclean.model.impl.v2
 
-import scalaclean.model.{ModelKey, Refers}
+import scalaclean.model.ModelKey
 import scalafix.v1._
 
 import scala.meta.{Decl, Defn, Mod, Pat, Stat, Template, Term, Tree, Type}
 
 sealed abstract class ParsedElement(val stat: Stat, val enclosing: List[ParsedElement], val doc: SemanticDocument) {
-  assert(!rawSymbol.isNone)
+  assert(!rawSymbol.isNone, s"no symbol found for: ${stat.pos.startLine}: $stat")
 
   def addRefersTo(tree: Tree, symbol: ModelKey, isSynthetic: Boolean): Unit = {
     _refersTo ::= (symbol, isSynthetic)
