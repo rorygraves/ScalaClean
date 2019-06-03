@@ -36,10 +36,10 @@ class PrivatiserAkkaMain extends DiffAssertions {
   val inputSourceDirectories: List[AbsolutePath] = Classpath(toPlatform(s"$akkaWorkspace/src/main/scala")).entries
 
   def semanticPatch(
-    rule: AbstractRule,
-    sdoc: SemanticDocument,
-    suppress: Boolean
-  ): (String, List[RuleDiagnostic]) = {
+                     rule: AbstractRule,
+                     sdoc: SemanticDocument,
+                     suppress: Boolean
+                   ): (String, List[RuleDiagnostic]) = {
     val fixes = Some(RuleName(rule.name) -> rule.fix(sdoc)).map(Map.empty + _).getOrElse(Map.empty)
     PatchInternals.semantic(fixes, sdoc, suppress)
   }
@@ -47,49 +47,73 @@ class PrivatiserAkkaMain extends DiffAssertions {
   def run: Unit = {
 
     val sd = inputSourceDirectories.head
-    val targetFiles: List[RelativePath] = FileIO.listAllFilesRecursively(sd).filter(f => f.isFile  && f.toFile.getAbsolutePath.endsWith(".scala")).map(_.toRelative(sd)).toList.sortBy(_.toString())
+    val targetFiles: List[RelativePath] = FileIO.listAllFilesRecursively(sd).filter(f => f.isFile && f.toFile.getAbsolutePath.endsWith(".scala")).map(_.toRelative(sd)).toList.sortBy(_.toString())
 
 
     val filteredFiles = targetFiles filter {
       case RelativePath(nio) =>
-        val path = nio.toString
-        path.endsWith("akka/dispatch/Mailbox.scala")
+        val path = nio.toString.replace('\\', '/')
+        println(s"path = $path")
 
-//        ! path.endsWith("akka/dispatch/Mailbox.scala") && // illegal cyclic reference involving class AbstractNodeQueue
-        ! path.endsWith("akka/dispatch/ThreadPoolBuilder.scala") && // MissingRequirementError: class akka.dispatch.ThreadPoolConfig.ThreadPoolExecutorServiceFactory in JavaMirror
-        ! path.endsWith("akka/event/EventBus.scala") && // MissingRequirementError: class akka.event.ManagedActorClassification.ManagedActorClassificationMappings in JavaMirror
-        ! path.endsWith("akka/event/Logging.scala") && // no match
-        ! path.endsWith("akka/event/LoggingReceive.scala") && // could not match the method
-        ! path.endsWith("akka/io/Dns.scala") && // MissingRequirementError: class akka.io.DnsExt.Settings in JavaMirror
-        ! path.endsWith("akka/io/SelectionHandler.scala") && // JavaMirror
-        ! path.endsWith("akka/io/Tcp.scala") && // JavaMirror
-        ! path.endsWith("akka/io/TcpConnection.scala") && // JavaMirror
-        ! path.endsWith("akka/pattern/AskSupport.scala") && // could not match the method private[pattern] def $qmark$extension(
-          ! path.endsWith("akka/pattern/BackoffSupervisor.scala") && // assertion failed
-          ! path.endsWith("akka/pattern/CircuitBreaker.scala") && // could not match the method def onOpen(callback: ⇒ Unit): ...
-          ! path.endsWith("akka/pattern/PipeToSupport.scala") && // MissingRequirementError: class akka.pattern.PipeToSupport.PipeableFuture in JavaMirror
-          ! path.endsWith("akka/routing/ConsistentHash.scala") && // match method apply
-          ! path.endsWith("ActorSystem.scala") && // no symbol
-          ! path.endsWith("CoordinatedShutdown.scala") && // no symbol
-          ! path.endsWith("FaultHandling.scala") && // no symbol
-          ! path.endsWith("AffinityPool.scala") && // no symbol
-          ! path.endsWith("Future.scala") && // JavaMirror
-          ! path.endsWith("ActorRefProvider.scala") && // cant find method  - recordOverrides
-          ! path.endsWith("DynamicAccess.scala") && // cant find method  - recordOverrides
-          ! path.endsWith("Props.scala") && // cant find method  - recordOverrides
-          ! path.endsWith("ActorSystemSetup.scala") && // cant find method  - recordOverrides
-          ! path.endsWith("TypedActor.scala") && // cant find method  - recordOverrides
-          ! path.endsWith("Creators.scala") && // recordOverrides  --- build issue ? MissingRequirementError:
-          ! path.endsWith("Inbox.scala") && // recordOverrides  --- build issue ? MissingRequirementError:
-          ! path.endsWith("FSM.scala") && // recordOverrides  --- build issue ? MissingRequirementError:
-          ! path.endsWith("Dispatcher.scala") && // recordOverrides  --- build issue ? MissingRequirementError:
-          ! path.endsWith("BalancingDispatcher.scala") && // recordOverrides  --- build issue ? MissingRequirementError:
-          ! path.endsWith("BatchingExecutor.scala") && // recordOverrides  --- build issue ? MissingRequirementError:
-          ! path.endsWith("ForkJoinExecutorConfigurator.scala") && // recordOverrides  --- build issue ? MissingRequirementError:
-          ! path.endsWith("CachingConfig.scala") && // recordOverrides  --- unsafe issue
-      true
+        path != "akka/dispatch/Mailbox.scala" && // illegal cyclic reference involving class AbstractNodeQueue
+          path != "akka/util/SerializedSuspendableExecutionContext.scala" && // illegal cyclic reference involving Java module class AbstractNodeQueue
+          //
+          path != "akka/pattern/BackoffSupervisor.scala" && // assertion failed
+          //
+          //
+          path != "akka/actor/DynamicAccess.scala" && // cant find method  - recordOverrides - implicit parameters
+          path != "akka/actor/Props.scala" && // cant find method  - recordOverrides - implicit parameters
+          path != "akka/actor/ReflectiveDynamicAccess.scala" && // cant find method  - recordOverrides - implicit parameters
+          path != "akka/actor/TypedActor.scala" && // cant find method  - recordOverrides - implicit parameters
+          path != "akka/actor/setup/ActorSystemSetup.scala" && // cant find method  - recordOverrides - implicit parameters
+          path != "akka/compat/Future.scala" && // cant find method  - recordOverrides - implicit parameters
+          path != "akka/event/Logging.scala" && // cant find method  - recordOverrides - implicit parameters
+          path != "akka/routing/ConsistentHash.scala" && // cant find method  - recordOverrides - implicit parameters
+          //
+          path != "akka/pattern/CircuitBreaker.scala" && // recordOverrides  --- build issue ? MissingRequirementError:
+          path != "akka/pattern/PipeToSupport.scala" && // recordOverrides  --- build issue ? MissingRequirementError:
+          path != "akka/event/EventBus.scala" && // recordOverrides  --- build issue ? MissingRequirementError:
+          path != "akka/io/Dns.scala" && // recordOverrides  --- build issue ? MissingRequirementError:
+          path != "akka/io/SelectionHandler.scala" && // recordOverrides  --- build issue ? MissingRequirementError:
+          path != "akka/io/Tcp.scala" && // recordOverrides  --- build issue ? MissingRequirementError:
+          path != "akka/io/TcpConnection.scala" && // recordOverrides  --- build issue ? MissingRequirementError:
+          path != "akka/dispatch/ThreadPoolBuilder.scala" && // recordOverrides  --- build issue ? MissingRequirementError:
+          path != "akka/actor/ActorSystem.scala" && // recordOverrides  --- build issue ? MissingRequirementError:
+          path != "akka/actor/dsl/Creators.scala" && // recordOverrides  --- build issue ? MissingRequirementError:
+          path != "akka/actor/dsl/Inbox.scala" && // recordOverrides  --- build issue ? MissingRequirementError:
+          path != "akka/actor/FSM.scala" && // recordOverrides  --- build issue ? MissingRequirementError:
+          path != "akka/dispatch/BalancingDispatcher.scala" && // recordOverrides  --- build issue ? MissingRequirementError:
+          path != "akka/dispatch/BatchingExecutor.scala" && // recordOverrides  --- build issue ? MissingRequirementError:
+          path != "akka/dispatch/Dispatcher.scala" && // recordOverrides  --- build issue ? MissingRequirementError:
+          path != "akka/dispatch/ForkJoinExecutorConfigurator.scala" && // recordOverrides  --- build issue ? MissingRequirementError:
+          path != "akka/dispatch/affinity/AffinityPool.scala" && // recordOverrides  --- build issue ? MissingRequirementError:
+          //
+          path != "akka/dispatch/CachingConfig.scala" && // recordOverrides  --- unsafe issue - unsafe symbol ConfigMemorySize (child of package class config) in runtime reflection universe
+          //
+          path != "akka/actor/ActorRefProvider.scala" && // recordOverrides  --- UNKNOWN - recordOverrides
+          path != "akka/actor/FaultHandling.scala" && // recordOverrides  --- UNKNOWN - makeDecider
+          path != "akka/event/LoggingReceive.scala" && // recordOverrides  --- UNKNOWN - create
+          path != "akka/japi/JavaAPI.scala" && // recordOverrides  --- UNKNOWN - immutableSeq
+          path != "akka/serialization/Serializer.scala" && // recordOverrides  --- UNKNOWN - fromBinary
+          //
+          path != "akka/util/Index.scala" && // recordOverrides  --- compare -- method missing??
+          //
+          path != "akka/util/ByteString.scala" && // recordOverrides  --- apply ??? varargs
+          //
+          path != "akka/util/ByteIterator.scala" && // recordOverrides  --- current - its a @inline private ?????
+          //
+          path != "akka/util/Helpers.scala" && // recordOverrides  --- requiring - byName ?????
+          //
+          path != "akka/util/LineNumbers.scala" && // recordOverrides  --- `for` - backticks ?????
+          //
+          path != "akka/pattern/AskSupport.scala" && //  recordOverrides  --- def $qmark$extension decode ???
+          //
+          path != "akka/dispatch/Future.scala" && // init - no global
+          //
+          path != "akka/routing/MurmurHash.scala" && // internal - duplicate symbol on var decl - no global
+          true
     }
-    AnalysisHelper.runAnalysis(projectName, inputClasspath, sourceRoot,  inputSourceDirectories, outputClassDir, storagePath, filteredFiles)
+    AnalysisHelper.runAnalysis(projectName, inputClasspath, sourceRoot, inputSourceDirectories, outputClassDir, storagePath, filteredFiles)
     runPrivatiser(targetFiles)
   }
 

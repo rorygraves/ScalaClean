@@ -1,7 +1,7 @@
 package scalaclean.model.impl.v2
 
 import scalaclean.model.ModelKey
-import scalafix.v1.Symbol
+import scalafix.v1.{SemanticDocument, Symbol}
 
 import scala.meta.Term
 import scala.reflect.runtime.JavaUniverse
@@ -62,7 +62,7 @@ class ExtraParsedData(parser: ParserImpl) {
     element.recordOverrides(directSyms, allSyms)
   }
 
-  private def paramsMatchName(gSymParamss: List[List[JavaUniverse#Symbol]], metaParamss: List[List[Term.Param]]): Boolean = {
+  private def paramsMatchName(gSymParamss: List[List[JavaUniverse#Symbol]], metaParamss: List[List[Term.Param]], doc: SemanticDocument): Boolean = {
     gSymParamss.size == metaParamss.size &&
       (gSymParamss zip metaParamss forall {
         case (gSymParams: List[JavaUniverse#Symbol], metaParams: List[Term.Param]) =>
@@ -77,7 +77,7 @@ class ExtraParsedData(parser: ParserImpl) {
             })
       })
   }
-  private def paramsMatchType(gSymParamss: List[List[JavaUniverse#Symbol]], metaParamss: List[List[Term.Param]]): Boolean = {
+  private def paramsMatchType(gSymParamss: List[List[JavaUniverse#Symbol]], metaParamss: List[List[Term.Param]], doc: SemanticDocument): Boolean = {
     gSymParamss.size == metaParamss.size &&
       (gSymParamss zip metaParamss forall {
         case (gSymParams: List[JavaUniverse#Symbol], metaParams: List[Term.Param]) =>
@@ -87,16 +87,26 @@ class ExtraParsedData(parser: ParserImpl) {
                 assert(metaParam.decltpe.isDefined)
                 //TODO not a great compare
                 //strip spaces Foo[A, B] -->  Foo[A,B]
-                //strip FQ outer names in generic params Foo[a.b.A, c.d.B] --> Foo[A,B]
+                //strip FQ outer names in generic params x.y.Foo[a.b.A, c.d.B] --> Foo[A,B]
                 //regex
                 // 1. capture as $1 a '[' or ','
                 // 2. match anything except '[' ']' and ',' followed by a '.'
                 // 3. replace with $1
 
-                val gType = gSymParam.tpe.toString.replace(" ", "")replaceAll("([\\,\\[])[^,\\[\\]]+\\.", "$1")
-                val mType = metaParam.decltpe.get.toString.replace(" ", "")replaceAll("([\\,\\[])[^,\\[\\]]+\\.", "$1")
-
+//                val gType = gSymParam.tpe.toString.replace(" ", "")replaceAll("([\\,\\[])[^,\\[\\]]+\\.", "$1")
+//                val mType = metaParam.decltpe.get.toString.replace(" ", "")replaceAll("([\\,\\[])[^,\\[\\]]+\\.", "$1")
+                val gType = gSymParam.tpe.toString.replace(" ", "").replaceAll("^([^\\.\\[]+\\.)*","").replaceAll("([\\,\\[])[^,\\[\\]]+\\.", "$1").replaceAll("\\<byname\\>\\[([^\\,\\[\\.]+)\\]", "⇒$1")
+                val mType = metaParam.decltpe.get.toString.replace(" ", "").replaceAll("^([^\\.\\[]+\\.)*","").replaceAll("([\\,\\[])[^,\\[\\]]+\\.", "$1")
                 (gType == mType || gType.endsWith(s".$mType"))
+
+//                import scalafix.v1._
+//                metaParam.symbol(doc).info(doc).get.signature
+//
+//                val gType = gSymParam.tpe.toString
+//                val mType = metaParam.symbol(doc).toString()
+//
+//
+//                gType == mType
             })
       })
   }
@@ -108,17 +118,18 @@ class ExtraParsedData(parser: ParserImpl) {
 
     //TODO consider varargs
     //TODO can we put this in scalafix without the hop to reflection
+    //its all so fragile
 
     m.enclosing.headOption match {
       case Some(cls: ParsedClassLike) =>
-        val sym = reflectSymbol(cls)
-        val list = sym.toType.decls.toList
+        val classSym = reflectSymbol(cls)
+        val list = classSym.toType.decls.toList
         val methodName = m.method_name.toString
         val methodParamss = m.method_paramss
         val simpleMethodMatch = list.collect {
           case sym: parser.internalAccess.ru.MethodSymbol
             if !sym.isClassConstructor
-              && sym.nameString == methodName => sym
+              && sym.decodedName == methodName => sym
         }
         val foundNamesMatch = simpleMethodMatch filter {
           case sym =>
@@ -126,7 +137,7 @@ class ExtraParsedData(parser: ParserImpl) {
             (symParams, methodParamss) match {
               case (Nil, List(Nil)) => true
               case (List(Nil), Nil) => true
-              case _ => paramsMatchName(symParams, methodParamss)
+              case _ => paramsMatchName(symParams, methodParamss, m.doc)
             }
         }
         val found = if (foundNamesMatch.size <= 1) foundNamesMatch else foundNamesMatch filter {
@@ -135,10 +146,23 @@ class ExtraParsedData(parser: ParserImpl) {
             (symParams, methodParamss) match {
               case (Nil, List(Nil)) => true
               case (List(Nil), Nil) => true
-              case _ => paramsMatchType(symParams, methodParamss)
+              case _ => paramsMatchType(symParams, methodParamss, m.doc)
             }
         }
-        assert(found.size == 1, s"could not match the method ${m.stat} from $simpleMethodMatch - found=$found - orig = $list")
+        if (found.size != 1) {
+          println(s"could not match the method \n${m.stat}\n\nsimpleMethodMatch (${simpleMethodMatch.size}) =  \n${simpleMethodMatch.mkString("\n")}\n\nfoundNamesMatch (${foundNamesMatch.size}) =  \n${foundNamesMatch.mkString("\n")}\n - found=$found - orig = ${list.mkString("\n")}")
+          println()
+          foundNamesMatch filter {
+            case sym =>
+              val symParams = sym.paramLists
+              (symParams, methodParamss) match {
+                case (Nil, List(Nil)) => true
+                case (List(Nil), Nil) => true
+                case _ => paramsMatchType(symParams, methodParamss, m.doc)
+              }
+          }
+        }
+        assert(found.size == 1, s"could not match the method \n${m.stat}\n simpleMethodMatch (${simpleMethodMatch.size}) =  ${simpleMethodMatch.mkString("\n")}\n foundNamesMatch (${foundNamesMatch.size}) =  ${foundNamesMatch.mkString("\n")}\n - found=$found - orig = ${list.mkString("\n")}")
         recordInheritance(m,found)
       case _ => // local cant override
 

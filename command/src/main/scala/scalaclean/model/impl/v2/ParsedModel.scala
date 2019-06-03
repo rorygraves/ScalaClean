@@ -6,7 +6,8 @@ import scalafix.v1._
 import scala.meta.{Decl, Defn, Mod, Pat, Stat, Template, Term, Tree, Type}
 
 sealed abstract class ParsedElement(val stat: Stat, val enclosing: List[ParsedElement], val doc: SemanticDocument) {
-  assert(!rawSymbol.isNone, s"no symbol found for: ${stat.pos.startLine}: $stat")
+  assert(!rawSymbol.isNone, s"can't find a symbol for '''$stat''' \n at ${stat.pos.startLine}:${stat.pos.startColumn} - ${stat.pos.endLine}:${stat.pos.endColumn}$rawSymboInfo")
+  protected def rawSymboInfo = ""
 
   def addRefersTo(tree: Tree, symbol: ModelKey, isSynthetic: Boolean): Unit = {
     _refersTo ::= (symbol, isSynthetic)
@@ -45,6 +46,11 @@ abstract sealed class ParsedField(defn: Stat, val field: Pat.Var, allFields: Seq
   require(allFields.nonEmpty)
 
   override protected def rawSymbol: Symbol = field.symbol(doc)
+
+  override protected def rawSymboInfo: String = {
+    val stat = rawSymbol
+    s"\n field details - \n'''$field''' \n at ${field.pos.startLine}:${field.pos.startColumn} - ${field.pos.endLine}:${field.pos.endColumn}"
+  }
 
   def isAbstract: Boolean
 
@@ -157,7 +163,7 @@ abstract sealed class ParsedClassLike(defn: Defn, enclosing: List[ParsedElement]
   private def direct: Set[Symbol] = (template.inits collect {
     case i =>
       var res = i.symbol(doc)
-      assert (res.isGlobal)
+      assert (res.isGlobal, s"not global $defn\n$res")
       res
   }) toSet
 
