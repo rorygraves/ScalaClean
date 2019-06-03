@@ -32,6 +32,7 @@ class InternalAccess {
 
 
   private[v2] val ru = runtime.universe.asInstanceOf[runtime.JavaUniverse]
+  ru.settings.debug.value = true
   private[v2] val globalHelper = new GlobalHelper(ru)
 
   private val internalAccess = classOf[SemanticDocument].getMethod("internal")
