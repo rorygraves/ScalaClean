@@ -57,8 +57,24 @@ class PrivatiserAkkaMain extends DiffAssertions {
         ! path.endsWith("akka/dispatch/ThreadPoolBuilder.scala") && // MissingRequirementError: class akka.dispatch.ThreadPoolConfig.ThreadPoolExecutorServiceFactory in JavaMirror
         ! path.endsWith("akka/event/DeadLetterListener.scala") && // no symbol found for: 32: val done = maxCount != Int.MaxValue && count >= maxCount
         ! path.endsWith("akka/event/EventBus.scala") && // MissingRequirementError: class akka.event.ManagedActorClassification.ManagedActorClassificationMappings in JavaMirror
-        ! path.endsWith("akka/util/Index.scala") && // can't find method - recordOverrides compare
-        ! path.endsWith("Reflect.scala") && // no symbol
+        ! path.endsWith("akka/event/Logging.scala") && // no symbol found for: 75: val level = levelFor(config.StdoutLogLevel) getOrElse {
+        ! path.endsWith("akka/event/LoggingReceive.scala") && // could not match the method
+        ! path.endsWith("akka/event/LoggingReceive.scala") && // could not match the method
+        ! path.endsWith("akka/io/Dns.scala") && // MissingRequirementError: class akka.io.DnsExt.Settings in JavaMirror
+        ! path.endsWith("akka/io/SelectionHandler.scala") && // no symbol found for: 35: val SelectorAssociationRetries: Int
+        ! path.endsWith("akka/io/SimpleDnsManager.scala") && // assertion failed: no symbol found for: 22: private val inetDnsEnabled = ext.provider.actorClass
+        ! path.endsWith("akka/io/Tcp.scala") && // no symbol found for: 572: val NrOfSelectors: Int =
+        ! path.endsWith("akka/io/TcpConnection.scala") && // no symbol found for: 377: val interestedInClose: Set[ActorRef] =
+        ! path.endsWith("akka/io/Udp.scala") && //  no symbol found for: 192: val NrOfSelectors: Int
+        ! path.endsWith("akka/io/dns/DnsResourceRecords.scala") && // no symbol found for: 92: val priority = it.getShort.toInt & 0xFFFF
+        ! path.endsWith("akka/io/dns/internal/DomainName.scala") && // no symbol found for: 41: val offset =...
+        ! path.endsWith("akka/io/dns/internal/TcpDnsClient.scala") && // no symbol found for: 52: val data = buffer ++ newData
+        ! path.endsWith("akka/pattern/AskSupport.scala") && // could not match the method private[pattern] def $qmark$extension(
+          ! path.endsWith("akka/pattern/BackoffOnRestartSupervisor.scala") && // no symbol found for: 51: val nextRestartCount ...
+          ! path.endsWith("akka/pattern/BackoffSupervisor.scala") && // no symbol found for: 271: val rnd = 1.0 + T
+          ! path.endsWith("akka/pattern/CircuitBreaker.scala") && // could not match the method def onOpen(callback: ⇒ Unit): ...
+          ! path.endsWith("akka/pattern/PipeToSupport.scala") && // MissingRequirementError: class akka.pattern.PipeToSupport.PipeableFuture in JavaMirror
+          ! path.endsWith("Reflect.scala") && // no symbol
         ! path.endsWith("ActorPath.scala") && // no symbol
           ! path.endsWith("ActorRef.scala") && // no symbol
           ! path.endsWith("ActorSystem.scala") && // no symbol
