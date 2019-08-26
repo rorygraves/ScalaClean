@@ -22,3 +22,22 @@ To deploy updated docs run (from the ```docs``` directory)
 
 Clone this repo.
 
+### Compiling custom semanticdb-scalac plugin
+
+```
+sbt -J-Dscalameta.version=9.9.9-SNAPSHOT
+> scalameta/publishLocal
+> semanticdbScalacCore/publishLocal
+> semanticdbScalacPlugin/publishLocal
+```
+
+```
+addCompilerPlugin("org.scalameta" % "semanticdb-scalac" % "9.9.9-SNAPSHOT" cross CrossVersion.full)
+scalacOptions += "-Yrangepos"
+```
+
+The dead code build has been updated to use this version.
+
+Key class: SemanticdbTyperComponent - toTextDocument
+
+Next steps - determine CSV formats and contents - output these directly.

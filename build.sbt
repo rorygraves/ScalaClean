@@ -6,7 +6,7 @@ inThisBuild(
     organization := "scalaclean",
     homepage := Some(url("https://github.com/rorygraves")),
     licenses := List("Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0")),
-    scalaVersion := V.scala212,
+    scalaVersion := "2.12.9",
     scalacOptions ++= List(
       "-Yrangepos"
     )
@@ -58,7 +58,8 @@ lazy val privatiserProject1 = project.in(file("testProjects/privatiserProject1")
 )
 
 lazy val deadCodeProject1 = project.in(file("testProjects/deadCodeProject1")).settings(
-  addCompilerPlugin(scalafixSemanticdb),
+  addCompilerPlugin("org.scalameta" % "semanticdb-scalac" % "9.9.9-SNAPSHOT" cross CrossVersion.full),
+  scalacOptions += "-Yrangepos",
   libraryDependencies += "org.scalaz" %% "scalaz-core" % "7.2.27",
   scalacOptions += "-P:semanticdb:synthetics:on",
   skip in publish := true
