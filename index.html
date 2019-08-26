@@ -54,6 +54,7 @@
     <ul class="nav bs-sidenav">
         <li class="main active"><a href="#welcome-to-scalaclean-documentation">Welcome to ScalaClean documentation</a></li>
             <li><a href="#deploying-the-docs">Deploying the docs</a></li>
+            <li><a href="#custom-semanticdb-scalac-plugin">Custom SemanticDB ScalaC Plugin</a></li>
     </ul>
 </div></div>
                 <div class="col-md-9" role="main">
@@ -64,7 +65,26 @@
 <p>Docs are created with  <a href="https://mkdocs.org">mkdocs.org</a> from the <code>docs</code> directory.</p>
 <p>To deploy updated docs run (from the <code>docs</code> directory)</p>
 <pre><code class="bash"> mkdocs gh-deploy
-</code></pre></div>
+</code></pre>
+
+<h2 id="custom-semanticdb-scalac-plugin">Custom SemanticDB ScalaC Plugin</h2>
+<h3 id="location">Location</h3>
+<p><a href="https://github.com/rorygraves/scalameta/tree/scalaclean">Github scalameta scalaclean</a></p>
+<p>Clone this repo.</p>
+<h3 id="compiling-custom-semanticdb-scalac-plugin">Compiling custom semanticdb-scalac plugin</h3>
+<pre><code>sbt -J-Dscalameta.version=9.9.9-SNAPSHOT
+&gt; scalameta/publishLocal
+&gt; semanticdbScalacCore/publishLocal
+&gt; semanticdbScalacPlugin/publishLocal
+</code></pre>
+
+<pre><code>addCompilerPlugin(&quot;org.scalameta&quot; % &quot;semanticdb-scalac&quot; % &quot;9.9.9-SNAPSHOT&quot; cross CrossVersion.full)
+scalacOptions += &quot;-Yrangepos&quot;
+</code></pre>
+
+<p>The dead code build has been updated to use this version.</p>
+<p>Key class: SemanticdbTyperComponent - toTextDocument</p>
+<p>Next steps - determine CSV formats and contents - output these directly.</p></div>
         </div>
 
         <footer class="col-md-12">
@@ -147,5 +167,5 @@
 
 <!--
 MkDocs version : 1.0.4
-Build Date UTC : 2019-08-26 16:16:23
+Build Date UTC : 2019-08-26 20:51:42
 -->
