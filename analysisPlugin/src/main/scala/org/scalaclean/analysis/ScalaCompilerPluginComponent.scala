@@ -1,10 +1,11 @@
 package org.scalaclean.analysis
 
+import scala.meta.internal.semanticdb.scalac.SemanticdbOps
 import scala.tools.nsc.plugins.PluginComponent
 import scala.tools.nsc.{Global, Phase}
 
 
-class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent {
+class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent with SemanticdbOps {
   override val phaseName: String = "scalaclean-compiler-plugin-phase"
   override val runsAfter: List[String] = List("typer")
 
@@ -24,6 +25,7 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent {
         override def traverse(tree: Tree): Unit = {
           tree match {
             case defdef: DefDef =>
+              println(defdef.symbol.toSemantic)
               println(defdef)
             case _ =>
           }

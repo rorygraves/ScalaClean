@@ -13,18 +13,65 @@ inThisBuild(
   )
 )
 
+lazy val commonSettings = Seq(
+  version := "0.1-SNAPSHOT",
+  organization := "com.example",
+  scalaVersion := "2.10.1",
+  test in assembly := {}
+)
 skip in publish := true
+
+lazy val mergeSettings = Def.settings(
+  test.in(assembly) := {},
+  logLevel.in(assembly) := Level.Error,
+  assemblyJarName.in(assembly) :=
+    name.value + "_" + scalaVersion.value + "-" + version.value + "-assembly.jar",
+  assemblyOption.in(assembly) ~= { _.copy(includeScala = false) },
+  Keys.`package`.in(Compile) := {
+    val slimJar = Keys.`package`.in(Compile).value
+    val fatJar =
+      new File(crossTarget.value + "/" + assemblyJarName.in(assembly).value)
+    val _ = assembly.value
+    IO.copy(List(fatJar -> slimJar), CopyOptions(true,false,false))
+    slimJar
+  },
+  packagedArtifact.in(Compile).in(packageBin) := {
+    val temp = packagedArtifact.in(Compile).in(packageBin).value
+    val (art, slimJar) = temp
+    val fatJar =
+      new File(crossTarget.value + "/" + assemblyJarName.in(assembly).value)
+    val _ = assembly.value
+    IO.copy(List(fatJar -> slimJar), CopyOptions(true,false,false))
+    (art, slimJar)
+  },
+  assemblyMergeStrategy.in(assembly) := {
+    case PathList("com", "sun", _*) => MergeStrategy.discard
+    case PathList("sun", _*) => MergeStrategy.discard
+    case x =>
+      val oldStrategy = (assemblyMergeStrategy in assembly).value
+      oldStrategy(x)
+  },
+)
 
 lazy val analysisPlugin = project.settings(
     moduleName := "analysisPlugin",
     scalaVersion:= V.scala212,
     libraryDependencies += "org.scala-lang" % "scala-compiler" % V.scala212,
     libraryDependencies += "org.scala-lang" % "scala-reflect" % V.scala212,
+    mergeSettings,
+
+    libraryDependencies += "org.scalameta" % "semanticdb-scalac-core_2.12.9" % "4.2.3",
+
     scalacOptions in Test ++= {
-      val jar = (packageBin in Compile).value
-      Seq(s"-Xplugin:${jar.getAbsolutePath}", s"-Jdummy=${jar.lastModified}") // ensures recompile
+      // we depend on the assembly jar
+      val jar = (assembly in Compile).value
+      Seq(
+        "-Yrangepos",
+        s"-Xplugin:${jar.getAbsolutePath}",
+        s"-Jdummy=${jar.lastModified}", // ensures recompile
+      )
+
     },
-    scalacOptions in Test += "-Yrangepos",
     fork in Test := true
   )
 
