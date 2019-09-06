@@ -31,6 +31,10 @@ sbt -J-Dscalameta.version=9.9.9-SNAPSHOT
 > semanticdbScalacPlugin/publishLocal
 ```
 
+sbt -J-Dscalameta.version=9.9.9-SNAPSHOT scalameta/publishLocal  semanticdbScalacCore/publishLocal  semanticdbScalacPlugin/publishLocal
+
+
+
 ```
 addCompilerPlugin("org.scalameta" % "semanticdb-scalac" % "9.9.9-SNAPSHOT" cross CrossVersion.full)
 scalacOptions += "-Yrangepos"
@@ -39,5 +43,6 @@ scalacOptions += "-Yrangepos"
 The dead code build has been updated to use this version.
 
 Key class: SemanticdbTyperComponent - toTextDocument
+Bulk of the wrk in TextDocumentOps
 
 Next steps - determine CSV formats and contents - output these directly.

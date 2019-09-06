@@ -15,6 +15,21 @@ inThisBuild(
 
 skip in publish := true
 
+lazy val analysisPlugin = project.settings(
+    moduleName := "analysisPlugin",
+    scalaVersion:= V.scala212,
+    libraryDependencies += "org.scala-lang" % "scala-compiler" % V.scala212,
+    libraryDependencies += "org.scala-lang" % "scala-reflect" % V.scala212,
+    scalacOptions in Test ++= {
+      val jar = (packageBin in Compile).value
+      Seq(s"-Xplugin:${jar.getAbsolutePath}", s"-Jdummy=${jar.lastModified}") // ensures recompile
+    },
+    scalacOptions in Test += "-Yrangepos",
+    fork in Test := true
+  )
+
+fork in Test := true
+
 lazy val command = project
   .settings(
     moduleName := "command",

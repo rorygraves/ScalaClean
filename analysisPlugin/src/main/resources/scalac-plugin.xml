@@ -1,0 +1,4 @@
+<plugin>
+  <name>scalaclean-analysis-compiler-plugin</name>
+  <classname>org.scalaclean.analysis.ScalaCleanCompilerPlugin</classname>
+</plugin>
