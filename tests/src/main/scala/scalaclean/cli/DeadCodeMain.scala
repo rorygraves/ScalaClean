@@ -52,7 +52,7 @@ class DeadCodeMain extends DiffAssertions {
   def run(): Unit = {
 
     AnalysisHelper.runAnalysis(projectName, inputClasspath, sourceRoot,  inputSourceDirectories, outputClassDir, storagePath, targetFiles)
-    runDeadCode()
+   // runDeadCode()
   }
 
   def runDeadCode(): Unit = {

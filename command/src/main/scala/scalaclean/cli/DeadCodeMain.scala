@@ -50,8 +50,9 @@ class DeadCodeMain extends DiffAssertions {
   }
 
   def run(): Unit = {
-
+    println(s"Running dead code analysis on $sourceRoot")
     AnalysisHelper.runAnalysis(projectName, inputClasspath, sourceRoot,  inputSourceDirectories, outputClassDir, storagePath, targetFiles)
+    println("Running dead code removal")
     runDeadCode()
   }
 

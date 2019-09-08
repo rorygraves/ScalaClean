@@ -65,6 +65,7 @@ lazy val analysisPlugin = project.settings(
     scalacOptions in Test ++= {
       // we depend on the assembly jar
       val jar = (assembly in Compile).value
+      println("JAR = " + jar.getAbsolutePath)
       Seq(
         "-Yrangepos",
         s"-Xplugin:${jar.getAbsolutePath}",
@@ -120,9 +121,24 @@ lazy val privatiserProject1 = project.in(file("testProjects/privatiserProject1")
 )
 
 lazy val deadCodeProject1 = project.in(file("testProjects/deadCodeProject1")).settings(
-  addCompilerPlugin("org.scalameta" % "semanticdb-scalac" % "9.9.9-SNAPSHOT" cross CrossVersion.full),
+  addCompilerPlugin(scalafixSemanticdb),
   scalacOptions += "-Yrangepos",
   libraryDependencies += "org.scalaz" %% "scalaz-core" % "7.2.27",
   scalacOptions += "-P:semanticdb:synthetics:on",
-  skip in publish := true
-)
+  skip in publish := true,
+
+  scalacOptions  ++= {
+    // we depend on the assembly jar
+//    val baseDirectory.value /"custom_lib"
+    val jar = (assembly in Compile in analysisPlugin).value
+    Seq(
+      "-Yrangepos",
+      s"-Xplugin:${jar.getAbsolutePath}",
+      s"-Jdummy=${jar.lastModified}", // ensures recompile
+    )
+
+  },
+
+
+
+).dependsOn(analysisPlugin)
