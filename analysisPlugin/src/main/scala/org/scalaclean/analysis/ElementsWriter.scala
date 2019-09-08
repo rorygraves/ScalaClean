@@ -15,6 +15,17 @@ class ElementsWriter(file: File) {
   def classDef(isGlobal: Boolean,symbolName: String, file: String, start: Int, end: Int): Unit = {
     val globalStr = if(isGlobal) "G:" else "L:"
     pr.println(s"${IoTokens.typeClass},$globalStr$symbolName,$file,$start,$end")
+  }
+
+  def valDef(isGlobal: Boolean,symbolName: String, file: String, start: Int, end: Int, isAbstract: Boolean, fieldName: String, isLazy: Boolean): Unit = {
+    val globalStr = if (isGlobal) "G:" else "L:"
+    pr.println(s"${IoTokens.typeVal},$globalStr$symbolName,$file,$start,$end,$isAbstract,$fieldName,$isLazy")
+
+  }
+
+  def varDef(isGlobal: Boolean,symbolName: String, file: String, start: Int, end: Int, isAbstract: Boolean, fieldName: String): Unit = {
+    val globalStr = if (isGlobal) "G:" else "L:"
+    pr.println(s"${IoTokens.typeVar},$globalStr$symbolName,$file,$start,$end,$isAbstract,$fieldName")
 
   }
 

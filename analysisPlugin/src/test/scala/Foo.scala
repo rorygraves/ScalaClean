@@ -1,5 +1,6 @@
 class Foo {
-  def bar(): Unit = {
-    println("Hello")
-  }
+  var x = 1
+//  def bar(): Unit = {
+//    println("Hello")
+//  }
 }

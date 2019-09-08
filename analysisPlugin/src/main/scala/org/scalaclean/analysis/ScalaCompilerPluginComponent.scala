@@ -15,6 +15,7 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
   override def newPhase(prev: Phase): Phase = new StdPhase(prev) {
 
     var elementsWriter: ElementsWriter = _
+
     override def run(): Unit = {
       global.reporter.echo("Before Analysis Phase")
 
@@ -24,7 +25,7 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
           .map(_.getAbsolutePath)
           .getOrElse(global.settings.d.value))
 
-      val outputFile = new File(outputPath.toFile ,"scalaclean-data.csv")
+      val outputFile = new File(outputPath.toFile, "scalaclean-data.csv")
       println(s"Writing analysis results to ${outputFile}")
       elementsWriter = new ElementsWriter(outputFile)
       super.run()
@@ -41,10 +42,11 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
     // TODO this is a total hack - need to discover the source root of the compilaion unit and remove
     def mungeUnitPath(input: String): String = {
       val idx = input.indexOf("src/main/scala")
-      if(idx != -1)
+      if (idx != -1)
         input.substring(idx + "src/main/scala".length + 1)
       else input
     }
+
     override def apply(unit: global.CompilationUnit): Unit = {
 
       val sourceFile = mungeUnitPath(unit.source.file.toString)
@@ -53,25 +55,49 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
 
 
       import global._
-      class SCTraverser extends Traverser  {
+      class SCTraverser extends Traverser {
         override def traverse(tree: Tree): Unit = {
+          println("--" + tree.getClass)
           tree match {
             case classDef: ClassDef =>
               val symbol = classDef.symbol
               val sSymbol = symbol.toSemantic
               val isGlobal = symbol.isSemanticdbGlobal
-              if(!symbol.isSynthetic)
+              if (!symbol.isSynthetic)
                 elementsWriter.classDef(isGlobal, sSymbol, sourceFile, symbol.pos.start, symbol.pos.end)
-              println("class: "+ symbol.toSemantic)
+              println("class: " + symbol.toSemantic)
+
+            case valDef: ValDef =>
+
+              val symbol = valDef.symbol
+              if (symbol.owner.isClass) {
+                val isAbstract = symbol.isAbstract
+                val name = symbol.nameString
+                val isLazy = symbol.isLazy
+                val sSymbol = symbol.toSemantic
+                val isGlobal = symbol.isSemanticdbGlobal
+                if (!symbol.isSynthetic)
+                  if (symbol.isVar) {
+                    elementsWriter.varDef(isGlobal, sSymbol, sourceFile, symbol.pos.start, symbol.pos.end,isAbstract,name)
+                    println("var: " + sSymbol)
+                  } else {
+                    elementsWriter.valDef(isGlobal, sSymbol, sourceFile, symbol.pos.start, symbol.pos.end,isAbstract, name, isLazy)
+                    println("val: " + sSymbol)
+                  }
+              }
 
             case defdef: DefDef =>
               val symbol = defdef.symbol
+              //              println("  def-owner = " + symbol.owner)
+              //              println("  isAccessor " + symbol.isAccessor)
               val sSymbol = symbol.toSemantic
               val isGlobal = symbol.isSemanticdbGlobal
-              if(!symbol.isSynthetic)
+              if (!symbol.isSynthetic && !symbol.isAccessor) {
                 elementsWriter.method(isGlobal, sSymbol, sourceFile, symbol.pos.start, symbol.pos.end)
-              println("def: " + defdef.symbol.toSemantic)
-            case _ =>
+                println("def: " + defdef.symbol.toSemantic)
+              }
+            case unknown =>
+
           }
 
           super.traverse(tree)
