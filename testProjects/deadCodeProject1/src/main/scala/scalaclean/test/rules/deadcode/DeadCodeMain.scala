@@ -25,6 +25,11 @@ object AppWithMain2 {
     ()
   }
 }
+
+trait UnusedTrait {
+  def unusedTraitMethod(x:Int)
+}
+
 object Used2 {
   def aMethod(): Unit = {}
   def aMethod(notUsed:Int): Unit = {}

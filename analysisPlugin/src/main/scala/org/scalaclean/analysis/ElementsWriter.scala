@@ -4,29 +4,44 @@ import java.io.{BufferedWriter, File, FileWriter, PrintWriter}
 
 class ElementsWriter(file: File) {
 
-  val  pr = new PrintWriter(new BufferedWriter(new FileWriter(file)))
+  val pr = new PrintWriter(new BufferedWriter(new FileWriter(file)))
 
-  def method(isGlobal: Boolean,symbolName: String, file: String, start: Int, end: Int): Unit = {
-    val globalStr = if(isGlobal) "G:" else "L:"
-    pr.println(s"${IoTokens.typeMethod},$globalStr$symbolName,$file,$start,$end")
-
+  def method(mSymbol: ModelSymbol, methodName: String, declTypeDefined: Boolean): Unit = {
+    pr.println(s"${IoTokens.typeMethod},${mSymbol.csvString},${mSymbol.sourceFile},${mSymbol.posStart},${mSymbol.posEnd},${mSymbol.isAbstract},$methodName,$declTypeDefined")
   }
 
-  def classDef(isGlobal: Boolean,symbolName: String, file: String, start: Int, end: Int): Unit = {
-    val globalStr = if(isGlobal) "G:" else "L:"
+  def method(
+    isGlobal: Boolean, symbolName: String, file: String, start: Int, end: Int, isAbstract: Boolean, methodName: String,
+    declTypeDefined: Boolean): Unit = {
+    val globalStr = if (isGlobal) "G:" else "L:"
+    pr.println(s"${IoTokens.typeMethod},$globalStr$symbolName,$file,$start,$end,$isAbstract,$methodName,$declTypeDefined")
+  }
+
+  def classDef(isGlobal: Boolean, symbolName: String, file: String, start: Int, end: Int): Unit = {
+    val globalStr = if (isGlobal) "G:" else "L:"
     pr.println(s"${IoTokens.typeClass},$globalStr$symbolName,$file,$start,$end")
   }
 
-  def valDef(isGlobal: Boolean,symbolName: String, file: String, start: Int, end: Int, isAbstract: Boolean, fieldName: String, isLazy: Boolean): Unit = {
+  def traitDef(isGlobal: Boolean, symbolName: String, file: String, start: Int, end: Int): Unit = {
     val globalStr = if (isGlobal) "G:" else "L:"
-    pr.println(s"${IoTokens.typeVal},$globalStr$symbolName,$file,$start,$end,$isAbstract,$fieldName,$isLazy")
-
+    pr.println(s"${IoTokens.typeTrait},$globalStr$symbolName,$file,$start,$end")
   }
 
-  def varDef(isGlobal: Boolean,symbolName: String, file: String, start: Int, end: Int, isAbstract: Boolean, fieldName: String): Unit = {
+  def objectDef(isGlobal: Boolean, symbolName: String, file: String, start: Int, end: Int): Unit = {
     val globalStr = if (isGlobal) "G:" else "L:"
-    pr.println(s"${IoTokens.typeVar},$globalStr$symbolName,$file,$start,$end,$isAbstract,$fieldName")
+    pr.println(s"${IoTokens.typeObject},$globalStr$symbolName,$file,$start,$end")
+  }
 
+  def valDef(mSymbol: ModelSymbol): Unit = {
+    valVarDef(IoTokens.typeVar, mSymbol, s",${mSymbol.isLazy}")
+  }
+
+  def varDef(mSymbol: ModelSymbol): Unit = {
+    valVarDef(IoTokens.typeVar, mSymbol)
+  }
+
+  private def valVarDef(token: String, mSymbol: ModelSymbol, extraStr: String = ""): Unit = {
+    pr.println(s"${token},${mSymbol.csvString},${mSymbol.sourceFile},${mSymbol.posStart},${mSymbol.posEnd},${mSymbol.isAbstract},${mSymbol.name}$extraStr")
   }
 
   def finish(): Unit = {
