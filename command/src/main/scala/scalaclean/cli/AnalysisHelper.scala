@@ -15,7 +15,7 @@ object AnalysisHelper {
     val symtab = ClasspathOps.newSymbolTable(inputClasspath)
     val classLoader = ClasspathOps.toClassLoader(inputClasspath)
 
-    // run analysis
+      // run analysis
     val analysis = new Analysis(storagePath, projectName,inputClasspath.entries.map(_.toString()).mkString(File.pathSeparator),
       outputClassDir,inputSourceDirectories.head.toRelative(sourceRoot).toString(),inputSourceDirectories.head.toString())
 

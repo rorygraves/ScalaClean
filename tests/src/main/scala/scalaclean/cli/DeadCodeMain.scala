@@ -26,7 +26,7 @@ class DeadCodeMain extends DiffAssertions {
 
   val projectName = "deadCodeProject1"
   val scalaCleanWorkspace = "."
-  val ivyDir: String = toPlatform("$HOME$/.ivy2/cache")
+//  val ivyDir: String = toPlatform("$HOME$/.ivy2/cache")
   val storagePath: String = toPlatform("$HOME$/Downloads/temp3")
 
   val targetFiles = List(
@@ -37,7 +37,7 @@ class DeadCodeMain extends DiffAssertions {
   )
   val sourceRoot = AbsolutePath(scalaCleanWorkspace)
   val outputClassDir: String = toPlatform(s"$scalaCleanWorkspace/testProjects/$projectName/target/scala-2.12/classes/")
-  val inputClasspath = Classpath(toPlatform(s"$outputClassDir:$ivyDir/org.scala-lang/scala-library/jars/scala-library-2.12.8.jar:$ivyDir/org.scalaz/scalaz-core_2.12/bundles/scalaz-core_2.12-7.2.27.jar"))
+//  val inputClasspath = Classpath(toPlatform(s"$outputClassDir:$ivyDir/org.scala-lang/scala-library/jars/scala-library-2.12.8.jar:$ivyDir/org.scalaz/scalaz-core_2.12/bundles/scalaz-core_2.12-7.2.27.jar"))
   val inputSourceDirectories: List[AbsolutePath] = Classpath(toPlatform(s"$scalaCleanWorkspace/testProjects/$projectName/src/main/scala")).entries
 
   def semanticPatch(
@@ -51,14 +51,14 @@ class DeadCodeMain extends DiffAssertions {
 
   def run(): Unit = {
 
-    AnalysisHelper.runAnalysis(projectName, inputClasspath, sourceRoot,  inputSourceDirectories, outputClassDir, storagePath, targetFiles)
-   // runDeadCode()
+//    AnalysisHelper.runAnalysis(projectName, inputClasspath, sourceRoot,  inputSourceDirectories, outputClassDir, storagePath, targetFiles)
+    runDeadCode()
   }
 
   def runDeadCode(): Unit = {
 
-    val symtab = ClasspathOps.newSymbolTable(inputClasspath)
-    val classLoader = ClasspathOps.toClassLoader(inputClasspath)
+//    val symtab = ClasspathOps.newSymbolTable(inputClasspath)
+//    val classLoader = ClasspathOps.toClassLoader(inputClasspath)
 
     println("---------------------------------------------------------------------------------------------------")
     // run DeadCode

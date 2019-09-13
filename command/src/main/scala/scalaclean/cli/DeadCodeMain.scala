@@ -61,6 +61,13 @@ class DeadCodeMain extends DiffAssertions {
     val symtab = ClasspathOps.newSymbolTable(inputClasspath)
     val classLoader = ClasspathOps.toClassLoader(inputClasspath)
 
+    val elementsRelUrl = s"META-INF/ScalaClean/scalaclean-elements.csv"
+    Option(classLoader.getResourceAsStream(elementsRelUrl)) match {
+      case Some(foo) =>
+        println("GOT ONE")
+      case None =>
+        println("AGGGHH")
+    }
     println("---------------------------------------------------------------------------------------------------")
     // run DeadCode
     val deadCode = new DeadCodeRemover()
