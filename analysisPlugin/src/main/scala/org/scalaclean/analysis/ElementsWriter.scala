@@ -17,14 +17,12 @@ class ElementsWriter(file: File) {
     pr.println(s"${IoTokens.typeMethod},$globalStr$symbolName,$file,$start,$end,$isAbstract,$methodName,$declTypeDefined")
   }
 
-  def classDef(isGlobal: Boolean, symbolName: String, file: String, start: Int, end: Int): Unit = {
-    val globalStr = if (isGlobal) "G:" else "L:"
-    pr.println(s"${IoTokens.typeClass},$globalStr$symbolName,$file,$start,$end")
+  def classDef(mSymbol: ModelSymbol): Unit = {
+    pr.println(s"${IoTokens.typeClass},${mSymbol.csvString},${mSymbol.sourceFile},${mSymbol.posStart},${mSymbol.posEnd}")
   }
 
-  def traitDef(isGlobal: Boolean, symbolName: String, file: String, start: Int, end: Int): Unit = {
-    val globalStr = if (isGlobal) "G:" else "L:"
-    pr.println(s"${IoTokens.typeTrait},$globalStr$symbolName,$file,$start,$end")
+  def traitDef(mSymbol: ModelSymbol): Unit = {
+    pr.println(s"${IoTokens.typeTrait},${mSymbol.csvString},${mSymbol.sourceFile},${mSymbol.posStart},${mSymbol.posEnd}")
   }
 
   def objectDef(isGlobal: Boolean, symbolName: String, file: String, start: Int, end: Int): Unit = {

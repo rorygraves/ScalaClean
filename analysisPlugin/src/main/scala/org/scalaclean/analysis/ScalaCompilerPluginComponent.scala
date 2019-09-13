@@ -14,6 +14,8 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
 
   override def newPhase(prev: Phase): Phase = new StdPhase(prev) {
 
+    val debug = false
+
     var elementsWriter: ElementsWriter = _
 
     var relationsWriter: RelationshipsWriter = _
@@ -21,17 +23,20 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
     override def run(): Unit = {
       global.reporter.echo("Before Analysis Phase")
 
-      val outputPath = AbsolutePath(
+      val outputPathBase: AbsolutePath = AbsolutePath(
         global.settings.outputDirs.getSingleOutput
           .flatMap(so => Option(so.file))
-          .map(_.getAbsolutePath)
+          .map(v => v.getAbsolutePath)
           .getOrElse(global.settings.d.value))
 
-      val elementsFile = new File(outputPath.toFile, "scalaclean-elements.new.csv")
+
+      val outputPath = outputPathBase.resolve("META-INF/ScalaClean/")
+      outputPath.toFile.mkdirs()
+      val elementsFile = new File(outputPath.toFile, "scalaclean-elements.csv")
       println(s"Writing elements file  to ${elementsFile}")
       elementsWriter = new ElementsWriter(elementsFile)
 
-      val relationsFile = new File(outputPath.toFile, "scalaclean-relationships.new.csv")
+      val relationsFile = new File(outputPath.toFile, "scalaclean-relationships.csv")
       println(s"Writing relationships file to to ${relationsFile}")
       relationsWriter = new RelationshipsWriter(relationsFile, global)
 
@@ -40,6 +45,8 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
       elementsWriter.finish()
       relationsWriter.finish()
       global.reporter.echo("After Analysis Phase")
+      global.reporter.echo(s"  Wrote elements to $elementsFile")
+      global.reporter.echo(s"  Wrote relationships to $relationsFile")
 
     }
 
@@ -48,25 +55,31 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
         sys.props("user.dir")
     }
 
-//    // TODO this is a total hack - need to discover the source root of the compilation unit and remove
-//    def mungeUnitPath(input: String): String = {
-//      val idx = input.indexOf("src/main/scala")
-//      if (idx != -1)
-//        input.substring(idx + "src/main/scala".length + 1)
-//      else input
-//    }
-//
     override def apply(unit: global.CompilationUnit): Unit = {
 
       val sourceFile = mungeUnitPath(unit.source.file.toString)
 
       global.reporter.echo(s"Executing for unit: ${sourceFile}")
 
+      var scopeStack: List[ModelSymbol] = Nil
+
+      def withinScope[T](mSymbol: ModelSymbol)(fn: => T): Unit = {
+        println("  " * scopeStack.size + "   Entering " + mSymbol)
+        scopeStack = mSymbol :: scopeStack
+        fn
+        scopeStack = scopeStack.tail
+        println("  " * scopeStack.size +"   Exiting " + mSymbol)
+      }
+
+      def parentScope: ModelSymbol = scopeStack.head
+      def parentGlobalScope: ModelSymbol = scopeStack.find(_.isGlobal).get
 
       import global._
       class SCTraverser extends Traverser {
         override def traverse(tree: Tree): Unit = {
-          println("--" + tree.getClass + "  " + Option(tree.tpe).map(_.nameAndArgsString))
+          if(debug)
+            println("--" + tree.getClass + "  " + Option(tree.tpe).map(_.nameAndArgsString))
+
           tree match {
             case objectDef: ModuleDef =>
               val symbol = objectDef.symbol
@@ -74,57 +87,66 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
               val sSymbol = symbol.toSemantic
               val isGlobal = symbol.isSemanticdbGlobal
               elementsWriter.objectDef(isGlobal, sSymbol, sourceFile, symbol.pos.start, symbol.pos.end)
-              println("object: " + sSymbol)
+              if(debug)
+                println("object: " + sSymbol)
+
               symbol.ancestors foreach { parentSymbol =>
                 relationsWriter.extendsCls(asMSymbol(parentSymbol), mSymbol)
                 println(s"  parent: ${parentSymbol.toSemantic}")
+              }
+              withinScope(mSymbol) {
+                super.traverse(tree)
               }
             case apply: Apply =>
-              println("-----------------------------------------------")
-              newTreePrinter().print(apply)
-
-              println(asMSymbol(apply.symbol).csvString)
-              println(asMSymbol(apply.symbol.owner).csvString)
-              println("-----------------------------------------------")
+              val target = asMSymbol(apply.symbol)
+              relationsWriter.refers(parentGlobalScope, target)
+              super.traverse(tree)
             case classDef: ClassDef =>
               val symbol = classDef.symbol
-              val mSymbol = asMSymbol(symbol)
               val isTrait = symbol.isTrait
-              val sSymbol = symbol.toSemantic
-              val isGlobal = symbol.isSemanticdbGlobal
+              val mSymbol = asMSymbol(symbol)
               if (!symbol.isSynthetic) {
                 if(isTrait)
-                  elementsWriter.traitDef(isGlobal, sSymbol, sourceFile, symbol.pos.start, symbol.pos.end)
+                  elementsWriter.traitDef(mSymbol)
                 else
-                  elementsWriter.classDef(isGlobal, sSymbol, sourceFile, symbol.pos.start, symbol.pos.end)
+                  elementsWriter.classDef(mSymbol)
               }
 
-              println("class: " + sSymbol)
+              if(debug)
+                println("class: " + mSymbol.csvString)
 
               symbol.ancestors foreach { parentSymbol =>
                 relationsWriter.extendsCls(asMSymbol(parentSymbol), mSymbol)
                 println(s"  parent: ${parentSymbol.toSemantic}")
+              }
+              withinScope(mSymbol) {
+                super.traverse(tree)
               }
 
             case valDef: ValDef =>
 
               val symbol = valDef.symbol
+              val mSymbol = asMSymbol(symbol)
               val owner = symbol.owner
               if (owner.isClass || owner.isModuleOrModuleClass || owner.isPackageObjectOrClass) {
-                val mSymbol = asMSymbol(symbol)
                 if (!symbol.isSynthetic)
                   if (symbol.isVar) {
                     elementsWriter.varDef(mSymbol)
-                    println("var: " + mSymbol.csvString)
+                    if(debug)
+                      println("var: " + mSymbol.csvString)
                   } else {
                     elementsWriter.valDef(mSymbol)
-                    println("val: " + mSymbol.csvString)
+                    if(debug)
+                      println("val: " + mSymbol.csvString)
                   }
 
                 val parentMSym = asMSymbol(symbol.outerClass)
                 relationsWriter.within(parentMSym, mSymbol)
               }
 
+              withinScope(mSymbol) {
+                super.traverse(tree)
+              }
 
             case defdef: DefDef =>
 
@@ -140,11 +162,20 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
               val parentMSym = asMSymbol(symbol.outerClass)
               relationsWriter.within(parentMSym, mSymbol)
 
+              symbol.overrides.foreach { overridden =>
+                relationsWriter.overrides(mSymbol, asMSymbol(overridden))
+              }
+              symbol.overrides
+
+              withinScope(mSymbol) {
+                super.traverse(tree)
+              }
+
             case unknown =>
+              super.traverse(tree)
 
           }
 
-          super.traverse(tree)
         }
       }
       (new SCTraverser).traverse(unit.body)
