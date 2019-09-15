@@ -24,8 +24,8 @@ object ModelHooks {
   type VarModel = VarModelHook
 }
 
-private[v2] case class BasicElementInfo(symbol: Symbol, source: SourceData, startPos: Int, endPos: Int)
-private[v2] case class BasicRelationshipInfo(
+case class BasicElementInfo(symbol: Symbol, source: SourceData, startPos: Int, endPos: Int)
+case class BasicRelationshipInfo(
                                               refers: Map[Symbol, List[RefersImpl]],
                                               extnds: Map[Symbol, List[ExtendsImpl]],
                                               overrides: Map[Symbol, List[OverridesImpl]],
@@ -70,7 +70,7 @@ private[v2] case class BasicRelationshipInfo(
   }
 }
 
-private[v2] trait LegacyReferences {
+trait LegacyReferences {
   self: ElementModelImpl =>
 
   override def internalOutgoingReferences: List[(model.ModelElement, Refers)] = {
@@ -91,7 +91,7 @@ private[v2] trait LegacyReferences {
     }
   }
 }
-private[v2] trait LegacyOverrides {
+trait LegacyOverrides {
   self: ElementModelImpl =>
 
   override def internalDirectOverrides: List[model.ModelElement] = {
@@ -128,7 +128,7 @@ private[v2] trait LegacyOverrides {
     overriden map {_.fromElement}
   }
 }
-private[v2] trait LegacyExtends {
+trait LegacyExtends {
   self: ClassLikeModelImpl=>
 
   override def directExtends: Set[Symbol] =  {
@@ -156,7 +156,7 @@ private[v2] trait LegacyExtends {
 
 import scalaclean.model.impl.v2.ModelHooks._
 
-private[impl] abstract class ElementModelImpl(info: BasicElementInfo, relationships: BasicRelationshipInfo) extends ModelElement
+abstract class ElementModelImpl(info: BasicElementInfo, relationships: BasicRelationshipInfo) extends ModelElement
  with LegacyReferences with LegacyOverrides{
   def complete(elements: Map[Symbol, ElementModelImpl],
                relsFrom: BasicRelationshipInfo,

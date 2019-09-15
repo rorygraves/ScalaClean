@@ -64,11 +64,13 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
       var scopeStack: List[ModelSymbol] = Nil
 
       def withinScope[T](mSymbol: ModelSymbol)(fn: => T): Unit = {
-        println("  " * scopeStack.size + "   Entering " + mSymbol)
+        if(debug)
+          println("  " * scopeStack.size + "   Entering " + mSymbol)
         scopeStack = mSymbol :: scopeStack
         fn
         scopeStack = scopeStack.tail
-        println("  " * scopeStack.size +"   Exiting " + mSymbol)
+        if(debug)
+          println("  " * scopeStack.size +"   Exiting " + mSymbol)
       }
 
       def parentScope: ModelSymbol = scopeStack.head
@@ -90,17 +92,24 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
               if(debug)
                 println("object: " + sSymbol)
 
+              val directSymbols =  symbol.info.parents.map(t => asMSymbol(t.typeSymbol)).toSet
+
               symbol.ancestors foreach { parentSymbol =>
-                relationsWriter.extendsCls(asMSymbol(parentSymbol), mSymbol)
-                println(s"  parent: ${parentSymbol.toSemantic}")
+                val parentMSymbol = asMSymbol(parentSymbol)
+                val direct = directSymbols.contains(parentMSymbol)
+                relationsWriter.extendsCls(asMSymbol(parentSymbol), mSymbol,direct)
+                println(s"  parent: ${parentSymbol.toSemantic}  $direct")
               }
               withinScope(mSymbol) {
                 super.traverse(tree)
               }
             case apply: Apply =>
               val target = asMSymbol(apply.symbol)
-              relationsWriter.refers(parentGlobalScope, target)
+              val isSynthetic = target.isSynthetic
+              if(!isSynthetic && !scopeStack.head.isSynthetic)
+                relationsWriter.refers(parentGlobalScope, target, isSynthetic)
               super.traverse(tree)
+
             case classDef: ClassDef =>
               val symbol = classDef.symbol
               val isTrait = symbol.isTrait
@@ -112,12 +121,17 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
                   elementsWriter.classDef(mSymbol)
               }
 
-              if(debug)
+//              if(debug)
+                println("-------------------------------------------------")
                 println("class: " + mSymbol.csvString)
 
+              val directSymbols =  symbol.info.parents.map(t => asMSymbol(t.typeSymbol)).toSet
+
               symbol.ancestors foreach { parentSymbol =>
-                relationsWriter.extendsCls(asMSymbol(parentSymbol), mSymbol)
-                println(s"  parent: ${parentSymbol.toSemantic}")
+                val parentMSymbol = asMSymbol(parentSymbol)
+                val direct = directSymbols.contains(parentMSymbol)
+                relationsWriter.extendsCls(parentMSymbol, mSymbol,direct = direct)
+                println(s"  parent: ${parentSymbol.toSemantic}  $direct")
               }
               withinScope(mSymbol) {
                 super.traverse(tree)
@@ -129,7 +143,7 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
               val mSymbol = asMSymbol(symbol)
               val owner = symbol.owner
               if (owner.isClass || owner.isModuleOrModuleClass || owner.isPackageObjectOrClass) {
-                if (!symbol.isSynthetic)
+                if (!symbol.isSynthetic) {
                   if (symbol.isVar) {
                     elementsWriter.varDef(mSymbol)
                     if(debug)
@@ -139,9 +153,9 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
                     if(debug)
                       println("val: " + mSymbol.csvString)
                   }
-
-                val parentMSym = asMSymbol(symbol.outerClass)
-                relationsWriter.within(parentMSym, mSymbol)
+                  val parentMSym = asMSymbol(symbol.outerClass)
+                  relationsWriter.within(parentMSym, mSymbol)
+                }
               }
 
               withinScope(mSymbol) {
@@ -156,20 +170,28 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
               val mSymbol = asMSymbol(symbol)
               if (!symbol.isSynthetic && !symbol.isAccessor) {
                 elementsWriter.method(mSymbol,symbol.nameString,declTypeDefined)
-                println("def: " + mSymbol.csvString)
+                if(debug)
+                  println("def: " + mSymbol.csvString)
+
+                val parentMSym = asMSymbol(symbol.outerClass)
+                relationsWriter.within(parentMSym, mSymbol)
+
+                val directParentSymbols =  symbol.info.parents.map(t => asMSymbol(t.typeSymbol)).toSet
+
+                symbol.overrides.foreach { overridden =>
+                  val overrriddenOwnerMSym =asMSymbol(overridden.owner)
+                  val direct = directParentSymbols.contains(overrriddenOwnerMSym)
+
+                  relationsWriter.overrides(mSymbol, asMSymbol(overridden), direct)
+                }
+                symbol.overrides
+
+                withinScope(mSymbol) {
+                  super.traverse(tree)
+                }
+
               }
 
-              val parentMSym = asMSymbol(symbol.outerClass)
-              relationsWriter.within(parentMSym, mSymbol)
-
-              symbol.overrides.foreach { overridden =>
-                relationsWriter.overrides(mSymbol, asMSymbol(overridden))
-              }
-              symbol.overrides
-
-              withinScope(mSymbol) {
-                super.traverse(tree)
-              }
 
             case unknown =>
               super.traverse(tree)

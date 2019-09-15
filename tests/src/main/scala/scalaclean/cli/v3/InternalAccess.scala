@@ -31,9 +31,9 @@ class InternalAccess {
   }
 
 
-  private[v2] val ru = runtime.universe.asInstanceOf[runtime.JavaUniverse]
+   val ru = runtime.universe.asInstanceOf[runtime.JavaUniverse]
   ru.settings.debug.value = true
-  private[v2] val globalHelper = new GlobalHelper(ru)
+  private[v3] val globalHelper = new GlobalHelper(ru)
 
   private val internalAccess = classOf[SemanticDocument].getMethod("internal")
   private val classpathAccess = classOf[GlobalSymbolTable].getDeclaredField("classpath")

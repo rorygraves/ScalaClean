@@ -38,12 +38,12 @@ class ParserImpl extends ParseModel {
     new Projects(projectsRoot,(projectName, projectPath))
   }
 
-  private[v2] val internalAccess = new InternalAccess()
-  private[v2] val additionalDataBuilder = new ExtraParsedData(this)
+  private[v3] val internalAccess = new InternalAccess()
+  val additionalDataBuilder = new ExtraParsedData(this)
 
 
   private val bySymbol = mutable.Map[ModelKey, ParsedElement]()
-  private[v2] def record( element: ParsedElement): Unit = {
+  def record( element: ParsedElement): Unit = {
     bySymbol.get(element.key) foreach {e => assert(false, s"$element --- ${element.key} enclosing ${element.enclosing}\n matches $e --- ${e.key} enclosing ${e.enclosing}")}
     bySymbol.put(element.key, element)
   }

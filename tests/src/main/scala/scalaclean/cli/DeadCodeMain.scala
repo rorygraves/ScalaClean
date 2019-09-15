@@ -1,7 +1,10 @@
 package scalaclean.cli
 
 import java.nio.charset.StandardCharsets
+import java.nio.file.{Files, Path, Paths}
 
+import scalaclean.cli.v3.{ModelReader, Project, Projects}
+import scalaclean.model.{ModelHelper, ProjectModel, ScalaCleanModel}
 import scalaclean.rules.AbstractRule
 import scalaclean.rules.deadcode.DeadCodeRemover
 import scalafix.internal.patch.PatchInternals
@@ -26,7 +29,7 @@ class DeadCodeMain extends DiffAssertions {
 
   val projectName = "deadCodeProject1"
   val scalaCleanWorkspace = "."
-//  val ivyDir: String = toPlatform("$HOME$/.ivy2/cache")
+  val ivyDir: String = toPlatform("$HOME$/.ivy2/cache")
   val storagePath: String = toPlatform("$HOME$/Downloads/temp3")
 
   val targetFiles = List(
@@ -37,7 +40,7 @@ class DeadCodeMain extends DiffAssertions {
   )
   val sourceRoot = AbsolutePath(scalaCleanWorkspace)
   val outputClassDir: String = toPlatform(s"$scalaCleanWorkspace/testProjects/$projectName/target/scala-2.12/classes/")
-//  val inputClasspath = Classpath(toPlatform(s"$outputClassDir:$ivyDir/org.scala-lang/scala-library/jars/scala-library-2.12.8.jar:$ivyDir/org.scalaz/scalaz-core_2.12/bundles/scalaz-core_2.12-7.2.27.jar"))
+  val inputClasspath = Classpath(toPlatform(s"$outputClassDir:$ivyDir/org.scala-lang/scala-library/jars/scala-library-2.12.8.jar:$ivyDir/org.scalaz/scalaz-core_2.12/bundles/scalaz-core_2.12-7.2.27.jar"))
   val inputSourceDirectories: List[AbsolutePath] = Classpath(toPlatform(s"$scalaCleanWorkspace/testProjects/$projectName/src/main/scala")).entries
 
   def semanticPatch(
@@ -62,33 +65,45 @@ class DeadCodeMain extends DiffAssertions {
 
     println("---------------------------------------------------------------------------------------------------")
     // run DeadCode
+    val rootDir  = Paths.get("/home/rory/workspace/ScalaClean")
+    val srcDir  = Paths.get("testProjects/deadCodeProject1/target/scala-2.12/classes/META-INF/ScalaClean/")
+    val projects = new Projects(rootDir,"src" -> srcDir)
+    val project = projects.projects.head
+    val model = ModelReader.read(project,srcDir, rootDir)
+
+    new ProjectModel {}
+    ModelHelper.model = Some(pro)
+//    val pm: ProjectModel = ModelReader.read()
+
     val deadCode = new DeadCodeRemover()
     deadCode.beforeStart()
-    targetFiles.foreach { targetFile =>
-      val sdoc = DocHelper.readSemanticDoc(classLoader, symtab, inputSourceDirectories.head, sourceRoot, targetFile)
-      val (fixed, _) = semanticPatch(deadCode, sdoc, suppress = false)
 
-      // compare results
-      val tokens = fixed.tokenize.get
-      val obtained = tokens.mkString
 
-      val targetOutput = RelativePath(targetFile.toString() + ".expected")
-      val outputFile = inputSourceDirectories.head.resolve(targetOutput)
-      val expected = FileIO.slurp(outputFile, StandardCharsets.UTF_8)
-
-      val diff = DiffAssertions.compareContents(obtained, expected)
-      if (diff.nonEmpty) {
-        println("###########> obtained       <###########")
-        println(obtained)
-        println("###########> expected       <###########")
-        println(expected)
-        println("###########> Diff       <###########")
-        println(error2message(obtained, expected))
-
-        System.out.flush()
-        System.exit(1)
-      }
-    }
+    //    targetFiles.foreach { targetFile =>
+//      val sdoc = DocHelper.readSemanticDoc(classLoader, symtab, inputSourceDirectories.head, sourceRoot, targetFile)
+//      val (fixed, _) = semanticPatch(deadCode, sdoc, suppress = false)
+//
+//      // compare results
+//      val tokens = fixed.tokenize.get
+//      val obtained = tokens.mkString
+//
+//      val targetOutput = RelativePath(targetFile.toString() + ".expected")
+//      val outputFile = inputSourceDirectories.head.resolve(targetOutput)
+//      val expected = FileIO.slurp(outputFile, StandardCharsets.UTF_8)
+//
+//      val diff = DiffAssertions.compareContents(obtained, expected)
+//      if (diff.nonEmpty) {
+//        println("###########> obtained       <###########")
+//        println(obtained)
+//        println("###########> expected       <###########")
+//        println(expected)
+//        println("###########> Diff       <###########")
+//        println(error2message(obtained, expected))
+//
+//        System.out.flush()
+//        System.exit(1)
+//      }
+//    }
   }
 
 }

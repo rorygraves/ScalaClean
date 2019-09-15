@@ -19,11 +19,12 @@ object ModelKey {
     }
     else ???
   }
-  private[model] case class GlobalSymbolKey(sym: Symbol) extends ModelKey {
+
+  case class GlobalSymbolKey(sym: Symbol) extends ModelKey {
     override def toCsv: String = s"G:$sym"
   }
 
-  private[model] case class LocalSymbolKey(sym: Symbol, filename: String) extends ModelKey {
+ case class LocalSymbolKey(sym: Symbol, filename: String) extends ModelKey {
     override def toCsv: String = s"L:$filename::$sym"
   }
 

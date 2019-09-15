@@ -1,6 +1,6 @@
 package scalaclean.cli.v3
 
-private[v2] object IoTokens {
+private object IoTokens {
   val fileElements = "scalaclean-elements.csv"
   val fileRelationships= "scalaclean-relationships.csv"
 
