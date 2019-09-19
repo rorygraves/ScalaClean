@@ -10,7 +10,7 @@ import scala.tools.nsc.{Global, Phase}
 
 class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent with SemanticdbOps with ModelSymbolBuilder {
   override val phaseName: String = "scalaclean-compiler-plugin-phase"
-  override val runsAfter: List[String] = List("typer")
+  override val runsAfter: List[String] = List("typer") // was typer
 
   override def newPhase(prev: Phase): Phase = new StdPhase(prev) {
 
@@ -79,8 +79,10 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
       import global._
       class SCTraverser extends Traverser {
         override def traverse(tree: Tree): Unit = {
-          if(debug)
-            println("--" + tree.getClass + "  " + Option(tree.tpe).map(_.nameAndArgsString))
+//          if(debug)
+            if(tree.symbol != NoSymbol && tree.symbol != null) {
+              println("--" + tree.getClass +  "  --  " + tree.symbol.toSemantic + "  " + tree.symbol.pos + " " + Option(tree.tpe).map(_.nameAndArgsString))
+            }
 
           tree match {
             case objectDef: ModuleDef =>
@@ -94,12 +96,19 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
 
               val directSymbols =  symbol.info.parents.map(t => asMSymbol(t.typeSymbol)).toSet
 
+              if(!symbol.owner.isPackageClass) {
+                val parentMSym = asMSymbol(symbol.outerClass)
+                relationsWriter.within(parentMSym, mSymbol)
+              }
+
               symbol.ancestors foreach { parentSymbol =>
                 val parentMSymbol = asMSymbol(parentSymbol)
                 val direct = directSymbols.contains(parentMSymbol)
                 relationsWriter.extendsCls(asMSymbol(parentSymbol), mSymbol,direct)
-                println(s"  parent: ${parentSymbol.toSemantic}  $direct")
+                if(debug)
+                  println(s"  parent: ${parentSymbol.toSemantic}  $direct")
               }
+
               withinScope(mSymbol) {
                 super.traverse(tree)
               }
@@ -142,7 +151,7 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
               val symbol = valDef.symbol
               val mSymbol = asMSymbol(symbol)
               val owner = symbol.owner
-              if (owner.isClass || owner.isModuleOrModuleClass || owner.isPackageObjectOrClass) {
+//              if (owner.isClass || owner.isModuleOrModuleClass || owner.isPackageObjectOrClass) {
                 if (!symbol.isSynthetic) {
                   if (symbol.isVar) {
                     elementsWriter.varDef(mSymbol)
@@ -155,15 +164,16 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
                   }
                   val parentMSym = asMSymbol(symbol.outerClass)
                   relationsWriter.within(parentMSym, mSymbol)
+                  relationsWriter.refers(parentMSym, mSymbol, symbol.isSynthetic)
                 }
-              }
+  //            }
 
               withinScope(mSymbol) {
                 super.traverse(tree)
               }
 
             case defdef: DefDef =>
-
+              defdef.tpt.symbol
               // TODO This feels wrong - this is def declType Defined field
               val declTypeDefined = defdef.isTyped
               val symbol = defdef.symbol
@@ -186,14 +196,15 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
                 }
                 symbol.overrides
 
+
+
                 withinScope(mSymbol) {
                   super.traverse(tree)
                 }
-
               }
 
-
             case unknown =>
+              println("  -- " + tree)
               super.traverse(tree)
 
           }

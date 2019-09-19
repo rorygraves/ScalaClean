@@ -14,6 +14,7 @@ import scalafix.v1.SemanticDocument
 
 import scala.meta._
 import scala.meta.internal.io.FileIO
+import scala.meta.internal.symtab.SymbolTable
 
 object DeadCodeMain {
   def main(args: Array[String]): Unit = {
@@ -58,16 +59,10 @@ class DeadCodeMain extends DiffAssertions {
 
   def runDeadCode(): Unit = {
 
-    val symtab = ClasspathOps.newSymbolTable(inputClasspath)
+    val symtab: SymbolTable = ClasspathOps.newSymbolTable(inputClasspath)
     val classLoader = ClasspathOps.toClassLoader(inputClasspath)
 
     val elementsRelUrl = s"META-INF/ScalaClean/scalaclean-elements.csv"
-    Option(classLoader.getResourceAsStream(elementsRelUrl)) match {
-      case Some(foo) =>
-        println("GOT ONE")
-      case None =>
-        println("AGGGHH")
-    }
     println("---------------------------------------------------------------------------------------------------")
     // run DeadCode
     val deadCode = new DeadCodeRemover()

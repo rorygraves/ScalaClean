@@ -108,7 +108,8 @@ lazy val privatiserProject1 = project.in(file("testProjects/privatiserProject1")
   skip in publish := true
 ).dependsOn(analysisPlugin)
 
-lazy val deadCodeProject1 = project.in(file("testProjects/deadCodeProject1")).settings(
+// template for dead code projects
+def deadCodeProject(id: String, projectLocation: String) = sbt.Project.apply(id, file(projectLocation)).settings(
   addCompilerPlugin(scalafixSemanticdb),
   scalacOptions += "-Yrangepos",
   libraryDependencies += "org.scalaz" %% "scalaz-core" % "7.2.27",
@@ -117,9 +118,11 @@ lazy val deadCodeProject1 = project.in(file("testProjects/deadCodeProject1")).se
 
   scalacOptions  ++= {
     // we depend on the assembly jar
-//    val baseDirectory.value /"custom_lib"
+    //    val baseDirectory.value /"custom_lib"
     val jar = (assembly in Compile in analysisPlugin).value
     Seq(
+      "-Xprint:typer",
+//      "-Ycompact-trees",
       "-Yrangepos",
       s"-Xplugin:${jar.getAbsolutePath}",
       s"-Jdummy=${jar.lastModified}", // ensures recompile
@@ -128,7 +131,11 @@ lazy val deadCodeProject1 = project.in(file("testProjects/deadCodeProject1")).se
   },
 ).dependsOn(analysisPlugin) // here to ensure rebuild on change
 
-lazy val tests = project.dependsOn(command, unitTestProject, privatiserProject1, deadCodeProject1)
+
+lazy val deadCodeProject1 = deadCodeProject("deadCodeProject1","testProjects/deadCodeProject1")
+lazy val deadCodeProject2 = deadCodeProject("deadCodeProject2", "testProjects/deadCodeProject2")
+
+lazy val tests = project.dependsOn(command, unitTestProject, privatiserProject1, deadCodeProject1, deadCodeProject2)
   .settings(
     moduleName := "tests",
     libraryDependencies += "args4j" % "args4j" % "2.0.23",

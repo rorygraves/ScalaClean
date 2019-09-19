@@ -1,7 +1,6 @@
 package scalaclean.cli.v3
 
 import scalaclean.model
-import scalaclean.model.impl.{ExtendsImpl, OverridesImpl, RefersImpl, WithinImpl}
 import scalaclean.model.{Extends, Overrides, Reference, Refers}
 import scalafix.v1.{Symbol, SymbolInformation}
 
@@ -222,9 +221,12 @@ abstract class ElementModelImpl(info: BasicElementInfo, relationships: BasicRela
   private val offsetStart = info.startPos
   private val offsetEnd = info.endPos
   override protected def infoPosString: String = {
-    val pos = tree.pos
-    s"${pos.startLine}:${pos.startColumn} - ${pos.endLine}:${pos.endColumn}"
+    s"${offsetStart}-${offsetEnd}"
 
+    // TODO Disabled as we don't want to laod the tree to work out line / column right now
+    //    val pos = tree.pos
+//    s"${pos.startLine}:${pos.startColumn} - ${pos.endLine}:${pos.endColumn}"
+//
   }
 }
 

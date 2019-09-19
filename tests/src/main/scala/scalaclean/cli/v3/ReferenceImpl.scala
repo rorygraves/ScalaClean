@@ -49,7 +49,7 @@ final class WithinImpl(from:Symbol, to:Symbol) extends ReferenceImpl(from,to)
   override def complete(elements: Map[Symbol, ElementModelImpl]): Unit = {
     super.complete(elements)
     assert(fromElement.isInstanceOf[ElementModelImpl])
-    assert(toElement.isDefined)
+    assert(toElement.isDefined, s"to reference $toSymbol not found for $from")
   }
 
 }

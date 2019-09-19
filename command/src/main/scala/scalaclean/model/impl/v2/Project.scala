@@ -22,18 +22,22 @@ class Project(name: String, path: Path, val projects: Projects) {
     val cp = props.getProperty("classpath")
     val output = props.getProperty("outputDir")
     val src = props.getProperty("src")
-    assert (cp ne null, props.keys)
-    assert (output ne null, props.keys)
+    assert(cp ne null, props.keys)
+    assert(output ne null, props.keys)
     (Classpath.apply(cp), output, src)
   }
+
   def symbolTable: SymbolTable = GlobalSymbolTable(classPath, true)
 
   println("OUTPUTPATH = " + outputPath)
-  lazy val classloader: ClassLoader = new URLClassLoader(Array(new URL("file:"+outputPath)), null)
+  lazy val classloader: ClassLoader = new URLClassLoader(Array(new URL("file:" + outputPath)), null)
 
   def relativePath = if (path.isAbsolute) path.relativize((projects.projectRoot)) else path
+
   def absolutePath = projects.projectRoot.resolve(path).toAbsolutePath
+
   private val infos = new ConcurrentHashMap[Symbol, SymbolInformation]()
+
   def symbolInfo(viewedFrom: ElementModelImpl, symbol: Symbol): SymbolInformation = {
     infos.computeIfAbsent(symbol,
       s => //any doc in the project would do though
@@ -43,18 +47,20 @@ class Project(name: String, path: Path, val projects: Projects) {
   def read = ModelReader.read(this, path, projects.projectRoot)
 
   private val sourcesMap = new ConcurrentHashMap[String, SourceData]()
-  def source(name:String) = {
+
+  def source(name: String) = {
     sourcesMap.computeIfAbsent(name, p => new SourceData(this, Paths.get(p)))
   }
 
 }
-class Projects(val projectRoot: Path, projectPaths: (String,Path) *) extends ProjectModel {
-  val projects = projectPaths.toList map { p => new Project(p._1, p._2, this)}
+
+class Projects(val projectRoot: Path, projectPaths: (String, Path)*) extends ProjectModel {
+  val projects = projectPaths.toList map { p => new Project(p._1, p._2, this) }
 
   val elements: Map[Symbol, ElementModelImpl] = {
     val (elements, rels: immutable.Seq[BasicRelationshipInfo]) = projects.map(_.read) unzip
 
-    val elementsMap = elements.flatten.toVector.map (e => e.symbol -> e) toMap
+    val elementsMap = elements.flatten.toVector.map(e => e.symbol -> e) toMap
 
     val relsFrom = rels.reduce(_ + _)
     val relsTo = relsFrom.byTo
@@ -66,10 +72,15 @@ class Projects(val projectRoot: Path, projectPaths: (String,Path) *) extends Pro
   }
 
   override def fromSymbol[T <: ModelElement](symbol: Symbol)(implicit tpe: ClassTag[T]): T = {
-    elements.get(symbol) match {
-      case None => throw new IllegalArgumentException(s"Unknown symbol $symbol")
+    val targetSymbol = if (symbol.isGlobal) Symbol("G:" + symbol.value) else {
+      elements.keys.find(_.value.contains(symbol.value)).getOrElse(throw new IllegalStateException("  " ))
+    }
+    //    elements.get(symbol) match {
+    elements.get(targetSymbol) match {
+      case None =>
+        throw new IllegalArgumentException(s"Unknown symbol $symbol")
       case Some(x: T) => x
-      case Some(x) => throw new IllegalArgumentException(s"Unexxpected symbol $symbol - found a $x when expecting a ${tpe.runtimeClass}")
+      case Some(x) => throw new IllegalArgumentException(s"Unexpected symbol $symbol - found a $x when expecting a ${tpe.runtimeClass}")
     }
   }
 
@@ -78,15 +89,15 @@ class Projects(val projectRoot: Path, projectPaths: (String,Path) *) extends Pro
     elements.get(symbol) match {
       case None => None
       case Some(x: T) => Some(x)
-      case Some(x) => throw new IllegalArgumentException(s"Unexxpected symbol $symbol - found a $x when expecting a ${tpe.runtimeClass}")
+      case Some(x) => throw new IllegalArgumentException(s"Unexpected symbol $symbol - found a $x when expecting a ${tpe.runtimeClass}")
     }
   }
 
   override def size: Int = elements.size
 
   override def allOf[T <: ModelElement : ClassTag]: Iterator[T] = {
-    elements.values.iterator collect{
-      case x:T => x
+    elements.values.iterator collect {
+      case x: T => x
     }
   }
 

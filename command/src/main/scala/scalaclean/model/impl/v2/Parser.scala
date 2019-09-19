@@ -4,7 +4,7 @@ import java.nio.file.{Files, Path, Paths}
 import java.util.Properties
 
 import scalaclean.model._
-import scalafix.v1.{SemanticDocument, Symbol}
+import scalafix.v1.SemanticDocument
 
 import scala.collection.mutable
 
@@ -25,7 +25,8 @@ class ParserImpl extends ParseModel {
     val projectsRoot = Paths.get(storagePath)
     val projectPath = Paths.get(relSource) // privatiser-test-input/src/main/scala
 
-    writeToFile(projectPath, projectsRoot)
+    val fileOutputPath = Paths.get(".")
+    writeToFile(fileOutputPath /*projectPath*/, projectsRoot)
 
     val props = new Properties
     props.put("classpath", classpath)

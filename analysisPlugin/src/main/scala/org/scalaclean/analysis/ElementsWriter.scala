@@ -31,7 +31,7 @@ class ElementsWriter(file: File) {
   }
 
   def valDef(mSymbol: ModelSymbol): Unit = {
-    valVarDef(IoTokens.typeVar, mSymbol, s",${mSymbol.isLazy}")
+    valVarDef(IoTokens.typeVal, mSymbol, s",${mSymbol.isLazy}")
   }
 
   def varDef(mSymbol: ModelSymbol): Unit = {

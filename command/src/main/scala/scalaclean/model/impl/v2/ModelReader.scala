@@ -2,9 +2,7 @@ package scalaclean.model.impl.v2
 
 import java.nio.file.{Files, Path}
 
-import scalaclean.model._
 import scalaclean.model.impl._
-import scalafix.v1.Symbol
 
 
 object ModelReader {
@@ -16,7 +14,8 @@ object ModelReader {
     val overridesB = List.newBuilder[OverridesImpl]
     val withinB = List.newBuilder[WithinImpl]
 
-    val dir = projectRoot.resolve(path).toAbsolutePath
+//    val dir = projectRoot.resolve(path).toAbsolutePath
+    val dir = projectRoot.resolve(".").toAbsolutePath
     val relsPath = dir.resolve(IoTokens.fileRelationships)
     println(s"reading relationships from $relsPath")
 

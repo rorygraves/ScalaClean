@@ -1,7 +1,7 @@
 package scalaclean.cli.v3
 
 import java.net.{URL, URLClassLoader}
-import java.nio.file.{Files, Path, Paths}
+import java.nio.file.{Path, Paths}
 import java.util.Properties
 import java.util.concurrent.ConcurrentHashMap
 
@@ -9,8 +9,7 @@ import scalaclean.model.{ModelElement, ProjectModel}
 import scalafix.v1.{Symbol, SymbolInformation}
 
 import scala.collection.immutable
-import scala.meta.internal.symtab.{GlobalSymbolTable, SymbolTable}
-import scala.meta.io.Classpath
+import scala.meta.internal.symtab.SymbolTable
 import scala.reflect.ClassTag
 
 class Project(name: String, path: Path, val projects: Projects) {
@@ -68,10 +67,17 @@ class Projects(val projectRoot: Path, projectPaths: (String,Path) *) extends Pro
   }
 
   override def fromSymbol[T <: ModelElement](symbol: Symbol)(implicit tpe: ClassTag[T]): T = {
-    elements.get(symbol) match {
+    val targetSymbol = if (symbol.isGlobal) Symbol("G:" + symbol.value) else {
+      elements.keys.find(_.value.contains(symbol.value)).getOrElse {
+        throw new IllegalStateException("Unable to match symbol: " + symbol)
+      }
+
+    }
+    //    elements.get(symbol) match {
+    elements.get(targetSymbol) match {
       case None => throw new IllegalArgumentException(s"Unknown symbol $symbol")
       case Some(x: T) => x
-      case Some(x) => throw new IllegalArgumentException(s"Unexxpected symbol $symbol - found a $x when expecting a ${tpe.runtimeClass}")
+      case Some(x) => throw new IllegalArgumentException(s"Unexpected symbol $symbol - found a $x when expecting a ${tpe.runtimeClass}")
     }
   }
 
@@ -80,7 +86,7 @@ class Projects(val projectRoot: Path, projectPaths: (String,Path) *) extends Pro
     elements.get(symbol) match {
       case None => None
       case Some(x: T) => Some(x)
-      case Some(x) => throw new IllegalArgumentException(s"Unexxpected symbol $symbol - found a $x when expecting a ${tpe.runtimeClass}")
+      case Some(x) => throw new IllegalArgumentException(s"Unexpected symbol $symbol - found a $x when expecting a ${tpe.runtimeClass}")
     }
   }
 

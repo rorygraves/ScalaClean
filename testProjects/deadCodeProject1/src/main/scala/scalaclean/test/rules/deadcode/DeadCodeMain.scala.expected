@@ -23,6 +23,7 @@ object AppWithMain2 {
     ()
   }
 }
+
 object Used2 {
   def aMethod(): Unit = {}
 }

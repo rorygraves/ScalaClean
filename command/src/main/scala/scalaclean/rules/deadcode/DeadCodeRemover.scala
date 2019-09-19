@@ -21,6 +21,23 @@ class DeadCodeRemover extends AbstractRule("ScalaCleanDeadCodeRemover") {
     override def toString: String = getClass.getSimpleName.replace("$", "")
   }
 
+  override def debugDump(): Unit = {
+    println("-------------------------------------------------------------")
+
+    val used = model.allOf[ModelElement].filter(!_.colour.isUnused).toList.map(_.symbol).sortBy(_.toString())
+    val unused = model.allOf[ModelElement].filter(_.colour.isUnused).toList.map(_.symbol).sortBy(_.toString())
+
+    println("Used symbols =  " + used.size)
+    println("Unused size = " + unused.size)
+    println("Used Elements: ")
+    used foreach( e => println("  " + e))
+    println("Unused Elements: ")
+    unused foreach( e => println("  " + e))
+    println("-------------------------------------------------------------")
+
+  }
+
+
   object Main extends Purpose {
     override def id: Int = 1
   }
@@ -67,7 +84,7 @@ class DeadCodeRemover extends AbstractRule("ScalaCleanDeadCodeRemover") {
   }
 
   def allApp = {
-    for (obj <- model.allOf[ObjectModel] if (obj.xtends[App]))
+    for (obj <- model.allOf[ObjectModel] if (obj.xtends(Symbol("G:scala/App#"))))
       yield obj
   }
 

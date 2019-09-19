@@ -23,7 +23,7 @@ class ParserImpl extends ParseModel {
 
 
     val projectsRoot = Paths.get(storagePath)
-    val projectPath = Paths.get(relSource) // privatiser-test-input/src/main/scala
+    val projectPath = Paths.get(".") // privatiser-test-input/src/main/scala
 
     writeToFile(projectPath, projectsRoot)
 

@@ -17,8 +17,15 @@ abstract class AbstractRule(val name:String) {
 
     runRule()
 
+    debugDump()
+
     println(s"$name end beforeStart")
+
+
   }
+
+  def debugDump(): Unit = {}
+
   def markInitial(): Unit
 
   def runRule() : Unit
