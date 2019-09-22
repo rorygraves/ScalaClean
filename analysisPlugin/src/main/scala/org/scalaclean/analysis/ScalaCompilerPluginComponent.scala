@@ -146,10 +146,36 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
                 super.traverse(tree)
               }
 
+            // *********************************************************************************************************
             case valDef: ValDef =>
 
               val symbol = valDef.symbol
+              println("\n\nVAL  DEF " + valDef.symbol)
               val mSymbol = asMSymbol(symbol)
+              relationsWriter.refers(parentScope,asMSymbol(valDef.tpt.symbol),symbol.isSynthetic)
+              if(symbol.isLocalToBlock) {
+                println("------------")
+                println("  " +   valDef.tpt)
+                println(" tpt.XXXX " + valDef.tpt.symbol)
+                println("  tpt.CLS " + valDef.tpt.getClass)
+                println("  tpt.PARENTS " + valDef.tpt.symbol.parentSymbols)
+                println("  tpt.TPE " + valDef.tpt.tpe)
+                println("  tpt.TPE " + valDef.tpt.tpe.typeSymbol.nameString)
+                valDef.tpt.tpe.foreach { x =>
+                  println("  tpt.TPE_X " + x)
+                }
+
+                def typeRels(container: ModelSymbol, typeTarget: Type): Unit = {
+                  val typeSymbol = typeTarget.typeSymbol
+                  relationsWriter.refers(parentScope,asMSymbol(typeSymbol),typeSymbol.isSynthetic)
+                  typeTarget.typeArgs foreach { tpe =>
+                    typeRels(container, tpe)
+//                    relationsWriter.refers(parentScope,asMSymbol(typeSymbol),typeSymbol.isSynthetic)
+                  }
+                }
+
+                typeRels(parentScope, valDef.tpt.tpe)
+              }
               val owner = symbol.owner
 //              if (owner.isClass || owner.isModuleOrModuleClass || owner.isPackageObjectOrClass) {
                 if (!symbol.isSynthetic) {
@@ -173,7 +199,8 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
               }
 
             case defdef: DefDef =>
-              defdef.tpt.symbol
+
+              println("\n\nDEF DEF " + defdef.symbol)
               // TODO This feels wrong - this is def declType Defined field
               val declTypeDefined = defdef.isTyped
               val symbol = defdef.symbol
@@ -194,9 +221,6 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
 
                   relationsWriter.overrides(mSymbol, asMSymbol(overridden), direct)
                 }
-                symbol.overrides
-
-
 
                 withinScope(mSymbol) {
                   super.traverse(tree)

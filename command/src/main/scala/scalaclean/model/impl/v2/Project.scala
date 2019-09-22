@@ -13,19 +13,26 @@ import scala.meta.internal.symtab.{GlobalSymbolTable, SymbolTable}
 import scala.meta.io.Classpath
 import scala.reflect.ClassTag
 
-class Project(name: String, path: Path, val projects: Projects) {
-  val (classPath, outputPath, src) = {
-    val props = new Properties()
-    val propsPath = projects.projectRoot.resolve(s"$name.properties")
-    println("PropsPath = " + propsPath)
-    props.load(Files.newBufferedReader(propsPath))
-    val cp = props.getProperty("classpath")
-    val output = props.getProperty("outputDir")
-    val src = props.getProperty("src")
-    assert(cp ne null, props.keys)
-    assert(output ne null, props.keys)
-    (Classpath.apply(cp), output, src)
+object Project {
+  def oldApply(name: String, path: Path, projects: Projects): Project = {
+    val (classPath: Classpath, outputPath: String, src: String) = {
+      val props = new Properties()
+      val propsPath = projects.projectRoot.resolve(s"$name.properties")
+      println("PropsPath = " + propsPath)
+      props.load(Files.newBufferedReader(propsPath))
+      val cp = props.getProperty("classpath")
+      val output = props.getProperty("outputDir")
+      val src = props.getProperty("src")
+      assert(cp ne null, props.keys)
+      assert(output ne null, props.keys)
+      (Classpath.apply(cp), output, src)
+    }
+
+    new Project(name, path, projects, classPath, outputPath, src)
   }
+}
+
+class Project private (name: String, path: Path, val projects: Projects, val classPath: Classpath, val outputPath: String, val src: String) {
 
   def symbolTable: SymbolTable = GlobalSymbolTable(classPath, true)
 
@@ -55,7 +62,7 @@ class Project(name: String, path: Path, val projects: Projects) {
 }
 
 class Projects(val projectRoot: Path, projectPaths: (String, Path)*) extends ProjectModel {
-  val projects = projectPaths.toList map { p => new Project(p._1, p._2, this) }
+  val projects = projectPaths.toList map { p => Project.oldApply(p._1, p._2, this) }
 
   val elements: Map[Symbol, ElementModelImpl] = {
     val (elements, rels: immutable.Seq[BasicRelationshipInfo]) = projects.map(_.read) unzip
@@ -73,7 +80,10 @@ class Projects(val projectRoot: Path, projectPaths: (String, Path)*) extends Pro
 
   override def fromSymbol[T <: ModelElement](symbol: Symbol)(implicit tpe: ClassTag[T]): T = {
     val targetSymbol = if (symbol.isGlobal) Symbol("G:" + symbol.value) else {
-      elements.keys.find(_.value.contains(symbol.value)).getOrElse(throw new IllegalStateException("  " ))
+      elements.keys.find(_.value.contains(symbol.value)).getOrElse {
+        throw new IllegalStateException("Unable to match symbol: " + symbol)
+      }
+
     }
     //    elements.get(symbol) match {
     elements.get(targetSymbol) match {

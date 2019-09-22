@@ -143,6 +143,11 @@ trait ProjectModel {
 
   def fromSymbol[T <: ModelElement](symbol: Symbol)(implicit tpe: ClassTag[T]): T
 
+  def fromSymbolLocal[T <: ModelElement](symbol: Symbol, startPos: Int, endPos: Int)(implicit tpe: ClassTag[T]): T = {
+    fromSymbol(symbol)
+  }
+
+
   def getSymbol[T <: ModelElement](symbol: Symbol)(implicit tpe: ClassTag[T]): Option[T]
 
   def size: Int

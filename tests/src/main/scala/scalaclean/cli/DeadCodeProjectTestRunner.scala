@@ -1,8 +1,11 @@
 package scalaclean.cli
 
 import java.nio.charset.StandardCharsets
-import java.nio.file.Paths
+import java.nio.file.attribute.BasicFileAttributes
+import java.nio.file.{Files, Path, Paths}
+import java.util.function.BiPredicate
 
+import scalaclean.cli.FileHelper.toPlatform
 import scalaclean.cli.v3.Projects
 import scalaclean.model.ModelHelper
 import scalaclean.rules.AbstractRule
@@ -15,36 +18,38 @@ import scalafix.scalaclean.cli.DocHelper
 import scalafix.testkit.DiffAssertions
 import scalafix.v1.SemanticDocument
 
-import scala.meta._
 import scala.meta.internal.io.FileIO
+import scala.meta.{AbsolutePath, Classpath, RelativePath, _}
 
-object DeadCodeMain {
-  def main(args: Array[String]): Unit = {
-    new DeadCodeMain().run()
-  }
-}
+class DeadCodeProjectTestRunner(val projectName: String, useNew: Boolean, overwriteTargetFiles: Boolean) extends DiffAssertions {
 
-class DeadCodeMain extends DiffAssertions {
-
-  import scalaclean.cli.FileHelper.toPlatform
-
-  val projectName = "deadCodeProject1"
   val scalaCleanWorkspace = "."
   val ivyDir: String = toPlatform("$HOME$/.ivy2/cache")
 
 
-  // TODO MAKE this dynamically sourced from directory
-  val targetFiles = List(
-    RelativePath("scalaclean/test/rules/deadcode/DeadCodeAnnotation.scala"),
-//    RelativePath("scalaclean/test/rules/deadcode/DeadCodeImport.scala"),
-    RelativePath("scalaclean/test/rules/deadcode/DeadCodeMain.scala"),
-    RelativePath("scalaclean/test/rules/deadcode/DeadCodeVarVal.scala")
-  )
   val sourceRoot = AbsolutePath(scalaCleanWorkspace)
   val outputClassDir: String = toPlatform(s"$scalaCleanWorkspace/testProjects/$projectName/target/scala-2.12/classes/")
   val storagePath: String = toPlatform(s"$scalaCleanWorkspace/testProjects/$projectName/target/scala-2.12/classes/META-INF/ScalaClean/old/")
   val inputClasspath = Classpath(toPlatform(s"$outputClassDir:$ivyDir/org.scala-lang/scala-library/jars/scala-library-2.12.8.jar:$ivyDir/org.scalaz/scalaz-core_2.12/bundles/scalaz-core_2.12-7.2.27.jar"))
   val inputSourceDirectories: List[AbsolutePath] = Classpath(toPlatform(s"$scalaCleanWorkspace/testProjects/$projectName/src/main/scala")).entries
+
+  def sourceFiles(directories: List[AbsolutePath]): List[RelativePath] = {
+    import scala.collection.JavaConverters._
+    val files: List[RelativePath] = inputSourceDirectories.flatMap { sourceDir =>
+      val sourceDirPath = sourceDir.toNIO
+      if(sourceDir.isDirectory) {
+        val absPaths = Files.find(sourceDir.toNIO,Integer.MAX_VALUE, new BiPredicate[Path, BasicFileAttributes] {
+          override def test(
+            t: Path, u: BasicFileAttributes): Boolean = { u.isRegularFile && t.getFileName.toString.endsWith(".scala") }
+        }).iterator().asScala.toList
+        absPaths.map(AbsolutePath(_).toRelative(sourceDir))
+      } else
+        Nil
+    }
+    files.sortBy(_.toString())
+  }
+
+  val targetFiles = sourceFiles(inputSourceDirectories)
 
   def semanticPatch(
     rule: AbstractRule,
@@ -55,13 +60,15 @@ class DeadCodeMain extends DiffAssertions {
     PatchInternals.semantic(fixes, sdoc, suppress)
   }
 
-  def run(): Unit = {
+  def run(): Boolean = {
 
-    AnalysisHelper.runAnalysis(projectName, inputClasspath, sourceRoot, inputSourceDirectories, outputClassDir, storagePath, targetFiles)
+    // if we are in old mode generate the META-INF/ScalaClean/old analysis files
+//    if(!useNew)
+      AnalysisHelper.runAnalysis(projectName, inputClasspath, sourceRoot, inputSourceDirectories, outputClassDir, storagePath, targetFiles)
     runDeadCode()
   }
 
-  def runDeadCode(): Unit = {
+  def runDeadCode(): Boolean = {
 
     val symtab = ClasspathOps.newSymbolTable(inputClasspath)
     val classLoader = ClasspathOps.toClassLoader(inputClasspath)
@@ -69,10 +76,13 @@ class DeadCodeMain extends DiffAssertions {
     println("---------------------------------------------------------------------------------------------------")
     // run DeadCode
     val rootDir = Paths.get("/workspace/ScalaClean")
-    val srcDir = Paths.get("testProjects/deadCodeProject1/target/scala-2.12/classes/META-INF/ScalaClean/")
+    val srcDir = Paths.get(s"testProjects/$projectName/target/scala-2.12/classes/META-INF/ScalaClean/")
 
-//     val projects = new Projects(rootDir, "src" -> srcDir)
-//    ModelHelper.model = Some(projects)
+    // if 'useNew' is enabled - load the data from the compiler plugin files not the old analysis files
+    if(useNew) {
+      val projects = new Projects(rootDir, "src" -> srcDir)
+      ModelHelper.model = Some(projects)
+    }
 
     val deadCode = new DeadCodeRemover()
     deadCode.beforeStart()
@@ -89,6 +99,10 @@ class DeadCodeMain extends DiffAssertions {
 
       val targetOutput = RelativePath(targetFile.toString() + ".expected")
       val outputFile = inputSourceDirectories.head.resolve(targetOutput)
+
+      if(overwriteTargetFiles)
+        Files.write(outputFile.toNIO,obtained.getBytes)
+
       val expected = FileIO.slurp(outputFile, StandardCharsets.UTF_8)
 
       val diff = DiffAssertions.compareContents(obtained, expected)
@@ -101,9 +115,10 @@ class DeadCodeMain extends DiffAssertions {
         println(error2message(obtained, expected))
 
         System.out.flush()
-        System.exit(1)
+        return false
       }
     }
+    true
   }
 
 }

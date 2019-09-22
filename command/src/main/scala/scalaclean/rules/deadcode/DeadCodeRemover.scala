@@ -30,9 +30,9 @@ class DeadCodeRemover extends AbstractRule("ScalaCleanDeadCodeRemover") {
     println("Used symbols =  " + used.size)
     println("Unused size = " + unused.size)
     println("Used Elements: ")
-    used foreach( e => println("  " + e))
+    used foreach (e => println("  " + e))
     println("Unused Elements: ")
-    unused foreach( e => println("  " + e))
+    unused foreach (e => println("  " + e))
     println("-------------------------------------------------------------")
 
   }
@@ -116,8 +116,8 @@ class DeadCodeRemover extends AbstractRule("ScalaCleanDeadCodeRemover") {
             case (ref, _) => markUsed(ref, purpose, obj :: path)
           }
           markRhs(obj, obj :: path)
-          //remove this after migration
-        case _ : impl.FieldModelHook => ???
+        //remove this after migration
+        case _: impl.FieldModelHook => ???
       }
     }
 
@@ -148,7 +148,8 @@ class DeadCodeRemover extends AbstractRule("ScalaCleanDeadCodeRemover") {
 
     val tv = new SymbolTreeVisitor {
 
-      override protected def handlerSymbol(symbol: Symbol, mods: Seq[Mod], stat: Stat, scope: List[Scope]): (Patch, Boolean) = {
+      override protected def handlerSymbol(
+        symbol: Symbol, mods: Seq[Mod], stat: Stat, scope: List[Scope]): (Patch, Boolean) = {
         val modelElement = model.fromSymbol[ModelElement](symbol)
         val usage = modelElement.colour
         if (usage.isUnused) {
@@ -162,9 +163,15 @@ class DeadCodeRemover extends AbstractRule("ScalaCleanDeadCodeRemover") {
           continue
       }
 
-      override protected def handlerPats(pats: Seq[Pat.Var], mods: Seq[Mod], stat: Stat, scope: List[Scope]): (Patch, Boolean) = {
+      override protected def handlerPats(
+        pats: Seq[Pat.Var], mods: Seq[Mod], stat: Stat, scope: List[Scope]): (Patch, Boolean) = {
+
         val declarationsByUsage: Map[Usage, Seq[(Pat.Var, ModelElement)]] =
-          pats map (p => (p, model.fromSymbol[ModelElement](p.symbol))) groupBy (m => m._2.colour)
+          pats map { p =>
+            println(" p . pos = " + stat.pos.start, stat.pos.end)
+            (p, model.fromSymbolLocal[ModelElement](p.symbol, stat.pos.start, stat.pos.end))
+          } groupBy (m => m._2.colour)
+
         declarationsByUsage.get(Usage.unused) match {
           case Some(_) if declarationsByUsage.size == 1 =>
             //we can remove the whole declaration

@@ -313,7 +313,7 @@ object ValModelImpl {
   val treeAbstractType = ClassTag[Decl.Val](classOf[Decl.Val])
   val treeConcreteType = ClassTag[Defn.Val](classOf[Defn.Val])
 }
-class ValModelImpl(info: BasicElementInfo, relationships: BasicRelationshipInfo,
+class ValModelImpl(val info: BasicElementInfo, relationships: BasicRelationshipInfo,
                    fieldName: String, isAbstract: Boolean, val isLazy: Boolean)
   extends FieldModelImpl(info, relationships, fieldName, isAbstract) with ValModel {
   override protected def typeName: String = "trait"
@@ -329,7 +329,7 @@ object VarModelImpl {
   val treeAbstractType = ClassTag[Decl.Var](classOf[Decl.Var])
   val treeConcreteType = ClassTag[Defn.Var](classOf[Defn.Var])
 }
-class VarModelImpl(info: BasicElementInfo, relationships: BasicRelationshipInfo,
+class VarModelImpl(val info: BasicElementInfo, relationships: BasicRelationshipInfo,
                    fieldName: String, isAbstract: Boolean)
   extends FieldModelImpl(info, relationships, fieldName, isAbstract) with VarModel{
   override protected def typeName: String = "var"

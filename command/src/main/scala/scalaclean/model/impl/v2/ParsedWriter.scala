@@ -1,23 +1,54 @@
 package scalaclean.model.impl.v2
 
-import java.io.BufferedWriter
 import java.nio.file.{Files, Path, Paths, StandardOpenOption}
 
 import scala.meta.inputs.Input
 
 
 class ParsedWriter(path: Path, projectRoot: Path) {
+
+  class SortedStringWriter(targetPath: Path) {
+    val target = Files.newBufferedWriter(targetPath,
+      StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.WRITE, StandardOpenOption.CREATE)
+
+    var strings: Vector[String] = Vector.empty
+    var current = ""
+
+    def write(s: String): Unit = {
+      current = current + s
+    }
+
+    def newLine(): Unit = {
+      if (current.nonEmpty) {
+        strings = strings :+ current
+        current = ""
+      }
+    }
+
+    def flush(): Unit = {
+      newLine()
+      strings.toSet.toList.sorted.foreach { line =>
+        target.write(line)
+        target.newLine()
+      }
+      strings = Vector.empty
+      target.flush()
+    }
+
+    def close(): Unit = {
+      target.close()
+    }
+  }
+
   val dir = projectRoot.resolve(path).toAbsolutePath
   println(s" writing to dir $dir")
   Files.createDirectories(dir)
   val ele = dir.resolve(IoTokens.fileElements).toAbsolutePath
-  val rels= dir.resolve(IoTokens.fileRelationships ).toAbsolutePath
+  val rels = dir.resolve(IoTokens.fileRelationships).toAbsolutePath
   println(s" writing elements $ele")
-  val elementsFile = Files.newBufferedWriter(ele,
-    StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.WRITE, StandardOpenOption.CREATE)
+  val elementsFile = new SortedStringWriter(ele)
   println(s" writing relationships $rels")
-  val relationshipsFile = Files.newBufferedWriter(rels,
-    StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.WRITE, StandardOpenOption.CREATE)
+  val relationshipsFile = new SortedStringWriter(rels)
 
   def writeElement(element: ParsedElement): Unit = {
     element match {
@@ -56,11 +87,12 @@ class ParsedWriter(path: Path, projectRoot: Path) {
   private def writeEnd(): Unit = {
     elementsFile.newLine()
   }
+
   private def writeElementImpl(e: ParsedElement, typeId: String): Unit = {
     val inputFile = e.doc.input match {
       case file: Input.File => file.path.toNIO.toAbsolutePath.relativize(projectRoot)
       case file: Input.VirtualFile => Paths.get(file.path)
-      case x  =>
+      case x =>
         throw new IllegalStateException(s"unexpected input type ${x.getClass}")
     }
     val source = e.key.toCsv
@@ -82,6 +114,7 @@ class ParsedWriter(path: Path, projectRoot: Path) {
       relationshipsFile.newLine()
     }
   }
+
   private def writeClassLike(c: ParsedClassLike): Unit = {
 
     val directExtends = c.directExtends
@@ -95,18 +128,25 @@ class ParsedWriter(path: Path, projectRoot: Path) {
     }
 
   }
+
   private def writeObjectImpl(o: ParsedObjectImpl): Unit = {}
+
   private def writeTraitImpl(o: ParsedTraitImpl): Unit = {}
+
   private def writeClassImpl(o: ParsedClassImpl): Unit = {}
+
   private def writeMethod(o: ParsedMethod): Unit = {
     elementsFile.write(s",${o.isAbstract},${o.method_name},${o.method_decltpe.isDefined}")
   }
+
   private def writeField(o: ParsedField): Unit = {
     elementsFile.write(s",${o.isAbstract},${o.field.name}")
   }
+
   private def writeVal(o: ParsedVal): Unit = {
     elementsFile.write(s",${o.isLazy}")
   }
+
   private def writeVar(o: ParsedVar): Unit = {}
 
   def close(): Unit = {

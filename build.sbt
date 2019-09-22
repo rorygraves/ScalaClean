@@ -134,6 +134,8 @@ def deadCodeProject(id: String, projectLocation: String) = sbt.Project.apply(id,
 
 lazy val deadCodeProject1 = deadCodeProject("deadCodeProject1","testProjects/deadCodeProject1")
 lazy val deadCodeProject2 = deadCodeProject("deadCodeProject2", "testProjects/deadCodeProject2")
+lazy val deadCodeProject3 = deadCodeProject("deadCodeProject3", "testProjects/deadCodeProject3")
+lazy val deadCodeProject4Broken = deadCodeProject("deadCodeProject4", "testProjects/deadCodeProject4")
 
 lazy val tests = project.dependsOn(command, unitTestProject, privatiserProject1, deadCodeProject1, deadCodeProject2)
   .settings(

@@ -1,4 +1,4 @@
-package scalaclean.cli.v3
+ package scalaclean.cli.v3
 
 import java.net.{URL, URLClassLoader}
 import java.nio.file.{Path, Paths}
@@ -64,6 +64,21 @@ class Projects(val projectRoot: Path, projectPaths: (String,Path) *) extends Pro
     elementsMap.values foreach (_.complete(elementsMap, relsFrom, relsTo))
 
     elementsMap
+  }
+
+  override def fromSymbolLocal[T <: ModelElement](symbol: Symbol, startPos: Int, endPos: Int)(implicit tpe: ClassTag[T]): T = {
+    val x = elements.find {
+      case (candidateSymbol: Symbol,em: ValModelImpl) => em.info.startPos == startPos && em.info.endPos == endPos
+      case (candidateSymbol,em: VarModelImpl) => em.info.startPos == startPos && em.info.endPos == endPos
+      case _ => false
+    }
+
+    x.map(_._2) match {
+      case None => throw new IllegalArgumentException(s"Unknown symbol $symbol")
+      case Some(x: T) => x
+      case Some(x) => throw new IllegalArgumentException(s"Unexpected symbol $symbol - found a $x when expecting a ${tpe.runtimeClass}")
+
+    }
   }
 
   override def fromSymbol[T <: ModelElement](symbol: Symbol)(implicit tpe: ClassTag[T]): T = {
