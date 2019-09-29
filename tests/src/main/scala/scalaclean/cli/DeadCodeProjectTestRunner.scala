@@ -75,7 +75,8 @@ class DeadCodeProjectTestRunner(val projectName: String, useNew: Boolean, overwr
 
     println("---------------------------------------------------------------------------------------------------")
     // run DeadCode
-    val rootDir = Paths.get("/workspace/ScalaClean")
+    val rootDir = Paths.get(".")
+
     val srcDir = Paths.get(s"testProjects/$projectName/target/scala-2.12/classes/META-INF/ScalaClean/")
 
     // if 'useNew' is enabled - load the data from the compiler plugin files not the old analysis files
