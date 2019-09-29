@@ -63,157 +63,206 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
     }
   }
 
-  class SCUnitTraverser(sourceFile: String, elementsWriter: ElementsWriter, relationsWriter: RelationshipsWriter) extends global.Traverser with ScopeTracking with ScopedLogging {
+  trait ScopeTracking {
+
+    var scopeStack: List[ModelSymbol] = Nil
+
+    val debug: Boolean
+    val logTransScope: Boolean
+
+    var depth = 0
+    private def indentString: String = "  " * depth
+    def scopeLog(msg: => String): Unit = {
+      if(debug)
+        println(s"${indentString}  $msg")
+    }
+
+
+    def enterScope[T](name: String, mSymbol: ModelSymbol)(fn: => T): Unit = {
+      if(debug)
+        println(s"${indentString}$name - ${mSymbol.csvString}")
+      scopeStack = mSymbol :: scopeStack
+      depth +=1
+      fn
+      scopeStack = scopeStack.tail
+      depth -=1
+    }
+
+
+    def outerScope: ModelSymbol = scopeStack.tail.head
+    def currentScope: ModelSymbol = scopeStack.head
+    def currentGlobalScope: ModelSymbol = scopeStack.find(_.isGlobal).get
+
+    def enterTransScope[T](name: String)(fn: => T): Unit = {
+
+      if(debug && logTransScope) {
+        println(s"${indentString}$name")
+        depth +=1
+        fn
+        depth -=1
+      } else
+        fn
+    }
+  }
+
+
+  class SCUnitTraverser(sourceFile: String, elementsWriter: ElementsWriter, relationsWriter: RelationshipsWriter) extends global.Traverser with ScopeTracking {
 
     import global._
     lazy val g: global.type = global
     val debug = true
-
-    def traverseInScope(mSymbol: ModelSymbol, tree: Tree): Unit = {
-      withinScope(mSymbol) {
-        super.traverse(tree)
-      }
-    }
+    val logTransScope = true
 
     override def traverse(tree: Tree): Unit = {
-      logTreeStart(tree)
-      if(debug)
-        if(tree.symbol != NoSymbol && tree.symbol != null) {
-          println("--" + tree.getClass +  "  --  " + tree.symbol.toSemantic + "  " + tree.symbol.pos + " " + Option(tree.tpe).map(_.nameAndArgsString))
-        }
 
       tree match {
+        case packageDef: PackageDef =>
+          val symbol = packageDef.symbol
+          val mSymbol = asMSymbol(symbol)
+          enterScope("PackageDef", mSymbol) {
+            super.traverse(packageDef)
+          }
+        case treeSelect: Select =>
+          enterTransScope("Select") {
+            super.traverse(treeSelect)
+          }
+        case template: Template =>
+          enterTransScope("Template")(super.traverse(template))
+        case typeTree: TypeTree =>
+          enterTransScope("TypeTree")(super.traverse(typeTree))
+        case blockTree: Block =>
+          enterTransScope("Block")(super.traverse(blockTree))
+        case superTree: Super =>
+          enterTransScope("Super")(super.traverse(superTree))
+        case EmptyTree =>
+          // do nothing
+        case thisTree: This =>
+          scopeLog("This")
+          // do nothing
         case objectDef: ModuleDef =>
           val symbol = objectDef.symbol
           val mSymbol = asMSymbol(symbol)
-          val sSymbol = symbol.toSemantic
-          val isGlobal = symbol.isSemanticdbGlobal
-          elementsWriter.objectDef(isGlobal, sSymbol, sourceFile, symbol.pos.start, symbol.pos.end)
-          if(debug)
-            println("object: " + sSymbol)
+          enterScope("ObjectDef", mSymbol) {
+            val sSymbol = symbol.toSemantic
+            val isGlobal = symbol.isSemanticdbGlobal
+            elementsWriter.objectDef(isGlobal, sSymbol, sourceFile, symbol.pos.start, symbol.pos.end)
 
-          val directSymbols =  symbol.info.parents.map(t => asMSymbol(t.typeSymbol)).toSet
+            val directSymbols = symbol.info.parents.map(t => asMSymbol(t.typeSymbol)).toSet
 
-          if(!symbol.owner.isPackageClass) {
-            val parentMSym = asMSymbol(symbol.outerClass)
-            relationsWriter.within(parentMSym, mSymbol)
+            if (!symbol.owner.isPackageClass) {
+              val parentMSym = asMSymbol(symbol.outerClass)
+              if(parentMSym != outerScope) {
+                scopeLog("WARNING outerClass symbol != scope")
+                scopeLog("  parent (symbol.outerClass: " + parentMSym)
+                scopeLog("  outerScope:                " + outerScope)
+              }
+              relationsWriter.within(outerScope, mSymbol)
+            }
+
+            symbol.ancestors foreach { parentSymbol =>
+              val parentMSymbol = asMSymbol(parentSymbol)
+              val direct = directSymbols.contains(parentMSymbol)
+              relationsWriter.extendsCls(parentMSymbol, mSymbol, direct)
+            }
+
+            super.traverse(tree)
           }
 
-          symbol.ancestors foreach { parentSymbol =>
-            val parentMSymbol = asMSymbol(parentSymbol)
-            val direct = directSymbols.contains(parentMSymbol)
-            relationsWriter.extendsCls(asMSymbol(parentSymbol), mSymbol,direct)
-            if(debug)
-              println(s"  parent: ${parentSymbol.toSemantic}  $direct")
-          }
-
-          traverseInScope(mSymbol, tree)
         case apply: Apply =>
           val target = asMSymbol(apply.symbol)
           val isSynthetic = target.isSynthetic
           if(!isSynthetic && !scopeStack.head.isSynthetic)
-            relationsWriter.refers(parentGlobalScope, target, isSynthetic)
+            relationsWriter.refers(currentGlobalScope, target, isSynthetic)
           super.traverse(tree)
 
         case classDef: ClassDef =>
           val symbol = classDef.symbol
           val isTrait = symbol.isTrait
           val mSymbol = asMSymbol(symbol)
-          if (!symbol.isSynthetic) {
-            if(isTrait)
-              elementsWriter.traitDef(mSymbol)
-            else
-              elementsWriter.classDef(mSymbol)
+
+          enterScope("ClassDef", mSymbol) {
+
+            if (!symbol.isSynthetic) {
+              if (isTrait)
+                elementsWriter.traitDef(mSymbol)
+              else
+                elementsWriter.classDef(mSymbol)
+            }
+
+            val directSymbols = symbol.info.parents.map(t => asMSymbol(t.typeSymbol)).toSet
+
+            symbol.ancestors foreach { parentSymbol =>
+              val parentMSymbol = asMSymbol(parentSymbol)
+              val direct = directSymbols.contains(parentMSymbol)
+              relationsWriter.extendsCls(parentMSymbol, mSymbol, direct = direct)
+              scopeLog(s"parent: ${parentSymbol.toSemantic}  $direct")
+            }
+            super.traverse(tree)
           }
-
-          //              if(debug)
-          println("-------------------------------------------------")
-          println("class: " + mSymbol.csvString)
-
-          val directSymbols =  symbol.info.parents.map(t => asMSymbol(t.typeSymbol)).toSet
-
-          symbol.ancestors foreach { parentSymbol =>
-            val parentMSymbol = asMSymbol(parentSymbol)
-            val direct = directSymbols.contains(parentMSymbol)
-            relationsWriter.extendsCls(parentMSymbol, mSymbol,direct = direct)
-            println(s"  parent: ${parentSymbol.toSemantic}  $direct")
-          }
-          traverseInScope(mSymbol,tree)
 
         // *********************************************************************************************************
         case valDef: ValDef =>
 
           val symbol = valDef.symbol
-          println("\n\nVAL  DEF " + valDef.symbol)
           val mSymbol = asMSymbol(symbol)
-          relationsWriter.refers(parentScope,asMSymbol(valDef.tpt.symbol),symbol.isSynthetic)
-          if(symbol.isLocalToBlock) {
+          enterScope("ValDef-" + (if(symbol.isVar) "var" else "val"), mSymbol) {
+            relationsWriter.refers(currentScope, asMSymbol(valDef.tpt.symbol), symbol.isSynthetic)
+            if (symbol.isLocalToBlock) {
 
-            def typeRels(container: ModelSymbol, typeTarget: Type): Unit = {
-              val typeSymbol = typeTarget.typeSymbol
-              relationsWriter.refers(parentScope,asMSymbol(typeSymbol),typeSymbol.isSynthetic)
-              typeTarget.typeArgs foreach { tpe =>
-                typeRels(container, tpe)
+              def typeRels(container: ModelSymbol, typeTarget: Type): Unit = {
+                val typeSymbol = typeTarget.typeSymbol
+                relationsWriter.refers(currentScope, asMSymbol(typeSymbol), typeSymbol.isSynthetic)
+                typeTarget.typeArgs foreach { tpe =>
+                  typeRels(container, tpe)
+                }
               }
+
+              typeRels(currentScope, valDef.tpt.tpe)
+            }
+            if (symbol.isVar) {
+              elementsWriter.varDef(mSymbol)
+              scopeLog("var: " + mSymbol.csvString)
+            } else {
+              elementsWriter.valDef(mSymbol)
+              scopeLog("val: " + mSymbol.csvString)
+              val parentMSym = asMSymbol(symbol.outerClass)
+              relationsWriter.within(parentMSym, mSymbol)
+              relationsWriter.refers(parentMSym, mSymbol, symbol.isSynthetic)
             }
 
-            typeRels(parentScope, valDef.tpt.tpe)
+            super.traverse(tree)
           }
-          if (symbol.isVar) {
-            elementsWriter.varDef(mSymbol)
-            if(debug)
-              println("var: " + mSymbol.csvString)
-          } else {
-            elementsWriter.valDef(mSymbol)
-            if(debug)
-              println("val: " + mSymbol.csvString)
-            //                }
-            val parentMSym = asMSymbol(symbol.outerClass)
-            relationsWriter.within(parentMSym, mSymbol)
-            relationsWriter.refers(parentMSym, mSymbol, symbol.isSynthetic)
-          }
-
-          traverseInScope(mSymbol,tree)
-
         case defdef: DefDef =>
 
-          println("\n\nDEF DEF " + defdef.symbol)
           // TODO This feels wrong - this is def declType Defined field
           val declTypeDefined = defdef.isTyped
           val symbol = defdef.symbol
           val mSymbol = asMSymbol(symbol)
-          if (!symbol.isSynthetic && !symbol.isAccessor) {
-            elementsWriter.method(mSymbol,symbol.nameString,declTypeDefined)
-            if(debug)
-              println("def: " + mSymbol.csvString)
 
-            val parentMSym = asMSymbol(symbol.outerClass)
-            relationsWriter.within(parentMSym, mSymbol)
+          enterScope("DefDef", mSymbol) {
+            if (!symbol.isSynthetic && !symbol.isAccessor) {
+              elementsWriter.method(mSymbol, symbol.nameString, declTypeDefined)
 
-            val directParentSymbols =  symbol.info.parents.map(t => asMSymbol(t.typeSymbol)).toSet
+              val parentMSym = asMSymbol(symbol.outerClass)
+              relationsWriter.within(parentMSym, mSymbol)
 
-            symbol.overrides.foreach { overridden =>
-              val overrriddenOwnerMSym =asMSymbol(overridden.owner)
-              val direct = directParentSymbols.contains(overrriddenOwnerMSym)
+              val directParentSymbols = symbol.info.parents.map(t => asMSymbol(t.typeSymbol)).toSet
 
-              relationsWriter.overrides(mSymbol, asMSymbol(overridden), direct)
+              symbol.overrides.foreach { overridden =>
+                val overriddenOwnerMSym = asMSymbol(overridden.owner)
+                val direct = directParentSymbols.contains(overriddenOwnerMSym)
+
+                relationsWriter.overrides(mSymbol, asMSymbol(overridden), direct)
+              }
+
+              super.traverse(tree)
             }
-
-            traverseInScope(mSymbol,tree)
           }
 
         case unknown =>
-          println("  --  unhandled tree" + tree.getClass)
+          scopeLog("--  unhandled tree" + tree.getClass)
           super.traverse(tree)
       }
     }
   }
-
-  trait ScopedLogging  { SCTraverser =>
-      def logTreeStart(tree: g.Tree): Unit = {
-
-      }
-
-  }
-
 }
