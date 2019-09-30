@@ -16,8 +16,8 @@ class RelationshipsWriter(file: File, val global: Global) extends  SemanticdbOps
     writer.writeLine(s"${container.csvString},${IoTokens.relRefers},${target.csvString},$isSynthetic")
   }
 
-  def extendsCls(outerSym: ModelSymbol, innerSym: ModelSymbol, direct: Boolean): Unit = {
-    writer.writeLine(s"${innerSym.csvString},${IoTokens.relExtends},${outerSym.csvString},$direct")
+  def extendsCls(parentSym: ModelSymbol, childSym: ModelSymbol, direct: Boolean): Unit = {
+    writer.writeLine(s"${childSym.csvString},${IoTokens.relExtends},${parentSym.csvString},$direct")
   }
 
   def within(outerSym: ModelSymbol, innerSym: ModelSymbol): Unit = {

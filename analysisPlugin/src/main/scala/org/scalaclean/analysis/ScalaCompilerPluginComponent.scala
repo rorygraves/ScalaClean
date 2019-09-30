@@ -80,9 +80,10 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
 
     def enterScope[T](name: String, mSymbol: ModelSymbol)(fn: => T): Unit = {
       if(debug)
-        println(s"${indentString}$name - ${mSymbol.csvString}")
+        println(s"${indentString}$name")
       scopeStack = mSymbol :: scopeStack
       depth +=1
+      scopeLog(s"-symbol: ${mSymbol.csvString}")
       fn
       scopeStack = scopeStack.tail
       depth -=1
@@ -103,6 +104,7 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
       } else
         fn
     }
+
   }
 
 
@@ -110,6 +112,12 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
 
     import global._
     lazy val g: global.type = global
+
+    def recordExtendsClass(parentSym: ModelSymbol, childSym: ModelSymbol, direct: Boolean): Unit = {
+      relationsWriter.extendsCls(parentSym, childSym, direct = direct)
+      scopeLog(s"-extendsCls: ${parentSym.csvString}  direct=$direct")
+    }
+
     val debug = true
     val logTransScope = true
 
@@ -139,6 +147,12 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
         case thisTree: This =>
           scopeLog("This")
           // do nothing
+        case literalTree: Literal =>
+          scopeLog("Literal " + literalTree)
+        case identTree: Ident =>
+          scopeLog("Ident")
+        case importTree: Import =>
+          scopeLog("Import")
         case objectDef: ModuleDef =>
           val symbol = objectDef.symbol
           val mSymbol = asMSymbol(symbol)
@@ -191,11 +205,11 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
 
             val directSymbols = symbol.info.parents.map(t => asMSymbol(t.typeSymbol)).toSet
 
-            symbol.ancestors foreach { parentSymbol =>
-              val parentMSymbol = asMSymbol(parentSymbol)
-              val direct = directSymbols.contains(parentMSymbol)
-              relationsWriter.extendsCls(parentMSymbol, mSymbol, direct = direct)
-              scopeLog(s"parent: ${parentSymbol.toSemantic}  $direct")
+            symbol.ancestors foreach { ancestorSymbol =>
+              val ancestorMSymbol = asMSymbol(ancestorSymbol)
+              val direct = directSymbols.contains(ancestorMSymbol)
+              recordExtendsClass(ancestorMSymbol, mSymbol, direct = direct)
+
             }
             super.traverse(tree)
           }
@@ -239,11 +253,13 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
           val symbol = defdef.symbol
           val mSymbol = asMSymbol(symbol)
 
-          enterScope("DefDef", mSymbol) {
+          enterScope("DefDef " + symbol.nameString, mSymbol) {
             if (!symbol.isSynthetic && !symbol.isAccessor) {
               elementsWriter.method(mSymbol, symbol.nameString, declTypeDefined)
 
               val parentMSym = asMSymbol(symbol.outerClass)
+              if(parentMSym != outerScope)
+                println("xXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX")
               relationsWriter.within(parentMSym, mSymbol)
 
               val directParentSymbols = symbol.info.parents.map(t => asMSymbol(t.typeSymbol)).toSet
