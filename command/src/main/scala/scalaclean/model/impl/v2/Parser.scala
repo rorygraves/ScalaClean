@@ -33,7 +33,7 @@ class ParserImpl extends ParseModel {
     props.put("outputDir", outputDir)
     props.put("src", absSource)
 
-    val propsFile = projectsRoot.resolve(s"$projectName.properties")
+    val propsFile = projectsRoot.resolve(s"ScalaClean.properties")
     println("Writing props file " + propsFile)
     props.store(Files.newBufferedWriter(propsFile),"")
     new Projects(projectsRoot,(projectName, projectPath))

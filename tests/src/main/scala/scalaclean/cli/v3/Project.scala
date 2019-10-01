@@ -1,7 +1,7 @@
  package scalaclean.cli.v3
 
 import java.net.{URL, URLClassLoader}
-import java.nio.file.{Path, Paths}
+import java.nio.file.{Files, Path, Paths}
 import java.util.Properties
 import java.util.concurrent.ConcurrentHashMap
 
@@ -9,24 +9,31 @@ import scalaclean.model.{ModelElement, ProjectModel}
 import scalafix.v1.{Symbol, SymbolInformation}
 
 import scala.collection.immutable
-import scala.meta.internal.symtab.SymbolTable
+import scala.meta.internal.symtab.{GlobalSymbolTable, SymbolTable}
+import scala.meta.io.Classpath
 import scala.reflect.ClassTag
 
-class Project(name: String, path: Path, val projects: Projects) {
-  val (classPath, outputPath, src) = {
-    val props = new Properties()
-    val propsPath = projects.projectRoot.resolve(s"$name.properties")
-//    println("PropsPath = " + propsPath)
-//    props.load(Files.newBufferedReader(propsPath))
-//    val cp = props.getProperty("classpath")
-//    val output = props.getProperty("outputDir")
-//    val src = props.getProperty("src")
-//    assert (cp ne null, props.keys)
-//    assert (output ne null, props.keys)
-//    (Classpath.apply(cp), output, src)
-    (null,null, null)
-  }
-  def symbolTable: SymbolTable = null //GlobalSymbolTable(classPath, true)
+ object Project {
+   def oldApply(name: String, path: Path, projects: Projects): Project = {
+     val (classPath: Classpath, outputPath: String, src: String) = {
+       val props = new Properties()
+       val propsPath = projects.projectRoot.resolve(path).resolve(s"ScalaClean.properties")
+       println("PropsPath = " + propsPath)
+       props.load(Files.newBufferedReader(propsPath))
+       val cp = props.getProperty("classpath")
+       val output = props.getProperty("outputDir")
+       val src = props.getProperty("src")
+       assert(cp ne null, props.keys)
+       assert(output ne null, props.keys)
+       (Classpath.apply(cp), output, src)
+     }
+
+     new Project(name, path, projects, classPath, outputPath, src)
+   }
+ }
+
+ class Project private (name: String, path: Path, val projects: Projects, val classPath: Classpath, val outputPath: String, val src: String) {
+  def symbolTable: SymbolTable = GlobalSymbolTable(classPath, true)
 
   println("OUTPUTPATH = " + outputPath)
   lazy val classloader: ClassLoader = new URLClassLoader(Array(new URL("file:"+outputPath)), null)
@@ -50,7 +57,7 @@ class Project(name: String, path: Path, val projects: Projects) {
 }
 
 class Projects(val projectRoot: Path, projectPaths: (String,Path) *) extends ProjectModel {
-  val projects = projectPaths.toList map { p => new Project(p._1, p._2, this)}
+  val projects = projectPaths.toList map { p => Project.oldApply(p._1, p._2, this)}
 
   val elements: Map[Symbol, ElementModelImpl] = {
     val (elements, rels: immutable.Seq[BasicRelationshipInfo]) = projects.map(_.read) unzip

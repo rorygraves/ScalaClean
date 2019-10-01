@@ -17,7 +17,7 @@ object Project {
   def oldApply(name: String, path: Path, projects: Projects): Project = {
     val (classPath: Classpath, outputPath: String, src: String) = {
       val props = new Properties()
-      val propsPath = projects.projectRoot.resolve(s"$name.properties")
+      val propsPath = projects.projectRoot.resolve(s"ScalaClean.properties")
       println("PropsPath = " + propsPath)
       props.load(Files.newBufferedReader(propsPath))
       val cp = props.getProperty("classpath")

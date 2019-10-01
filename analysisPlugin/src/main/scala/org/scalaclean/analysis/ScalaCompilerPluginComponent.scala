@@ -1,6 +1,8 @@
 package org.scalaclean.analysis
 
 import java.io.File
+import java.nio.file.Files
+import java.util.Properties
 
 import scala.meta.internal.semanticdb.scalac.SemanticdbOps
 import scala.meta.io.AbsolutePath
@@ -19,6 +21,18 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
     var elementsWriter: ElementsWriter = _
 
     var relationsWriter: RelationshipsWriter = _
+    var basePaths: Set[String] = Set.empty
+
+    // TODO THis is a complete hack
+    def workOutCommonSourcePath(files: Set[String]) : String = {
+      println("FILES = " + files)
+      if(files.isEmpty)
+        throw new IllegalStateException("No files")
+      else if(files.size > 1) {
+        throw new IllegalStateException(s"Multiple Source roots unsupported: $files")
+      } else
+        files.head
+    }
 
     override def run(): Unit = {
       global.reporter.echo("Before Analysis Phase")
@@ -30,9 +44,19 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
           .getOrElse(global.settings.d.value))
 
 
+      println("CLASSPATH = " + global.settings.classpath.value)
+      println("SOURCEPATH = " + AbsolutePath(global.settings.sourcepath.value).toString())
+      println("SOURCEPATH = " + global.settings.d.value)
+      println("SOURCEPATH = " + global.settings.outputDirs.getSingleOutput)
+      println("OUTPUTPATHS =  " )
+      global.settings.outputDirs.outputs.foreach { case (src,target) =>
+          println(s"  $src -> $target" )
+      }
+
       val outputPath = outputPathBase.resolve("META-INF/ScalaClean/")
       outputPath.toFile.mkdirs()
       val elementsFile = new File(outputPath.toFile, "scalaclean-elements.csv")
+
       println(s"Writing elements file  to ${elementsFile}")
       elementsWriter = new ElementsWriter(elementsFile)
 
@@ -42,6 +66,16 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
 
 
       super.run()
+
+      val props = new Properties
+      props.put("classpath", global.settings.classpath.value)
+      props.put("outputDir", outputPathBase.toString())
+      val srcPath = workOutCommonSourcePath(basePaths)
+      props.put("src", srcPath)
+
+      val propsFile = outputPath.resolve(s"ScalaClean.properties").toNIO
+      println("Writing props file " + propsFile)
+      props.store(Files.newBufferedWriter(propsFile),"")
       elementsWriter.finish()
       relationsWriter.finish()
       global.reporter.echo("After Analysis Phase")
@@ -57,7 +91,9 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
 
     override def apply(unit: global.CompilationUnit): Unit = {
 
+      val srcPath = unit.source.file.toString
       val sourceFile = mungeUnitPath(unit.source.file.toString)
+      basePaths += srcPath.substring(0, srcPath.indexOf(sourceFile))
       global.reporter.echo(s"Executing for unit: ${sourceFile}")
       (new SCUnitTraverser(sourceFile, elementsWriter, relationsWriter)).traverse(unit.body)
     }
@@ -93,6 +129,7 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
     def outerScope: ModelSymbol = scopeStack.tail.head
     def currentScope: ModelSymbol = scopeStack.head
     def currentGlobalScope: ModelSymbol = scopeStack.find(_.isGlobal).get
+    def hasCurrentGlobalScope: Boolean = scopeStack.nonEmpty
 
     def enterTransScope[T](name: String)(fn: => T): Unit = {
 
@@ -127,17 +164,28 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
         case packageDef: PackageDef =>
           val symbol = packageDef.symbol
           val mSymbol = asMSymbol(symbol)
-          enterScope("PackageDef", mSymbol) {
+
+          // ignore package symbol for now
+          enterTransScope("PackageDef") {
             super.traverse(packageDef)
           }
         case treeSelect: Select =>
           enterTransScope("Select") {
+            scopeLog("-symbol: " + asMSymbol(treeSelect.symbol).csvString)
+            // avoids an issue with packages which we ScalaClean doesn't currently understand
+            if(hasCurrentGlobalScope) {
+              relationsWriter.refers(currentGlobalScope, asMSymbol(treeSelect.symbol), false)
+            }
             super.traverse(treeSelect)
           }
         case template: Template =>
           enterTransScope("Template")(super.traverse(template))
         case typeTree: TypeTree =>
-          enterTransScope("TypeTree")(super.traverse(typeTree))
+          enterTransScope("TypeTree") {
+//            println(typeTree)
+//            println(typeTree.symbol)
+//
+            super.traverse(typeTree) }
         case blockTree: Block =>
           enterTransScope("Block")(super.traverse(blockTree))
         case superTree: Super =>
@@ -150,7 +198,10 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
         case literalTree: Literal =>
           scopeLog("Literal " + literalTree)
         case identTree: Ident =>
-          scopeLog("Ident")
+//          identTree.name
+          enterTransScope("Ident " + identTree.symbol)(super.traverse(identTree))
+
+//          scopeLog("Ident " + identTree.name)
         case importTree: Import =>
           scopeLog("Import")
         case objectDef: ModuleDef =>

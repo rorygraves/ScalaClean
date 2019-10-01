@@ -63,7 +63,7 @@ class DeadCodeProjectTestRunner(val projectName: String, useNew: Boolean, overwr
   def run(): Boolean = {
 
     // if we are in old mode generate the META-INF/ScalaClean/old analysis files
-//    if(!useNew)
+    if(!useNew)
       AnalysisHelper.runAnalysis(projectName, inputClasspath, sourceRoot, inputSourceDirectories, outputClassDir, storagePath, targetFiles)
     runDeadCode()
   }
@@ -77,7 +77,7 @@ class DeadCodeProjectTestRunner(val projectName: String, useNew: Boolean, overwr
     // run DeadCode
     val rootDir = Paths.get(".")
 
-    val srcDir = Paths.get(s"testProjects/$projectName/target/scala-2.12/classes/META-INF/ScalaClean/")
+    val srcDir = Paths.get(s"testProjects/$projectName/target/scala-2.12/classes/META-INF/ScalaClean/").toAbsolutePath
 
     // if 'useNew' is enabled - load the data from the compiler plugin files not the old analysis files
     if(useNew) {
