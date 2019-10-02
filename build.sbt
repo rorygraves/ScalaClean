@@ -13,12 +13,12 @@ inThisBuild(
   )
 )
 
-lazy val commonSettings = Seq(
-  version := "0.1-SNAPSHOT",
-  organization := "com.example",
-  scalaVersion := "2.10.1",
-  test in assembly := {}
-)
+//lazy val commonSettings = Seq(
+//  version := "0.1-SNAPSHOT",
+//  organization := "com.example",
+//  scalaVersion := "2.10.1",
+//  test in assembly := {}
+//)
 skip in publish := true
 
 lazy val mergeSettings = Def.settings(
@@ -53,7 +53,12 @@ lazy val mergeSettings = Def.settings(
   },
 )
 
-lazy val analysisPlugin = project.settings(
+lazy val shared = project
+  .settings(
+    moduleName := "shared",
+    scalaVersion := V.scala212)
+
+lazy val analysisPlugin = project.dependsOn(shared).settings(
     moduleName := "analysisPlugin",
     scalaVersion:= V.scala212,
     libraryDependencies += "org.scala-lang" % "scala-compiler" % V.scala212,
@@ -78,7 +83,7 @@ lazy val analysisPlugin = project.settings(
 
 fork in Test := true
 
-lazy val command = project
+lazy val command = project.dependsOn(shared)
   .settings(
     moduleName := "command",
     scalaVersion := V.scala212,

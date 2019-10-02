@@ -1,5 +1,6 @@
 package scalaclean.model.impl.v2
 
+import org.scalaclean.analysis.IoTokens
 import java.nio.file.{Files, Path}
 
 import scalaclean.model.impl._

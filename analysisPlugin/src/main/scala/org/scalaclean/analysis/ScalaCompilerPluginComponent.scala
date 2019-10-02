@@ -174,6 +174,7 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
             scopeLog("-symbol: " + asMSymbol(treeSelect.symbol).csvString)
             // avoids an issue with packages which we ScalaClean doesn't currently understand
             if(hasCurrentGlobalScope) {
+              scopeLog("--refers:" + asMSymbol(treeSelect.symbol).csvString)
               relationsWriter.refers(currentGlobalScope, asMSymbol(treeSelect.symbol), false)
             }
             super.traverse(treeSelect)

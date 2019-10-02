@@ -3,6 +3,7 @@ package scalaclean.model.impl.v2
 import java.nio.file.{Files, Path, Paths, StandardOpenOption}
 
 import scala.meta.inputs.Input
+import org.scalaclean.analysis.IoTokens
 
 
 class ParsedWriter(path: Path, projectRoot: Path) {
