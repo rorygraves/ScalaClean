@@ -1,10 +1,25 @@
 package scalaclean.model.v3.parser
 
-import scalaclean.model.ModelKey
+import java.nio.file.Path
+
+import scalaclean.model.{ModelKey, ParseModel}
 import scalafix.v1._
 
 import scala.meta.{Decl, Defn, Mod, Pat, Stat, Template, Term, Tree, Type}
 
+class ParserImpl extends ParseModel {
+
+//  def analyse(implicit doc: SemanticDocument) = new ParserTreeWalker(this, doc).analyse
+
+  def finishedParsing(): Unit = {}
+
+  def writeToFile(path: Path, projectsSource: Path): Unit = {
+    val writer = new ParsedWriter(path, projectsSource)
+  //  bySymbol.values.foreach(writer.writeElement)
+    writer.close()
+  }
+
+}
 sealed abstract class ParsedElement(val stat: Stat, val enclosing: List[ParsedElement], val doc: SemanticDocument) {
   assert(!rawSymbol.isNone, s"can't find a symbol for '''$stat''' \n at ${stat.pos.startLine}:${stat.pos.startColumn} - ${stat.pos.endLine}:${stat.pos.endColumn}$rawSymboInfo")
   protected def rawSymboInfo = ""
