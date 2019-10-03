@@ -31,10 +31,10 @@ private[v2] case class BasicRelationshipInfo(
                                               overrides: Map[Symbol, List[OverridesImpl]],
                                               within: Map[Symbol, List[WithinImpl]]) {
   def complete(elements: Map[Symbol, ElementModelImpl]): Unit ={
-    refers.values.foreach(_.foreach(_.complete(elements)))
-    extnds.values.foreach(_.foreach(_.complete(elements)))
-    overrides.values.foreach(_.foreach(_.complete(elements)))
-    within.values.foreach(_.foreach(_.complete(elements)))
+//    refers.values.foreach(_.foreach(_.complete(elements)))
+//    extnds.values.foreach(_.foreach(_.complete(elements)))
+//    overrides.values.foreach(_.foreach(_.complete(elements)))
+//    within.values.foreach(_.foreach(_.complete(elements)))
   }
 
   def byTo = {

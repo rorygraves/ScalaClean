@@ -103,8 +103,21 @@ lazy val unitTestProject = project.in(file("testProjects/unitTestProject")).sett
   addCompilerPlugin(scalafixSemanticdb),
   libraryDependencies += "org.scalaz" %% "scalaz-core" % "7.2.28",
   scalacOptions += "-P:semanticdb:synthetics:on",
-  skip in publish := true
-)
+  skip in publish := true,
+
+    scalacOptions  ++= {
+      // we depend on the assembly jar
+      //    val baseDirectory.value /"custom_lib"
+      val jar = (assembly in Compile in analysisPlugin).value
+      Seq(
+        "-Xprint:typer",
+        //      "-Ycompact-trees",
+        "-Yrangepos",
+        s"-Xplugin:${jar.getAbsolutePath}",
+        s"-Jdummy=${jar.lastModified}", // ensures recompile
+      )
+    }
+  )
 
 lazy val privatiserProject1 = project.in(file("testProjects/privatiserProject1")).settings(
   addCompilerPlugin(scalafixSemanticdb),

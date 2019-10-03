@@ -1,15 +1,14 @@
 package scalaclean.cli.v3
 
-import java.nio.file.{Path, Paths}
+import java.nio.file.Path
 
 import scalafix.internal.v1.InternalSemanticDoc
 import scalafix.v1.SemanticDocument.Error
 import scalafix.v1.{SemanticDocument, SyntacticDocument}
 
-import scala.meta.inputs.Input
 import scala.meta.internal.semanticdb.TextDocuments
 import scala.meta.internal.symtab.SymbolTable
-import scala.meta.io.{AbsolutePath, RelativePath}
+import scala.meta.io.RelativePath
 
 object FixUtils {
 

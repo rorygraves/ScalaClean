@@ -21,7 +21,7 @@ import scalafix.v1.SemanticDocument
 import scala.meta.internal.io.FileIO
 import scala.meta.{AbsolutePath, Classpath, RelativePath, _}
 
-class DeadCodeProjectTestRunner(val projectName: String, useNew: Boolean, overwriteTargetFiles: Boolean) extends DiffAssertions {
+class DeadCodeProjectTestRunner(val projectName: String, overwriteTargetFiles: Boolean) extends DiffAssertions {
 
   val scalaCleanWorkspace = "."
   val ivyDir: String = toPlatform("$HOME$/.ivy2/cache")
@@ -63,8 +63,6 @@ class DeadCodeProjectTestRunner(val projectName: String, useNew: Boolean, overwr
   def run(): Boolean = {
 
     // if we are in old mode generate the META-INF/ScalaClean/old analysis files
-    if(!useNew)
-      AnalysisHelper.runAnalysis(projectName, inputClasspath, sourceRoot, inputSourceDirectories, outputClassDir, storagePath, targetFiles)
     runDeadCode()
   }
 
@@ -79,11 +77,8 @@ class DeadCodeProjectTestRunner(val projectName: String, useNew: Boolean, overwr
 
     val srcDir = Paths.get(s"testProjects/$projectName/target/scala-2.12/classes/META-INF/ScalaClean/").toAbsolutePath
 
-    // if 'useNew' is enabled - load the data from the compiler plugin files not the old analysis files
-    if(useNew) {
-      val projects = new Projects(rootDir, "src" -> srcDir)
-      ModelHelper.model = Some(projects)
-    }
+    val projects = new Projects(rootDir, "src" -> srcDir)
+    ModelHelper.model = Some(projects)
 
     val deadCode = new DeadCodeRemover()
     deadCode.beforeStart()

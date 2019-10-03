@@ -1,7 +1,10 @@
 package scalaclean.cli
 
 import java.nio.charset.StandardCharsets
+import java.nio.file.Paths
 
+import scalaclean.cli.v3.Projects
+import scalaclean.model.ModelHelper
 import scalaclean.rules.AbstractRule
 import scalaclean.rules.deadcode.DeadCodeRemover
 import scalafix.internal.patch.PatchInternals
@@ -22,6 +25,7 @@ object DeadCodeMain {
   }
 }
 
+// TODO - Share with PriviatiserMain - make it generic
 class DeadCodeMain extends DiffAssertions {
   import scalaclean.cli.FileHelper.toPlatform
 
@@ -51,8 +55,14 @@ class DeadCodeMain extends DiffAssertions {
   }
 
   def run(): Unit = {
-    println(s"Running dead code analysis on $sourceRoot")
-    AnalysisHelper.runAnalysis(projectName, inputClasspath, sourceRoot,  inputSourceDirectories, outputClassDir, storagePath, targetFiles)
+    val rootDir = Paths.get(".") // sourceRoot?
+
+    val srcDir = Paths.get(outputClassDir)
+
+    // TODO HACK
+    val projects = new Projects(rootDir, "src" -> srcDir)
+    ModelHelper.model = Some(projects)
+
     println("Running dead code removal")
     runDeadCode()
   }

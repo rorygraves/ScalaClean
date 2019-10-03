@@ -2,12 +2,15 @@ package scalaclean
 
 import java.io.FileOutputStream
 import java.nio.charset.StandardCharsets
+import java.nio.file.Paths
 
 import org.junit.Test
 import org.scalatest.junit.AssertionsForJUnit
-import scalaclean.cli.AnalysisHelper
+import scalaclean.cli.FileHelper
 import scalaclean.cli.FileHelper.toPlatform
-import scalaclean.test.{TestCommon, Test_allDirectOverrides, Test_allOutgoingReferences, Test_allTransitiveOverrides, Test_internalDirectOverrides, Test_internalIncomingReferences, Test_internalOutgoingReferences, Test_internalTransitiveOverriddenBy, Test_internalTransitiveOverrides, Test_nodes}
+import scalaclean.cli.v3.Projects
+import scalaclean.model.ModelHelper
+import scalaclean.test._
 import scalafix.internal.patch.PatchInternals
 import scalafix.internal.reflect.ClasspathOps
 import scalafix.lint.RuleDiagnostic
@@ -90,7 +93,15 @@ class UnitTests extends AssertionsForJUnit with DiffAssertions {
 
     def run: Unit = {
 
-      AnalysisHelper.runAnalysis(projectName, inputClasspath, sourceRoot,  inputSourceDirectories, outputClassDir, storagePath, targetFiles)
+      val rootDir = Paths.get(".")
+
+      val classDir = outputClassDir + FileHelper.fileSep + "META-INF" + FileHelper.fileSep +  "ScalaClean"
+      val srcDir = Paths.get(classDir).toAbsolutePath
+
+      val projects = new Projects(rootDir, "src" -> srcDir)
+      ModelHelper.model = Some(projects)
+
+      //      AnalysisHelper.runAnalysis(projectName, inputClasspath, sourceRoot,  inputSourceDirectories, outputClassDir, storagePath, targetFiles)
       runRule()
     }
 

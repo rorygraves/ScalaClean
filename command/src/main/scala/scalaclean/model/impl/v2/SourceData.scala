@@ -2,7 +2,6 @@ package scalaclean.model.impl.v2
 
 import java.nio.file.Path
 
-import scalafix.scalaclean.FixUtils
 import scalafix.v1.SemanticDocument
 
 import scala.meta.Tree
@@ -14,7 +13,7 @@ import scala.reflect.ClassTag
   * @param path the relative path to the source from the project path
   */
 private[v2] class SourceData(val project: Project, val path: Path) {
-  lazy val doc: SemanticDocument = FixUtils.loadSemanticDoc(project, path)
+  lazy val doc: SemanticDocument = ??? //FixUtils.loadSemanticDoc(project, path)
 
   def treeAt[T <: Tree : ClassTag](start: Int, end:Int): T = {
     treesAt[T](start,end) match {

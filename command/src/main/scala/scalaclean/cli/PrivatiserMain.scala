@@ -1,8 +1,11 @@
 package scalaclean.cli
 
 import java.nio.charset.StandardCharsets
+import java.nio.file.Paths
 
 import scalaclean.cli.FileHelper.toPlatform
+import scalaclean.cli.v3.Projects
+import scalaclean.model.ModelHelper
 import scalaclean.rules.AbstractRule
 import scalaclean.rules.privatiser.Privatiser
 import scalafix.internal.patch.PatchInternals
@@ -22,6 +25,7 @@ object PrivatiserMain {
   }
 }
 
+// TODO - This need to be updated to take the props file and read all relevant information from there.
 class PrivatiserMain extends DiffAssertions {
 
   val projectName = "privatiserProject1"
@@ -50,8 +54,15 @@ class PrivatiserMain extends DiffAssertions {
   }
 
   def run: Unit = {
+    val rootDir = Paths.get(".") // sourceRoot?
 
-    AnalysisHelper.runAnalysis(projectName, inputClasspath, sourceRoot,  inputSourceDirectories, outputClassDir, storagePath, targetFiles)
+    val srcDir = Paths.get(outputClassDir)
+
+    // TODO HACK
+    val projects = new Projects(rootDir, "src" -> srcDir)
+    ModelHelper.model = Some(projects)
+
+//    AnalysisHelper.runAnalysis(projectName, inputClasspath, sourceRoot,  inputSourceDirectories, outputClassDir, storagePath, targetFiles)
     runPrivatiser()
   }
 

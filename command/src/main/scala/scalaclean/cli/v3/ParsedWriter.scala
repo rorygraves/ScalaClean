@@ -1,7 +1,8 @@
 package scalaclean.cli.v3
 
-import org.scalaclean.analysis.IoTokens
 import java.nio.file.{Files, Path, Paths, StandardOpenOption}
+
+import org.scalaclean.analysis.IoTokens
 
 import scala.meta.inputs.Input
 

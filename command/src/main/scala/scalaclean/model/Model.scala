@@ -1,7 +1,7 @@
 package scalaclean.model
 
+import scalaclean.cli.v3.ParserImpl
 import scalaclean.model.impl.OverridesImpl
-import scalaclean.model.impl.v2.ParserImpl
 import scalafix.v1.{SemanticDocument, Symbol, SymbolInformation}
 
 import scala.reflect.ClassTag

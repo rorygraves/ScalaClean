@@ -153,8 +153,7 @@ trait LegacyExtends {
 
 }
 
-import scalaclean.model.impl.v2.ModelHooks._
-
+import scalaclean.cli.v3.ModelHooks._
 abstract class ElementModelImpl(info: BasicElementInfo, relationships: BasicRelationshipInfo) extends ModelElement
  with LegacyReferences with LegacyOverrides{
   def complete(elements: Map[Symbol, ElementModelImpl],

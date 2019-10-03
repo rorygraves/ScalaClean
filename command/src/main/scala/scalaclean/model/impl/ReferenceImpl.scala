@@ -1,6 +1,6 @@
 package scalaclean.model.impl
 
-import scalaclean.model.impl.v2.{ElementModelImpl, Projects}
+import scalaclean.cli.v3.{ElementModelImpl}
 import scalaclean.model.{ClassLike, Extends, ModelElement, Overrides, Refers, Within}
 import scalafix.v1.Symbol
 
