@@ -3,7 +3,7 @@ package scalaclean.cli
 import java.nio.charset.StandardCharsets
 import java.nio.file.Paths
 
-import scalaclean.cli.v3.Projects
+import scalaclean.model.v3.Projects
 import scalaclean.model.ModelHelper
 import scalaclean.rules.AbstractRule
 import scalaclean.rules.deadcode.DeadCodeRemover

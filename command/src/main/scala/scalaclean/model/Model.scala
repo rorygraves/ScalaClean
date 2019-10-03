@@ -1,8 +1,7 @@
 package scalaclean.model
 
-import scalaclean.cli.v3.ParserImpl
-import scalaclean.model.impl.OverridesImpl
-import scalafix.v1.{SemanticDocument, Symbol, SymbolInformation}
+import scalaclean.model.v3.OverridesImpl
+import scalafix.v1.{Symbol, SymbolInformation}
 
 import scala.reflect.ClassTag
 
@@ -118,7 +117,7 @@ sealed trait VarModel extends FieldModel{
   override protected final def infoTypeName: String = "VarModel"
 }
 //hooks for migration
-package impl {
+package impl.hooks {
   trait ModelElementHook extends ModelElement
   trait ClassLikeHook extends ClassLike with ModelElementHook
   trait ClassModelHook extends ClassModel with ClassLikeHook
@@ -129,14 +128,11 @@ package impl {
   trait ValModelHook extends ValModel with FieldModelHook
   trait VarModelHook extends VarModel with FieldModelHook
 }
-object ScalaCleanModel {
-  def createParseModel: ParseModel = new ParserImpl
-}
 trait ParseModel {
-  def analyse(implicit doc: SemanticDocument): Unit
-  def finishedParsing(): Unit
+//  def analyse(implicit doc: SemanticDocument): Unit
+//  def finishedParsing(): Unit
   //FIXME only a short term API
-  def asProjectModel(storagePath: String, projectName: String, classpath: String, outputDir: String, relSource: String, absSource: String): ProjectModel
+//  def asProjectModel(storagePath: String, projectName: String, classpath: String, outputDir: String, relSource: String, absSource: String): ProjectModel
 }
 trait ProjectModel {
   def save: Unit

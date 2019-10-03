@@ -1,4 +1,4 @@
-package scalaclean.cli.v3
+package scalaclean.model.v3.parser
 
 import scalaclean.model.ModelKey
 import scalafix.v1._

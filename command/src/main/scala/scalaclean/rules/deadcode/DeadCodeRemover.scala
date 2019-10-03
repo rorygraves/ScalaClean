@@ -117,7 +117,7 @@ class DeadCodeRemover extends AbstractRule("ScalaCleanDeadCodeRemover") {
           }
           markRhs(obj, obj :: path)
         //remove this after migration
-        case _: impl.FieldModelHook => ???
+        case _: impl.hooks.FieldModelHook => ???
       }
     }
 

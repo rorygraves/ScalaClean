@@ -2,7 +2,7 @@ package scalaclean.rules.privatiser
 
 import scalaclean.model._
 import scalaclean.rules.AbstractRule
-import scalaclean.util.{Scope, SymbolTreeVisitor, SymbolUtils, TokenHelper}
+import scalaclean.util.{Scope, SymbolTreeVisitor, SymbolUtils}
 import scalafix.patch.Patch
 import scalafix.v1
 import scalafix.v1.SemanticDocument
@@ -10,8 +10,6 @@ import scalafix.v1.SemanticDocument
 import scala.meta.{Import, Mod, Pat, Stat}
 
 class Privatiser extends AbstractRule("Privatiser") {
-
-  import SymbolUtils._
 
   type Colour = PrivatiserLevel
 
@@ -101,7 +99,7 @@ class Privatiser extends AbstractRule("Privatiser") {
           case _: MethodModel => false
           case _: FieldModel => throw new IllegalStateException(s"handlerPats should be called - $modelElement")
           //remove this after migration
-          case _ : impl.ModelElementHook => ???
+          case _ : impl.hooks.ModelElementHook => ???
         }
         (patch, rewriteContent)
       }

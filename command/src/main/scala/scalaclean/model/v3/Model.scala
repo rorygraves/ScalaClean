@@ -1,4 +1,4 @@
-package scalaclean.cli.v3
+package scalaclean.model.v3
 
 import scalaclean.model
 import scalaclean.model.{Extends, Overrides, Reference, Refers}
@@ -10,7 +10,7 @@ import scala.reflect.ClassTag
 
 object ModelHooks {
 
-  import scalaclean.model.impl._
+  import scalaclean.model.impl.hooks._
 
   type ModelElement = ModelElementHook
   type ClassLike = ClassLikeHook
@@ -153,7 +153,7 @@ trait LegacyExtends {
 
 }
 
-import scalaclean.cli.v3.ModelHooks._
+import scalaclean.model.v3.ModelHooks._
 abstract class ElementModelImpl(info: BasicElementInfo, relationships: BasicRelationshipInfo) extends ModelElement
  with LegacyReferences with LegacyOverrides{
   def complete(elements: Map[Symbol, ElementModelImpl],

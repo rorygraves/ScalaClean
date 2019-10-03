@@ -2,9 +2,8 @@ package scalafix.scalaclean
 
 import java.nio.file.{Path, Paths}
 
-import scalaclean.cli.v3.Project
+import scalaclean.model.v3.Project
 
-//import scalaclean.model.impl.v2.Project
 import scalafix.internal.v1.InternalSemanticDoc
 import scalafix.v1.SemanticDocument.Error
 import scalafix.v1.{SemanticDocument, SyntacticDocument}
