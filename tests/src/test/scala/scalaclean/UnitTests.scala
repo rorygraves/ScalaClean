@@ -9,7 +9,7 @@ import org.scalatest.junit.AssertionsForJUnit
 import scalaclean.cli.FileHelper
 import scalaclean.cli.FileHelper.toPlatform
 import scalaclean.model.v3.ProjectSet
-import scalaclean.model.ModelHelper
+import scalaclean.model.{ModelHelper, ProjectModel}
 import scalaclean.test._
 import scalafix.internal.patch.PatchInternals
 import scalafix.internal.reflect.ClasspathOps
@@ -101,11 +101,10 @@ class UnitTests extends AssertionsForJUnit with DiffAssertions {
       val projects = new ProjectSet(rootDir,srcDir)
       ModelHelper.model = Some(projects)
 
-      //      AnalysisHelper.runAnalysis(projectName, inputClasspath, sourceRoot,  inputSourceDirectories, outputClassDir, storagePath, targetFiles)
-      runRule()
+      runRule(projects)
     }
 
-    def runRule(): Unit = {
+    def runRule(projectModel: ProjectModel): Unit = {
 
       val symtab = ClasspathOps.newSymbolTable(inputClasspath)
       val classLoader = ClasspathOps.toClassLoader(inputClasspath)

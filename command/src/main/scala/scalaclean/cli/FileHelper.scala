@@ -5,7 +5,6 @@ import scala.meta.io.AbsolutePath
 object FileHelper {
 
   def home = System.getProperty("user.home")
-  def homePath = AbsolutePath(home)
   def fileSep = System.getProperty("file.separator")
   def pathSep = System.getProperty("path.separator")
 

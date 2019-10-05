@@ -8,7 +8,7 @@ import scalafix.v1.Symbol
 import scala.collection.immutable
 import scala.reflect.ClassTag
 
-class ProjectSet(val projectRoot: Path, projectPropertyPaths: Path *) extends ProjectModel {
+class ProjectSet(projectPropertyPaths: Path *) extends ProjectModel {
   val projects: List[Project] = projectPropertyPaths.toList map { p => Project(p, this)}
 
   val elements: Map[Symbol, ElementModelImpl] = {

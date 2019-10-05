@@ -11,7 +11,7 @@ import scala.meta.{Import, Mod, Pat, Stat}
   * A rule that removes unreferenced classes,
   * needs to be run after Analysis
   */
-class DeadCodeRemover extends AbstractRule("ScalaCleanDeadCodeRemover") {
+class DeadCodeRemover(model: ProjectModel) extends AbstractRule("ScalaCleanDeadCodeRemover", model) {
 
   type Colour = Usage
 

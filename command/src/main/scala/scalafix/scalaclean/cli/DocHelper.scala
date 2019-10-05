@@ -22,6 +22,7 @@ object DocHelper {
 
     //    val sourceDirectory = inputSourceDirectories.head
     val inputPath = sourceDirectory.resolve(targetFile)
+
     val semanticdbPath = inputPath.toRelative(sourceRoot)
 
     val input = Input.VirtualFile(targetFile.toString, FileIO.slurp(inputPath, StandardCharsets.UTF_8))

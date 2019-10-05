@@ -1,5 +1,6 @@
 package scalaclean.model.v3
 
+import java.io.File
 import java.net.{URL, URLClassLoader}
 import java.nio.file.{Files, Path, Paths}
 import java.util.Properties
@@ -20,23 +21,28 @@ object Project {
     val elementsFilePath = props.getProperty("elementsFile")
     val relationshipsFilePath = props.getProperty("relationshipsFile")
     val src = props.getProperty("src")
+    val srcBuildBase = props.getProperty("srcBuildBase")
+    val srcFiles = props.getProperty("srcFiles","").split(File.pathSeparatorChar).toSet
     assert(classpathValue ne null, props.keys)
     assert(outputPath ne null, props.keys)
 
     val classPath = Classpath.apply(classpathValue)
 
-    println("STEP 1 = rels = " +relationshipsFilePath)
+    println(File.separatorChar)
+    println(props.getProperty("srcFiles"))
+    println("STEP 1 = srcFiles = " +srcFiles)
+    println("CLASSPATH VALUE = " + classpathValue)
 
-    new Project(projects, classPath, outputPath, src,elementsFilePath, relationshipsFilePath)
+    new Project(projects, classPath, outputPath, src,srcBuildBase, elementsFilePath, relationshipsFilePath, srcFiles)
   }
 }
 
 class Project private(
-  val projects: ProjectSet, val classPath: Classpath, val outputPath: String, val src: String,
-  elementsFilePath: String, relationshipsFilePAth: String) {
+  val projects: ProjectSet, val classPath: Classpath, val outputPath: String, val src: String,val srcBuildBase : String,
+  elementsFilePath: String, relationshipsFilePAth: String,
+  val srcFiles: Set[String]) {
   def symbolTable: SymbolTable = GlobalSymbolTable(classPath, includeJdk = true)
-
-  lazy val classloader: ClassLoader = new URLClassLoader(Array(new URL("file:" + outputPath)), null)
+  lazy val classloader: ClassLoader = new URLClassLoader(Array(new URL("file:" + outputPath +"/")), null)
 
   private val infos = new ConcurrentHashMap[Symbol, SymbolInformation]()
 
@@ -46,7 +52,7 @@ class Project private(
         viewedFrom.source.doc.info(s).orNull)
   }
 
-  def read = ModelReader.read(this, projects.projectRoot, elementsFilePath, relationshipsFilePAth)
+  def read = ModelReader.read(this, elementsFilePath, relationshipsFilePAth)
 
   private val sourcesMap = new ConcurrentHashMap[String, SourceData]()
 

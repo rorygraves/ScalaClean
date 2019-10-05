@@ -1,13 +1,13 @@
 package scalaclean.model.v3
 
-import java.nio.file.{Files, Path, Paths}
+import java.nio.file.{Files, Paths}
 
 import org.scalaclean.analysis.IoTokens
 
 
 object ModelReader {
 
-  def read(project: Project, projectRoot: Path,elementsFilePath: String, relationshipsFilePath: String) : (Vector[ElementModelImpl], BasicRelationshipInfo) = {
+  def read(project: Project, elementsFilePath: String, relationshipsFilePath: String) : (Vector[ElementModelImpl], BasicRelationshipInfo) = {
 
     val refersToB = List.newBuilder[RefersImpl]
     val extendsB = List.newBuilder[ExtendsImpl]

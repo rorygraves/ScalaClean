@@ -30,7 +30,9 @@ object FixUtils {
                                 ): SemanticDocument = {
     import scala.collection.JavaConverters._
     val reluri = path.toNIO.iterator().asScala.mkString("/")
+
     val semanticdbReluri = s"META-INF/semanticdb/$reluri.semanticdb"
+    println(classLoader.getResource(semanticdbReluri))
     Option(classLoader.getResourceAsStream(semanticdbReluri)) match {
       case Some(inputStream) =>
         val sdocs =

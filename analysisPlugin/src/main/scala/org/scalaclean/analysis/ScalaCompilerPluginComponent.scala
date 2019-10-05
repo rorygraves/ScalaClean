@@ -1,7 +1,7 @@
 package org.scalaclean.analysis
 
 import java.io.File
-import java.nio.file.Files
+import java.nio.file.{Files, Paths}
 import java.util.Properties
 
 import scala.meta.internal.semanticdb.scalac.SemanticdbOps
@@ -62,7 +62,6 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
         println(s"Writing relationships file to to ${relationsFile}")
       relationsWriter = new RelationshipsWriter(relationsFile, global)
 
-
       super.run()
 
       val props = new Properties
@@ -73,6 +72,9 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
       val srcPath = workOutCommonSourcePath(basePaths)
       props.put("src", srcPath)
 
+      val currentRelativePath = Paths.get("")
+      val srcBuildBase = currentRelativePath.toAbsolutePath.toString
+      props.put("srcBuildBase",srcBuildBase)
       props.put("srcFiles", files.mkString(File.pathSeparator))
 
       val propsFile = outputPath.resolve(s"ScalaClean.properties").toNIO

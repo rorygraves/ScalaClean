@@ -4,14 +4,11 @@ import scalaclean.model._
 import scalafix.patch.Patch
 import scalafix.v1.SemanticDocument
 
-abstract class AbstractRule(val name:String) {
-  var model: ProjectModel = _
+abstract class AbstractRule(val name:String, val model: ProjectModel) {
   type Colour <: Mark
 
   final def beforeStart(): Unit = {
     println(s"$name start beforeStart")
-    // load the model from the helper class
-    this.model = ModelHelper.model.getOrElse(throw new IllegalStateException("No model to work from"))
 
     markInitial()
 

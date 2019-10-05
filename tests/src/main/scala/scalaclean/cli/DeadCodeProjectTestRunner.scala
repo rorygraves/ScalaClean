@@ -1,13 +1,11 @@
 package scalaclean.cli
 
 import java.nio.charset.StandardCharsets
-import java.nio.file.attribute.BasicFileAttributes
-import java.nio.file.{Files, Path, Paths}
-import java.util.function.BiPredicate
+import java.nio.file.{Files, Paths}
 
 import scalaclean.cli.FileHelper.toPlatform
-import scalaclean.model.v3.ProjectSet
 import scalaclean.model.ModelHelper
+import scalaclean.model.v3.ProjectSet
 import scalaclean.rules.AbstractRule
 import scalaclean.rules.deadcode.DeadCodeRemover
 import scalafix.internal.patch.PatchInternals
@@ -33,24 +31,6 @@ class DeadCodeProjectTestRunner(val projectName: String, overwriteTargetFiles: B
   val inputClasspath = Classpath(toPlatform(s"$outputClassDir:$ivyDir/org.scala-lang/scala-library/jars/scala-library-2.12.8.jar:$ivyDir/org.scalaz/scalaz-core_2.12/bundles/scalaz-core_2.12-7.2.27.jar"))
   val inputSourceDirectories: List[AbsolutePath] = Classpath(toPlatform(s"$scalaCleanWorkspace/testProjects/$projectName/src/main/scala")).entries
 
-  def sourceFiles(directories: List[AbsolutePath]): List[RelativePath] = {
-    import scala.collection.JavaConverters._
-    val files: List[RelativePath] = inputSourceDirectories.flatMap { sourceDir =>
-      val sourceDirPath = sourceDir.toNIO
-      if(sourceDir.isDirectory) {
-        val absPaths = Files.find(sourceDir.toNIO,Integer.MAX_VALUE, new BiPredicate[Path, BasicFileAttributes] {
-          override def test(
-            t: Path, u: BasicFileAttributes): Boolean = { u.isRegularFile && t.getFileName.toString.endsWith(".scala") }
-        }).iterator().asScala.toList
-        absPaths.map(AbsolutePath(_).toRelative(sourceDir))
-      } else
-        Nil
-    }
-    files.sortBy(_.toString())
-  }
-
-  val targetFiles = sourceFiles(inputSourceDirectories)
-
   def semanticPatch(
     rule: AbstractRule,
     sdoc: SemanticDocument,
@@ -62,7 +42,6 @@ class DeadCodeProjectTestRunner(val projectName: String, overwriteTargetFiles: B
 
   def run(): Boolean = {
 
-    // if we are in old mode generate the META-INF/ScalaClean/old analysis files
     runDeadCode()
   }
 
@@ -79,14 +58,18 @@ class DeadCodeProjectTestRunner(val projectName: String, overwriteTargetFiles: B
 
     val projectProps = srcDir.resolve(s"ScalaClean.properties")
 
-    val projects = new ProjectSet(rootDir, projectProps)
+    val projects = new ProjectSet(projectProps)
     ModelHelper.model = Some(projects)
 
-    val deadCode = new DeadCodeRemover()
+    val deadCode = new DeadCodeRemover(projects)
     deadCode.beforeStart()
 
+    val project = projects.projects.head
+    val srcBase = AbsolutePath(project.src)
 
-    targetFiles.foreach { targetFile =>
+    val files = project.srcFiles.toList.map(AbsolutePath(_).toRelative(srcBase))
+
+    files.foreach { targetFile =>
       println(s" processing $targetFile")
       val sdoc = DocHelper.readSemanticDoc(classLoader, symtab, inputSourceDirectories.head, sourceRoot, targetFile)
       val (fixed, _) = semanticPatch(deadCode, sdoc, suppress = false)

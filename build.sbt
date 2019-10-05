@@ -82,6 +82,7 @@ lazy val command = project.dependsOn(shared)
     moduleName := "command",
     scalaVersion := V.scala212,
     libraryDependencies += "args4j" % "args4j" % "2.33",
+    libraryDependencies += "com.github.scopt" %% "scopt" % "4.0.0-RC2",
     libraryDependencies += "ch.epfl.scala" %% "scalafix-core" % V.scalafixVersion,
     libraryDependencies += "ch.epfl.scala" % "scalafix-testkit_2.12.8" % V.scalafixVersion,
     libraryDependencies += "junit" % "junit" % "4.12" % Test,
@@ -113,15 +114,9 @@ lazy val unitTestProject = project.in(file("testProjects/unitTestProject")).sett
     }
   )
 
-lazy val privatiserProject1 = project.in(file("testProjects/privatiserProject1")).settings(
-  addCompilerPlugin(scalafixSemanticdb),
-  libraryDependencies += "org.scalaz" %% "scalaz-core" % "7.2.28",
-  scalacOptions += "-P:semanticdb:synthetics:on",
-  skip in publish := true
-).dependsOn(analysisPlugin)
 
 // template for dead code projects
-def deadCodeProject(id: String, projectLocation: String) = sbt.Project.apply(id, file(projectLocation)).settings(
+def testInputProject(id: String, projectLocation: String) = sbt.Project.apply(id, file(projectLocation)).settings(
   addCompilerPlugin(scalafixSemanticdb),
   scalacOptions += "-Yrangepos",
   libraryDependencies += "org.scalaz" %% "scalaz-core" % "7.2.27",
@@ -146,10 +141,12 @@ def deadCodeProject(id: String, projectLocation: String) = sbt.Project.apply(id,
 ).dependsOn(analysisPlugin) // here to ensure rebuild on change
 
 
-lazy val deadCodeProject1 = deadCodeProject("deadCodeProject1","testProjects/deadCodeProject1")
-lazy val deadCodeProject2 = deadCodeProject("deadCodeProject2", "testProjects/deadCodeProject2")
-lazy val deadCodeProject3 = deadCodeProject("deadCodeProject3", "testProjects/deadCodeProject3")
-lazy val deadCodeProject4 = deadCodeProject("deadCodeProject4", "testProjects/deadCodeProject4")
+lazy val deadCodeProject1 = testInputProject("deadCodeProject1","testProjects/deadCodeProject1")
+lazy val deadCodeProject2 = testInputProject("deadCodeProject2", "testProjects/deadCodeProject2")
+lazy val deadCodeProject3 = testInputProject("deadCodeProject3", "testProjects/deadCodeProject3")
+lazy val deadCodeProject4 = testInputProject("deadCodeProject4", "testProjects/deadCodeProject4")
+
+lazy val privatiserProject1 = testInputProject("privatiserProject1", "testProjects/privatiserProject1")
 
 lazy val tests = project.dependsOn(command, unitTestProject, privatiserProject1, deadCodeProject1, deadCodeProject2)
   .settings(
