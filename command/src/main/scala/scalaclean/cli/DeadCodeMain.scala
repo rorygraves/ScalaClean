@@ -3,7 +3,7 @@ package scalaclean.cli
 import java.nio.charset.StandardCharsets
 import java.nio.file.Paths
 
-import scalaclean.model.v3.Projects
+import scalaclean.model.v3.ProjectSet
 import scalaclean.model.ModelHelper
 import scalaclean.rules.AbstractRule
 import scalaclean.rules.deadcode.DeadCodeRemover
@@ -57,10 +57,9 @@ class DeadCodeMain extends DiffAssertions {
   def run(): Unit = {
     val rootDir = Paths.get(".") // sourceRoot?
 
-    val srcDir = Paths.get(outputClassDir)
-
+    val projectProps = Paths.get(outputClassDir).resolve(s"ScalaClean.properties")
     // TODO HACK
-    val projects = new Projects(rootDir, "src" -> srcDir)
+    val projects = new ProjectSet(rootDir, projectProps)
     ModelHelper.model = Some(projects)
 
     println("Running dead code removal")
@@ -72,7 +71,6 @@ class DeadCodeMain extends DiffAssertions {
     val symtab: SymbolTable = ClasspathOps.newSymbolTable(inputClasspath)
     val classLoader = ClasspathOps.toClassLoader(inputClasspath)
 
-    val elementsRelUrl = s"META-INF/ScalaClean/scalaclean-elements.csv"
     println("---------------------------------------------------------------------------------------------------")
     // run DeadCode
     val deadCode = new DeadCodeRemover()

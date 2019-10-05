@@ -5,9 +5,25 @@ import scala.tools.nsc.plugins.{Plugin, PluginComponent}
 
 class ScalaCleanCompilerPlugin(override val global: Global) extends Plugin {
 
-  override val name: String = "scalaclean-compiler-plugin"
+  override val name: String = "scalaclean-analysis-plugin"
   override val description: String = "ScalaClean analysis plugin"
 
-  override val components: List[PluginComponent] = List(new ScalaCompilerPluginComponent(global))
+  var debug = false
+
+  override def processOptions(
+    options: List[String],
+    error: String => Unit): Unit = {
+    for (option <- options) {
+      if(option == "debug:true") {
+        component.debug = true
+      } else
+        error(s"Option not recognised: $option")
+    }
+  }
+
+  override val optionsHelp: Option[String] = Some(s"use -P:$name:debug:true        Set debugging on the ScalaClean analysis plugin")
+
+  val component = new ScalaCompilerPluginComponent(global)
+  override val components: List[PluginComponent] = List(component)
 }
 

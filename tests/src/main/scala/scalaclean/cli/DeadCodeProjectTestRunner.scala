@@ -6,7 +6,7 @@ import java.nio.file.{Files, Path, Paths}
 import java.util.function.BiPredicate
 
 import scalaclean.cli.FileHelper.toPlatform
-import scalaclean.model.v3.Projects
+import scalaclean.model.v3.ProjectSet
 import scalaclean.model.ModelHelper
 import scalaclean.rules.AbstractRule
 import scalaclean.rules.deadcode.DeadCodeRemover
@@ -77,7 +77,9 @@ class DeadCodeProjectTestRunner(val projectName: String, overwriteTargetFiles: B
 
     val srcDir = Paths.get(s"testProjects/$projectName/target/scala-2.12/classes/META-INF/ScalaClean/").toAbsolutePath
 
-    val projects = new Projects(rootDir, "src" -> srcDir)
+    val projectProps = srcDir.resolve(s"ScalaClean.properties")
+
+    val projects = new ProjectSet(rootDir, projectProps)
     ModelHelper.model = Some(projects)
 
     val deadCode = new DeadCodeRemover()

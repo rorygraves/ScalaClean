@@ -12,20 +12,23 @@ import scala.tools.nsc.{Global, Phase}
 
 class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent with SemanticdbOps with ModelSymbolBuilder {
   override val phaseName: String = "scalaclean-compiler-plugin-phase"
-  override val runsAfter: List[String] = List("typer") // was typer
+  override val runsAfter: List[String] = List("typer")
+
+  // a bit ugly, but the options are read after the component is create - so it is updated by the plugin
+  var debug = false
 
   override def newPhase(prev: Phase): Phase = new StdPhase(prev) {
 
-    val debug = false
-
     var elementsWriter: ElementsWriter = _
 
+
     var relationsWriter: RelationshipsWriter = _
+    var files: Set[String] = Set.empty
+
     var basePaths: Set[String] = Set.empty
 
     // TODO THis is a complete hack
     def workOutCommonSourcePath(files: Set[String]) : String = {
-      println("FILES = " + files)
       if(files.isEmpty)
         throw new IllegalStateException("No files")
       else if(files.size > 1) {
@@ -35,7 +38,8 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
     }
 
     override def run(): Unit = {
-      global.reporter.echo("Before Analysis Phase")
+      if(debug)
+        global.reporter.echo("Before Analysis Phase")
 
       val outputPathBase: AbsolutePath = AbsolutePath(
         global.settings.outputDirs.getSingleOutput
@@ -43,25 +47,19 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
           .map(v => v.getAbsolutePath)
           .getOrElse(global.settings.d.value))
 
-
-      println("CLASSPATH = " + global.settings.classpath.value)
-      println("SOURCEPATH = " + AbsolutePath(global.settings.sourcepath.value).toString())
-      println("SOURCEPATH = " + global.settings.d.value)
-      println("SOURCEPATH = " + global.settings.outputDirs.getSingleOutput)
-      println("OUTPUTPATHS =  " )
-      global.settings.outputDirs.outputs.foreach { case (src,target) =>
-          println(s"  $src -> $target" )
-      }
-
       val outputPath = outputPathBase.resolve("META-INF/ScalaClean/")
       outputPath.toFile.mkdirs()
       val elementsFile = new File(outputPath.toFile, "scalaclean-elements.csv")
 
-      println(s"Writing elements file  to ${elementsFile}")
+      if(debug)
+        println(s"Writing elements file  to ${elementsFile}")
       elementsWriter = new ElementsWriter(elementsFile)
 
+
       val relationsFile = new File(outputPath.toFile, "scalaclean-relationships.csv")
-      println(s"Writing relationships file to to ${relationsFile}")
+
+      if(debug)
+        println(s"Writing relationships file to to ${relationsFile}")
       relationsWriter = new RelationshipsWriter(relationsFile, global)
 
 
@@ -70,18 +68,25 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
       val props = new Properties
       props.put("classpath", global.settings.classpath.value)
       props.put("outputDir", outputPathBase.toString())
+      props.put("elementsFile", elementsFile.toString)
+      props.put("relationshipsFile", relationsFile.toString)
       val srcPath = workOutCommonSourcePath(basePaths)
       props.put("src", srcPath)
 
+      props.put("srcFiles", files.mkString(File.pathSeparator))
+
       val propsFile = outputPath.resolve(s"ScalaClean.properties").toNIO
-      println("Writing props file " + propsFile)
+      if(debug)
+        println("Writing props file " + propsFile)
       props.store(Files.newBufferedWriter(propsFile),"")
       elementsWriter.finish()
       relationsWriter.finish()
-      global.reporter.echo("After Analysis Phase")
-      global.reporter.echo(s"  Wrote elements to $elementsFile")
-      global.reporter.echo(s"  Wrote relationships to $relationsFile")
+      if(debug) {
+        global.reporter.echo("After Analysis Phase")
+        global.reporter.echo(s"  Wrote elements to $elementsFile")
+        global.reporter.echo(s"  Wrote relationships to $relationsFile")
 
+      }
     }
 
     object PlatformPathIO {
@@ -92,10 +97,14 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
     override def apply(unit: global.CompilationUnit): Unit = {
 
       val srcPath = unit.source.file.toString
+
+      files += srcPath
+
       val sourceFile = mungeUnitPath(unit.source.file.toString)
       basePaths += srcPath.substring(0, srcPath.indexOf(sourceFile))
-      global.reporter.echo(s"Executing for unit: ${sourceFile}")
-      (new SCUnitTraverser(sourceFile, elementsWriter, relationsWriter)).traverse(unit.body)
+      if(debug)
+        global.reporter.echo(s"Executing for unit: ${sourceFile}")
+      (new SCUnitTraverser(sourceFile, elementsWriter, relationsWriter, debug)).traverse(unit.body)
     }
   }
 
@@ -145,7 +154,7 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
   }
 
 
-  class SCUnitTraverser(sourceFile: String, elementsWriter: ElementsWriter, relationsWriter: RelationshipsWriter) extends global.Traverser with ScopeTracking {
+  class SCUnitTraverser(sourceFile: String, elementsWriter: ElementsWriter, relationsWriter: RelationshipsWriter, val debug: Boolean) extends global.Traverser with ScopeTracking {
 
     import global._
     lazy val g: global.type = global
@@ -155,7 +164,6 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
       scopeLog(s"-extendsCls: ${parentSym.csvString}  direct=$direct")
     }
 
-    val debug = true
     val logTransScope = true
 
     override def traverse(tree: Tree): Unit = {

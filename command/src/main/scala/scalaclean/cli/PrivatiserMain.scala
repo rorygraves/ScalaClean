@@ -4,7 +4,7 @@ import java.nio.charset.StandardCharsets
 import java.nio.file.Paths
 
 import scalaclean.cli.FileHelper.toPlatform
-import scalaclean.model.v3.Projects
+import scalaclean.model.v3.ProjectSet
 import scalaclean.model.ModelHelper
 import scalaclean.rules.AbstractRule
 import scalaclean.rules.privatiser.Privatiser
@@ -59,7 +59,7 @@ class PrivatiserMain extends DiffAssertions {
     val srcDir = Paths.get(outputClassDir)
 
     // TODO HACK
-    val projects = new Projects(rootDir, "src" -> srcDir)
+    val projects = new ProjectSet(rootDir, srcDir)
     ModelHelper.model = Some(projects)
 
 //    AnalysisHelper.runAnalysis(projectName, inputClasspath, sourceRoot,  inputSourceDirectories, outputClassDir, storagePath, targetFiles)

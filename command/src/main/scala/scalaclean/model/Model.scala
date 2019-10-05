@@ -135,7 +135,6 @@ trait ParseModel {
 //  def asProjectModel(storagePath: String, projectName: String, classpath: String, outputDir: String, relSource: String, absSource: String): ProjectModel
 }
 trait ProjectModel {
-  def save: Unit
 
   def fromSymbol[T <: ModelElement](symbol: Symbol)(implicit tpe: ClassTag[T]): T
 

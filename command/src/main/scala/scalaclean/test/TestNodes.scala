@@ -5,7 +5,7 @@ import scalaclean.model._
 /**
   * Basic node types test
   */
-class Test_nodes extends TestCommon("Test_nodes") {
+class TestNodes extends TestCommon("TestNodes") {
   def visit(modelElement: ModelElement): String = {
     modelElement.toString
   }

@@ -7,7 +7,7 @@ import scalafix.v1._
 import scala.meta.{Decl, Defn, Import, Pat, Pkg, Stat, Term, Tree}
 
 /**
-  * A rule use to test the that incloming references ar set correctly,
+  * A rule use to test the that incoming references ar set correctly,
   * needs to be run after ScalaCleanTestAnalysis
   */
 abstract class TestBase(name: String) extends SemanticRule(name) {

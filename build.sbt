@@ -3,8 +3,8 @@ import sbt.Keys.libraryDependencies
 lazy val V = _root_.scalafix.sbt.BuildInfo
 inThisBuild(
   List(
-    organization := "scalaclean",
-    homepage := Some(url("https://github.com/rorygraves")),
+    organization := "org.scalaclean",
+    homepage := Some(url("https://github.com/rorygraves/ScalaClean")),
     licenses := List("Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0")),
     scalaVersion := "2.12.9",
     scalacOptions ++= List(
@@ -13,12 +13,6 @@ inThisBuild(
   )
 )
 
-//lazy val commonSettings = Seq(
-//  version := "0.1-SNAPSHOT",
-//  organization := "com.example",
-//  scalaVersion := "2.10.1",
-//  test in assembly := {}
-//)
 skip in publish := true
 
 lazy val mergeSettings = Def.settings(
@@ -139,11 +133,13 @@ def deadCodeProject(id: String, projectLocation: String) = sbt.Project.apply(id,
     //    val baseDirectory.value /"custom_lib"
     val jar = (assembly in Compile in analysisPlugin).value
     Seq(
-      "-Xprint:typer",
+
+//      "-Xprint:typer",
 //      "-Ycompact-trees",
       "-Yrangepos",
       s"-Xplugin:${jar.getAbsolutePath}",
       s"-Jdummy=${jar.lastModified}", // ensures recompile
+      "-P:scalaclean-analysis-plugin:debug:true",
     )
 
   },

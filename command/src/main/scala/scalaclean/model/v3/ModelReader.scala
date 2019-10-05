@@ -1,21 +1,20 @@
 package scalaclean.model.v3
 
-import java.nio.file.{Files, Path}
+import java.nio.file.{Files, Path, Paths}
 
 import org.scalaclean.analysis.IoTokens
 
 
 object ModelReader {
 
-  def read(project: Project, path: Path, projectRoot: Path) : (Vector[ElementModelImpl], BasicRelationshipInfo) = {
+  def read(project: Project, projectRoot: Path,elementsFilePath: String, relationshipsFilePath: String) : (Vector[ElementModelImpl], BasicRelationshipInfo) = {
 
     val refersToB = List.newBuilder[RefersImpl]
     val extendsB = List.newBuilder[ExtendsImpl]
     val overridesB = List.newBuilder[OverridesImpl]
     val withinB = List.newBuilder[WithinImpl]
 
-    val dir = projectRoot.resolve(path).toAbsolutePath
-    val relsPath = dir.resolve(IoTokens.fileRelationships)
+    val relsPath = Paths.get(relationshipsFilePath)
     println(s"reading relationships from $relsPath")
 
     Files.lines(relsPath) forEach {
@@ -52,7 +51,7 @@ object ModelReader {
     within
     )
 
-    val elePath = dir.resolve(IoTokens.fileElements)
+    val elePath = Paths.get(elementsFilePath)
     println(s"reading elements from $elePath")
 
     val builder = Vector.newBuilder[ElementModelImpl]

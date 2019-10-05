@@ -8,7 +8,7 @@ import org.junit.Test
 import org.scalatest.junit.AssertionsForJUnit
 import scalaclean.cli.FileHelper
 import scalaclean.cli.FileHelper.toPlatform
-import scalaclean.model.v3.Projects
+import scalaclean.model.v3.ProjectSet
 import scalaclean.model.ModelHelper
 import scalaclean.test._
 import scalafix.internal.patch.PatchInternals
@@ -28,7 +28,7 @@ class UnitTests extends AssertionsForJUnit with DiffAssertions {
   }
 
   @Test def nodesTest() {
-    runTest("scalaclean/test/nodes/nodes.scala", new Test_nodes())
+    runTest("scalaclean/test/nodes/nodes.scala", new TestNodes())
   }
 
   @Test def internalTransitiveOverriddenByTest() {
@@ -98,7 +98,7 @@ class UnitTests extends AssertionsForJUnit with DiffAssertions {
       val classDir = outputClassDir + FileHelper.fileSep + "META-INF" + FileHelper.fileSep +  "ScalaClean"
       val srcDir = Paths.get(classDir).toAbsolutePath
 
-      val projects = new Projects(rootDir, "src" -> srcDir)
+      val projects = new ProjectSet(rootDir,srcDir)
       ModelHelper.model = Some(projects)
 
       //      AnalysisHelper.runAnalysis(projectName, inputClasspath, sourceRoot,  inputSourceDirectories, outputClassDir, storagePath, targetFiles)
