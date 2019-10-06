@@ -1,7 +1,7 @@
 package scalaclean.cli
 
 import java.nio.charset.StandardCharsets
-import java.nio.file.Paths
+import java.nio.file.{Files, Paths}
 
 import scalaclean.model.ProjectModel
 import scalaclean.model.v3.{Project, ProjectSet}
@@ -20,18 +20,15 @@ import scala.meta.internal.io.FileIO
 import scala.meta.internal.symtab.SymbolTable
 
 
-//[error] /Users/rorygraves/.ivy2/cache/org.scalameta/parsers_2.12/jars/parsers_2.12-4.2.1.jar:scala/meta/parsers/Parsed$Success.class
-//[error] /Users/rorygraves/.ivy2/cache/org.scalameta/semanticdb-scalac_2.12.8/jars/semanticdb-scalac_2.12.8-4.2.1.jar:scala/meta/parsers/Parsed$Success.class
-
 object ScalaCleanMain {
   def main(args: Array[String]): Unit = {
     SCOptions.parseCommandLine(args) match {
       case Some(options) =>
         val commandFn: ProjectModel => AbstractRule = options.mode match {
           case SCOptions.privatiserCmd =>
-            model =>  new DeadCodeRemover(model)
+            model =>  new DeadCodeRemover(model, options.debug)
           case SCOptions.deadCodeCmd =>
-            model =>  new DeadCodeRemover(model)
+            model =>  new DeadCodeRemover(model, options.debug)
           case _ =>
             throw new IllegalStateException(s"Invalid command argument ${options.mode}")
         }
@@ -54,7 +51,7 @@ class ScalaCleanMain(dcOptions: SCOptions, ruleCreateFn: ProjectModel => Abstrac
     PatchInternals.semantic(fixes, sdoc, suppress)
   }
 
-  def run(): Unit = {
+  def run(): Boolean = {
 
     val projectProps = dcOptions.files.map(f => Paths.get(f.toString))
 
@@ -65,15 +62,52 @@ class ScalaCleanMain(dcOptions: SCOptions, ruleCreateFn: ProjectModel => Abstrac
 
     rule.beforeStart()
 
+    var changed = false
     projectSet.projects foreach { project =>
-      runRuleOnProject(rule, projectSet, project)
+      changed |= runRuleOnProject(rule, project, dcOptions.validate, dcOptions.replace, dcOptions.debug)
     }
+    if(dcOptions.debug)
+      println(s"DEBUG: Changed = $changed")
+    changed
   }
 
-  def runRuleOnProject(rule: AbstractRule, model: ProjectModel, project: Project): Unit = {
+  def expectedPathForTarget(srcBase: AbsolutePath, targetFile: RelativePath): AbsolutePath = {
+    val targetOutput = RelativePath(targetFile.toString() + ".expected")
+    val outputFile = srcBase.resolve(targetOutput)
+    outputFile
+  }
+  def compareAgainstFile(existingFile: AbsolutePath, obtained: String): Boolean = {
+    val expected = FileIO.slurp(existingFile, StandardCharsets.UTF_8)
+
+    val diff = DiffAssertions.compareContents(obtained, expected)
+    if (diff.nonEmpty) {
+        println("###########> obtained       <###########")
+        println(obtained)
+        println("###########> expected       <###########")
+        println(expected)
+        println("###########> Diff       <###########")
+        println(error2message(obtained, expected))
+        true
+    } else
+      false
+  }
+
+  def writeToFile(path: AbsolutePath, content: String): Unit = {
+    Files.write(path.toNIO, content.getBytes)
+  }
+
+  /**
+    *
+    * @param rule The rule to run
+    * @param project The target project
+    * @return True if diffs were seen or files were changed
+    */
+  def runRuleOnProject(rule: AbstractRule, project: Project, validateMode: Boolean, replace: Boolean, debug: Boolean): Boolean = {
 
     val symtab: SymbolTable = ClasspathOps.newSymbolTable(project.classPath)
     val classLoader = project.classloader
+
+    var changed = false
 
     println("---------------------------------------------------------------------------------------------------")
 
@@ -91,23 +125,34 @@ class ScalaCleanMain(dcOptions: SCOptions, ruleCreateFn: ProjectModel => Abstrac
       val tokens = fixed.tokenize.get
       val obtained = tokens.mkString
 
-      val targetOutput = RelativePath(targetFile.toString() + ".expected")
-      val outputFile = srcBase.resolve(targetOutput)
-      val expected = FileIO.slurp(outputFile, StandardCharsets.UTF_8)
+      if(validateMode) {
+        val expectedFile = expectedPathForTarget(srcBase, targetFile)
 
-      val diff = DiffAssertions.compareContents(obtained, expected)
-      if (diff.nonEmpty) {
-        println("###########> obtained       <###########")
-        println(obtained)
-        println("###########> expected       <###########")
-        println(expected)
-        println("###########> Diff       <###########")
-        println(error2message(obtained, expected))
+        changed |= compareAgainstFile(expectedFile, obtained)
+        if(replace) {
+          // overwrite the '.expected' file
+          val overwritePath = expectedPathForTarget(srcBase, targetFile)
+          writeToFile(overwritePath, obtained)
+        }
+      } else {
+        if(replace) {
+          // overwrite the base file
+          val overwritePath = srcBase.resolve(targetFile)
+          if(debug)
+            println(s"DEBUG: Overwriting existing file: $overwritePath")
+          writeToFile(overwritePath, obtained)
+        } else {
+          val expectedFile = srcBase.resolve(targetFile)
 
-        System.out.flush()
-        System.exit(1)
+          if(debug)
+            println("DEBUG Comparing obtained vs " + expectedFile)
+
+          // diff against original file
+          changed |= compareAgainstFile(expectedFile, obtained)
+        }
       }
     }
+    changed
   }
 
 }

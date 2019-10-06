@@ -4,8 +4,10 @@ import java.io.File
 import scopt.OParser
 
 case class SCOptions(
-  debug: Boolean = false,
   mode: String = "",
+  debug: Boolean = false,
+  validate: Boolean = false,
+  replace: Boolean = false,
   files: Seq[File] = Seq(),
 )
 
@@ -26,6 +28,12 @@ object SCOptions {
         opt[Unit]("debug")
           .action((_, c) => c.copy(debug = true))
           .text("this option is hidden in the usage text"),
+        opt[Unit]("validate")
+          .action((_, c) => c.copy(validate = true))
+          .text("Validate the files against an expectation"),
+        opt[Unit]("replace")
+          .action((_, c) => c.copy(replace = true))
+          .text("Replace the content of the file with the results"),
         arg[File]("<file>...")
           .unbounded()
           .required()
@@ -39,6 +47,12 @@ object SCOptions {
         opt[Unit]("debug")
           .action((_, c) => c.copy(debug = true))
           .text("this option is hidden in the usage text"),
+        opt[Unit]("validate")
+          .action((_, c) => c.copy(validate = true))
+          .text("Validate the files against an expectation"),
+        opt[Unit]("replace")
+          .action((_, c) => c.copy(replace = true))
+          .text("Replace the content of the file with the results"),
         arg[File]("<file>...")
           .unbounded()
           .required()

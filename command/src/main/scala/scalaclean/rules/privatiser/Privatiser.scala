@@ -9,7 +9,7 @@ import scalafix.v1.SemanticDocument
 
 import scala.meta.{Import, Mod, Pat, Stat}
 
-class Privatiser(model: ProjectModel) extends AbstractRule("Privatiser", model) {
+class Privatiser(model: ProjectModel, debug: Boolean) extends AbstractRule("Privatiser", model, debug) {
 
   type Colour = PrivatiserLevel
 

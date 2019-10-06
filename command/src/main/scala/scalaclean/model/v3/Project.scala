@@ -28,11 +28,6 @@ object Project {
 
     val classPath = Classpath.apply(classpathValue)
 
-    println(File.separatorChar)
-    println(props.getProperty("srcFiles"))
-    println("STEP 1 = srcFiles = " +srcFiles)
-    println("CLASSPATH VALUE = " + classpathValue)
-
     new Project(projects, classPath, outputPath, src,srcBuildBase, elementsFilePath, relationshipsFilePath, srcFiles)
   }
 }

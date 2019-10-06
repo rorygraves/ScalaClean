@@ -10,18 +10,6 @@ import scala.meta.io.RelativePath
 
 object FixUtils {
 
-// def loadSyntaticDocument(project: Project, path: Path): SyntacticDocument = {
-//    SyntacticDocument.fromInput(Input.File(AbsolutePath(Paths.get(project.src).resolve(path))))
-//  }
-//  def loadSemanticDoc(project: Project, path: Path) : SemanticDocument = {
-//    val syntacticDoc = loadSyntaticDocument(project, path)
-//    val rel = if (path.isAbsolute) project.absolutePath.relativize(path) else path
-//    println(rel)
-//    println(project.relativePath)
-//    println(project.relativePath.resolve(rel))
-//    fromPath(syntacticDoc, RelativePath(project.relativePath.resolve(rel)), project.classloader, project.symbolTable)
-//  }
-
   private[scalafix] def fromPath(
                                   doc: SyntacticDocument,
                                   path: RelativePath,

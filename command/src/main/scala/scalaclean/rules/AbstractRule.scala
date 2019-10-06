@@ -4,21 +4,22 @@ import scalaclean.model._
 import scalafix.patch.Patch
 import scalafix.v1.SemanticDocument
 
-abstract class AbstractRule(val name:String, val model: ProjectModel) {
+abstract class AbstractRule(val name:String, val model: ProjectModel, debug: Boolean) {
   type Colour <: Mark
 
   final def beforeStart(): Unit = {
-    println(s"$name start beforeStart")
+    if(debug)
+      println(s"$name performing analysis")
 
     markInitial()
 
     runRule()
 
-    debugDump()
+    if(debug)
+      debugDump()
 
-    println(s"$name end beforeStart")
-
-
+    if(debug)
+      println(s"$name analysis complete")
   }
 
   def debugDump(): Unit = {}

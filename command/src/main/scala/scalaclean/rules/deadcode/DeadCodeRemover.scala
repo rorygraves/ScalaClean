@@ -11,7 +11,7 @@ import scala.meta.{Import, Mod, Pat, Stat}
   * A rule that removes unreferenced classes,
   * needs to be run after Analysis
   */
-class DeadCodeRemover(model: ProjectModel) extends AbstractRule("ScalaCleanDeadCodeRemover", model) {
+class DeadCodeRemover(model: ProjectModel, debug: Boolean) extends AbstractRule("ScalaCleanDeadCodeRemover", model, debug) {
 
   type Colour = Usage
 
@@ -168,7 +168,7 @@ class DeadCodeRemover(model: ProjectModel) extends AbstractRule("ScalaCleanDeadC
 
         val declarationsByUsage: Map[Usage, Seq[(Pat.Var, ModelElement)]] =
           pats map { p =>
-            println(" p . pos = " + stat.pos.start, stat.pos.end)
+//            println(" p . pos = " + stat.pos.start, stat.pos.end)
             (p, model.fromSymbolLocal[ModelElement](p.symbol, stat.pos.start, stat.pos.end))
           } groupBy (m => m._2.colour)
 
