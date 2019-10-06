@@ -88,6 +88,14 @@ lazy val command = project.dependsOn(shared)
     libraryDependencies += "junit" % "junit" % "4.12" % Test,
     libraryDependencies += "org.scalatest" %% "scalatest" % "3.0.8" % Test,
 
+    mainClass in assembly := Some("scalaclean.cli.ScalaCleanMain"),
+    // exclude some of the semanticdb classes which are imported twice
+    assemblyExcludedJars in assembly := {
+      var cp = (fullClasspath in assembly).value
+      cp.filter { f=>
+        f.data.getName.contains("semanticdb-scalac_2.12.8-4.2.1.jar")
+      }
+    },
     compile.in(Compile) :=
       compile.in(Compile).dependsOn(compile.in(unitTestProject, Compile), compile.in(privatiserProject1, Compile), compile.in(deadCodeProject1, Compile)).value,
 

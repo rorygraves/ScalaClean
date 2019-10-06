@@ -36,7 +36,7 @@ final class ExtendsImpl(from:Symbol, to:Symbol, val isDirect: Boolean)
 
   override def complete(elements: Map[Symbol, ElementModelImpl]): Unit = {
     super.complete(elements)
-    assert(fromElement.isInstanceOf[ClassLike])
+    assert(fromElement.isInstanceOf[ClassLike], s"$fromElement is not a ClassLike")
     assert(toElement map (_.isInstanceOf[ClassLike]) getOrElse(true))
   }
 }
