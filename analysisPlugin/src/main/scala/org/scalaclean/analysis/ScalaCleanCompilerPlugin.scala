@@ -16,6 +16,8 @@ class ScalaCleanCompilerPlugin(override val global: Global) extends Plugin {
     for (option <- options) {
       if(option == "debug:true") {
         component.debug = true
+      } else if(option.startsWith("srcdirs:")) {
+        component.sourceDirs = option.substring(8).split(java.io.File.pathSeparatorChar).toList
       } else
         error(s"Option not recognised: $option")
     }

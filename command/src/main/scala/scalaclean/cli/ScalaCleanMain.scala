@@ -114,10 +114,31 @@ class ScalaCleanMain(dcOptions: SCOptions, ruleCreateFn: ProjectModel => Abstrac
     val srcBase = AbsolutePath(project.src)
     val base = AbsolutePath(project.srcBuildBase)
 
-    val files = project.srcFiles.toList.map(AbsolutePath(_).toRelative(srcBase))
+    val files: Seq[AbsolutePath] = project.srcFiles.toList.map(AbsolutePath(_))
 
-    files.foreach { targetFile =>
+//    FileException: /workspace/ScalaClean/testProjects/deadCodeProject1/src/main/scala/testProjects/deadCodeProject1/src/main/scala/scalaclean/test/rules/deadcode/DeadCodeAnnotation.scala
 
+    def findRelativeSrc(absTargetFile: meta.AbsolutePath, basePaths: List[AbsolutePath]): (AbsolutePath,RelativePath) =  {
+
+      println("BASEPATHS= ")
+      basePaths.foreach(bp => println("  " + bp))
+      val nioTargetFile = absTargetFile.toNIO
+      val absTargetAsString = absTargetFile.toString()
+      val baseOpt = basePaths.find(bp => nioTargetFile.startsWith(bp.toNIO))
+      baseOpt.map(bp => (bp,absTargetFile.toRelative(bp))).getOrElse(throw new IllegalStateException(s"Unable to resolve source root for $absTargetFile"))
+    }
+
+    files.foreach { absTargetFile =>
+
+      val origTarget = absTargetFile.toRelative(srcBase)
+
+
+      val (relBase, targetFile)  = findRelativeSrc(absTargetFile, project.srcRoots)
+      println(" BASE " + base)
+      println("OBASE " + srcBase)
+      println(" TARGET FILE: " + targetFile)
+      println("OTARGET FILE: " + origTarget)
+      println("S")
       val sdoc = DocHelper.readSemanticDoc(classLoader, symtab, srcBase, base, targetFile)
       val (fixed, _) = semanticPatch(rule, sdoc, suppress = false)
 

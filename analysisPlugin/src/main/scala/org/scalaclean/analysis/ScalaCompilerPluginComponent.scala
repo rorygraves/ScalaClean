@@ -16,6 +16,7 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
 
   // a bit ugly, but the options are read after the component is create - so it is updated by the plugin
   var debug = false
+  var sourceDirs: List[String] = List.empty
 
   override def newPhase(prev: Phase): Phase = new StdPhase(prev) {
 
@@ -69,8 +70,17 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
       props.put("outputDir", outputPathBase.toString())
       props.put("elementsFile", elementsFile.toString)
       props.put("relationshipsFile", relationsFile.toString)
-      val srcPath = workOutCommonSourcePath(basePaths)
-      props.put("src", srcPath)
+      println("SourceDirs = " + sourceDirs)
+      if(sourceDirs.nonEmpty) {
+        props.put("srcRoots", sourceDirs.mkString(File.pathSeparator))
+        props.put("src", sourceDirs.head)
+      } else {
+        val srcPath = workOutCommonSourcePath(basePaths)
+        props.put("srcRoots", srcPath)
+        props.put("src", srcPath)
+      }
+
+//      assert(sourceDirs.nonEmpty)
 
       val currentRelativePath = Paths.get("")
       val srcBuildBase = currentRelativePath.toAbsolutePath.toString
@@ -320,7 +330,7 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
               elementsWriter.method(mSymbol, symbol.nameString, declTypeDefined)
 
               val parentMSym = asMSymbol(symbol.outerClass)
-              if(parentMSym != outerScope)
+              if(debug && parentMSym != outerScope)
                 println("xXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX")
               relationsWriter.within(parentMSym, mSymbol)
 
