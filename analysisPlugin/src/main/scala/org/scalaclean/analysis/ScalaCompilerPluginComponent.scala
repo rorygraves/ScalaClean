@@ -12,7 +12,7 @@ import scala.tools.nsc.{Global, Phase}
 
 class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent with SemanticdbOps with ModelSymbolBuilder {
   override val phaseName: String = "scalaclean-compiler-plugin-phase"
-  override val runsAfter: List[String] = List("typer")
+  override val runsAfter: List[String] = List("semanticdb")
 
   // a bit ugly, but the options are read after the component is create - so it is updated by the plugin
   var debug = false

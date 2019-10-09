@@ -28,7 +28,7 @@ object SCOptions {
         opt[Unit]("debug")
           .action((_, c) => c.copy(debug = true))
           .text("this option is hidden in the usage text"),
-        opt[Unit]("validate")
+        opt[Unit]("validate (used in development)")
           .action((_, c) => c.copy(validate = true))
           .text("Validate the files against an expectation"),
         opt[Unit]("replace")
@@ -47,7 +47,7 @@ object SCOptions {
         opt[Unit]("debug")
           .action((_, c) => c.copy(debug = true))
           .text("this option is hidden in the usage text"),
-        opt[Unit]("validate")
+        opt[Unit]("validate (used in development)")
           .action((_, c) => c.copy(validate = true))
           .text("Validate the files against an expectation"),
         opt[Unit]("replace")
