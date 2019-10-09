@@ -15,22 +15,19 @@ object DocHelper {
   def readSemanticDoc(
     classLoader: ClassLoader,
     symtab: SymbolTable,
-    sourceDirectory: AbsolutePath,
-    sourceRoot: AbsolutePath,
+    absSourcePath : AbsolutePath,
+    buildBase: AbsolutePath,
     targetFile: RelativePath
   ): v1.SemanticDocument = {
 
-    //    val sourceDirectory = inputSourceDirectories.head
-    val inputPath = sourceDirectory.resolve(targetFile)
-
-    val semanticdbPath = inputPath.toRelative(sourceRoot)
-
-    val input = Input.VirtualFile(targetFile.toString, FileIO.slurp(inputPath, StandardCharsets.UTF_8))
+    val input = Input.VirtualFile(targetFile.toString, FileIO.slurp(absSourcePath, StandardCharsets.UTF_8))
     val doc = SyntacticDocument.fromInput(input)
+
+    val semanticDBPath = absSourcePath.toRelative(buildBase)
 
     FixUtils.fromPath(
       doc,
-      semanticdbPath,
+      semanticDBPath,
       classLoader,
       symtab)
 

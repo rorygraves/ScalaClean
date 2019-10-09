@@ -26,9 +26,9 @@ object ScalaCleanMain {
       case Some(options) =>
         val commandFn: ProjectModel => AbstractRule = options.mode match {
           case SCOptions.privatiserCmd =>
-            model =>  new DeadCodeRemover(model, options.debug)
+            model => new DeadCodeRemover(model, options.debug)
           case SCOptions.deadCodeCmd =>
-            model =>  new DeadCodeRemover(model, options.debug)
+            model => new DeadCodeRemover(model, options.debug)
           case _ =>
             throw new IllegalStateException(s"Invalid command argument ${options.mode}")
         }
@@ -55,7 +55,7 @@ class ScalaCleanMain(dcOptions: SCOptions, ruleCreateFn: ProjectModel => Abstrac
 
     val projectProps = dcOptions.files.map(f => Paths.get(f.toString))
 
-    val projectSet = new ProjectSet(projectProps :_*)
+    val projectSet = new ProjectSet(projectProps: _*)
 
     val rule = ruleCreateFn(projectSet)
     println(s"Running rule: ${rule.name}")
@@ -66,7 +66,7 @@ class ScalaCleanMain(dcOptions: SCOptions, ruleCreateFn: ProjectModel => Abstrac
     projectSet.projects foreach { project =>
       changed |= runRuleOnProject(rule, project, dcOptions.validate, dcOptions.replace, dcOptions.debug)
     }
-    if(dcOptions.debug)
+    if (dcOptions.debug)
       println(s"DEBUG: Changed = $changed")
     changed
   }
@@ -76,18 +76,19 @@ class ScalaCleanMain(dcOptions: SCOptions, ruleCreateFn: ProjectModel => Abstrac
     val outputFile = srcBase.resolve(targetOutput)
     outputFile
   }
+
   def compareAgainstFile(existingFile: AbsolutePath, obtained: String): Boolean = {
     val expected = FileIO.slurp(existingFile, StandardCharsets.UTF_8)
 
     val diff = DiffAssertions.compareContents(obtained, expected)
     if (diff.nonEmpty) {
-        println("###########> obtained       <###########")
-        println(obtained)
-        println("###########> expected       <###########")
-        println(expected)
-        println("###########> Diff       <###########")
-        println(error2message(obtained, expected))
-        true
+      println("###########> obtained       <###########")
+      println(obtained)
+      println("###########> expected       <###########")
+      println(expected)
+      println("###########> Diff       <###########")
+      println(error2message(obtained, expected))
+      true
     } else
       false
   }
@@ -102,7 +103,8 @@ class ScalaCleanMain(dcOptions: SCOptions, ruleCreateFn: ProjectModel => Abstrac
     * @param project The target project
     * @return True if diffs were seen or files were changed
     */
-  def runRuleOnProject(rule: AbstractRule, project: Project, validateMode: Boolean, replace: Boolean, debug: Boolean): Boolean = {
+  def runRuleOnProject(
+    rule: AbstractRule, project: Project, validateMode: Boolean, replace: Boolean, debug: Boolean): Boolean = {
 
     val symtab: SymbolTable = ClasspathOps.newSymbolTable(project.classPath)
     val classLoader = project.classloader
@@ -116,56 +118,42 @@ class ScalaCleanMain(dcOptions: SCOptions, ruleCreateFn: ProjectModel => Abstrac
 
     val files: Seq[AbsolutePath] = project.srcFiles.toList.map(AbsolutePath(_))
 
-//    FileException: /workspace/ScalaClean/testProjects/deadCodeProject1/src/main/scala/testProjects/deadCodeProject1/src/main/scala/scalaclean/test/rules/deadcode/DeadCodeAnnotation.scala
-
-    def findRelativeSrc(absTargetFile: meta.AbsolutePath, basePaths: List[AbsolutePath]): (AbsolutePath,RelativePath) =  {
-
-      println("BASEPATHS= ")
-      basePaths.foreach(bp => println("  " + bp))
+    def findRelativeSrc(
+      absTargetFile: meta.AbsolutePath, basePaths: List[AbsolutePath]): (AbsolutePath, RelativePath) = {
       val nioTargetFile = absTargetFile.toNIO
-      val absTargetAsString = absTargetFile.toString()
       val baseOpt = basePaths.find(bp => nioTargetFile.startsWith(bp.toNIO))
-      baseOpt.map(bp => (bp,absTargetFile.toRelative(bp))).getOrElse(throw new IllegalStateException(s"Unable to resolve source root for $absTargetFile"))
+      baseOpt.map(bp => (bp, absTargetFile.toRelative(bp))).getOrElse(throw new IllegalStateException(s"Unable to resolve source root for $absTargetFile"))
     }
 
     files.foreach { absTargetFile =>
-
-      val origTarget = absTargetFile.toRelative(srcBase)
-
-
-      val (relBase, targetFile)  = findRelativeSrc(absTargetFile, project.srcRoots)
-      println(" BASE " + base)
-      println("OBASE " + srcBase)
-      println(" TARGET FILE: " + targetFile)
-      println("OTARGET FILE: " + origTarget)
-      println("S")
-      val sdoc = DocHelper.readSemanticDoc(classLoader, symtab, srcBase, base, targetFile)
+      val (relBase, targetFile) = findRelativeSrc(absTargetFile, project.srcRoots)
+      val sdoc = DocHelper.readSemanticDoc(classLoader, symtab, absTargetFile, base, targetFile)
       val (fixed, _) = semanticPatch(rule, sdoc, suppress = false)
 
       // compare results
       val tokens = fixed.tokenize.get
       val obtained = tokens.mkString
 
-      if(validateMode) {
-        val expectedFile = expectedPathForTarget(srcBase, targetFile)
+      if (validateMode) {
+        val expectedFile = expectedPathForTarget(relBase, targetFile)
 
         changed |= compareAgainstFile(expectedFile, obtained)
-        if(replace) {
+        if (replace) {
           // overwrite the '.expected' file
-          val overwritePath = expectedPathForTarget(srcBase, targetFile)
+          val overwritePath = expectedPathForTarget(relBase, targetFile)
           writeToFile(overwritePath, obtained)
         }
       } else {
-        if(replace) {
+        if (replace) {
           // overwrite the base file
           val overwritePath = srcBase.resolve(targetFile)
-          if(debug)
+          if (debug)
             println(s"DEBUG: Overwriting existing file: $overwritePath")
           writeToFile(overwritePath, obtained)
         } else {
           val expectedFile = srcBase.resolve(targetFile)
 
-          if(debug)
+          if (debug)
             println("DEBUG Comparing obtained vs " + expectedFile)
 
           // diff against original file

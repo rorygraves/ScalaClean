@@ -114,7 +114,8 @@ class UnitTests extends AssertionsForJUnit with DiffAssertions {
 
       rule.beforeStart()
       targetFiles.foreach { targetFile =>
-        val sdoc = DocHelper.readSemanticDoc(classLoader, symtab, inputSourceDirectories.head, sourceRoot, targetFile)
+        val absFile = inputSourceDirectories.head.resolve(targetFile)
+        val sdoc = DocHelper.readSemanticDoc(classLoader, symtab, absFile, sourceRoot,targetFile)
         val (fixed, messages) = semanticPatch(rule, sdoc, suppress = false)
 
         // compare results

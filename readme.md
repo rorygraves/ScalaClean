@@ -1,11 +1,12 @@
 # ScalaClean
 
-ScalaClean is a set of rules for ScalaFix that do more in-depth code analysis of a codebase 
-based on ScalaFix and SemanticDB.
+ScalaClean is a full program static analysis tool.
+By looking at the entire program as a single entity we can do an in-depth analysis that is not 
+available when working file by file as most analysis toos do.
 
 ## Current Status
 
-In development - not yet working.
+Runnable, but probably will do something bad ;).
 
 ## Ideas
 
@@ -16,10 +17,7 @@ In development - not yet working.
 
 ## TODO List
 
-- [ ] Create extension methods in ScalaFix to support pre-analysis
-- [ ] Generate graph structure (packages/classes/methods/references)
-- [ ] Work out how to write automated tests (maybe debug text in result?)
-- [ ] Apply detected code rules
+- [ ] Run it on more things an fix rhe bugs
 
 
 ## Useful links
@@ -39,8 +37,8 @@ We structure each feature based on a common Analysis and a custom rule:
 Using Scalafix, SemanticDB and reflection we generate a graph that represents the syntatic structure of the the code, including cross-references, so  model of our code and how it operates internally and with the libraries that it uses. 
   
 #### Custom Rule
-We can develop a custom rule, to focus on a specific aspect, or oppertunity for improvement
-The cusom rule can use the analsis model to identify improvements, generally by colouring of the syntax tree withe the results of the analysis
+We can develop a custom rule, to focus on a specific aspect, or opportunity for improvement
+The custom rule can use the analysis model to identify improvements, generally by colouring of the syntax tree withe the results of the analysis
 The rule then traverses the syntax graph and suggests improvements using the ScalaFix toolkit
 such as access modifiers changes, and detection of possibly unused code.
 

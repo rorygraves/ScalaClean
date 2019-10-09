@@ -20,13 +20,16 @@ object FixUtils {
     val reluri = path.toNIO.iterator().asScala.mkString("/")
 
     val semanticdbReluri = s"META-INF/semanticdb/$reluri.semanticdb"
-    println(classLoader.getResource(semanticdbReluri))
     Option(classLoader.getResourceAsStream(semanticdbReluri)) match {
       case Some(inputStream) =>
         val sdocs =
           try TextDocuments.parseFrom(inputStream).documents
           finally inputStream.close()
         val sdoc = sdocs.find(_.uri == reluri).getOrElse {
+          println(s" xx $reluri")
+          sdocs.foreach { sd =>
+            println(s"  yy ${sd.uri}   ${reluri == sd.uri}")
+          }
           throw Error.MissingTextDocument(reluri)
         }
         val impl = new InternalSemanticDoc(doc, sdoc, symtab)
