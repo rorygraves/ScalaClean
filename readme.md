@@ -1,5 +1,7 @@
 # ScalaClean
 
+[![Join the chat at https://gitter.im/rorygraves/ScalaClean](https://badges.gitter.im/rorygraves/ScalaClean.svg)](https://gitter.im/rorygraves/ScalaClean?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 ScalaClean is a full program static analysis tool.
 By looking at the entire program as a single entity we can do an in-depth analysis that is not 
 available when working file by file as most current static analysis tools do.
