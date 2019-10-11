@@ -13,7 +13,9 @@ class ProjectTests extends AssertionsForJUnit with DiffAssertions {
 
   def projectTest(projectNames: List[String], overwriteTarget: Boolean): Unit = {
     val res = new DeadCodeProjectTestRunner(projectNames, overwriteTarget).run()
-    assert(res,s" Failed for projects $projectNames, overwriteTarget=$overwriteTarget")
+    if(!res)
+      fail(s" Failed for projects $projectNames, overwriteTarget=$overwriteTarget")
+//    assert(res,s" Failed for projects $projectNames, overwriteTarget=$overwriteTarget")
   }
 
 

@@ -1,4 +1,4 @@
-package scalaclean.test.rules.deadcode
+package scalaclean.test.deadcode3
 
 object DeadCodePackageVals extends App {
   Outer.Inner
@@ -12,4 +12,6 @@ object Outer {
   }
 
   object referred1
+
+  object unReference1
 }

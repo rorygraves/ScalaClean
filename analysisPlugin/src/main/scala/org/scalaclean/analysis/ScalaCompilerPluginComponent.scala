@@ -12,7 +12,7 @@ import scala.tools.nsc.{Global, Phase}
 
 class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent with SemanticdbOps with ModelSymbolBuilder {
   override val phaseName: String = "scalaclean-compiler-plugin-phase"
-  override val runsAfter: List[String] = List("semanticdb")
+  override val runsAfter: List[String] = List("semanticdb-typer")
 
   // a bit ugly, but the options are read after the component is create - so it is updated by the plugin
   var debug = false
@@ -203,9 +203,6 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
           enterTransScope("Template")(super.traverse(template))
         case typeTree: TypeTree =>
           enterTransScope("TypeTree") {
-//            println(typeTree)
-//            println(typeTree.symbol)
-//
             super.traverse(typeTree) }
         case blockTree: Block =>
           enterTransScope("Block")(super.traverse(blockTree))

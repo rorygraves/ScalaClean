@@ -143,6 +143,7 @@ def testInputProject(id: String, projectLocation: String, dependencies: Classpat
 
 //      "-Xprint:typer",
 //      "-Ycompact-trees",
+//      "-Xprint:all",
       "-Yrangepos",
       s"-Xplugin:${jar.getAbsolutePath}",
       s"-Jdummy=${jar.lastModified}", // ensures recompile
