@@ -13,5 +13,9 @@ object Outer {
 
   object referred1
 
+  object referred2
+
+  println(referred2)
+
   object unReference1
 }

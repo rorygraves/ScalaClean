@@ -1,8 +1,8 @@
-package scalaclean.model.v3
+package scalaclean.model.impl
 
 import java.nio.file.Path
 
-import scalaclean.model.{ModelElement, ProjectModel}
+import scalaclean.model._
 import scalafix.v1.Symbol
 
 import scala.collection.immutable

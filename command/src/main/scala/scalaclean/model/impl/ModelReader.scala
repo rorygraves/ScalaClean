@@ -1,8 +1,9 @@
-package scalaclean.model.v3
+package scalaclean.model.impl
 
 import java.nio.file.{Files, Paths}
 
 import org.scalaclean.analysis.IoTokens
+import scalaclean.model._
 
 
 object ModelReader {

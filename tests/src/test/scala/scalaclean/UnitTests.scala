@@ -8,7 +8,7 @@ import org.junit.Test
 import org.scalatest.junit.AssertionsForJUnit
 import scalaclean.cli.FileHelper
 import scalaclean.cli.FileHelper.toPlatform
-import scalaclean.model.v3.ProjectSet
+import scalaclean.model.impl.ProjectSet
 import scalaclean.model.{ModelHelper, ProjectModel}
 import scalaclean.test._
 import scalafix.internal.patch.PatchInternals

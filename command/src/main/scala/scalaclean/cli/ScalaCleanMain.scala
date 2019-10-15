@@ -4,7 +4,7 @@ import java.nio.charset.StandardCharsets
 import java.nio.file.{Files, Paths}
 
 import scalaclean.model.ProjectModel
-import scalaclean.model.v3.{Project, ProjectSet}
+import scalaclean.model.impl.{Project, ProjectSet}
 import scalaclean.rules.AbstractRule
 import scalaclean.rules.deadcode.DeadCodeRemover
 import scalafix.internal.patch.PatchInternals

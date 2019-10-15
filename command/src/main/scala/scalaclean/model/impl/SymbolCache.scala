@@ -1,4 +1,4 @@
-package scalaclean.model.v3
+package scalaclean.model.impl
 
 import java.util.concurrent.ConcurrentHashMap
 

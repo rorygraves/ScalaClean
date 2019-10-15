@@ -116,8 +116,6 @@ class DeadCodeRemover(model: ProjectModel, debug: Boolean) extends AbstractRule(
             case (ref, _) => markUsed(ref, purpose, obj :: path)
           }
           markRhs(obj, obj :: path)
-        //remove this after migration
-        case _: impl.hooks.FieldModelHook => ???
       }
     }
 

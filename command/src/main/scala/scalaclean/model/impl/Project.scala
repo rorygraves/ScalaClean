@@ -1,5 +1,6 @@
-package scalaclean.model.v3
+package scalaclean.model.impl
 
+import scalaclean.model._
 import java.io.File
 import java.net.{URL, URLClassLoader}
 import java.nio.file.{Files, Path, Paths}

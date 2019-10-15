@@ -1,4 +1,4 @@
-package scalaclean.model.v3
+package scalaclean.model.impl
 
 import scalaclean.model._
 import scalafix.v1.Symbol
