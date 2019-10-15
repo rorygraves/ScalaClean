@@ -70,7 +70,7 @@ class UnitTests extends AssertionsForJUnit with DiffAssertions {
 
   def runTest(file: String, rule: TestCommon, overwrite: Boolean = false): Unit = {
     val projectName = "unitTestProject"
-    val scalaCleanWorkspace = "."
+    val scalaCleanWorkspace = ".."
     val ivyDir = toPlatform("$HOME$/.ivy2/cache")
 
     val targetFiles = List(
