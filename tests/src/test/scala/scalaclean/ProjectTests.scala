@@ -7,39 +7,52 @@ import scalafix.testkit.DiffAssertions
 
 class ProjectTests extends AssertionsForJUnit with DiffAssertions {
 
-  def projectTest(projectName: String, overwriteTarget: Boolean = false): Unit = {
-    projectTest(List(projectName), overwriteTarget)
+  def deadCodeProjectTest(projectName: String, overwriteTarget: Boolean = false): Unit = {
+    deadCodeProjectTest(List(projectName), overwriteTarget)
   }
 
-  def projectTest(projectNames: List[String], overwriteTarget: Boolean): Unit = {
+  def deadCodeProjectTest(projectNames: List[String], overwriteTarget: Boolean): Unit = {
     val res = new DeadCodeProjectTestRunner(projectNames, overwriteTarget).run()
     if(!res)
       fail(s" Failed for projects $projectNames, overwriteTarget=$overwriteTarget")
-//    assert(res,s" Failed for projects $projectNames, overwriteTarget=$overwriteTarget")
   }
 
+  def privatiserProjectTest(projectName: String, overwriteTarget: Boolean = false): Unit = {
+    deadCodeProjectTest(List(projectName), overwriteTarget)
+  }
+
+  def privatiserProjectTest(projectNames: List[String], overwriteTarget: Boolean): Unit = {
+    val res = new DeadCodeProjectTestRunner(projectNames, overwriteTarget).run()
+    if(!res)
+      fail(s" Failed for projects $projectNames, overwriteTarget=$overwriteTarget")
+  }
 
   @Test def deadCode1(): Unit = {
-    projectTest("deadCodeProject1")
+    deadCodeProjectTest("deadCodeProject1")
   }
 
   @Test def deadCode2() {
-    projectTest("deadCodeProject2")
+    deadCodeProjectTest("deadCodeProject2")
   }
 
   @Test def deadCode3() {
-    projectTest("deadCodeProject3")
+    deadCodeProjectTest("deadCodeProject3")
   }
 
   @Test def deadCode4() {
-    projectTest("deadCodeProject4")
+    deadCodeProjectTest("deadCodeProject4")
   }
 
   @Test def deadCode5() {
-    projectTest("deadCodeProject5")
+    deadCodeProjectTest("deadCodeProject5")
   }
 
   @Test def deadCode6() {
-    projectTest(List("deadCodeProject6a", "deadCodeProject6b"), false)
+    deadCodeProjectTest(List("deadCodeProject6a", "deadCodeProject6b"), false)
   }
+
+  @Test def privatiser1() {
+    privatiserProjectTest("privatiserProject1")
+  }
+
 }

@@ -1,21 +1,19 @@
 package scalaclean.cli
 
-import java.nio.file.Paths
+import java.io.File
 
+import scalaclean.model.ProjectModel
+import scalaclean.rules.AbstractRule
 import scalaclean.rules.deadcode.DeadCodeRemover
-import scalafix.testkit.DiffAssertions
 
-class DeadCodeProjectTestRunner(val projectNames: List[String], overwriteTargetFiles: Boolean) extends DiffAssertions {
+class DeadCodeProjectTestRunner(projectNames: List[String], overwriteTargetFiles: Boolean) extends AbstractProjectTestRunner(projectNames, overwriteTargetFiles) {
 
-  def run(): Boolean = {
+  def taskName = SCOptions.deadCodeCmd
+  def createModelTaskFn(propsFiles: Seq[File], debug: Boolean): ProjectModel => AbstractRule = {
 
-    val propsFiles = projectNames.map { projectName =>
-      val srcDir = Paths.get(s"testProjects/$projectName/target/scala-2.12/classes/META-INF/ScalaClean/").toAbsolutePath
-      srcDir.resolve(s"ScalaClean.properties").toFile
+    def fn(model: ProjectModel): AbstractRule = {
+      new DeadCodeRemover(model, debug)
     }
-
-    val options = SCOptions("deadcode",true, true,false,propsFiles)
-    val main = new ScalaCleanMain(options,model =>  new DeadCodeRemover(model, options.debug))
-    !main.run()
+    fn
   }
 }

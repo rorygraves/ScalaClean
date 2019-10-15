@@ -133,7 +133,7 @@ class DeadCodeRemover(model: ProjectModel, debug: Boolean) extends AbstractRule(
       markRhs(element, element :: path)
       //TODO for the vars, (non lazy) vals and objects - eagerly traverse
 
-      //TODO consider marking the overridded and overrides
+      //TODO consider marking the overridden and overrides
       //TODO consider marking the inherited classes
       //TODO consider marking the enclosing like markUsed(element.owner)
     }
