@@ -70,9 +70,8 @@ class UnitTests extends AssertionsForJUnit with DiffAssertions {
 
   def runTest(file: String, rule: TestCommon, overwrite: Boolean = false): Unit = {
     val projectName = "unitTestProject"
-    val scalaCleanWorkspace = ".."
+    val scalaCleanWorkspace = "."
     val ivyDir = toPlatform("$HOME$/.ivy2/cache")
-    val storagePath = toPlatform("$HOME$/Downloads/temp3")
 
     val targetFiles = List(
       RelativePath(file),
@@ -91,14 +90,13 @@ class UnitTests extends AssertionsForJUnit with DiffAssertions {
       PatchInternals.semantic(fixes, sdoc, suppress)
     }
 
-    def run: Unit = {
-
-      val rootDir = Paths.get(".")
+    def run(): Unit = {
 
       val classDir = outputClassDir + FileHelper.fileSep + "META-INF" + FileHelper.fileSep +  "ScalaClean"
       val srcDir = Paths.get(classDir).toAbsolutePath
 
-      val projects = new ProjectSet(rootDir,srcDir)
+      val propsFile = srcDir.resolve("ScalaClean.properties")
+      val projects = new ProjectSet(propsFile)
       ModelHelper.model = Some(projects)
 
       runRule(projects)
