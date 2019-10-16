@@ -16,12 +16,11 @@ class ElementsWriter(file: File) {
     case model: ModelObject =>
       writer.writeLine(s"${IoTokens.typeObject},${model.csvString},${model.sourceFile},${model.posStart},${model.posEnd}")
     case model: ModelVal =>
-    //  writer.writeLine(s"${IoTokens.typeVal},${model.csvString},${model.sourceFile},${model.posStart},${model.posEnd},${model.isLazy}")
       writer.writeLine(s"${IoTokens.typeVal},${model.csvString},${model.sourceFile},${model.posStart},${model.posEnd},${model.isAbstract},${model.sourceName},${model.isLazy}")
     case model: ModelVar =>
       writer.writeLine(s"${IoTokens.typeVar},${model.csvString},${model.sourceFile},${model.posStart},${model.posEnd},${model.isAbstract},${model.sourceName}")
     case model: ModelSource =>
-//      writer.writeLine(s"${IoTokens.typeSource},${model.csvString},${model.sourceFile},${model.posStart},${model.posEnd}")
+      writer.writeLine(s"${IoTokens.typeSource},${model.csvString},${model.sourceFile},${model.posStart},${model.posEnd}")
 
   }
   def finish(): Unit = {

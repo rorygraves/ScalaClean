@@ -5,22 +5,25 @@ import scalafix.v1.{Symbol, SymbolInformation}
 //import scala.meta.{Decl, Defn, Tree}
 import scala.reflect.ClassTag
 
-sealed trait ModelElement extends Ordered[ModelElement]{
+sealed trait ModelElement extends Ordered[ModelElement] {
 
   override def compare(that: ModelElement): Int = symbol.value.compare(that.symbol.value)
 
   def symbol: Symbol
 
-  var mark : Mark = _
+  var mark: Mark = _
+
   def name: String
 
   //usually just one element. Can be >1 for  RHS of a val (a,b,c) = ...
   //where a,b,c are the enclosing
   def enclosing: List[ModelElement]
+
   def classOrEnclosing: ClassLike
 
   //start target APIs
   def outgoingReferences: Iterable[Refers] = allOutgoingReferences map (_._2)
+
   def overrides: Iterable[Overrides] = {
     val direct = (allDirectOverrides map (_._2)).toSet
     val thisSym = symbol
@@ -28,32 +31,40 @@ sealed trait ModelElement extends Ordered[ModelElement]{
       case (_, sym) => new impl.OverridesImpl(thisSym, sym, direct.contains(sym))
     }
   }
+
   //should be in the following form
-//  def outgoingReferences: Iterable[Refers]
-//  def outgoingReferencedInternal[T <: ModelElement]: Iterable[T]
-//  def outgoingReferencedExternal: Iterable[Symbol]
-//
-//  def incomingReferences: Iterable[Refers]
-//  def incomingReferencedInternal[T <: ModelElement]: Iterable[T]
+  //  def outgoingReferences: Iterable[Refers]
+  //  def outgoingReferencedInternal[T <: ModelElement]: Iterable[T]
+  //  def outgoingReferencedExternal: Iterable[Symbol]
+  //
+  //  def incomingReferences: Iterable[Refers]
+  //  def incomingReferencedInternal[T <: ModelElement]: Iterable[T]
 
   //end target APIs
 
   //start old APIs
   def internalOutgoingReferences: List[(ModelElement, Refers)]
+
   def internalIncomingReferences: List[(ModelElement, Refers)]
+
   def allOutgoingReferences: List[(Option[ModelElement], Refers)]
 
   def internalDirectOverrides: List[ModelElement]
+
   def internalTransitiveOverrides: List[ModelElement]
 
   def allDirectOverrides: List[(Option[ModelElement], Symbol)]
+
   def allTransitiveOverrides: List[(Option[ModelElement], Symbol)]
 
   def internalDirectOverriddenBy: List[ModelElement]
+
   def internalTransitiveOverriddenBy: List[ModelElement]
+
   //end old APIs
 
   def symbolInfo: SymbolInformation
+
   def symbolInfo(anotherSymbol: Symbol): SymbolInformation
 
   //any block may contain many val of the same name!
@@ -67,13 +78,18 @@ sealed trait ModelElement extends Ordered[ModelElement]{
   //    }
   //  }
   def fields: List[FieldModel]
-  def methods:  List[MethodModel]
+
+  def methods: List[MethodModel]
+
   def innerClassLike: Seq[ClassLike]
 
 
   protected def infoTypeName: String
+
   protected def infoPosString: String
+
   protected def infoDetail = ""
+
   protected def infoName = symbol.displayName
 
   override def toString: String = s"$infoTypeName $infoName [$infoPosString] $infoDetail"
@@ -83,25 +99,31 @@ sealed trait ClassLike extends ModelElement {
   def fullName: String
 
   def xtends[T](implicit cls: ClassTag[T]): Boolean
+
   def xtends(symbol: Symbol): Boolean
 
   def directExtends: Set[Symbol]
+
   def transitiveExtends: Set[Symbol]
 
   def directExtendedBy: Set[ClassLike]
+
   def transitiveExtendedBy: Set[ClassLike]
 }
 
 sealed trait ClassModel extends ClassLike {
   override protected final def infoTypeName: String = "ClassModel"
 }
-sealed trait ObjectModel extends ClassLike with FieldModel{
+
+sealed trait ObjectModel extends ClassLike with FieldModel {
   override protected final def infoTypeName: String = "ObjectModel"
+
   final override def otherFieldsInSameDeclaration = Nil
-  type fieldType  = ObjectModel
+
+  type fieldType = ObjectModel
 }
 
-sealed trait TraitModel extends ClassLike{
+sealed trait TraitModel extends ClassLike {
   override protected final def infoTypeName: String = "TraitModel"
 }
 
@@ -109,21 +131,32 @@ sealed trait MethodModel extends ModelElement {
   override protected final def infoTypeName: String = "MethodModel"
 }
 
-sealed trait FieldModel extends ModelElement{
+sealed trait FieldModel extends ModelElement {
   type fieldType <: FieldModel
+
   def otherFieldsInSameDeclaration: Seq[fieldType]
 }
 
-sealed trait ValModel extends FieldModel{
+sealed trait ValModel extends FieldModel {
   def isLazy: Boolean
+
   type fieldType = ValModel
+
   override protected final def infoTypeName: String = "ValModel"
 }
 
-sealed trait VarModel extends FieldModel{
+sealed trait VarModel extends FieldModel {
   type fieldType = VarModel
+
   override protected final def infoTypeName: String = "VarModel"
 }
+
+sealed trait SourceModel extends ModelElement {
+  type fieldType = SourceModel
+
+  override protected final def infoTypeName: String = "SourceModel"
+}
+
 trait ProjectModel {
 
   def fromSymbol[T <: ModelElement](symbol: Symbol)(implicit tpe: ClassTag[T]): T
@@ -136,7 +169,9 @@ trait ProjectModel {
   def getSymbol[T <: ModelElement](symbol: Symbol)(implicit tpe: ClassTag[T]): Option[T]
 
   def size: Int
+
   def allOf[T <: ModelElement : ClassTag]: Iterator[T]
+
   def printStructure() = allOf[ClassLike] foreach {
     cls => println(s"class ${cls.fullName}")
   }
@@ -146,12 +181,13 @@ trait ProjectModel {
 package impl {
 
   case class BasicElementInfo(symbol: Symbol, source: SourceData, startPos: Int, endPos: Int)
+
   case class BasicRelationshipInfo(
-                                    refers: Map[Symbol, List[RefersImpl]],
-                                    extnds: Map[Symbol, List[ExtendsImpl]],
-                                    overrides: Map[Symbol, List[OverridesImpl]],
-                                    within: Map[Symbol, List[WithinImpl]]) {
-    def complete(elements: Map[Symbol, ElementModelImpl]): Unit ={
+    refers: Map[Symbol, List[RefersImpl]],
+    extnds: Map[Symbol, List[ExtendsImpl]],
+    overrides: Map[Symbol, List[OverridesImpl]],
+    within: Map[Symbol, List[WithinImpl]]) {
+    def complete(elements: Map[Symbol, ElementModelImpl]): Unit = {
       refers.values.foreach(_.foreach(_.complete(elements)))
       extnds.values.foreach(_.foreach(_.complete(elements)))
       overrides.values.foreach(_.foreach(_.complete(elements)))
@@ -174,7 +210,7 @@ package impl {
 
     }
 
-    def + (that: BasicRelationshipInfo): BasicRelationshipInfo = {
+    def +(that: BasicRelationshipInfo): BasicRelationshipInfo = {
       val res = BasicRelationshipInfo(
         this.refers ++ that.refers,
         this.extnds ++ that.extnds,
@@ -190,6 +226,7 @@ package impl {
       res
     }
   }
+
   trait LegacyReferences {
     self: ElementModelImpl =>
 
@@ -279,11 +316,13 @@ package impl {
 
   }
 
-  abstract sealed class ElementModelImpl(info: BasicElementInfo, relationships: BasicRelationshipInfo) extends ModelElement
+  abstract sealed class ElementModelImpl(
+    info: BasicElementInfo, relationships: BasicRelationshipInfo) extends ModelElement
     with LegacyReferences with LegacyOverrides {
-    def complete(elements: Map[Symbol, ElementModelImpl],
-                 relsFrom: BasicRelationshipInfo,
-                 relsTo: BasicRelationshipInfo): Unit = {
+    def complete(
+      elements: Map[Symbol, ElementModelImpl],
+      relsFrom: BasicRelationshipInfo,
+      relsTo: BasicRelationshipInfo): Unit = {
       within = relsFrom.within.getOrElse(symbol, Nil) map {
         _.toElement.get.asInstanceOf[ElementModelImpl]
       }
@@ -360,15 +399,17 @@ package impl {
     }
   }
 
-  abstract sealed class ClassLikeModelImpl(info: BasicElementInfo, relationships: BasicRelationshipInfo) extends ElementModelImpl(info, relationships)
+  abstract sealed class ClassLikeModelImpl(
+    info: BasicElementInfo, relationships: BasicRelationshipInfo) extends ElementModelImpl(info, relationships)
     with ClassLike with LegacyExtends {
 
     var extnds: List[Extends] = _
     var extendedBy: List[Extends] = _
 
-    override def complete(elements: Map[Symbol, ElementModelImpl],
-                          relsFrom: BasicRelationshipInfo,
-                          relsTo: BasicRelationshipInfo): Unit = {
+    override def complete(
+      elements: Map[Symbol, ElementModelImpl],
+      relsFrom: BasicRelationshipInfo,
+      relsTo: BasicRelationshipInfo): Unit = {
       super.complete(elements, relsFrom, relsTo)
       extnds = relsFrom.extnds.getOrElse(symbol, Nil)
       extendedBy = relsTo.extnds.getOrElse(symbol, Nil)
@@ -390,8 +431,9 @@ package impl {
 
   }
 
-  abstract sealed class FieldModelImpl(info: BasicElementInfo, relationships: BasicRelationshipInfo,
-                                       val fieldName: String, val isAbstract: Boolean)
+  abstract sealed class FieldModelImpl(
+    info: BasicElementInfo, relationships: BasicRelationshipInfo,
+    val fieldName: String, val isAbstract: Boolean)
     extends ElementModelImpl(info, relationships) with FieldModel {
     override def otherFieldsInSameDeclaration: Seq[fieldType] = ???
   }
@@ -434,8 +476,9 @@ package impl {
     //  val treeConcreteType = ClassTag[Defn.Def](classOf[Defn.Def])
   }
 
-  class MethodModelImpl(info: BasicElementInfo, relationships: BasicRelationshipInfo,
-                        val methodName: String, val isAbstract: Boolean, val hasDeclaredType: Boolean)
+  class MethodModelImpl(
+    info: BasicElementInfo, relationships: BasicRelationshipInfo,
+    val methodName: String, val isAbstract: Boolean, val hasDeclaredType: Boolean)
     extends ElementModelImpl(info, relationships) with MethodModel {
     override protected def typeName: String = "def"
 
@@ -449,8 +492,9 @@ package impl {
     //  val treeConcreteType = ClassTag[Defn.Val](classOf[Defn.Val])
   }
 
-  class ValModelImpl(val info: BasicElementInfo, relationships: BasicRelationshipInfo,
-                     fieldName: String, isAbstract: Boolean, val isLazy: Boolean)
+  class ValModelImpl(
+    val info: BasicElementInfo, relationships: BasicRelationshipInfo,
+    fieldName: String, isAbstract: Boolean, val isLazy: Boolean)
     extends FieldModelImpl(info, relationships, fieldName, isAbstract) with ValModel {
     override protected def typeName: String = "trait"
 
@@ -466,14 +510,23 @@ package impl {
     //  val treeConcreteType = ClassTag[Defn.Var](classOf[Defn.Var])
   }
 
-  class VarModelImpl(val info: BasicElementInfo, relationships: BasicRelationshipInfo,
-                     fieldName: String, isAbstract: Boolean)
+  class VarModelImpl(
+    val info: BasicElementInfo, relationships: BasicRelationshipInfo,
+    fieldName: String, isAbstract: Boolean)
     extends FieldModelImpl(info, relationships, fieldName, isAbstract) with VarModel {
     override protected def typeName: String = "var"
 
     //  override def treeType: ClassTag[_ <: Tree] =
     //    if (isAbstract) VarModelImpl.treeAbstractType
     //    else VarModelImpl.treeConcreteType
+  }
+
+  class SourceModelImpl(
+    val info: BasicElementInfo, relationships: BasicRelationshipInfo) extends ElementModelImpl(info, relationships) with SourceModel {
+
+    def filename = info.source.path
+    override protected def typeName: String = "source"
+
   }
 
 }

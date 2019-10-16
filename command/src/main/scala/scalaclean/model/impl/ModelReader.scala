@@ -90,8 +90,13 @@ object ModelReader {
               val methodName = tokens(idx + 1).intern()
               val hasDeclaredType = tokens(idx + 2).toBoolean
               new MethodModelImpl(basicInfo, relationships, methodName, isAbstract, hasDeclaredType)
+            case IoTokens.typeSource =>
+              val srcInfo = new SourceModelImpl(basicInfo, relationships)
+
+              new SourceModelImpl(basicInfo, relationships)
+
             case other =>
-              throw new IllegalArgumentException("other")
+              throw new IllegalArgumentException("Unknown token: $other")
           }
           builder += ele
         } catch {

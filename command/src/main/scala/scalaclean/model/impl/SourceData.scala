@@ -13,7 +13,7 @@ import scala.reflect.ClassTag
   * @param project the containing project
   * @param path the relative path to the source from the project path
   */
-class SourceData(val project: Project, val path: Path) {
+case class SourceData(val project: Project, val path: Path) {
   lazy val doc: SemanticDocument = null //FixUtils.loadSemanticDoc(project, path)
 
   def treeAt[T <: Tree : ClassTag](start: Int, end:Int): T = {
