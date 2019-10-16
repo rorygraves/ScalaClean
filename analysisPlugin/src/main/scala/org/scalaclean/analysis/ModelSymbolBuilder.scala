@@ -1,14 +1,15 @@
 package org.scalaclean.analysis
 
+import scala.collection.mutable
 import scala.meta.internal.semanticdb.scalac.SemanticdbOps
 import scala.reflect.internal.util.NoPosition
 
 trait ModelSymbolBuilder extends SemanticdbOps {
 
-  private var mSymbolCache = Map[global.Symbol, ModelSymbol]()
-  def asMSymbol(gSym: global.Symbol): ModelSymbol = {
+  private val mSymbolCache = mutable.Map[global.Symbol, ModelCommon]()
+  def asMSymbol(gSym: global.Symbol): ModelCommon = {
 
-    mSymbolCache.getOrElse(gSym,{
+    mSymbolCache.getOrElseUpdate(gSym,{
       val isGlobal = gSym.isSemanticdbGlobal
       val sString = gSym.toSemantic
       val (startPos,endPos) = if(gSym.pos == NoPosition) (-1,-1) else (gSym.pos.start, gSym.pos.end)
@@ -17,10 +18,8 @@ trait ModelSymbolBuilder extends SemanticdbOps {
       else
         "-"
       val name = gSym.nameString
-      val mSym = ModelSymbol(isGlobal, sString, sourceFile, startPos, endPos, gSym.isSynthetic, gSym.isAbstract, gSym.isLazy, name)
+      ModelCommon(isGlobal, sString, sourceFile, startPos, endPos, name)
 
-      mSymbolCache += gSym -> mSym
-      mSym
     }
     )
   }

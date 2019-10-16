@@ -8,15 +8,15 @@ import scala.tools.nsc.Global
 class RelationshipsWriter(file: File, val global: Global) extends  SemanticdbOps {
   val writer = new SortedStringWriter(file.toPath)
 
-  def overrides(overrider: ModelSymbol, overridden: ModelSymbol, isDirect: Boolean): Unit = {
+  def overrides(overrider: ModelMethod, overridden: HasModelCommon, isDirect: Boolean): Unit = {
     writer.writeLine(s"${overrider.csvString},${IoTokens.relOverrides},${overridden.csvString},$isDirect")
   }
 
-  def refers(container: ModelSymbol, target: ModelSymbol,isSynthetic: Boolean) : Unit = {
+  def refers(container: HasModelCommon, target: HasModelCommon,isSynthetic: Boolean) : Unit = {
     writer.writeLine(s"${container.csvString},${IoTokens.relRefers},${target.csvString},$isSynthetic")
   }
 
-  def extendsCls(parentSym: ModelSymbol, childSym: ModelSymbol, direct: Boolean): Unit = {
+  def extendsCls(parentSym: HasModelCommon, childSym: ModelSymbol, direct: Boolean): Unit = {
     writer.writeLine(s"${childSym.csvString},${IoTokens.relExtends},${parentSym.csvString},$direct")
   }
 
