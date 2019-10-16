@@ -116,6 +116,10 @@ sealed trait ClassModel extends ClassLike {
 }
 
 sealed trait ObjectModel extends ClassLike with FieldModel {
+  def isTopLevel: Boolean = {
+    enclosing.forall(_.isInstanceOf[SourceModel])
+  }
+
   override protected final def infoTypeName: String = "ObjectModel"
 
   final override def otherFieldsInSameDeclaration = Nil

@@ -76,7 +76,8 @@ class DeadCodeRemover(model: ProjectModel, debug: Boolean) extends AbstractRule(
 
   def allMainMethodEntries = {
     val stringArray = List(List(Symbol))
-    (for (obj <- model.allOf[ObjectModel] if (obj.enclosing.isEmpty);
+
+    (for (obj <- model.allOf[ObjectModel] if (obj.isTopLevel);
           method <- obj.methods if method.name == "main") //&& method.paramsType = stringArray
       yield {
         List(method, obj)
