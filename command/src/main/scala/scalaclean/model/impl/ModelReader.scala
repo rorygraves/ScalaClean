@@ -3,7 +3,6 @@ package scalaclean.model.impl
 import java.nio.file.{Files, Paths}
 
 import org.scalaclean.analysis.IoTokens
-import scalaclean.model._
 
 
 object ModelReader {
@@ -58,42 +57,48 @@ object ModelReader {
     val builder = Vector.newBuilder[ElementModelImpl]
     Files.lines(elePath) forEach {
       line =>
-        val tokens = line.split(",")
+        try {
+          val tokens = line.split(",")
 
-        val typeId = tokens(0)
-        val symbol = SymbolCache(tokens(1))
-        val src = project.source(tokens(2))
-        val start = tokens(3).toInt
-        val end = tokens(4).toInt
+          val typeId = tokens(0)
+          val symbol = SymbolCache(tokens(1))
+          val src = project.source(tokens(2))
+          val start = tokens(3).toInt
+          val end = tokens(4).toInt
 
-        val basicInfo = BasicElementInfo(symbol,src,start,end)
+          val basicInfo = BasicElementInfo(symbol, src, start, end)
 
-        val idx = 5
-        val ele:ElementModelImpl = typeId match {
-          case IoTokens.typeObject =>
-            new ObjectModelImpl(basicInfo, relationships)
-          case IoTokens.typeTrait =>
-            new TraitModelImpl(basicInfo, relationships)
-          case IoTokens.typeClass =>
-            new ClassModelImpl(basicInfo, relationships)
-          case IoTokens.typeVal =>
-            val isAbstract = tokens(idx).toBoolean
-            val valName = tokens(idx+1).intern()
-            val isLazy = tokens(idx+2).toBoolean
-            new ValModelImpl(basicInfo, relationships, valName, isAbstract, isLazy)
-          case IoTokens.typeVar=>
-            val isAbstract = tokens(idx).toBoolean
-            val varName = tokens(idx+1).intern()
-            new VarModelImpl(basicInfo, relationships, varName, isAbstract)
-          case IoTokens.typeMethod =>
-            val isAbstract = tokens(idx).toBoolean
-            val methodName = tokens(idx+1).intern()
-            val hasDeclaredType = tokens(idx+2).toBoolean
-            new MethodModelImpl(basicInfo, relationships, methodName, isAbstract, hasDeclaredType)
-          case other =>
-            throw new IllegalArgumentException("other")
+          val idx = 5
+          val ele: ElementModelImpl = typeId match {
+            case IoTokens.typeObject =>
+              new ObjectModelImpl(basicInfo, relationships)
+            case IoTokens.typeTrait =>
+              new TraitModelImpl(basicInfo, relationships)
+            case IoTokens.typeClass =>
+              new ClassModelImpl(basicInfo, relationships)
+            case IoTokens.typeVal =>
+              val isAbstract = tokens(idx).toBoolean
+              val valName = tokens(idx + 1).intern()
+              val isLazy = tokens(idx + 2).toBoolean
+              new ValModelImpl(basicInfo, relationships, valName, isAbstract, isLazy)
+            case IoTokens.typeVar =>
+              val isAbstract = tokens(idx).toBoolean
+              val varName = tokens(idx + 1).intern()
+              new VarModelImpl(basicInfo, relationships, varName, isAbstract)
+            case IoTokens.typeMethod =>
+              val isAbstract = tokens(idx).toBoolean
+              val methodName = tokens(idx + 1).intern()
+              val hasDeclaredType = tokens(idx + 2).toBoolean
+              new MethodModelImpl(basicInfo, relationships, methodName, isAbstract, hasDeclaredType)
+            case other =>
+              throw new IllegalArgumentException("other")
+          }
+          builder += ele
+        } catch {
+          case t: Throwable =>
+            println(s"Failed to parse line: $line")
+            throw t
         }
-        builder += ele
     }
     (builder.result(), relationships)
 
