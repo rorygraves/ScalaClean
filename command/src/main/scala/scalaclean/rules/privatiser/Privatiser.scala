@@ -25,6 +25,10 @@ class Privatiser(model: ProjectModel, debug: Boolean) extends AbstractRule("Priv
         e.colour = NoChange("source")
       case e => e.colour = localLevel(e)
     }
+    model.allOf[ModelElement].toList.sortBy(_.infoPosSorted).foreach {
+      case ele =>
+        println(s"${ele}  colour: ${ele.colour}")
+    }
   }
 
   val app: Symbol = Symbol("G:scala/App#")

@@ -89,6 +89,7 @@ sealed trait ModelElement extends Ordered[ModelElement] {
   protected def infoTypeName: String
 
   protected def infoPosString: String
+  def infoPosSorted: (String,Int,Int)
 
   protected def infoDetail = ""
 
@@ -418,6 +419,8 @@ package impl {
       //    s"${pos.startLine}:${pos.startColumn} - ${pos.endLine}:${pos.endColumn}"
       //
     }
+
+    override def infoPosSorted: (String, Int, Int) = (source.path.toString, offsetStart, offsetEnd)
   }
 
   abstract sealed class ClassLikeModelImpl(

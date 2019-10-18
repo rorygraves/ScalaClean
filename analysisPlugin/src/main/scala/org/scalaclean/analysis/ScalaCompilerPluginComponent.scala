@@ -28,17 +28,17 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
     var basePaths: Set[String] = Set.empty
 
     // TODO THis is a complete hack
-    def workOutCommonSourcePath(files: Set[String]) : String = {
-      if(files.isEmpty)
+    def workOutCommonSourcePath(files: Set[String]): String = {
+      if (files.isEmpty)
         throw new IllegalStateException("No files")
-      else if(files.size > 1) {
+      else if (files.size > 1) {
         throw new IllegalStateException(s"Multiple Source roots unsupported: $files")
       } else
         files.head
     }
 
     override def run(): Unit = {
-      if(debug)
+      if (debug)
         global.reporter.echo("Before Analysis Phase")
 
       val outputPathBase: AbsolutePath = AbsolutePath(
@@ -52,14 +52,14 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
       val elementsFile = new File(outputPath.toFile, "scalaclean-elements.csv")
 
 
-      if(debug)
+      if (debug)
         println(s"Writing elements file  to ${elementsFile}")
       elementsWriter = new ElementsWriter(elementsFile)
 
 
       val relationsFile = new File(outputPath.toFile, "scalaclean-relationships.csv")
 
-      if(debug)
+      if (debug)
         println(s"Writing relationships file to to ${relationsFile}")
       relationsWriter = new RelationshipsWriter(relationsFile, global)
 
@@ -75,7 +75,7 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
       props.put("elementsFile", elementsFile.toString)
       props.put("relationshipsFile", relationsFile.toString)
       println("SourceDirs = " + sourceDirs)
-      if(sourceDirs.nonEmpty) {
+      if (sourceDirs.nonEmpty) {
         props.put("srcRoots", sourceDirs.mkString(File.pathSeparator))
         props.put("src", sourceDirs.head)
       } else {
@@ -84,20 +84,20 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
         props.put("src", srcPath)
       }
 
-//      assert(sourceDirs.nonEmpty)
+      //      assert(sourceDirs.nonEmpty)
 
       val currentRelativePath = Paths.get("")
       val srcBuildBase = currentRelativePath.toAbsolutePath.toString
-      props.put("srcBuildBase",srcBuildBase)
+      props.put("srcBuildBase", srcBuildBase)
       props.put("srcFiles", files.mkString(File.pathSeparator))
 
       val propsFile = outputPath.resolve(s"ScalaClean.properties").toNIO
-      if(debug)
+      if (debug)
         println("Writing props file " + propsFile)
-      props.store(Files.newBufferedWriter(propsFile),"")
+      props.store(Files.newBufferedWriter(propsFile), "")
       elementsWriter.finish()
       relationsWriter.finish()
-      if(debug) {
+      if (debug) {
         global.reporter.echo("After Analysis Phase")
         global.reporter.echo(s"  Wrote elements to $elementsFile")
         global.reporter.echo(s"  Wrote relationships to $relationsFile")
@@ -119,7 +119,7 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
 
       val sourceFile = mungeUnitPath(unit.source.file.toString)
       basePaths += srcPath.substring(0, srcPath.indexOf(sourceFile))
-      if(debug)
+      if (debug)
         global.reporter.echo(s"Executing for unit: ${sourceFile}")
       traverser.traverseSource(unit)
       elementsWriter.endUnit()
@@ -127,7 +127,7 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
     }
   }
 
-  trait ScopeTracking extends ScopeLogging{
+  trait ScopeTracking extends ScopeLogging {
     self: SCUnitTraverser =>
 
     var scopeStack: List[ModelSymbol] = Nil
@@ -136,42 +136,47 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
     val logTransScope: Boolean
 
     var depth = 0
+
     private def indentString: String = "  " * depth
+
     def scopeLog(msg: => String): Unit = {
-      if(debug)
+      if (debug)
         println(s"${indentString}  $msg")
     }
 
 
-    def enterScope[T, M <:ModelSymbol ](mSymbol: M)(fn: M => T): Unit = {
+    def enterScope[T, M <: ModelSymbol](mSymbol: M)(fn: M => T): Unit = {
       val outer = scopeStack.headOption
-      if(debug)
+      if (debug)
         println(s"${indentString}${mSymbol.debugName}")
       scopeStack = mSymbol :: scopeStack
-      depth +=1
+      depth += 1
       scopeLog(s"-symbol: ${mSymbol.csvString}")
-      outer.foreach{ o=>
+      outer.foreach { o =>
         relationsWriter.within(o, mSymbol)
       }
       elementsWriter.write(mSymbol)
       fn(mSymbol)
       scopeStack = scopeStack.tail
-      depth -=1
+      depth -= 1
     }
 
 
     def outerScope: ModelSymbol = scopeStack.tail.head
+
     def currentScope: ModelSymbol = scopeStack.head
+
     def currentGlobalScope: ModelSymbol = scopeStack.find(_.isGlobal).get
+
     def hasCurrentGlobalScope: Boolean = scopeStack.nonEmpty
 
     def enterTransScope[T](name: String)(fn: => T): Unit = {
 
-      if(debug && logTransScope) {
+      if (debug && logTransScope) {
         println(s"${indentString}$name")
-        depth +=1
+        depth += 1
         fn
-        depth -=1
+        depth -= 1
       } else
         fn
     }
@@ -182,6 +187,7 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
   class SCUnitTraverser(val elementsWriter: ElementsWriter, val relationsWriter: RelationshipsWriter, val debug: Boolean) extends global.Traverser with ScopeTracking {
 
     import global._
+
     lazy val g: global.type = global
 
     def recordExtendsClass(parentSym: HasModelCommon, childSym: ModelSymbol, direct: Boolean): Unit = {
@@ -189,9 +195,10 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
     }
 
     val logTransScope = true
+
     def traverseSource(unit: CompilationUnit): Unit = {
       val sourceFile = unit.source.file.canonicalPath
-      enterScope(ModelSource(ModelCommon(true,s"source:$sourceFile",sourceFile, -1,-1,"<NA>"))) {
+      enterScope(ModelSource(ModelCommon(true, s"source:$sourceFile", sourceFile, -1, -1, "<NA>"))) {
         s =>
           traverse(unit.body)
       }
@@ -212,7 +219,7 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
           enterTransScope("Select") {
             scopeLog("-symbol: " + asMSymbol(treeSelect.symbol).csvString)
             // avoids an issue with packages which we ScalaClean doesn't currently understand
-            if(hasCurrentGlobalScope) {
+            if (hasCurrentGlobalScope) {
               relationsWriter.refers(currentGlobalScope, asMSymbol(treeSelect.symbol), false)
             }
             super.traverse(treeSelect)
@@ -221,24 +228,25 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
           enterTransScope("Template")(super.traverse(template))
         case typeTree: TypeTree =>
           enterTransScope("TypeTree") {
-            super.traverse(typeTree) }
+            super.traverse(typeTree)
+          }
         case blockTree: Block =>
           enterTransScope("Block")(super.traverse(blockTree))
         case superTree: Super =>
           enterTransScope("Super")(super.traverse(superTree))
         case EmptyTree =>
-          // do nothing
+        // do nothing
         case thisTree: This =>
           scopeLog("This")
-          // do nothing
+        // do nothing
         case literalTree: Literal =>
           scopeLog("Literal " + literalTree)
         case identTree: Ident =>
-//          identTree.name
+          //          identTree.name
           enterTransScope("Ident " + identTree.symbol)(super.traverse(identTree))
-          relationsWriter.refers(currentGlobalScope, asMSymbol( identTree.symbol),  identTree.symbol.isSynthetic)
+          relationsWriter.refers(currentGlobalScope, asMSymbol(identTree.symbol), identTree.symbol.isSynthetic)
 
-//          scopeLog("Ident " + identTree.name)
+        //          scopeLog("Ident " + identTree.name)
         case importTree: Import =>
           //TODO need to track imports so that we can remove them
           scopeLog("Import")
@@ -251,7 +259,7 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
 
             if (!symbol.owner.isPackageClass) {
               val parentMSym = asMSymbol(symbol.outerClass)
-              if(parentMSym.common != outerScope.common) {
+              if (parentMSym.common != outerScope.common) {
                 scopeLog("WARNING outerClass symbol != scope")
                 scopeLog("  parent (symbol.outerClass: " + parentMSym)
                 scopeLog("  outerScope:                " + outerScope)
@@ -280,7 +288,7 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
 
           val cls =
             if (isTrait) ModelTrait(mSymbol)
-          else ModelClass(mSymbol, symbol.isAbstractClass)
+            else ModelClass(mSymbol, symbol.isAbstractClass)
           enterScope(cls) { cls =>
 
             val directSymbols = symbol.info.parents.map(t => asMSymbol(t.typeSymbol)).toSet
@@ -300,7 +308,7 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
           val symbol = valDef.symbol
           val mSymbol = asMSymbol(symbol)
           val field =
-            if(symbol.isVar) ModelVar(mSymbol, symbol.isDeferred)
+            if (symbol.isVar) ModelVar(mSymbol, symbol.isDeferred)
             else ModelVal(mSymbol, symbol.isDeferred, valDef.symbol.isLazy)
           enterScope(field) { field =>
             relationsWriter.refers(field, asMSymbol(valDef.tpt.symbol), symbol.isSynthetic)
@@ -314,7 +322,7 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
                 }
               }
 
-              typeRels( valDef.tpt.tpe)
+              typeRels(valDef.tpt.tpe)
             }
 
             super.traverse(tree)
@@ -325,6 +333,7 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
           val declTypeDefined = defdef.isTyped
           val symbol = defdef.symbol
           val mSymbol = asMSymbol(symbol)
+
           def traverseMethod(method: ModelMethod): Unit = {
             val directParentSymbols = symbol.info.parents.map(t => asMSymbol(t.typeSymbol)).toSet
 
@@ -338,19 +347,20 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
             super.traverse(tree)
 
           }
+
           currentScope match {
             case o: ModelObject if defdef.symbol.nameString == "<init>" =>
               // we consider the constructor of the object to be part of the object
               // this simplified the model navigation
               super.traverse(tree)
             case _ if symbol.isAccessor && symbol.isGetter =>
-              val field =  asMSymbol(symbol.accessedOrSelf)
+              val field = asMSymbol(symbol.accessedOrSelf)
               enterScope(ModelGetterMethod(mSymbol, declTypeDefined, symbol.isDeferred)) { method =>
                 traverseMethod(method)
                 relationsWriter.getterFor(mSymbol, field)
               }
             case _ if symbol.isAccessor && symbol.isSetter =>
-              val field =  asMSymbol(symbol.accessedOrSelf)
+              val field = asMSymbol(symbol.accessedOrSelf)
               enterScope(ModelSetterMethod(mSymbol, declTypeDefined, symbol.isDeferred)) { method =>
                 traverseMethod(method)
                 relationsWriter.setterFor(mSymbol, field)
@@ -365,10 +375,14 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
               }
           }
 
+        case New(x) =>
+          scopeLog("--  NEW tree" + tree.getClass)
+          super.traverse(tree)
         case unknown =>
           scopeLog("--  unhandled tree" + tree.getClass)
           super.traverse(tree)
       }
     }
   }
+
 }
