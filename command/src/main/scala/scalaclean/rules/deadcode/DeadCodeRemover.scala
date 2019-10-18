@@ -85,7 +85,8 @@ class DeadCodeRemover(model: ProjectModel, debug: Boolean) extends AbstractRule(
   }
 
   def allApp = {
-    for (obj <- model.allOf[ObjectModel] if (obj.xtends(Symbol("G:scala/App#"))))
+    val app = Symbol("G:scala/App#")
+    for (obj <- model.allOf[ObjectModel] if (obj.xtends(app)))
       yield obj
   }
 

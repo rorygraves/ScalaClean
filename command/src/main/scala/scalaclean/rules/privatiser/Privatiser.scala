@@ -5,7 +5,7 @@ import scalaclean.rules.AbstractRule
 import scalaclean.util.{Scope, SymbolTreeVisitor, SymbolUtils}
 import scalafix.patch.Patch
 import scalafix.v1
-import scalafix.v1.SemanticDocument
+import scalafix.v1.{SemanticDocument, Symbol}
 
 import scala.meta.{Import, Mod, Pat, Stat}
 
@@ -27,6 +27,8 @@ class Privatiser(model: ProjectModel, debug: Boolean) extends AbstractRule("Priv
     }
   }
 
+  val app: Symbol = Symbol("G:scala/App#")
+
   private def localLevel(element: ModelElement): PrivatiserLevel = {
     if (element.colour != Undefined) element.colour
     else {
@@ -38,7 +40,7 @@ class Privatiser(model: ProjectModel, debug: Boolean) extends AbstractRule("Priv
 
       //is it defined by the signature
       var res: PrivatiserLevel = element match {
-        case o: ObjectModel if o.xtends[App] =>
+        case o: ObjectModel if o.xtends(app) =>
           NoChange("its an App and needs to be public")
         //      case any: ModelElement if any.hasAnnotation[ExternalAccess] => Some(NoChange(any.getAnnotation[ExternalAccess]))
         //      case method:MethodModel if (method.overidesExternal)=>  res.combine(Level of parent method)
@@ -69,19 +71,24 @@ class Privatiser(model: ProjectModel, debug: Boolean) extends AbstractRule("Priv
           }
           res = res.widen(overridenVisibility)
         case (None, parentSym) =>
-          val info = element.symbolInfo(parentSym)
-          val reason = s"declared in $parentSym"
-          val parentVis =
-            if (info.isProtectedWithin) Scoped.Protected(info.within.get, reason, true)
-            else if (info.isProtected) Scoped.Protected(v1.Symbol.RootPackage, reason, true)
-            else if (info.isProtectedThis) ???
-            else if (info.isPrivateWithin) Scoped.Private(info.within.get, reason)
-            else if (info.isPrivate) ???
-            else if (info.isPrivateThis) ???
-            else Public(reason)
-          res = res.widen(parentVis)
+          //if it is not in the model, then we will leave this as is
+          NoChange("inherits from external")
+
+
+//          val info = element.symbolInfo(parentSym)
+//          val reason = s"declared in $parentSym"
+//          val parentVis =
+//            if (info.isProtectedWithin) Scoped.Protected(info.within.get, reason, true)
+//            else if (info.isProtected) Scoped.Protected(v1.Symbol.RootPackage, reason, true)
+//            else if (info.isProtectedThis) ???
+//            else if (info.isPrivateWithin) Scoped.Private(info.within.get, reason)
+//            else if (info.isPrivate) ???
+//            else if (info.isPrivateThis) ???
+//            else Public(reason)
+//          res = res.widen(parentVis)
       }
 
+      element.colour = res
       res
     }
   }
@@ -149,9 +156,11 @@ class Privatiser(model: ProjectModel, debug: Boolean) extends AbstractRule("Priv
         val (mod, existing) = existingAccess(mods)
         val proposed = level.asText(aModel)
 
-        val structuredPatch = if (isWiderThanExisting(level, aModel, mod))
-          Utils.addError(defn, s" cant widen to $proposed from $existing */")
-        else (mod, level.shouldReplace(aModel), proposed) match {
+        val structuredPatch =
+//          if (isWiderThanExisting(level, aModel, mod))
+//          Utils.addError(defn, s" cant widen to $proposed from $existing */")
+//        else
+          (mod, level.shouldReplace(aModel), proposed) match {
           case (_, _, None) => Patch.empty
           case (None, _, Some(toReplace)) => Patch.addLeft(defn, s"$toReplace ")
           case (_, false, Some(toReplace)) => Patch.addLeft(defn, s"$toReplace ")

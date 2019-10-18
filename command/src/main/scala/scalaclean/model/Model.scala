@@ -63,8 +63,10 @@ sealed trait ModelElement extends Ordered[ModelElement] {
 
   //end old APIs
 
+  @deprecated
   def symbolInfo: SymbolInformation
 
+  @deprecated
   def symbolInfo(anotherSymbol: Symbol): SymbolInformation
 
   //any block may contain many val of the same name!
