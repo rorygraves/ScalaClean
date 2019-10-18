@@ -2,7 +2,7 @@ package scalaclean
 
 import org.junit.Test
 import org.scalatest.junit.AssertionsForJUnit
-import scalaclean.cli.DeadCodeProjectTestRunner
+import scalaclean.cli.{DeadCodeProjectTestRunner, PrivatiserProjectTestRunner}
 import scalafix.testkit.DiffAssertions
 
 class ProjectTests extends AssertionsForJUnit with DiffAssertions {
@@ -18,11 +18,11 @@ class ProjectTests extends AssertionsForJUnit with DiffAssertions {
   }
 
   def privatiserProjectTest(projectName: String, overwriteTarget: Boolean = false): Unit = {
-    deadCodeProjectTest(List(projectName), overwriteTarget)
+    privatiserProjectTest(List(projectName), overwriteTarget)
   }
 
   def privatiserProjectTest(projectNames: List[String], overwriteTarget: Boolean): Unit = {
-    val res = new DeadCodeProjectTestRunner(projectNames, overwriteTarget).run()
+    val res = new PrivatiserProjectTestRunner(projectNames, overwriteTarget).run()
     if(!res)
       fail(s" Failed for projects $projectNames, overwriteTarget=$overwriteTarget")
   }

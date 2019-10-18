@@ -545,9 +545,7 @@ package impl {
       super.complete(elements, relsFrom, relsTo)
       relsTo.setter.get(info.symbol) match {
         case None => setter_ = None
-        case Some(f :: Nil) =>
-          f.complete(elements)
-          setter_ = Some(f.fromElement)
+        case Some(f :: Nil) => setter_ = Some(f.fromElement)
         case Some(error) => ???
       }
     }

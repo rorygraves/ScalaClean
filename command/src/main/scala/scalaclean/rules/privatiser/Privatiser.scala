@@ -20,8 +20,10 @@ class Privatiser(model: ProjectModel, debug: Boolean) extends AbstractRule("Priv
   }
 
   override def runRule(): Unit = {
-    model.allOf[ModelElement].foreach { e =>
-      e.colour = localLevel(e)
+    model.allOf[ModelElement].foreach {
+      case e : SourceModel =>
+        e.colour = NoChange("source")
+      case e => e.colour = localLevel(e)
     }
   }
 
