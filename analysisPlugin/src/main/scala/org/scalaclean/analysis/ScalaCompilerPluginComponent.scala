@@ -21,9 +21,8 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
   override def newPhase(prev: Phase): Phase = new StdPhase(prev) {
 
     var elementsWriter: ElementsWriter = _
-
-
     var relationsWriter: RelationshipsWriter = _
+    var traverser: SCUnitTraverser = _
     var files: Set[String] = Set.empty
 
     var basePaths: Set[String] = Set.empty
@@ -52,6 +51,7 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
       outputPath.toFile.mkdirs()
       val elementsFile = new File(outputPath.toFile, "scalaclean-elements.csv")
 
+
       if(debug)
         println(s"Writing elements file  to ${elementsFile}")
       elementsWriter = new ElementsWriter(elementsFile)
@@ -62,6 +62,10 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
       if(debug)
         println(s"Writing relationships file to to ${relationsFile}")
       relationsWriter = new RelationshipsWriter(relationsFile, global)
+
+      traverser = new SCUnitTraverser(elementsWriter, relationsWriter, debug)
+      elementsWriter.logger = traverser
+      relationsWriter.logger = traverser
 
       super.run()
 
@@ -106,6 +110,7 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
         sys.props("user.dir")
     }
 
+
     override def apply(unit: global.CompilationUnit): Unit = {
 
       val srcPath = unit.source.file.toString
@@ -116,11 +121,13 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
       basePaths += srcPath.substring(0, srcPath.indexOf(sourceFile))
       if(debug)
         global.reporter.echo(s"Executing for unit: ${sourceFile}")
-      (new SCUnitTraverser(sourceFile, elementsWriter, relationsWriter, debug)).traverseSource(unit)
+      traverser.traverseSource(unit)
+      elementsWriter.endUnit()
+      relationsWriter.endUnit()
     }
   }
 
-  trait ScopeTracking {
+  trait ScopeTracking extends ScopeLogging{
     self: SCUnitTraverser =>
 
     var scopeStack: List[ModelSymbol] = Nil
@@ -172,18 +179,18 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
   }
 
 
-  class SCUnitTraverser(sourceFile: String, val elementsWriter: ElementsWriter, val relationsWriter: RelationshipsWriter, val debug: Boolean) extends global.Traverser with ScopeTracking {
+  class SCUnitTraverser(val elementsWriter: ElementsWriter, val relationsWriter: RelationshipsWriter, val debug: Boolean) extends global.Traverser with ScopeTracking {
 
     import global._
     lazy val g: global.type = global
 
     def recordExtendsClass(parentSym: HasModelCommon, childSym: ModelSymbol, direct: Boolean): Unit = {
       relationsWriter.extendsCls(parentSym, childSym, direct = direct)
-      scopeLog(s"-extendsCls: ${parentSym.csvString}  direct=$direct")
     }
 
     val logTransScope = true
     def traverseSource(unit: CompilationUnit): Unit = {
+      val sourceFile = unit.source.file.canonicalPath
       enterScope(ModelSource(ModelCommon(true,s"source:$sourceFile",sourceFile, -1,-1,"<NA>"))) {
         s =>
           traverse(unit.body)
@@ -206,7 +213,6 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
             scopeLog("-symbol: " + asMSymbol(treeSelect.symbol).csvString)
             // avoids an issue with packages which we ScalaClean doesn't currently understand
             if(hasCurrentGlobalScope) {
-              scopeLog("--refers:" + asMSymbol(treeSelect.symbol).csvString)
               relationsWriter.refers(currentGlobalScope, asMSymbol(treeSelect.symbol), false)
             }
             super.traverse(treeSelect)
@@ -230,6 +236,7 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
         case identTree: Ident =>
 //          identTree.name
           enterTransScope("Ident " + identTree.symbol)(super.traverse(identTree))
+          relationsWriter.refers(currentGlobalScope, asMSymbol( identTree.symbol),  identTree.symbol.isSynthetic)
 
 //          scopeLog("Ident " + identTree.name)
         case importTree: Import =>
@@ -309,9 +316,6 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
 
               typeRels( valDef.tpt.tpe)
             }
-              scopeLog(field.debugName +":" + mSymbol.csvString)
-              val parentMSym = asMSymbol(symbol.outerClass)
-              relationsWriter.refers(parentMSym, mSymbol, symbol.isSynthetic)
 
             super.traverse(tree)
           }

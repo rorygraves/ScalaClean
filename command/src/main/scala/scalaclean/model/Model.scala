@@ -92,7 +92,7 @@ sealed trait ModelElement extends Ordered[ModelElement] {
 
   protected def infoName = symbol.displayName
 
-  override def toString: String = s"$infoTypeName $infoName [$infoPosString] $infoDetail"
+  override def toString: String = s"$infoTypeName $infoName [$infoPosString] $infoDetail [[$symbol]]"
 }
 
 sealed trait ClassLike extends ModelElement {
@@ -502,7 +502,7 @@ package impl {
     extends FieldModelImpl(info, relationships, fieldName, isAbstract) with ValModel {
     override protected def typeName: String = "trait"
 
-    protected override def infoDetail = s"${super.infoDetail}lazy=$isLazy"
+    protected override def infoDetail = s"${super.infoDetail} lazy=$isLazy"
 
     //  override def treeType: ClassTag[_ <: Tree] =
     //    if (isAbstract) ValModelImpl.treeAbstractType
