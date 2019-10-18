@@ -1,6 +1,14 @@
 package scalaclean.test.rules.deadcode.Import
 
-import scalaclean.test.rules.deadcode.Import.Outer.{overloaded, Inner2 => I2}
+import scala.collection.mutable.HashEntry
+import scala.collection.mutable.{HashSet, HashEntry}
+import scala.collection.mutable.{HashSet => hs}
+import scala.collection.mutable.{HashSet => hs1, HashEntry => he1}
+
+import Outer.{Inner2 => I2}
+import Outer.overloaded
+
+import scalaclean.test.rules.deadcode.Import.Outer.{overloaded, Inner2 => I2, NotUsed}
 
 object App1 extends App {
   Outer.Inner

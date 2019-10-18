@@ -166,8 +166,15 @@ lazy val deadCodeProject6b = testInputProject("deadCodeProject6b", "testProjects
 
 
 lazy val privatiserProject1 = testInputProject("privatiserProject1", "testProjects/privatiserProject1")
+lazy val privatiserProject2 = testInputProject("privatiserProject2", "testProjects/privatiserProject2")
+lazy val privatiserProject3 = testInputProject("privatiserProject3", "testProjects/privatiserProject3")
+lazy val privatiserProject4 = testInputProject("privatiserProject4", "testProjects/privatiserProject4")
+lazy val privatiserProject5 = testInputProject("privatiserProject5", "testProjects/privatiserProject5")
 
-lazy val tests = project.dependsOn(command, unitTestProject, privatiserProject1, deadCodeProject1, deadCodeProject2, deadCodeProject3, deadCodeProject4, deadCodeProject5)
+lazy val privatiserTests = project.dependsOn(privatiserProject1, privatiserProject2, privatiserProject3, privatiserProject4, privatiserProject5)
+lazy val deadCodeTests = project.dependsOn(deadCodeProject1, deadCodeProject2, deadCodeProject3, deadCodeProject4, deadCodeProject5)
+
+lazy val tests = project.dependsOn(command, unitTestProject, privatiserTests, deadCodeTests)
   .settings(
     moduleName := "tests",
     libraryDependencies += "args4j" % "args4j" % "2.0.23",

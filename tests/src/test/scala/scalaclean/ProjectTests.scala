@@ -55,4 +55,20 @@ class ProjectTests extends AssertionsForJUnit with DiffAssertions {
     privatiserProjectTest("privatiserProject1")
   }
 
+  @Test def privatiser2() {
+    privatiserProjectTest("privatiserProject2")
+  }
+
+  @Test def privatiser3() {
+    privatiserProjectTest("privatiserProject3")
+  }
+
+  @Test def privatiser4() {
+    privatiserProjectTest("privatiserProject4")
+  }
+
+  @Test def privatiser5() {
+    privatiserProjectTest("privatiserProject5")
+  }
+
 }
