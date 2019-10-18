@@ -10,7 +10,7 @@ class ElementsWriter(file: File) {
   def write(modelSymbol: ModelSymbol) = {
     val msg = modelSymbol match {
       case model: ModelMethod =>
-        s"${IoTokens.typeMethod},${model.csvString},${model.sourceFile},${model.posStart},${model.posEnd},${model.isAbstract},${model.sourceName},${model.isAbstract}"
+        s"${model.ioToken},${model.csvString},${model.sourceFile},${model.posStart},${model.posEnd},${model.isAbstract},${model.sourceName},${model.isAbstract}"
 
       case model: ModelClass =>
         s"${IoTokens.typeClass},${model.csvString},${model.sourceFile},${model.posStart},${model.posEnd}"

@@ -131,8 +131,19 @@ sealed trait TraitModel extends ClassLike {
   override protected final def infoTypeName: String = "TraitModel"
 }
 
-sealed trait MethodModel extends ModelElement {
-  override protected final def infoTypeName: String = "MethodModel"
+sealed trait MethodModel extends ModelElement
+sealed trait AccessorModel extends MethodModel {
+  def field : Option[FieldModel]
+}
+sealed trait PlainMethodModel extends MethodModel {
+  override protected final def infoTypeName: String = "PlainMethodModel"
+}
+sealed trait GetterMethodModel extends AccessorModel {
+  override protected final def infoTypeName: String = "GetterMethodModel"
+}
+sealed trait SetterMethodModel extends AccessorModel {
+  override protected final def infoTypeName: String = "SetterMethodModel"
+  def field : Option[VarModel]
 }
 
 sealed trait FieldModel extends ModelElement {
@@ -190,12 +201,16 @@ package impl {
     refers: Map[Symbol, List[RefersImpl]],
     extnds: Map[Symbol, List[ExtendsImpl]],
     overrides: Map[Symbol, List[OverridesImpl]],
-    within: Map[Symbol, List[WithinImpl]]) {
+    within: Map[Symbol, List[WithinImpl]],
+    getter: Map[Symbol, List[GetterImpl]],
+    setter: Map[Symbol, List[SetterImpl]]) {
     def complete(elements: Map[Symbol, ElementModelImpl]): Unit = {
       refers.values.foreach(_.foreach(_.complete(elements)))
       extnds.values.foreach(_.foreach(_.complete(elements)))
       overrides.values.foreach(_.foreach(_.complete(elements)))
       within.values.foreach(_.foreach(_.complete(elements)))
+      getter.values.foreach(_.foreach(_.complete(elements)))
+      setter.values.foreach(_.foreach(_.complete(elements)))
     }
 
     def byTo = {
@@ -209,7 +224,9 @@ package impl {
         byToSymbol(refers),
         byToSymbol(extnds),
         byToSymbol(overrides),
-        byToSymbol(within)
+        byToSymbol(within),
+        byToSymbol(getter),
+        byToSymbol(setter)
       )
 
     }
@@ -219,13 +236,17 @@ package impl {
         this.refers ++ that.refers,
         this.extnds ++ that.extnds,
         this.overrides ++ that.overrides,
-        this.within ++ that.within
+        this.within ++ that.within,
+        this.getter ++ that.getter,
+        this.setter ++ that.setter
       )
       //there should be no overlaps
       assert(res.refers.size == this.refers.size + that.refers.size)
       assert(res.extnds.size == this.extnds.size + that.extnds.size)
       assert(res.overrides.size == this.overrides.size + that.overrides.size)
       assert(res.within.size == this.within.size + that.within.size)
+      assert(res.getter.size == this.getter.size + that.getter.size)
+      assert(res.setter.size == this.setter.size + that.setter.size)
 
       res
     }
@@ -376,7 +397,7 @@ package impl {
     }
 
     override def methods: List[MethodModel] = children collect {
-      case m: MethodModelImpl => m
+      case m: MethodModel => m
     }
 
     override def innerClassLike: Seq[ClassLike] = children collect {
@@ -384,12 +405,6 @@ package impl {
     }
 
     protected def typeName: String
-
-    //  def treeType: ClassTag[ _ <: Tree]
-    //  def tree = {
-    //    val tag = treeType
-    //    source.treeAt(offsetStart, offsetEnd)(tag)
-    //  }
     private val offsetStart = info.startPos
     private val offsetEnd = info.endPos
 
@@ -432,7 +447,6 @@ package impl {
     override def xtends(symbol: Symbol): Boolean = {
       extnds.exists(_.toSymbol == symbol)
     }
-
   }
 
   abstract sealed class FieldModelImpl(
@@ -440,60 +454,75 @@ package impl {
     val fieldName: String, val isAbstract: Boolean)
     extends ElementModelImpl(info, relationships) with FieldModel {
     override def otherFieldsInSameDeclaration: Seq[fieldType] = ???
-  }
 
-  object ClassModelImpl {
-    //  val treeType = ClassTag[Defn.Class](classOf[Defn.Class])
+    override def complete(elements: Map[Symbol, ElementModelImpl], relsFrom: BasicRelationshipInfo, relsTo: BasicRelationshipInfo): Unit = {
+      super.complete(elements, relsFrom, relsTo)
+      relsTo.getter.get(info.symbol) match {
+        case None => getter_ = None
+        case Some(f :: Nil) => getter_ = Some(f.fromElement)
+        case Some(error) => ???
+      }
+    }
+    private var getter_ : Option[GetterMethodModel] = _
+    def getter = getter_
+
   }
 
   class ClassModelImpl(info: BasicElementInfo, relationships: BasicRelationshipInfo)
     extends ClassLikeModelImpl(info, relationships) with ClassModel {
     override protected def typeName: String = "class"
-
-    //  override def treeType: ClassTag[Defn.Class] = ClassModelImpl.treeType
-  }
-
-  object ObjectModelImpl {
-    //  val treeType = ClassTag[Defn.Object](classOf[Defn.Object])
   }
 
   class ObjectModelImpl(info: BasicElementInfo, relationships: BasicRelationshipInfo)
     extends ClassLikeModelImpl(info, relationships) with ObjectModel {
     override protected def typeName: String = "object"
-
-    //  override def treeType: ClassTag[Defn.Object] = ObjectModelImpl.treeType
-  }
-
-  object TraitModelImpl {
-    //  val treeType = ClassTag[Defn.Trait](classOf[Defn.Trait])
   }
 
   class TraitModelImpl(info: BasicElementInfo, relationships: BasicRelationshipInfo)
     extends ClassLikeModelImpl(info, relationships) with TraitModel {
     override protected def typeName: String = "trait"
-
-    //  override def treeType: ClassTag[Defn.Trait] = TraitModelImpl.treeType
   }
 
-  object MethodModelImpl {
-    //  val treeAbstractType = ClassTag[Decl.Def](classOf[Decl.Def])
-    //  val treeConcreteType = ClassTag[Defn.Def](classOf[Defn.Def])
-  }
-
-  class MethodModelImpl(
-    info: BasicElementInfo, relationships: BasicRelationshipInfo,
-    val methodName: String, val isAbstract: Boolean, val hasDeclaredType: Boolean)
-    extends ElementModelImpl(info, relationships) with MethodModel {
+  class PlainMethodModelImpl(
+                              info: BasicElementInfo, relationships: BasicRelationshipInfo,
+                              val methodName: String, val isAbstract: Boolean, val hasDeclaredType: Boolean)
+    extends ElementModelImpl(info, relationships) with PlainMethodModel {
     override protected def typeName: String = "def"
 
-    //  override def treeType: ClassTag[_ <: Tree] =
-    //    if (isAbstract) MethodModelImpl.treeAbstractType
-    //    else MethodModelImpl.treeConcreteType
   }
+  class GetterMethodModelImpl(
+                              info: BasicElementInfo, relationships: BasicRelationshipInfo,
+                              val methodName: String, val isAbstract: Boolean, val hasDeclaredType: Boolean)
+    extends ElementModelImpl(info, relationships) with GetterMethodModel {
+    override protected def typeName: String = "def[getter]"
 
-  object ValModelImpl {
-    //  val treeAbstractType = ClassTag[Decl.Val](classOf[Decl.Val])
-    //  val treeConcreteType = ClassTag[Defn.Val](classOf[Defn.Val])
+    override def complete(elements: Map[Symbol, ElementModelImpl], relsFrom: BasicRelationshipInfo, relsTo: BasicRelationshipInfo): Unit = {
+      super.complete(elements, relsFrom, relsTo)
+      relsFrom.getter.get(info.symbol) match {
+        case None => field_ = None
+        case Some(f :: Nil) => field_ = f.toElement
+        case Some(error) => ???
+      }
+    }
+    private var field_ : Option[FieldModel] = _
+    def field = field_
+  }
+  class SetterMethodModelImpl(
+                              info: BasicElementInfo, relationships: BasicRelationshipInfo,
+                              val methodName: String, val isAbstract: Boolean, val hasDeclaredType: Boolean)
+    extends ElementModelImpl(info, relationships) with SetterMethodModel {
+    override protected def typeName: String = "def[setter]"
+
+    override def complete(elements: Map[Symbol, ElementModelImpl], relsFrom: BasicRelationshipInfo, relsTo: BasicRelationshipInfo): Unit = {
+      super.complete(elements, relsFrom, relsTo)
+      relsFrom.setter.get(info.symbol) match {
+        case None => field_ = None
+        case Some(f :: Nil) => field_ = f.toElement
+        case Some(error) => ???
+      }
+    }
+    private var field_ : Option[VarModel] = _
+    def field = field_
   }
 
   class ValModelImpl(
@@ -504,14 +533,6 @@ package impl {
 
     protected override def infoDetail = s"${super.infoDetail} lazy=$isLazy"
 
-    //  override def treeType: ClassTag[_ <: Tree] =
-    //    if (isAbstract) ValModelImpl.treeAbstractType
-    //    else ValModelImpl.treeConcreteType
-  }
-
-  object VarModelImpl {
-    //  val treeAbstractType = ClassTag[Decl.Var](classOf[Decl.Var])
-    //  val treeConcreteType = ClassTag[Defn.Var](classOf[Defn.Var])
   }
 
   class VarModelImpl(
@@ -520,9 +541,19 @@ package impl {
     extends FieldModelImpl(info, relationships, fieldName, isAbstract) with VarModel {
     override protected def typeName: String = "var"
 
-    //  override def treeType: ClassTag[_ <: Tree] =
-    //    if (isAbstract) VarModelImpl.treeAbstractType
-    //    else VarModelImpl.treeConcreteType
+    override def complete(elements: Map[Symbol, ElementModelImpl], relsFrom: BasicRelationshipInfo, relsTo: BasicRelationshipInfo): Unit = {
+      super.complete(elements, relsFrom, relsTo)
+      relsTo.setter.get(info.symbol) match {
+        case None => setter_ = None
+        case Some(f :: Nil) =>
+          f.complete(elements)
+          setter_ = Some(f.fromElement)
+        case Some(error) => ???
+      }
+    }
+    private var setter_ : Option[SetterMethodModel] = _
+    def setter = setter_
+
   }
 
   class SourceModelImpl(

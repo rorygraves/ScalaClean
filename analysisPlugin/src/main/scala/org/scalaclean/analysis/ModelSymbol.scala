@@ -36,8 +36,27 @@ case class ModelVal(common: ModelCommon, isAbstract: Boolean, isLazy: Boolean) e
   override def debugName: String = "val"
 }
 
-case class ModelMethod(common: ModelCommon, isTyped: Boolean, isAbstract: Boolean) extends ModelSymbol {
+sealed trait ModelMethod extends ModelSymbol {
+  val common: ModelCommon
+  val isTyped: Boolean
+  val isAbstract: Boolean
+
+  def ioToken: String
+
+}
+case class ModelGetterMethod(common: ModelCommon, isTyped: Boolean, isAbstract: Boolean) extends ModelMethod {
+  override def debugName: String = "getter"
+  override def ioToken: String = IoTokens.typeGetterMethod
+}
+
+case class ModelSetterMethod(common: ModelCommon, isTyped: Boolean, isAbstract: Boolean) extends ModelMethod {
+  override def debugName: String = "setter"
+  override def ioToken: String = IoTokens.typeSetterMethod
+}
+
+case class ModelPlainMethod(common: ModelCommon, isTyped: Boolean, isAbstract: Boolean) extends ModelMethod {
   override def debugName: String = "def"
+  override def ioToken: String = IoTokens.typePlainMethod
 }
 case class ModelObject(common: ModelCommon) extends ModelSymbol{
   override def debugName: String = "object"

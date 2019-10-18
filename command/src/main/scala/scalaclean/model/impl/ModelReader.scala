@@ -13,6 +13,8 @@ object ModelReader {
     val extendsB = List.newBuilder[ExtendsImpl]
     val overridesB = List.newBuilder[OverridesImpl]
     val withinB = List.newBuilder[WithinImpl]
+    val getterB = List.newBuilder[GetterImpl]
+    val setterB = List.newBuilder[SetterImpl]
 
     val relsPath = Paths.get(relationshipsFilePath)
     println(s"reading relationships from $relsPath")
@@ -37,18 +39,27 @@ object ModelReader {
             overridesB += new OverridesImpl(from, to, isDirect)
           case IoTokens.relWithin =>
             withinB += new WithinImpl(from, to)
+          case IoTokens.relGetter =>
+            getterB += new GetterImpl(from, to)
+          case IoTokens.relSetter =>
+            setterB += new SetterImpl(from, to)
+
         }
     }
     val refersTo = refersToB.result().groupBy(_.fromSymbol)
     val extends_ = extendsB.result().groupBy(_.fromSymbol)
     val overrides = overridesB.result().groupBy(_.fromSymbol)
     val within = withinB.result().groupBy(_.fromSymbol)
+    val getter = getterB.result().groupBy(_.fromSymbol)
+    val setter = setterB.result().groupBy(_.fromSymbol)
 
     val relationships = BasicRelationshipInfo(
-    refersTo,
-    extends_,
-    overrides,
-    within
+      refersTo,
+      extends_,
+      overrides,
+      within,
+      getter,
+      setter
     )
 
     val elePath = Paths.get(elementsFilePath)
@@ -85,14 +96,22 @@ object ModelReader {
               val isAbstract = tokens(idx).toBoolean
               val varName = tokens(idx + 1).intern()
               new VarModelImpl(basicInfo, relationships, varName, isAbstract)
-            case IoTokens.typeMethod =>
+            case IoTokens.typePlainMethod  =>
               val isAbstract = tokens(idx).toBoolean
               val methodName = tokens(idx + 1).intern()
               val hasDeclaredType = tokens(idx + 2).toBoolean
-              new MethodModelImpl(basicInfo, relationships, methodName, isAbstract, hasDeclaredType)
+              new PlainMethodModelImpl(basicInfo, relationships, methodName, isAbstract, hasDeclaredType)
+            case IoTokens.typeGetterMethod  =>
+              val isAbstract = tokens(idx).toBoolean
+              val methodName = tokens(idx + 1).intern()
+              val hasDeclaredType = tokens(idx + 2).toBoolean
+              new GetterMethodModelImpl(basicInfo, relationships, methodName, isAbstract, hasDeclaredType)
+            case IoTokens.typeSetterMethod  =>
+              val isAbstract = tokens(idx).toBoolean
+              val methodName = tokens(idx + 1).intern()
+              val hasDeclaredType = tokens(idx + 2).toBoolean
+              new SetterMethodModelImpl(basicInfo, relationships, methodName, isAbstract, hasDeclaredType)
             case IoTokens.typeSource =>
-              val srcInfo = new SourceModelImpl(basicInfo, relationships)
-
               new SourceModelImpl(basicInfo, relationships)
 
             case other =>

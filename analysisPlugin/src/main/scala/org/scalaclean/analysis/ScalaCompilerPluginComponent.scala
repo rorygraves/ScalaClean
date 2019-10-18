@@ -300,8 +300,8 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
           val symbol = valDef.symbol
           val mSymbol = asMSymbol(symbol)
           val field =
-            if(symbol.isVar) ModelVar(mSymbol, valDef.rhs.isEmpty)
-          else ModelVal(mSymbol, valDef.rhs.isEmpty, valDef.symbol.isLazy)
+            if(symbol.isVar) ModelVar(mSymbol, symbol.isDeferred)
+            else ModelVal(mSymbol, symbol.isDeferred, valDef.symbol.isLazy)
           enterScope(field) { field =>
             relationsWriter.refers(field, asMSymbol(valDef.tpt.symbol), symbol.isSynthetic)
             if (symbol.isLocalToBlock) {
@@ -325,28 +325,43 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
           val declTypeDefined = defdef.isTyped
           val symbol = defdef.symbol
           val mSymbol = asMSymbol(symbol)
+          def traverseMethod(method: ModelMethod): Unit = {
+            val directParentSymbols = symbol.info.parents.map(t => asMSymbol(t.typeSymbol)).toSet
+
+            symbol.overrides.foreach { overridden =>
+              val overriddenOwnerMSym = asMSymbol(overridden.owner)
+              val direct = directParentSymbols.contains(overriddenOwnerMSym)
+
+              relationsWriter.overrides(method, asMSymbol(overridden), direct)
+            }
+
+            super.traverse(tree)
+
+          }
           currentScope match {
-            case o: ModelObject if defdef.symbol.nameString == "<init>" => super.traverse(tree)
-            case _ if symbol.isSynthetic || symbol.isAccessor => //
+            case o: ModelObject if defdef.symbol.nameString == "<init>" =>
+              // we consider the constructor of the object to be part of the object
+              // this simplified the model navigation
+              super.traverse(tree)
+            case _ if symbol.isAccessor && symbol.isGetter =>
+              val field =  asMSymbol(symbol.accessedOrSelf)
+              enterScope(ModelGetterMethod(mSymbol, declTypeDefined, symbol.isDeferred)) { method =>
+                traverseMethod(method)
+                relationsWriter.getterFor(mSymbol, field)
+              }
+            case _ if symbol.isAccessor && symbol.isSetter =>
+              val field =  asMSymbol(symbol.accessedOrSelf)
+              enterScope(ModelSetterMethod(mSymbol, declTypeDefined, symbol.isDeferred)) { method =>
+                traverseMethod(method)
+                relationsWriter.setterFor(mSymbol, field)
+              }
+
+            case _ if symbol.isSynthetic =>
             // TODO should we super.traverse(tree) ??
             case _ =>
 
-              enterScope(ModelMethod(mSymbol, declTypeDefined, defdef.rhs.isEmpty)) { method =>
-
-                val parentMSym = asMSymbol(symbol.outerClass)
-                if (debug && parentMSym != outerScope)
-                  println("xXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX")
-
-                val directParentSymbols = symbol.info.parents.map(t => asMSymbol(t.typeSymbol)).toSet
-
-                symbol.overrides.foreach { overridden =>
-                  val overriddenOwnerMSym = asMSymbol(overridden.owner)
-                  val direct = directParentSymbols.contains(overriddenOwnerMSym)
-
-                  relationsWriter.overrides(method, asMSymbol(overridden), direct)
-                }
-
-                super.traverse(tree)
+              enterScope(ModelPlainMethod(mSymbol, declTypeDefined, symbol.isDeferred)) { method =>
+                traverseMethod(method)
               }
           }
 

@@ -44,6 +44,16 @@ final class ExtendsImpl(from:Symbol, to:Symbol, val isDirect: Boolean)
 final class OverridesImpl(from:Symbol, to:Symbol, val isDirect: Boolean)
   extends ReferenceImpl(from,to) with Overrides
 
+final class GetterImpl(from:Symbol, to:Symbol)
+  extends ReferenceImpl[GetterMethodModel, FieldModel](from,to) with Overrides {
+  override def isDirect: Boolean =   true
+}
+
+final class SetterImpl(from:Symbol, to:Symbol)
+  extends ReferenceImpl[SetterMethodModel, VarModel](from,to) with Overrides{
+  override def isDirect: Boolean =   true
+}
+
 final class WithinImpl(from:Symbol, to:Symbol) extends ReferenceImpl(from,to)
   with Within {
   override def complete(elements: Map[Symbol, ElementModelImpl]): Unit = {
