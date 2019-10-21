@@ -10,7 +10,7 @@ class Test_internalDirectOverrides extends TestCommon("Test_internalDirectOverri
     val overrides = modelElement.internalDirectOverrides.sorted
     overrides match {
       case Nil => ""
-      case refs => withSymbols(refs).mkString(s"internalDirectOverrides(${modelElement.symbol.value}) - ", " :: ", "")
+      case refs => withSymbols(refs).mkString(s"internalDirectOverrides(${modelElement.symbol.debugValue}) - ", " :: ", "")
     }
   }
 }
@@ -22,7 +22,7 @@ class Test_internalTransitiveOverrides extends TestCommon("Test_internalTransiti
     val overrides = modelElement.internalTransitiveOverrides.sorted
     overrides match {
       case Nil => ""
-      case refs => withSymbols(refs).mkString(s"internalTransitiveOverrides(${modelElement.symbol.value}) - ", " :: ", "")
+      case refs => withSymbols(refs).mkString(s"internalTransitiveOverrides(${modelElement.symbol.debugValue}) - ", " :: ", "")
     }
   }
 }
@@ -32,10 +32,10 @@ class Test_internalTransitiveOverrides extends TestCommon("Test_internalTransiti
 class Test_allDirectOverrides extends TestCommon("Test_allDirectOverrides") {
   def visit(modelElement: ModelElement): String = {
     println("HERE " + modelElement.symbol)
-    val overrides = (modelElement.allDirectOverrides map (_._2)).sortBy(_.value)
+    val overrides = (modelElement.allDirectOverrides map (_._2)).sortBy(_.debugValue)
     overrides match {
       case Nil => ""
-      case refs => refs.mkString(s"allDirectOverrides(${modelElement.symbol.value}) - ", " :: ", "")
+      case refs => refs.mkString(s"allDirectOverrides(${modelElement.symbol.debugValue}) - ", " :: ", "")
     }
   }
 }
@@ -44,10 +44,10 @@ class Test_allDirectOverrides extends TestCommon("Test_allDirectOverrides") {
   */
 class Test_allTransitiveOverrides extends TestCommon("Test_allTransitiveOverrides") {
   def visit(modelElement: ModelElement): String = {
-    val overrides = (modelElement.allTransitiveOverrides map (_._2)).sortBy(_.value)
+    val overrides = (modelElement.allTransitiveOverrides map (_._2)).sortBy(_.debugValue)
     overrides match {
       case Nil => ""
-      case refs => refs.mkString(s"allTransitiveOverrides(${modelElement.symbol.value}) - ", " :: ", "")
+      case refs => refs.mkString(s"allTransitiveOverrides(${modelElement.symbol.debugValue}) - ", " :: ", "")
     }
   }
 }
@@ -59,7 +59,7 @@ class Test_internalDirectOverriddenBy extends TestCommon("Test_internalDirectOve
     val overrides = modelElement.internalDirectOverriddenBy.sorted
     overrides match {
       case Nil => ""
-      case refs => withSymbols(refs).mkString(s"internalDirectOverriddenBy(${modelElement.symbol.value}) - ", " :: ", "")
+      case refs => withSymbols(refs).mkString(s"internalDirectOverriddenBy(${modelElement.symbol.debugValue}) - ", " :: ", "")
     }
   }
 }
@@ -71,7 +71,7 @@ class Test_internalTransitiveOverriddenBy extends TestCommon("Test_internalTrans
     val overrides = modelElement.internalTransitiveOverriddenBy.sorted
     overrides match {
       case Nil => ""
-      case refs => withSymbols(refs).mkString(s"internalTransitiveOverriddenBy(${modelElement.symbol.value}) - ", " :: ", "")
+      case refs => withSymbols(refs).mkString(s"internalTransitiveOverriddenBy(${modelElement.symbol.debugValue}) - ", " :: ", "")
     }
   }
 }

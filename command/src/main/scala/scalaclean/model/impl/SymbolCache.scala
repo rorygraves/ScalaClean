@@ -5,7 +5,7 @@ import java.util.concurrent.ConcurrentHashMap
 import scalafix.v1.Symbol
 
 object SymbolCache {
-  val cache = new ConcurrentHashMap[String, Symbol]()
-  def apply(id:String) : Symbol = cache.computeIfAbsent(id, Symbol.apply)
-  def apply(id:Symbol) : Symbol = apply(id.value)
+  val cache = new ConcurrentHashMap[String, ModelSymbol]()
+  def apply(id:String) : ModelSymbol = cache.computeIfAbsent(id, s => ModelSymbol(Symbol(s)))
+  def apply(id:Symbol) : ModelSymbol = apply(id.value)
 }

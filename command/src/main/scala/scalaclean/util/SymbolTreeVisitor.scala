@@ -1,6 +1,7 @@
 package scalaclean.util
 
 import scalaclean.model.Utils
+import scalaclean.model.impl.ModelSymbol
 import scalafix.patch.Patch
 import scalafix.v1._
 
@@ -8,7 +9,7 @@ import scala.meta.{Decl, Defn, Mod, Pat, Pkg, Stat, Term, Tree}
 
 abstract class SymbolTreeVisitor()(implicit doc: SemanticDocument) extends TreeVisitor {
 
-  protected def handlerSymbol(symbol: Symbol, mods: Seq[Mod], stat: Stat, scope: List[Scope]): (Patch, Boolean)
+  protected def handlerSymbol(symbol: ModelSymbol, mods: Seq[Mod], stat: Stat, scope: List[Scope]): (Patch, Boolean)
   protected def handlerPats(pats: Seq[Pat.Var], mods: Seq[Mod], stat: Stat, scope: List[Scope]): (Patch, Boolean)
   def handleVar(varDef: Defn.Var,scope: List[Scope]) = {
     handlerPats(Utils.readVars(varDef.pats), varDef.mods, varDef, scope)
@@ -30,23 +31,23 @@ abstract class SymbolTreeVisitor()(implicit doc: SemanticDocument) extends TreeV
     continue
   }
 
-  override def handleMethod(symbol: Symbol, fullSig: String, method: Decl.Def, scope: List[Scope]): (Patch, Boolean) =  {
+  override def handleMethod(symbol: ModelSymbol, fullSig: String, method: Decl.Def, scope: List[Scope]): (Patch, Boolean) =  {
     handlerSymbol(symbol, method.mods, method, scope)
   }
 
-  override def handleMethod(symbol: Symbol, fullSig: String, method: Defn.Def,scope: List[Scope]): (Patch, Boolean) = {
+  override def handleMethod(symbol: ModelSymbol, fullSig: String, method: Defn.Def,scope: List[Scope]): (Patch, Boolean) = {
     handlerSymbol(symbol, method.mods, method, scope)
   }
 
-  override def handleObject(objName: Symbol, obj: Defn.Object,scope: List[Scope]): (Patch, Boolean) = {
+  override def handleObject(objName: ModelSymbol, obj: Defn.Object,scope: List[Scope]): (Patch, Boolean) = {
     handlerSymbol(objName, obj.mods, obj, scope)
   }
 
-  override def handleClass(clsSymbol: Symbol, cls: Defn.Class,scope: List[Scope]): (Patch, Boolean) = {
+  override def handleClass(clsSymbol: ModelSymbol, cls: Defn.Class,scope: List[Scope]): (Patch, Boolean) = {
     handlerSymbol(clsSymbol, cls.mods, cls, scope)
   }
 
-  override def handleTrait(trtSymbol: Symbol, cls: Defn.Trait, scope: List[Scope]): (Patch, Boolean) = {
+  override def handleTrait(trtSymbol: ModelSymbol, cls: Defn.Trait, scope: List[Scope]): (Patch, Boolean) = {
     handlerSymbol(trtSymbol, cls.mods, cls, scope)
   }
 

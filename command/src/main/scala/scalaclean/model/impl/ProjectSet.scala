@@ -3,7 +3,6 @@ package scalaclean.model.impl
 import java.nio.file.Path
 
 import scalaclean.model._
-import scalafix.v1.Symbol
 
 import scala.collection.immutable
 import scala.reflect.ClassTag
@@ -11,10 +10,10 @@ import scala.reflect.ClassTag
 class ProjectSet(projectPropertyPaths: Path *) extends ProjectModel {
   val projects: List[Project] = projectPropertyPaths.toList map { p => Project(p, this)}
 
-  val elements: Map[Symbol, ElementModelImpl] = {
+  val elements: Map[ModelSymbol, ElementModelImpl] = {
     val (elements, rels: immutable.Seq[BasicRelationshipInfo]) = projects.map(_.read).unzip
 
-    val elementsMap = elements.flatten.toVector.map (e => e.symbol -> e).toMap
+    val elementsMap: Map[ModelSymbol, ElementModelImpl] = elements.flatten.toVector.map (e => e.symbol -> e).toMap
 
     val relsFrom = rels.reduce(_ + _)
     val relsTo = relsFrom.byTo
@@ -25,9 +24,9 @@ class ProjectSet(projectPropertyPaths: Path *) extends ProjectModel {
     elementsMap
   }
 
-  override def fromSymbolLocal[T <: ModelElement](symbol: Symbol, startPos: Int, endPos: Int)(implicit tpe: ClassTag[T]): T = {
+  override def fromSymbolLocal[T <: ModelElement](symbol: ModelSymbol, startPos: Int, endPos: Int)(implicit tpe: ClassTag[T]): T = {
     val x = elements.find {
-      case (candidateSymbol: Symbol,em: ValModelImpl) => em.info.startPos == startPos && em.info.endPos == endPos
+      case (candidateSymbol: ModelSymbol,em: ValModelImpl) => em.info.startPos == startPos && em.info.endPos == endPos
       case (candidateSymbol,em: VarModelImpl) => em.info.startPos == startPos && em.info.endPos == endPos
       case _ => false
     }
@@ -40,8 +39,8 @@ class ProjectSet(projectPropertyPaths: Path *) extends ProjectModel {
     }
   }
 
-  override def fromSymbol[T <: ModelElement](symbol: Symbol)(implicit tpe: ClassTag[T]): T = {
-    val targetSymbol = if (symbol.isGlobal) Symbol("G:" + symbol.value) else {
+  override def fromSymbol[T <: ModelElement](symbol: ModelSymbol)(implicit tpe: ClassTag[T]): T = {
+    val targetSymbol = if (symbol.isGlobal) ModelSymbol("G:" + symbol.value) else {
       elements.keys.find(_.value.contains(symbol.value)).getOrElse {
         throw new IllegalStateException("Unable to match symbol: " + symbol)
       }
@@ -55,7 +54,7 @@ class ProjectSet(projectPropertyPaths: Path *) extends ProjectModel {
     }
   }
 
-  override def getSymbol[T <: ModelElement](symbol: Symbol)(implicit tpe: ClassTag[T]): Option[T] = {
+  override def getSymbol[T <: ModelElement](symbol: ModelSymbol)(implicit tpe: ClassTag[T]): Option[T] = {
     elements.get(symbol) match {
       case None => None
       case Some(x: T) => Some(x)

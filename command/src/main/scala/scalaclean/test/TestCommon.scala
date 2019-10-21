@@ -20,6 +20,6 @@ abstract class TestCommon(name: String) extends TestBase(name) {
     elements map withSymbol
   }
   def withSymbol(element: ModelElement): String = {
-      s"$element(${element.symbol.value})"
+      s"$element(${element.symbol.debugValue})"
   }
 }

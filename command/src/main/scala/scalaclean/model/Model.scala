@@ -1,5 +1,6 @@
 package scalaclean.model
 
+import scalaclean.model.impl.ModelSymbol
 import scalafix.v1.{Symbol, SymbolInformation}
 
 //import scala.meta.{Decl, Defn, Tree}
@@ -7,9 +8,9 @@ import scala.reflect.ClassTag
 
 sealed trait ModelElement extends Ordered[ModelElement] {
 
-  override def compare(that: ModelElement): Int = symbol.value.compare(that.symbol.value)
+  override def compare(that: ModelElement): Int = symbol.symbol.value.compare(that.symbol.symbol.value)
 
-  def symbol: Symbol
+  def symbol: ModelSymbol
 
   var mark: Mark = _
 
@@ -53,9 +54,9 @@ sealed trait ModelElement extends Ordered[ModelElement] {
 
   def internalTransitiveOverrides: List[ModelElement]
 
-  def allDirectOverrides: List[(Option[ModelElement], Symbol)]
+  def allDirectOverrides: List[(Option[ModelElement], ModelSymbol)]
 
-  def allTransitiveOverrides: List[(Option[ModelElement], Symbol)]
+  def allTransitiveOverrides: List[(Option[ModelElement], ModelSymbol)]
 
   def internalDirectOverriddenBy: List[ModelElement]
 
@@ -67,7 +68,7 @@ sealed trait ModelElement extends Ordered[ModelElement] {
   def symbolInfo: SymbolInformation
 
   @deprecated
-  def symbolInfo(anotherSymbol: Symbol): SymbolInformation
+  def symbolInfo(anotherSymbol: ModelSymbol): SymbolInformation
 
   //any block may contain many val of the same name!
   //  val foo = {
@@ -103,11 +104,11 @@ sealed trait ClassLike extends ModelElement {
 
   def xtends[T](implicit cls: ClassTag[T]): Boolean
 
-  def xtends(symbol: Symbol): Boolean
+  def xtends(symbol: ModelSymbol): Boolean
 
-  def directExtends: Set[Symbol]
+  def directExtends: Set[ModelSymbol]
 
-  def transitiveExtends: Set[Symbol]
+  def transitiveExtends: Set[ModelSymbol]
 
   def directExtendedBy: Set[ClassLike]
 
@@ -177,14 +178,14 @@ sealed trait SourceModel extends ModelElement {
 
 trait ProjectModel {
 
-  def fromSymbol[T <: ModelElement](symbol: Symbol)(implicit tpe: ClassTag[T]): T
+  def fromSymbol[T <: ModelElement](symbol: ModelSymbol)(implicit tpe: ClassTag[T]): T
 
-  def fromSymbolLocal[T <: ModelElement](symbol: Symbol, startPos: Int, endPos: Int)(implicit tpe: ClassTag[T]): T = {
+  def fromSymbolLocal[T <: ModelElement](symbol: ModelSymbol, startPos: Int, endPos: Int)(implicit tpe: ClassTag[T]): T = {
     fromSymbol(symbol)
   }
 
 
-  def getSymbol[T <: ModelElement](symbol: Symbol)(implicit tpe: ClassTag[T]): Option[T]
+  def getSymbol[T <: ModelElement](symbol: ModelSymbol)(implicit tpe: ClassTag[T]): Option[T]
 
   def size: Int
 
@@ -198,16 +199,16 @@ trait ProjectModel {
 
 package impl {
 
-  case class BasicElementInfo(symbol: Symbol, source: SourceData, startPos: Int, endPos: Int)
+  case class BasicElementInfo(symbol: ModelSymbol, source: SourceData, startPos: Int, endPos: Int)
 
   case class BasicRelationshipInfo(
-    refers: Map[Symbol, List[RefersImpl]],
-    extnds: Map[Symbol, List[ExtendsImpl]],
-    overrides: Map[Symbol, List[OverridesImpl]],
-    within: Map[Symbol, List[WithinImpl]],
-    getter: Map[Symbol, List[GetterImpl]],
-    setter: Map[Symbol, List[SetterImpl]]) {
-    def complete(elements: Map[Symbol, ElementModelImpl]): Unit = {
+    refers: Map[ModelSymbol, List[RefersImpl]],
+    extnds: Map[ModelSymbol, List[ExtendsImpl]],
+    overrides: Map[ModelSymbol, List[OverridesImpl]],
+    within: Map[ModelSymbol, List[WithinImpl]],
+    getter: Map[ModelSymbol, List[GetterImpl]],
+    setter: Map[ModelSymbol, List[SetterImpl]]) {
+    def complete(elements: Map[ModelSymbol, ElementModelImpl]): Unit = {
       refers.values.foreach(_.foreach(_.complete(elements)))
       extnds.values.foreach(_.foreach(_.complete(elements)))
       overrides.values.foreach(_.foreach(_.complete(elements)))
@@ -216,8 +217,8 @@ package impl {
       setter.values.foreach(_.foreach(_.complete(elements)))
     }
 
-    def byTo = {
-      def byToSymbol[T <: Reference](from: Map[Symbol, List[T]]): Map[Symbol, List[T]] = {
+    def byTo: BasicRelationshipInfo = {
+      def byToSymbol[T <: Reference](from: Map[ModelSymbol, List[T]]): Map[ModelSymbol, List[T]] = {
         from.values.flatten.groupBy(_.toSymbol).map {
           case (k, v) => k -> (v.toList)
         }
@@ -292,13 +293,13 @@ package impl {
       }
     }
 
-    override def allDirectOverrides: List[(Option[ModelElement], Symbol)] = {
+    override def allDirectOverrides: List[(Option[ModelElement], ModelSymbol)] = {
       overrides collect {
         case o if o.isDirect => (o.toElement, o.toSymbol)
       }
     }
 
-    override def allTransitiveOverrides: List[(Option[ModelElement], Symbol)] = {
+    override def allTransitiveOverrides: List[(Option[ModelElement], ModelSymbol)] = {
       overrides collect {
         case o => (o.toElement, o.toSymbol)
       }
@@ -320,13 +321,13 @@ package impl {
   trait LegacyExtends {
     self: ClassLikeModelImpl =>
 
-    override def directExtends: Set[Symbol] = {
+    override def directExtends: Set[ModelSymbol] = {
       extnds collect {
         case s if s.isDirect => s.toSymbol
       } toSet
     }
 
-    override def transitiveExtends: Set[Symbol] = {
+    override def transitiveExtends: Set[ModelSymbol] = {
       extnds map (_.toSymbol) toSet
     }
 
@@ -348,7 +349,7 @@ package impl {
     info: BasicElementInfo, relationships: BasicRelationshipInfo) extends ModelElement
     with LegacyReferences with LegacyOverrides {
     def complete(
-      elements: Map[Symbol, ElementModelImpl],
+      elements: Map[ModelSymbol, ElementModelImpl],
       relsFrom: BasicRelationshipInfo,
       relsTo: BasicRelationshipInfo): Unit = {
       within = relsFrom.within.getOrElse(symbol, Nil) map {
@@ -369,7 +370,7 @@ package impl {
 
     def projects = project.projects
 
-    override val symbol = info.symbol
+    override val symbol: ModelSymbol = info.symbol
 
     override def name = symbol.displayName
 
@@ -393,7 +394,7 @@ package impl {
 
     override def symbolInfo: SymbolInformation = project.symbolInfo(this, symbol)
 
-    override def symbolInfo(anotherSymbol: Symbol): SymbolInformation = project.symbolInfo(this, anotherSymbol)
+    override def symbolInfo(anotherSymbol: ModelSymbol): SymbolInformation = project.symbolInfo(this, anotherSymbol)
 
     override def fields: List[FieldModel] = children collect {
       case f: FieldModelImpl => f
@@ -431,7 +432,7 @@ package impl {
     var extendedBy: List[Extends] = _
 
     override def complete(
-      elements: Map[Symbol, ElementModelImpl],
+      elements: Map[ModelSymbol, ElementModelImpl],
       relsFrom: BasicRelationshipInfo,
       relsTo: BasicRelationshipInfo): Unit = {
       super.complete(elements, relsFrom, relsTo)
@@ -446,10 +447,10 @@ package impl {
 
     override def xtends[T](implicit cls: ClassTag[T]): Boolean = {
       //TODO what is the canonocal conversion?
-      xtends(Symbol(cls.runtimeClass.getName.replace('.', '/') + "#"))
+      xtends(ModelSymbol(cls.runtimeClass.getName.replace('.', '/') + "#"))
     }
 
-    override def xtends(symbol: Symbol): Boolean = {
+    override def xtends(symbol: ModelSymbol): Boolean = {
       extnds.exists(_.toSymbol == symbol)
     }
   }
@@ -460,7 +461,7 @@ package impl {
     extends ElementModelImpl(info, relationships) with FieldModel {
     override def otherFieldsInSameDeclaration: Seq[fieldType] = ???
 
-    override def complete(elements: Map[Symbol, ElementModelImpl], relsFrom: BasicRelationshipInfo, relsTo: BasicRelationshipInfo): Unit = {
+    override def complete(elements: Map[ModelSymbol, ElementModelImpl], relsFrom: BasicRelationshipInfo, relsTo: BasicRelationshipInfo): Unit = {
       super.complete(elements, relsFrom, relsTo)
       relsTo.getter.get(info.symbol) match {
         case None => getter_ = None
@@ -501,7 +502,7 @@ package impl {
     extends ElementModelImpl(info, relationships) with GetterMethodModel {
     override protected def typeName: String = "def[getter]"
 
-    override def complete(elements: Map[Symbol, ElementModelImpl], relsFrom: BasicRelationshipInfo, relsTo: BasicRelationshipInfo): Unit = {
+    override def complete(elements: Map[ModelSymbol, ElementModelImpl], relsFrom: BasicRelationshipInfo, relsTo: BasicRelationshipInfo): Unit = {
       super.complete(elements, relsFrom, relsTo)
       relsFrom.getter.get(info.symbol) match {
         case None => field_ = None
@@ -518,7 +519,7 @@ package impl {
     extends ElementModelImpl(info, relationships) with SetterMethodModel {
     override protected def typeName: String = "def[setter]"
 
-    override def complete(elements: Map[Symbol, ElementModelImpl], relsFrom: BasicRelationshipInfo, relsTo: BasicRelationshipInfo): Unit = {
+    override def complete(elements: Map[ModelSymbol, ElementModelImpl], relsFrom: BasicRelationshipInfo, relsTo: BasicRelationshipInfo): Unit = {
       super.complete(elements, relsFrom, relsTo)
       relsFrom.setter.get(info.symbol) match {
         case None => field_ = None
@@ -546,7 +547,7 @@ package impl {
     extends FieldModelImpl(info, relationships, fieldName, isAbstract) with VarModel {
     override protected def typeName: String = "var"
 
-    override def complete(elements: Map[Symbol, ElementModelImpl], relsFrom: BasicRelationshipInfo, relsTo: BasicRelationshipInfo): Unit = {
+    override def complete(elements: Map[ModelSymbol, ElementModelImpl], relsFrom: BasicRelationshipInfo, relsTo: BasicRelationshipInfo): Unit = {
       super.complete(elements, relsFrom, relsTo)
       relsTo.setter.get(info.symbol) match {
         case None => setter_ = None

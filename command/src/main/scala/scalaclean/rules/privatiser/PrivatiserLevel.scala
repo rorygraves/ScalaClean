@@ -1,9 +1,9 @@
 package scalaclean.rules.privatiser
 
+import scalaclean.model.impl.ModelSymbol
 import scalaclean.model.{Mark, ModelElement, Utils}
 import scalaclean.util.SymbolUtils
 import scalafix.patch.Patch
-import scalafix.v1.Symbol
 
 import scala.meta.Stat
 
@@ -49,10 +49,10 @@ private[privatiser] case object Undefined extends PrivatiserLevel {
 }
 
 private[privatiser] object AccessScope {
-  val None = AccessScope(Symbol.None, "")
+  val None = AccessScope(ModelSymbol.None, "")
 }
 
-private[privatiser] final case class AccessScope(symbol: Symbol, reason: String) {
+private[privatiser] final case class AccessScope(symbol: ModelSymbol, reason: String) {
   def print(name: String) = if (symbol.isNone) s"$name <not found>" else s"$name $symbol $reason"
 
   def widen(other: AccessScope) =
@@ -62,9 +62,9 @@ private[privatiser] final case class AccessScope(symbol: Symbol, reason: String)
 }
 
 private[privatiser] object Scoped {
-  def Private(scope: Symbol, reason: String) = Scoped(AccessScope(scope, reason), AccessScope.None, false)
+  def Private(scope: ModelSymbol, reason: String) = Scoped(AccessScope(scope, reason), AccessScope.None, false)
 
-  def Protected(scope: Symbol, reason: String, forceProtected: Boolean ) = Scoped(AccessScope.None, AccessScope(scope, reason), forceProtected)
+  def Protected(scope: ModelSymbol, reason: String, forceProtected: Boolean ) = Scoped(AccessScope.None, AccessScope(scope, reason), forceProtected)
 }
 
 private[privatiser] final case class Scoped(privateScope: AccessScope, protectedScope: AccessScope, forceProtected: Boolean ) extends PrivatiserLevel {
@@ -76,8 +76,8 @@ private[privatiser] final case class Scoped(privateScope: AccessScope, protected
     forceProtected || privateScope.symbol.isNone || commonParentScope != privateScope.symbol
   }
 
-  def scope: Symbol = privateScope.symbol
-  def scopeOrDefault(default: Symbol): Symbol =  privateScope.symbol.asNonEmpty.getOrElse(default)
+  def scope: ModelSymbol = privateScope.symbol
+  def scopeOrDefault(default: ModelSymbol): ModelSymbol =  privateScope.symbol.asNonEmpty.getOrElse(default)
   override def asText(context: ModelElement): Option[String] = {
     val name = if (isProtected) "protected" else "private"
     context.enclosing.headOption match {
@@ -102,7 +102,7 @@ private[privatiser] final case class Scoped(privateScope: AccessScope, protected
     else s"private due to (${privateScope.reason}), protected access from (${protectedScope.reason})"
   }
 
-  def widen(level: PrivatiserLevel) = level match {
+  def widen(level: PrivatiserLevel): PrivatiserLevel = level match {
     case p: Public => p
     case n: NoChange => n
     case Undefined => this

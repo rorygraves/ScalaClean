@@ -1,6 +1,7 @@
 package scalaclean.rules.privatiser
 
 import scalaclean.model._
+import scalaclean.model.impl.ModelSymbol
 import scalaclean.rules.AbstractRule
 import scalaclean.util.{Scope, SymbolTreeVisitor, SymbolUtils}
 import scalafix.patch.Patch
@@ -30,7 +31,7 @@ class Privatiser(model: ProjectModel, debug: Boolean) extends AbstractRule("Priv
     }
   }
 
-  val app: Symbol = Symbol("G:scala/App#")
+  val app: ModelSymbol = ModelSymbol.AppObject
 
   private def localLevel(element: ModelElement): PrivatiserLevel = {
     if (element.colour != Undefined) element.colour
@@ -102,7 +103,7 @@ class Privatiser(model: ProjectModel, debug: Boolean) extends AbstractRule("Priv
 
     val tv = new SymbolTreeVisitor {
 
-      override protected def handlerSymbol(symbol: Symbol, mods: Seq[Mod], stat: Stat, scope: List[Scope]): (Patch, Boolean) = {
+      override protected def handlerSymbol(symbol: ModelSymbol, mods: Seq[Mod], stat: Stat, scope: List[Scope]): (Patch, Boolean) = {
         val modelElement = model.fromSymbol[ModelElement](symbol)
         val patch = changeAccessModifier(modelElement.colour, mods, stat, modelElement)
         //do we need to recurse into implementation?
@@ -120,9 +121,9 @@ class Privatiser(model: ProjectModel, debug: Boolean) extends AbstractRule("Priv
       override protected def handlerPats(pats: Seq[Pat.Var], mods: Seq[Mod], stat: Stat, scope: List[Scope]): (Patch, Boolean) = {
         //for vals and vars we set the access to the broadest of any access of the fields
 
-        val access = pats map (p => (model.fromSymbol[ModelElement](p.symbol)).colour)
+        val access = pats map (p => (model.fromSymbol[ModelElement](ModelSymbol(p.symbol))).colour)
         val combined = access.fold[PrivatiserLevel](Undefined)((l, r) => l.widen(r))
-        val patch = changeAccessModifier(combined, mods, stat, model.fromSymbol[ModelElement](pats.head.symbol))
+        val patch = changeAccessModifier(combined, mods, stat, model.fromSymbol[ModelElement](ModelSymbol(pats.head.symbol)))
         //we never need to recurse into RHS of decls as they are not externally visible
         (patch, false)
       }
@@ -136,10 +137,10 @@ class Privatiser(model: ProjectModel, debug: Boolean) extends AbstractRule("Priv
               case None => false
               case Some(Mod.Private(scope)) =>
                 !scope.symbol.isNone &&
-                  SymbolUtils.findCommonParent(scope.symbol, privateScope.symbol) != scope.symbol
+                  SymbolUtils.findCommonParent(ModelSymbol.fromTree(scope), privateScope.symbol) != ModelSymbol.fromTree(scope)
               case Some(Mod.Protected(scope)) =>
                 !scope.symbol.isNone &&
-                  SymbolUtils.findCommonParent(scope.symbol, privateScope.symbol) != scope.symbol
+                  SymbolUtils.findCommonParent(ModelSymbol.fromTree(scope), privateScope.symbol) != ModelSymbol.fromTree(scope)
             }
           case Undefined => false
           case Public(_) => existing.isDefined
@@ -149,8 +150,8 @@ class Privatiser(model: ProjectModel, debug: Boolean) extends AbstractRule("Priv
 
       def existingAccess(mods: Seq[Mod]): (Option[Mod], PrivatiserLevel) = {
         val res: Option[(Option[Mod], PrivatiserLevel)] = mods.collectFirst {
-          case s@Mod.Private(scope) => (Some(s), Scoped.Private(scope.symbol, "existing"))
-          case s@Mod.Protected(scope) => (Some(s), Scoped.Protected(scope.symbol, "existing", false))
+          case s@Mod.Private(scope) => (Some(s), Scoped.Private(ModelSymbol.fromTree(scope), "existing"))
+          case s@Mod.Protected(scope) => (Some(s), Scoped.Protected(ModelSymbol.fromTree(scope), "existing", false))
         }
         res.getOrElse((None, Public("existing")))
       }

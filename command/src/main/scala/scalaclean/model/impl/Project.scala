@@ -7,7 +7,7 @@ import java.nio.file.{Files, Path, Paths}
 import java.util.Properties
 import java.util.concurrent.ConcurrentHashMap
 
-import scalafix.v1.{Symbol, SymbolInformation}
+import scalafix.v1.{SymbolInformation}
 
 import scala.meta.internal.symtab.{GlobalSymbolTable, SymbolTable}
 import scala.meta.io.{AbsolutePath, Classpath}
@@ -42,12 +42,12 @@ class Project private(
   def symbolTable: SymbolTable = GlobalSymbolTable(classPath, includeJdk = true)
   lazy val classloader: ClassLoader = new URLClassLoader(Array(new URL("file:" + outputPath +"/")), null)
 
-  private val infos = new ConcurrentHashMap[Symbol, SymbolInformation]()
+  private val infos = new ConcurrentHashMap[ModelSymbol, SymbolInformation]()
 
-  def symbolInfo(viewedFrom: ElementModelImpl, symbol: Symbol): SymbolInformation = {
+  def symbolInfo(viewedFrom: ElementModelImpl, symbol: ModelSymbol): SymbolInformation = {
     infos.computeIfAbsent(symbol,
       s => //any doc in the project would do though
-        viewedFrom.source.doc.info(s).orNull)
+        viewedFrom.source.doc.info(s.symbol).orNull)
   }
 
   def read = ModelReader.read(this, elementsFilePath, relationshipsFilePAth)

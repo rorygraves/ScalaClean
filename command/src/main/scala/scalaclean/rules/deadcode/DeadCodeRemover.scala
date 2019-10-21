@@ -1,6 +1,7 @@
 package scalaclean.rules.deadcode
 
 import scalaclean.model._
+import scalaclean.model.impl.ModelSymbol
 import scalaclean.rules.AbstractRule
 import scalaclean.util.{Scope, SymbolTreeVisitor, TokenHelper}
 import scalafix.v1._
@@ -85,7 +86,7 @@ class DeadCodeRemover(model: ProjectModel, debug: Boolean) extends AbstractRule(
   }
 
   def allApp = {
-    val app = Symbol("G:scala/App#")
+    val app = ModelSymbol.AppObject
     for (obj <- model.allOf[ObjectModel] if (obj.xtends(app)))
       yield obj
   }
@@ -164,7 +165,7 @@ class DeadCodeRemover(model: ProjectModel, debug: Boolean) extends AbstractRule(
     val tv = new SymbolTreeVisitor {
 
       override protected def handlerSymbol(
-        symbol: Symbol, mods: Seq[Mod], stat: Stat, scope: List[Scope]): (Patch, Boolean) = {
+        symbol: ModelSymbol, mods: Seq[Mod], stat: Stat, scope: List[Scope]): (Patch, Boolean) = {
         val modelElement = model.fromSymbol[ModelElement](symbol)
         val usage = modelElement.colour
         if (usage.isUnused) {
@@ -184,7 +185,7 @@ class DeadCodeRemover(model: ProjectModel, debug: Boolean) extends AbstractRule(
         val declarationsByUsage: Map[Usage, Seq[(Pat.Var, ModelElement)]] =
           pats map { p =>
 //            println(" p . pos = " + stat.pos.start, stat.pos.end)
-            (p, model.fromSymbolLocal[ModelElement](p.symbol, stat.pos.start, stat.pos.end))
+            (p, model.fromSymbolLocal[ModelElement](ModelSymbol(p.symbol), stat.pos.start, stat.pos.end))
           } groupBy (m => m._2.colour)
 
         declarationsByUsage.get(Usage.unused) match {
@@ -215,7 +216,7 @@ class DeadCodeRemover(model: ProjectModel, debug: Boolean) extends AbstractRule(
         val byUsage = importees.groupBy {
           i =>
             val symbol = i.symbol(doc)
-            model.getSymbol[ModelElement](symbol).map(_.colour)
+            model.getSymbol[ModelElement](ModelSymbol(symbol)).map(_.colour)
         }
         byUsage.get(Some(Usage.unused)) match {
           case Some(_) if byUsage.size == 1 =>

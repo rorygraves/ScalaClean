@@ -1,15 +1,15 @@
 package scalaclean.util
 
-import scalafix.v1.Symbol
+import scalaclean.model.impl.ModelSymbol
 
 object SymbolUtils {
 
-  def findCommonParent(scope1: Symbol, scope2: Symbol): Symbol = {
-    def depth(scope: Symbol): Int = {
+  def findCommonParent(scope1: ModelSymbol, scope2: ModelSymbol): ModelSymbol = {
+    def depth(scope: ModelSymbol): Int = {
       if (scope.isNone) 0 else depth(scope.owner) +1
     }
 
-    def parent(scope: Symbol, level: Int): Symbol = {
+    def parent(scope: ModelSymbol, level: Int): ModelSymbol = {
       if (level == 0) scope else parent(scope.owner, level - 1)
     }
 
@@ -19,7 +19,7 @@ object SymbolUtils {
       findCommonParent(parent(scope1, depth1 - depth2), scope2)
     } else if (depth2 > depth1) {
       findCommonParent(scope1, parent(scope2, depth2 - depth1))
-    } else if (scope1 == scope2) if (scope1.isNone) Symbol.RootPackage else scope1
+    } else if (scope1 == scope2) if (scope1.isNone) ModelSymbol.RootPackage else scope1
     else findCommonParent(scope1.owner, scope2.owner)
   }
 

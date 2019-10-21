@@ -7,9 +7,9 @@ import scalaclean.model._
   */
 class Test_internalIncomingReferences extends TestCommon("Test_internalIncomingReferences") {
   def visit(modelElement: ModelElement): String = {
-    modelElement.internalIncomingReferences.map(_._1.symbol.value).distinct.sorted match  {
+    modelElement.internalIncomingReferences.map(_._1.symbol.debugValue).distinct.sorted match  {
       case Nil => ""
-      case refs => refs.mkString(s"internalIncomingReferences(${modelElement.symbol.value}) - "," :: ", "")
+      case refs => refs.mkString(s"internalIncomingReferences(${modelElement.symbol.debugValue}) - "," :: ", "")
     }
   }
 }
@@ -20,9 +20,9 @@ class Test_internalIncomingReferences extends TestCommon("Test_internalIncomingR
   */
 class Test_internalOutgoingReferences extends TestCommon("Test_internalOutgoingReferences") {
   def visit(modelElement: ModelElement): String = {
-    modelElement.internalOutgoingReferences.map(_._1.symbol.value).distinct.sorted match  {
+    modelElement.internalOutgoingReferences.map(_._1.symbol.debugValue).distinct.sorted match  {
       case Nil => ""
-      case refs => refs.mkString(s"internalOutgoingReferences(${modelElement.symbol.value}) - "," :: ", "")
+      case refs => refs.mkString(s"internalOutgoingReferences(${modelElement.symbol.debugValue}) - "," :: ", "")
     }
   }
 }
@@ -33,9 +33,9 @@ class Test_internalOutgoingReferences extends TestCommon("Test_internalOutgoingR
   */
 class Test_allOutgoingReferences extends TestCommon("Test_allOutgoingReferences") {
   def visit(modelElement: ModelElement): String = {
-    modelElement.allOutgoingReferences.map(_._2.toSymbol.value).distinct.sorted match  {
+    modelElement.allOutgoingReferences.map(_._2.toSymbol.debugValue).distinct.sorted match  {
       case Nil => ""
-      case refs => refs.mkString(s"allOutgoingReferences(${modelElement.symbol.value}) - "," :: ", "")
+      case refs => refs.mkString(s"allOutgoingReferences(${modelElement.symbol.debugValue}) - "," :: ", "")
     }
   }
 }
