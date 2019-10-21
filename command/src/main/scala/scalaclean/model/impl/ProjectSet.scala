@@ -13,13 +13,19 @@ class ProjectSet(projectPropertyPaths: Path *) extends ProjectModel {
   val elements: Map[ElementId, ElementModelImpl] = {
     val (elements, rels: immutable.Seq[BasicRelationshipInfo]) = projects.map(_.read).unzip
 
-    val elementsMap: Map[ElementId, ElementModelImpl] = elements.flatten.toVector.map (e => e.symbol -> e).toMap
+    val elementsMap: Map[ElementId, ElementModelImpl] = elements.flatten.toIterator.map (e => e.symbol -> e).toMap
+    val modelElements = elements.flatten.toIterator.map (e => e.modelElementId -> e).toMap
+
+    val skipped = elements.flatten.toVector.groupBy (_.symbol).filter{case (k,v) => v.size != 1}
+    val skipped2 = elements.flatten.toVector.groupBy (_.modelElementId).filter{case (k,v) => v.size != 1}
+    assert (elements.flatten.size == modelElements.size)
+//    assert (elementsMap.size == modelElements.size)
 
     val relsFrom = rels.reduce(_ + _)
     val relsTo = relsFrom.byTo
 
-    relsFrom.complete(elementsMap)
-    elementsMap.values foreach (_.complete(elementsMap, relsFrom, relsTo))
+    relsFrom.complete(elementsMap, modelElements)
+    elementsMap.values foreach (_.complete(elementsMap, modelElements, relsFrom = relsFrom, relsTo = relsTo))
 
     elementsMap
   }

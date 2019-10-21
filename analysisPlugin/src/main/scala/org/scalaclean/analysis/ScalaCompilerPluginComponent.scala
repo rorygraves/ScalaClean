@@ -200,7 +200,7 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
 
     def traverseSource(unit: CompilationUnit): Unit = {
       val sourceFile = unit.source.file.canonicalPath
-      enterScope(ModelSource(ModelCommon(true, s"source:$sourceFile", sourceFile, -1, -1, "<NA>"))) {
+      enterScope(ModelSource(ModelCommon(true, s"source:$sourceFile", s"S:$sourceFile", sourceFile, -1, -1, "<NA>"))) {
         s =>
           traverse(unit.body)
       }

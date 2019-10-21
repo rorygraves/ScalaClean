@@ -9,35 +9,39 @@ class RelationshipsWriter(file: File, val global: Global) extends  SemanticdbOps
 
   var logger: ScopeLogging = _
   val writer = new SortedStringWriter(file.toPath)
+  def commonOutput(from: HasModelCommon, token:String, to: HasModelCommon): String = {
+    s"${from.csvString},${from.newCsvString},$token,${to.csvString},${to.newCsvString}"
+    //    s"${from.csvString},$token,${to.csvString}"
+  }
 
   def overrides(overrider: ModelMethod, overridden: HasModelCommon, isDirect: Boolean): Unit = {
-    writeLine(s"${overrider.csvString},${IoTokens.relOverrides},${overridden.csvString},$isDirect",
+    writeLine(s"${commonOutput(overrider, IoTokens.relOverrides, overridden)},$isDirect",
       s"${IoTokens.relOverrides} ${overridden.csvString}) Direct:$isDirect")
   }
 
   def refers(container: HasModelCommon, target: HasModelCommon, isSynthetic: Boolean): Unit = {
-    writeLine(s"${container.csvString},${IoTokens.relRefers},${target.csvString},$isSynthetic",
+    writeLine(s"${commonOutput(container, IoTokens.relRefers, target)},$isSynthetic",
       s"${IoTokens.relRefers} ${target.csvString}) Synthetic:$isSynthetic")
   }
 
   def extendsCls(parentSym: HasModelCommon, childSym: ModelSymbol, direct: Boolean): Unit = {
-    writeLine(s"${childSym.csvString},${IoTokens.relExtends},${parentSym.csvString},$direct",
+    writeLine(s"${commonOutput(childSym, IoTokens.relExtends, parentSym)},$direct",
       s"${IoTokens.relExtends} ${parentSym.csvString} Direct:$direct")
   }
 
   def within(outerSym: ModelSymbol, innerSym: ModelSymbol): Unit = {
-    writeLine(s"${innerSym.csvString},${IoTokens.relWithin},${outerSym.csvString}",
+    writeLine(s"${commonOutput(innerSym, IoTokens.relWithin, outerSym)}",
       s"${IoTokens.relWithin} ${outerSym.csvString}")
 
   }
 
   def getterFor(method: ModelCommon, field: ModelCommon): Unit = {
-    writeLine(s"${method.csvString},${IoTokens.relGetter},${field.csvString}",
+    writeLine(s"${commonOutput(method, IoTokens.relGetter, field)}",
       s"${IoTokens.relGetter} ${field.csvString}")
   }
 
   def setterFor(method: ModelCommon, field: ModelCommon): Unit = {
-    writeLine(s"${method.csvString},${IoTokens.relSetter},${field.csvString}",
+    writeLine(s"${commonOutput(method, IoTokens.relSetter, field)}",
       s"${IoTokens.relSetter} ${field.csvString}")
   }
 

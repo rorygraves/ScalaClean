@@ -68,13 +68,13 @@ class Privatiser(model: ProjectModel, debug: Boolean) extends AbstractRule("Priv
 
       //We must be at least as visible as anything that we override
       element.allDirectOverrides foreach {
-        case (Some(overridenModel), _) =>
+        case (Some(overridenModel), _, _) =>
           val overridenVisibility = localLevel(overridenModel) match {
             case s: Scoped if s.isProtected => s.copy(forceProtected = true)
             case other => other
           }
           res = res.widen(overridenVisibility)
-        case (None, parentSym) =>
+        case (None, parentSym, parentModelSym) =>
           //if it is not in the model, then we will leave this as is
           NoChange("inherits from external")
 
@@ -111,6 +111,7 @@ class Privatiser(model: ProjectModel, debug: Boolean) extends AbstractRule("Priv
           case _: ClassLike => true
           case _: MethodModel => false
           case _: FieldModel => throw new IllegalStateException(s"handlerPats should be called - $modelElement")
+          case _: SourceModel => true
         }
         (patch, rewriteContent)
       }

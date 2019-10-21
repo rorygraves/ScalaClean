@@ -24,25 +24,28 @@ object ModelReader {
         val tokens = line.split(",")
 
         val from = SymbolCache(tokens(0))
-        val relType = tokens(1)
-        val to = SymbolCache(tokens(2))
+        val fromModel = NewElementIdImpl(tokens(1))
+        val relType = tokens(2)
+        val to = SymbolCache(tokens(3))
+        val toModel = NewElementIdImpl(tokens(4))
 
+        val offset = 5
         relType match {
           case IoTokens.relRefers =>
-            val isSynthetic = tokens(3).toBoolean
-            refersToB += new RefersImpl(from, to, isSynthetic)
+            val isSynthetic = tokens(offset).toBoolean
+            refersToB += new RefersImpl(from, fromModel, to, toModel, isSynthetic)
           case IoTokens.relExtends =>
-            val isDirect = tokens(3).toBoolean
-            extendsB += new ExtendsImpl(from, to, isDirect)
+            val isDirect = tokens(offset).toBoolean
+            extendsB += new ExtendsImpl(from, fromModel, to, toModel, isDirect)
           case IoTokens.relOverrides =>
-            val isDirect = tokens(3).toBoolean
-            overridesB += new OverridesImpl(from, to, isDirect)
+            val isDirect = tokens(offset).toBoolean
+            overridesB += new OverridesImpl(from, fromModel, to, toModel, isDirect)
           case IoTokens.relWithin =>
-            withinB += new WithinImpl(from, to)
+            withinB += new WithinImpl(from, fromModel, to, toModel)
           case IoTokens.relGetter =>
-            getterB += new GetterImpl(from, to)
+            getterB += new GetterImpl(from, fromModel, to, toModel)
           case IoTokens.relSetter =>
-            setterB += new SetterImpl(from, to)
+            setterB += new SetterImpl(from, fromModel, to, toModel)
 
         }
     }
@@ -73,13 +76,14 @@ object ModelReader {
 
           val typeId = tokens(0)
           val symbol = SymbolCache(tokens(1))
-          val src = project.source(tokens(2))
-          val start = tokens(3).toInt
-          val end = tokens(4).toInt
+          val modelSymbol = NewElementIdImpl(tokens(2))
+          val src = project.source(tokens(3))
+          val start = tokens(4).toInt
+          val end = tokens(5).toInt
 
-          val basicInfo = BasicElementInfo(symbol, src, start, end)
+          val basicInfo = BasicElementInfo(symbol, modelSymbol, src, start, end)
 
-          val idx = 5
+          val idx = 6
           val ele: ElementModelImpl = typeId match {
             case IoTokens.typeObject =>
               new ObjectModelImpl(basicInfo, relationships)

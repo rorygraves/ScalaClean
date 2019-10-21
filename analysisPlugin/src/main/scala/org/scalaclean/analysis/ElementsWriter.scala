@@ -6,29 +6,32 @@ class ElementsWriter(file: File) {
   var logger: ScopeLogging = _
 
   val writer = new SortedStringWriter(file.toPath)
+  def commonPrefix(model: ModelSymbol): String =
+    s"${model.ioToken},${model.csvString},${model.newCsvString},${model.sourceFile},${model.posStart},${model.posEnd}"
+
 
   def write(modelSymbol: ModelSymbol) = {
     val msg = modelSymbol match {
       case model: ModelMethod =>
-        s"${model.ioToken},${model.csvString},${model.sourceFile},${model.posStart},${model.posEnd},${model.isAbstract},${model.sourceName},${model.isAbstract}"
+        s"${commonPrefix(model)},${model.isAbstract},${model.sourceName},${model.isAbstract}"
 
       case model: ModelClass =>
-        s"${IoTokens.typeClass},${model.csvString},${model.sourceFile},${model.posStart},${model.posEnd}"
+        commonPrefix(model)
 
       case model: ModelTrait =>
-        s"${IoTokens.typeTrait},${model.csvString},${model.sourceFile},${model.posStart},${model.posEnd}"
+        commonPrefix(model)
 
       case model: ModelObject =>
-        s"${IoTokens.typeObject},${model.csvString},${model.sourceFile},${model.posStart},${model.posEnd}"
+        commonPrefix(model)
 
       case model: ModelVal =>
-        s"${IoTokens.typeVal},${model.csvString},${model.sourceFile},${model.posStart},${model.posEnd},${model.isAbstract},${model.sourceName},${model.isLazy}"
+        s"${commonPrefix(model)},${model.isAbstract},${model.sourceName},${model.isLazy}"
 
       case model: ModelVar =>
-        s"${IoTokens.typeVar},${model.csvString},${model.sourceFile},${model.posStart},${model.posEnd},${model.isAbstract},${model.sourceName}"
+        s"${commonPrefix(model)},${model.isAbstract},${model.sourceName}"
 
       case model: ModelSource =>
-        s"${IoTokens.typeSource},${model.csvString},${model.sourceFile},${model.posStart},${model.posEnd}"
+        s"${commonPrefix(model)}"
 
     }
     if (! writer.writeLine(msg))

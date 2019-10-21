@@ -11,6 +11,7 @@ sealed trait ModelElement extends Ordered[ModelElement] {
   override def compare(that: ModelElement): Int = symbol.symbol.value.compare(that.symbol.symbol.value)
 
   def symbol: ElementId
+  def modelElementId: NewElementId
 
   var mark: Mark = _
 
@@ -28,8 +29,9 @@ sealed trait ModelElement extends Ordered[ModelElement] {
   def overrides: Iterable[Overrides] = {
     val direct = (allDirectOverrides map (_._2)).toSet
     val thisSym = symbol
+    val thisModalSym = modelElementId
     allTransitiveOverrides map {
-      case (_, sym) => new impl.OverridesImpl(thisSym, sym, direct.contains(sym))
+      case (_, sym, modelSym) => new impl.OverridesImpl(thisSym, thisModalSym, sym, modelSym, direct.contains(sym))
     }
   }
 
@@ -54,9 +56,9 @@ sealed trait ModelElement extends Ordered[ModelElement] {
 
   def internalTransitiveOverrides: List[ModelElement]
 
-  def allDirectOverrides: List[(Option[ModelElement], ElementId)]
+  def allDirectOverrides: List[(Option[ModelElement], ElementId, NewElementId)]
 
-  def allTransitiveOverrides: List[(Option[ModelElement], ElementId)]
+  def allTransitiveOverrides: List[(Option[ModelElement], ElementId, NewElementId)]
 
   def internalDirectOverriddenBy: List[ModelElement]
 
@@ -195,11 +197,12 @@ trait ProjectModel {
     cls => println(s"class ${cls.fullName}")
   }
 }
+abstract sealed class NewElementId(val id:String)
 
 
 package impl {
 
-  case class BasicElementInfo(symbol: ElementId, source: SourceData, startPos: Int, endPos: Int)
+  case class BasicElementInfo(symbol: ElementId, newElementId: NewElementId, source: SourceData, startPos: Int, endPos: Int)
 
   case class BasicRelationshipInfo(
     refers: Map[ElementId, List[RefersImpl]],
@@ -208,13 +211,13 @@ package impl {
     within: Map[ElementId, List[WithinImpl]],
     getter: Map[ElementId, List[GetterImpl]],
     setter: Map[ElementId, List[SetterImpl]]) {
-    def complete(elements: Map[ElementId, ElementModelImpl]): Unit = {
-      refers.values.foreach(_.foreach(_.complete(elements)))
-      extnds.values.foreach(_.foreach(_.complete(elements)))
-      overrides.values.foreach(_.foreach(_.complete(elements)))
-      within.values.foreach(_.foreach(_.complete(elements)))
-      getter.values.foreach(_.foreach(_.complete(elements)))
-      setter.values.foreach(_.foreach(_.complete(elements)))
+    def complete(elements: Map[ElementId, ElementModelImpl], modelElements: Map[NewElementId, ElementModelImpl]): Unit = {
+      refers.values.foreach(_.foreach(_.complete(elements, modelElements)))
+      extnds.values.foreach(_.foreach(_.complete(elements, modelElements)))
+      overrides.values.foreach(_.foreach(_.complete(elements, modelElements)))
+      within.values.foreach(_.foreach(_.complete(elements, modelElements)))
+      getter.values.foreach(_.foreach(_.complete(elements, modelElements)))
+      setter.values.foreach(_.foreach(_.complete(elements, modelElements)))
     }
 
     def byTo: BasicRelationshipInfo = {
@@ -293,15 +296,15 @@ package impl {
       }
     }
 
-    override def allDirectOverrides: List[(Option[ModelElement], ElementId)] = {
+    override def allDirectOverrides: List[(Option[ModelElement], ElementId, NewElementId)] = {
       overrides collect {
-        case o if o.isDirect => (o.toElement, o.toSymbol)
+        case o if o.isDirect => (o.toElement, o.toSymbol, o.toNewElementId)
       }
     }
 
-    override def allTransitiveOverrides: List[(Option[ModelElement], ElementId)] = {
+    override def allTransitiveOverrides: List[(Option[ModelElement], ElementId, NewElementId)] = {
       overrides collect {
-        case o => (o.toElement, o.toSymbol)
+        case o => (o.toElement, o.toSymbol, o.toNewElementId)
       }
     }
 
@@ -350,6 +353,7 @@ package impl {
     with LegacyReferences with LegacyOverrides {
     def complete(
       elements: Map[ElementId, ElementModelImpl],
+      modelElements: Map[NewElementId, ElementModelImpl],
       relsFrom: BasicRelationshipInfo,
       relsTo: BasicRelationshipInfo): Unit = {
       within = relsFrom.within.getOrElse(symbol, Nil) map {
@@ -371,6 +375,8 @@ package impl {
     def projects = project.projects
 
     override val symbol: ElementId = info.symbol
+
+    override val modelElementId = info.newElementId
 
     override def name = symbol.displayName
 
@@ -433,9 +439,10 @@ package impl {
 
     override def complete(
       elements: Map[ElementId, ElementModelImpl],
+      modelElements: Map[NewElementId, ElementModelImpl],
       relsFrom: BasicRelationshipInfo,
       relsTo: BasicRelationshipInfo): Unit = {
-      super.complete(elements, relsFrom, relsTo)
+      super.complete(elements,modelElements, relsFrom, relsTo)
       extnds = relsFrom.extnds.getOrElse(symbol, Nil)
       extendedBy = relsTo.extnds.getOrElse(symbol, Nil)
 
@@ -461,8 +468,11 @@ package impl {
     extends ElementModelImpl(info, relationships) with FieldModel {
     override def otherFieldsInSameDeclaration: Seq[fieldType] = ???
 
-    override def complete(elements: Map[ElementId, ElementModelImpl], relsFrom: BasicRelationshipInfo, relsTo: BasicRelationshipInfo): Unit = {
-      super.complete(elements, relsFrom, relsTo)
+    override def complete(elements: Map[ElementId, ElementModelImpl],
+                          modelElements: Map[NewElementId, ElementModelImpl],
+                          relsFrom: BasicRelationshipInfo,
+                          relsTo: BasicRelationshipInfo): Unit = {
+      super.complete(elements, modelElements, relsFrom, relsTo)
       relsTo.getter.get(info.symbol) match {
         case None => getter_ = None
         case Some(f :: Nil) => getter_ = Some(f.fromElement)
@@ -502,8 +512,11 @@ package impl {
     extends ElementModelImpl(info, relationships) with GetterMethodModel {
     override protected def typeName: String = "def[getter]"
 
-    override def complete(elements: Map[ElementId, ElementModelImpl], relsFrom: BasicRelationshipInfo, relsTo: BasicRelationshipInfo): Unit = {
-      super.complete(elements, relsFrom, relsTo)
+    override def complete(elements: Map[ElementId, ElementModelImpl],
+                          modelElements: Map[NewElementId, ElementModelImpl],
+                          relsFrom: BasicRelationshipInfo,
+                          relsTo: BasicRelationshipInfo): Unit = {
+      super.complete(elements, modelElements, relsFrom, relsTo)
       relsFrom.getter.get(info.symbol) match {
         case None => field_ = None
         case Some(f :: Nil) => field_ = f.toElement
@@ -519,8 +532,11 @@ package impl {
     extends ElementModelImpl(info, relationships) with SetterMethodModel {
     override protected def typeName: String = "def[setter]"
 
-    override def complete(elements: Map[ElementId, ElementModelImpl], relsFrom: BasicRelationshipInfo, relsTo: BasicRelationshipInfo): Unit = {
-      super.complete(elements, relsFrom, relsTo)
+    override def complete(elements: Map[ElementId, ElementModelImpl],
+                          modelElements: Map[NewElementId, ElementModelImpl],
+                          relsFrom: BasicRelationshipInfo,
+                          relsTo: BasicRelationshipInfo): Unit = {
+      super.complete(elements, modelElements, relsFrom, relsTo)
       relsFrom.setter.get(info.symbol) match {
         case None => field_ = None
         case Some(f :: Nil) => field_ = f.toElement
@@ -547,8 +563,11 @@ package impl {
     extends FieldModelImpl(info, relationships, fieldName, isAbstract) with VarModel {
     override protected def typeName: String = "var"
 
-    override def complete(elements: Map[ElementId, ElementModelImpl], relsFrom: BasicRelationshipInfo, relsTo: BasicRelationshipInfo): Unit = {
-      super.complete(elements, relsFrom, relsTo)
+    override def complete(elements: Map[ElementId, ElementModelImpl],
+                          modelElements: Map[NewElementId, ElementModelImpl],
+                          relsFrom: BasicRelationshipInfo,
+                          relsTo: BasicRelationshipInfo): Unit = {
+      super.complete(elements, modelElements, relsFrom, relsTo)
       relsTo.setter.get(info.symbol) match {
         case None => setter_ = None
         case Some(f :: Nil) => setter_ = Some(f.fromElement)
@@ -567,5 +586,17 @@ package impl {
     override protected def typeName: String = "source"
 
   }
+
+  object NewElementIdImpl {
+    import java.util.concurrent.ConcurrentHashMap
+    val interned = new ConcurrentHashMap[String, NewElementIdImpl]
+    def apply(id: String) = interned.computeIfAbsent(id, id => new NewElementIdImpl(id.intern()))
+  }
+  final class NewElementIdImpl private(id:String) extends NewElementId(id) {
+    override def hashCode(): Int = id.hashCode()
+
+    override def toString: String = s"ModelSymbol[$id]"
+  }
+
 
 }
