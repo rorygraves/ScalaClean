@@ -4,7 +4,6 @@ import scalaclean.model._
 import scalaclean.rules.AbstractRule
 import scalaclean.util.{Scope, SymbolTreeVisitor, SymbolUtils}
 import scalafix.patch.Patch
-import scalafix.v1
 import scalafix.v1.{SemanticDocument, Symbol}
 
 import scala.meta.{Import, Mod, Pat, Stat}

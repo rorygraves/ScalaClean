@@ -11,6 +11,5 @@ object App1 extends App {
 object Outer {
   object Inner
   object Inner2
-
   def overloaded(i: Int) = 1
 }

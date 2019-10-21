@@ -281,6 +281,7 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
           relationsWriter.refers(currentGlobalScope, target, isSynthetic)
           super.traverse(tree)
 
+        // *********************************************************************************************************
         case classDef: ClassDef =>
           val symbol = classDef.symbol
           val isTrait = symbol.isTrait
@@ -327,6 +328,8 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
 
             super.traverse(tree)
           }
+
+        // *********************************************************************************************************
         case defdef: DefDef =>
 
           // TODO This feels wrong - this is def declType Defined field
@@ -335,13 +338,39 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
           val mSymbol = asMSymbol(symbol)
 
           def traverseMethod(method: ModelMethod): Unit = {
-            val directParentSymbols = symbol.info.parents.map(t => asMSymbol(t.typeSymbol)).toSet
 
-            symbol.overrides.foreach { overridden =>
-              val overriddenOwnerMSym = asMSymbol(overridden.owner)
-              val direct = directParentSymbols.contains(overriddenOwnerMSym)
+            if(symbol.owner.isClass) {
+              val classSym = symbol.owner
 
-              relationsWriter.overrides(method, asMSymbol(overridden), direct)
+              val directParentSymbols = symbol.info.parents.map(t => asMSymbol(t.typeSymbol)).toSet
+
+              scopeLog(s"DirectParentSymbols = $directParentSymbols")
+
+              val directParentSymbols2 = symbol.outerClass
+
+              scopeLog(s"DirectParentSymbols2 = $classSym")
+              scopeLog(s"DirectParentSymbols2 = $directParentSymbols2")
+
+              val directClassParentSymbols = classSym.info.parents.map(t => asMSymbol(t.typeSymbol)).toSet
+
+              scopeLog(s"DirectParentSymbols3 = $directClassParentSymbols")
+
+              classSym.ancestors foreach { ancestorSymbol =>
+                val ancestorMSymbol = asMSymbol(ancestorSymbol)
+                val direct = directClassParentSymbols.contains(ancestorMSymbol)
+                val overridden = symbol.overriddenSymbol(ancestorSymbol)
+                if(overridden != NoSymbol) {
+                  scopeLog(s"    AAAAA ${overridden} $direct")
+                }
+
+              }
+
+              symbol.overrides.foreach { overridden =>
+                val overriddenOwnerMSym = asMSymbol(overridden.owner)
+                val direct = directParentSymbols.contains(overriddenOwnerMSym)
+
+                relationsWriter.overrides(method, asMSymbol(overridden), direct)
+              }
             }
 
             super.traverse(tree)

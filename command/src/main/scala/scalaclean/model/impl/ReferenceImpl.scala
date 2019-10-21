@@ -42,7 +42,9 @@ final class ExtendsImpl(from:Symbol, to:Symbol, val isDirect: Boolean)
 }
 
 final class OverridesImpl(from:Symbol, to:Symbol, val isDirect: Boolean)
-  extends ReferenceImpl(from,to) with Overrides
+  extends ReferenceImpl(from,to) with Overrides {
+  override def toString: String = s"Overrides(${from} -> ${to}, isDirect = $isDirect"
+}
 
 final class GetterImpl(from:Symbol, to:Symbol)
   extends ReferenceImpl[GetterMethodModel, FieldModel](from,to) with Overrides {

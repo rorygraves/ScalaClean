@@ -82,7 +82,13 @@ private[privatiser] final case class Scoped(privateScope: AccessScope, protected
     val name = if (isProtected) "protected" else "private"
     context.enclosing.headOption match {
       case Some(enclosing) if scopeOrDefault(enclosing.symbol) == enclosing.symbol => Some(name)
-      case _ => Some(s"$name[${privateScope.symbol.displayName}]")
+
+      case _ =>
+        val scope = privateScope.symbol.displayName
+        if(scope.isEmpty)
+          Some(name)
+        else
+          Some(s"$name[${privateScope.symbol.displayName}]")
     }
   }
 

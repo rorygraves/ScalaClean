@@ -31,6 +31,7 @@ class Test_internalTransitiveOverrides extends TestCommon("Test_internalTransiti
   */
 class Test_allDirectOverrides extends TestCommon("Test_allDirectOverrides") {
   def visit(modelElement: ModelElement): String = {
+    println("HERE " + modelElement.symbol)
     val overrides = (modelElement.allDirectOverrides map (_._2)).sortBy(_.value)
     overrides match {
       case Nil => ""

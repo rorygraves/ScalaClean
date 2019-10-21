@@ -57,7 +57,7 @@ private[p2] object Other {
     x+y+z
   }
 
-  private[p2] trait usedAndVisible3 extends AnyRef {
+  /* *** SCALA CLEAN can't detect usage */trait usedAndVisible3 extends AnyRef {
     //content should be affected inside a trait
     //as the values are not visible
     private val x = 1

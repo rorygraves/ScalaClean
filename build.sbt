@@ -119,6 +119,7 @@ lazy val unitTestProject = project.in(file("testProjects/unitTestProject")).sett
         "-Yrangepos",
         s"-Xplugin:${jar.getAbsolutePath}",
         s"-Jdummy=${jar.lastModified}", // ensures recompile
+        "-P:scalaclean-analysis-plugin:debug:true",
         s"-P:scalaclean-analysis-plugin:srcdirs:${srcLocations}",
       )
     }

@@ -1,10 +1,10 @@
 package scalaclean
 
-import java.io.FileOutputStream
+import java.io.{File, FileOutputStream}
 import java.nio.charset.StandardCharsets
 import java.nio.file.Paths
 
-import org.junit.Test
+import org.scalatest.FunSuite
 import org.scalatest.junit.AssertionsForJUnit
 import scalaclean.cli.FileHelper
 import scalaclean.cli.FileHelper.toPlatform
@@ -21,62 +21,69 @@ import scalafix.v1.SemanticDocument
 import scala.meta._
 import scala.meta.internal.io.FileIO
 
-class UnitTests extends AssertionsForJUnit with DiffAssertions {
+class UnitTests extends FunSuite with AssertionsForJUnit with DiffAssertions {
 
-  @Test def akkaTimeoutTest() {
+  test("akkaTimeoutTest") {
     runTest("scalaclean/test/akka/Timeout.scala", new Test_allTransitiveOverrides(), overwrite = true)
   }
 
-  @Test def nodesTest() {
+  test("nodesTest") {
     runTest("scalaclean/test/nodes/nodes.scala", new TestNodes())
   }
 
-  @Test def internalTransitiveOverriddenByTest() {
+  test("internalTransitiveOverriddenByTest") {
     runTest("scalaclean/test/overriddenBy/internalTransitiveOverriddenBy/internalTransitiveOverriddenBy.scala", new Test_internalTransitiveOverriddenBy())
   }
 
-  @Test def internalDirectOverriddenBy() {
+  test("internalDirectOverriddenBy") {
     runTest("scalaclean/test/overriddenBy/internalDirectOverriddenBy/internalDirectOverriddenBy.scala", new Test_internalTransitiveOverriddenBy())
   }
 
-  @Test def allDirectOverrides() {
+  test("allDirectOverrides") {
     runTest("scalaclean/test/overrides/allDirectOverrides/allDirectOverrides.scala", new Test_allDirectOverrides())
   }
 
-  @Test def allTransitiveOverrides() {
+  test("allTransitiveOverrides") {
     runTest("scalaclean/test/overrides/allTransitiveOverrides/allTransitiveOverrides.scala", new Test_allTransitiveOverrides())
   }
 
-  @Test def internalDirectOverrides() {
+  test("internalDirectOverrides") {
     runTest("scalaclean/test/overrides/internalDirectOverrides/internalDirectOverrides.scala", new Test_internalDirectOverrides())
   }
 
-  @Test def internalTransitiveOverrides() {
+  test("internalTransitiveOverrides") {
     runTest("scalaclean/test/overrides/internalTransitiveOverrides/internalTransitiveOverrides.scala", new Test_internalTransitiveOverrides())
   }
 
-  @Test def allOutgoingReferences() {
+  test("allOutgoingReferences") {
     runTest("scalaclean/test/references/allOutgoingReferences/allOutgoingReferences.scala", new Test_allOutgoingReferences())
   }
 
-  @Test def internalIncomingReferences() {
+  test("internalIncomingReferences") {
     runTest("scalaclean/test/references/internalIncomingReferences/internalIncomingReferences.scala", new Test_internalIncomingReferences())
   }
 
-  @Test def internalOutgoingReferences() {
+  test("internalOutgoingReferences") {
     runTest("scalaclean/test/references/internalOutgoingReferences/internalOutgoingReferences.scala", new Test_internalOutgoingReferences())
   }
 
 
   def runTest(file: String, rule: TestCommon, overwrite: Boolean = false): Unit = {
     val projectName = "unitTestProject"
-    val scalaCleanWorkspace = ".."
+    //    val scalaCleanWorkspace = ".."
     val ivyDir = toPlatform("$HOME$/.ivy2/cache")
 
+    val scalaCleanWorkspace = if (new File(toPlatform("../testProjects")).exists()) {
+      ".."
+    } else {
+      "."
+    }
+
     val targetFiles = List(
-      RelativePath(file),
+      RelativePath(file)
     )
-    val outputClassDir: String = toPlatform(s"$scalaCleanWorkspace/testProjects/$projectName/target/scala-2.12/classes/")
+
+    val outputClassDir: String = s"${scalaCleanWorkspace}/testProjects/$projectName/target/scala-2.12/classes/"
     val inputClasspath = Classpath(toPlatform(s"$outputClassDir|$ivyDir/org.scala-lang/scala-library/jars/scala-library-2.12.8.jar|$ivyDir/org.scalaz/scalaz-core_2.12/bundles/scalaz-core_2.12-7.2.27.jar"))
     val sourceRoot = AbsolutePath(scalaCleanWorkspace)
     val inputSourceDirectories: List[AbsolutePath] = Classpath(toPlatform(s"$scalaCleanWorkspace/testProjects/$projectName/src/main/scala")).entries
@@ -92,7 +99,7 @@ class UnitTests extends AssertionsForJUnit with DiffAssertions {
 
     def run(): Unit = {
 
-      val classDir = outputClassDir + FileHelper.fileSep + "META-INF" + FileHelper.fileSep +  "ScalaClean"
+      val classDir = outputClassDir + FileHelper.fileSep + "META-INF" + FileHelper.fileSep + "ScalaClean"
       val srcDir = Paths.get(classDir).toAbsolutePath
 
       val propsFile = srcDir.resolve("ScalaClean.properties")
@@ -113,7 +120,7 @@ class UnitTests extends AssertionsForJUnit with DiffAssertions {
       rule.beforeStart()
       targetFiles.foreach { targetFile =>
         val absFile = inputSourceDirectories.head.resolve(targetFile)
-        val sdoc = DocHelper.readSemanticDoc(classLoader, symtab, absFile, sourceRoot,targetFile)
+        val sdoc = DocHelper.readSemanticDoc(classLoader, symtab, absFile, sourceRoot, targetFile)
         val (fixed, messages) = semanticPatch(rule, sdoc, suppress = false)
 
         // compare results
@@ -123,11 +130,11 @@ class UnitTests extends AssertionsForJUnit with DiffAssertions {
         val targetOutput = RelativePath(targetFile.toString() + ".expected")
         val outputFile = inputSourceDirectories.head.resolve(targetOutput)
 
-        if(overwrite) {
-                  println("Overwriting target file: " + outputFile)
-                  val w = new FileOutputStream(outputFile.toString())
-                  w.write(obtained.getBytes(StandardCharsets.UTF_8))
-                  w.close()
+        if (overwrite) {
+          println("Overwriting target file: " + outputFile)
+          val w = new FileOutputStream(outputFile.toString())
+          w.write(obtained.getBytes(StandardCharsets.UTF_8))
+          w.close()
         }
 
         val expected = FileIO.slurp(outputFile, StandardCharsets.UTF_8)
@@ -145,7 +152,8 @@ class UnitTests extends AssertionsForJUnit with DiffAssertions {
         }
       }
     }
-    run
+
+    run()
   }
 
 }

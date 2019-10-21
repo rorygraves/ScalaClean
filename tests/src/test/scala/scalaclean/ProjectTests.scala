@@ -1,11 +1,9 @@
 package scalaclean
 
-import org.junit.Test
-import org.scalatest.junit.AssertionsForJUnit
+import org.scalatest.FunSuite
 import scalaclean.cli.{DeadCodeProjectTestRunner, PrivatiserProjectTestRunner}
-import scalafix.testkit.DiffAssertions
 
-class ProjectTests extends AssertionsForJUnit with DiffAssertions {
+class ProjectTests extends FunSuite {
 
   def deadCodeProjectTest(projectName: String, overwriteTarget: Boolean = false): Unit = {
     deadCodeProjectTest(List(projectName), overwriteTarget)
@@ -27,47 +25,47 @@ class ProjectTests extends AssertionsForJUnit with DiffAssertions {
       fail(s" Failed for projects $projectNames, overwriteTarget=$overwriteTarget")
   }
 
-  @Test def deadCode1(): Unit = {
+  test("deadCode1") {
     deadCodeProjectTest("deadCodeProject1")
   }
 
-  @Test def deadCode2() {
+  test("deadCode2") {
     deadCodeProjectTest("deadCodeProject2")
   }
 
-  @Test def deadCode3() {
+  test("deadCode3") {
     deadCodeProjectTest("deadCodeProject3")
   }
 
-  @Test def deadCode4() {
+  test("deadCode4") {
     deadCodeProjectTest("deadCodeProject4")
   }
 
-  @Test def deadCode5() {
+  test("deadCode5") {
     deadCodeProjectTest("deadCodeProject5")
   }
 
-  @Test def deadCode6() {
-    deadCodeProjectTest(List("deadCodeProject6a", "deadCodeProject6b"), false)
+  test("deadCode6") {
+    deadCodeProjectTest(List("deadCodeProject6a", "deadCodeProject6b"), overwriteTarget = false)
   }
 
-  @Test def privatiser1() {
+  test("privatiser1") {
     privatiserProjectTest("privatiserProject1")
   }
 
-  @Test def privatiser2() {
+  test("privatiser2") {
     privatiserProjectTest("privatiserProject2")
   }
 
-  @Test def privatiser3() {
+  test("privatiser3") {
     privatiserProjectTest("privatiserProject3")
   }
 
-  @Test def privatiser4() {
+  test("privatiser4") {
     privatiserProjectTest("privatiserProject4")
   }
 
-  @Test def privatiser5() {
+  test("privatiser5") {
     privatiserProjectTest("privatiserProject5")
   }
 
