@@ -159,6 +159,8 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
       fn(mSymbol)
       scopeStack = scopeStack.tail
       depth -= 1
+      if (debug)
+        println(s"${indentString}/${mSymbol.debugName}")
     }
 
 
@@ -209,7 +211,6 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
       tree match {
         case packageDef: PackageDef =>
           val symbol = packageDef.symbol
-          val mSymbol = asMSymbol(symbol)
 
           // ignore package symbol for now
           enterTransScope("PackageDef") {
@@ -220,7 +221,7 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
             scopeLog("-symbol: " + asMSymbol(treeSelect.symbol).csvString)
             // avoids an issue with packages which we ScalaClean doesn't currently understand
             if (hasCurrentGlobalScope) {
-              relationsWriter.refers(currentGlobalScope, asMSymbol(treeSelect.symbol), false)
+              relationsWriter.refers(currentScope, asMSymbol(treeSelect.symbol), false)
             }
             super.traverse(treeSelect)
           }
@@ -244,7 +245,7 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
         case identTree: Ident =>
           //          identTree.name
           enterTransScope("Ident " + identTree.symbol)(super.traverse(identTree))
-          relationsWriter.refers(currentGlobalScope, asMSymbol(identTree.symbol), identTree.symbol.isSynthetic)
+          relationsWriter.refers(currentScope, asMSymbol(identTree.symbol), identTree.symbol.isSynthetic)
 
         //          scopeLog("Ident " + identTree.name)
         case importTree: Import =>
@@ -278,7 +279,7 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
         case apply: Apply =>
           val target = asMSymbol(apply.symbol)
           val isSynthetic = apply.symbol.isSynthetic
-          relationsWriter.refers(currentGlobalScope, target, isSynthetic)
+          relationsWriter.refers(currentScope, target, isSynthetic)
           super.traverse(tree)
 
         // *********************************************************************************************************

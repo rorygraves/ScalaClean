@@ -97,7 +97,7 @@ lazy val command = project.dependsOn(shared)
       }
     },
     compile.in(Compile) :=
-      compile.in(Compile).dependsOn(compile.in(unitTestProject, Compile), compile.in(privatiserProject1, Compile), compile.in(deadCodeProject1, Compile)).value,
+      compile.in(Compile).dependsOn(compile.in(unitTestProject, Compile), compile.in(privatiserTests, Compile), compile.in(deadCodeTests, Compile)).value,
 
   )
 

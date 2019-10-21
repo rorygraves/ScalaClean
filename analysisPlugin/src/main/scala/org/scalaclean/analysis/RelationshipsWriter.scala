@@ -46,7 +46,7 @@ class RelationshipsWriter(file: File, val global: Global) extends  SemanticdbOps
   }
   def writeLine(msg: String, summary: String): Unit = {
     if (! writer.writeLine(msg))
-      logger.scopeLog(s" -->[DUPLICATE] $msg")
+      logger.scopeLog(s" -->[DUPLICATE-REL] $msg")
 
     if (logger.debug) {
       logger.scopeLog(s" -->[RELATIONSHIP] $msg")

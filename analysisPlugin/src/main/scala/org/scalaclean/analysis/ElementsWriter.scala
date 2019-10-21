@@ -32,7 +32,7 @@ class ElementsWriter(file: File) {
 
     }
     if (! writer.writeLine(msg))
-      logger.scopeLog(s" -->[DUPLICATE] $msg")
+      logger.scopeLog(s" -->[DUPLICATE_ELE] $msg")
 
     if (logger.debug)
       logger.scopeLog(s" -->[ELEMENT] $msg")
