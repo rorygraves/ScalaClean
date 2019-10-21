@@ -1,6 +1,8 @@
 import sbt.Keys.libraryDependencies
 
-lazy val V = _root_.scalafix.sbt.BuildInfo
+lazy val scala212 = "2.12.8"
+lazy val scalaFixVersion = "0.9.6"
+
 inThisBuild(
   List(
     organization := "org.scalaclean",
@@ -50,13 +52,13 @@ lazy val mergeSettings = Def.settings(
 lazy val shared = project
   .settings(
     moduleName := "shared",
-    scalaVersion := V.scala212)
+    scalaVersion := scala212)
 
 lazy val analysisPlugin = project.dependsOn(shared).settings(
     moduleName := "analysisPlugin",
-    scalaVersion:= V.scala212,
-    libraryDependencies += "org.scala-lang" % "scala-compiler" % V.scala212,
-    libraryDependencies += "org.scala-lang" % "scala-reflect" % V.scala212,
+    scalaVersion:= scala212,
+    libraryDependencies += "org.scala-lang" % "scala-compiler" % scala212,
+    libraryDependencies += "org.scala-lang" % "scala-reflect" % scala212,
     mergeSettings,
 
     libraryDependencies += "org.scalameta" % "semanticdb-scalac-core_2.12.9" % "4.2.3",
@@ -80,11 +82,11 @@ fork in Test := true
 lazy val command = project.dependsOn(shared)
   .settings(
     moduleName := "command",
-    scalaVersion := V.scala212,
+    scalaVersion := scala212,
     libraryDependencies += "args4j" % "args4j" % "2.33",
     libraryDependencies += "com.github.scopt" %% "scopt" % "4.0.0-RC2",
-    libraryDependencies += "ch.epfl.scala" %% "scalafix-core" % V.scalafixVersion,
-    libraryDependencies += "ch.epfl.scala" % "scalafix-testkit_2.12.8" % V.scalafixVersion,
+    libraryDependencies += "ch.epfl.scala" %% "scalafix-core" % scalaFixVersion,
+    libraryDependencies += "ch.epfl.scala" % "scalafix-testkit_2.12.8" % scalaFixVersion,
     libraryDependencies += "junit" % "junit" % "4.12" % Test,
     libraryDependencies += "org.scalatest" %% "scalatest" % "3.0.8" % Test,
 
@@ -95,15 +97,12 @@ lazy val command = project.dependsOn(shared)
       cp.filter { f=>
         f.data.getName.contains("semanticdb-scalac_2.12.8-4.2.1.jar")
       }
-    },
-    compile.in(Compile) :=
-      compile.in(Compile).dependsOn(compile.in(unitTestProject, Compile), compile.in(privatiserTests, Compile), compile.in(deadCodeTests, Compile)).value,
-
+    }
   )
 
 
 lazy val unitTestProject = project.in(file("testProjects/unitTestProject")).settings(
-  addCompilerPlugin(scalafixSemanticdb),
+  addCompilerPlugin("org.scalameta" % "semanticdb-scalac_2.12.9" % "4.2.3"),
   libraryDependencies += "org.scalaz" %% "scalaz-core" % "7.2.28",
   scalacOptions += "-P:semanticdb:synthetics:on",
   skip in publish := true,
@@ -128,7 +127,7 @@ lazy val unitTestProject = project.in(file("testProjects/unitTestProject")).sett
 
 // template for dead code projects
 def testInputProject(id: String, projectLocation: String, dependencies: ClasspathDep[ProjectReference]*) = sbt.Project.apply(id, file(projectLocation)).settings(
-  addCompilerPlugin(scalafixSemanticdb),
+  addCompilerPlugin("org.scalameta" % "semanticdb-scalac_2.12.9" % "4.2.3"),
   scalacOptions += "-Yrangepos",
   libraryDependencies += "org.scalaz" %% "scalaz-core" % "7.2.27",
   scalacOptions += "-P:semanticdb:synthetics:on",
@@ -179,11 +178,11 @@ lazy val tests = project.dependsOn(command, unitTestProject, privatiserTests, de
   .settings(
     moduleName := "tests",
     libraryDependencies += "args4j" % "args4j" % "2.0.23",
-    libraryDependencies += "ch.epfl.scala" %% "scalafix-core" % V.scalafixVersion,
-    libraryDependencies += "ch.epfl.scala" % "scalafix-testkit_2.12.8" % V.scalafixVersion,
+    libraryDependencies += "ch.epfl.scala" %% "scalafix-core" % scalaFixVersion,
+    libraryDependencies += "ch.epfl.scala" % "scalafix-testkit_2.12.8" % scalaFixVersion,
     libraryDependencies += "junit" % "junit" % "4.12" % Test,
     libraryDependencies += "org.scalatest" %% "scalatest" % "3.0.8" % Test,
-    scalaVersion := V.scala212,
+    scalaVersion := scala212,
     crossPaths := false,
     libraryDependencies += "com.novocode" % "junit-interface" % "0.11" % Test,
   )
