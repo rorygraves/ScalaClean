@@ -42,9 +42,9 @@ class Project private(
   def symbolTable: SymbolTable = GlobalSymbolTable(classPath, includeJdk = true)
   lazy val classloader: ClassLoader = new URLClassLoader(Array(new URL("file:" + outputPath +"/")), null)
 
-  private val infos = new ConcurrentHashMap[ModelSymbol, SymbolInformation]()
+  private val infos = new ConcurrentHashMap[ElementId, SymbolInformation]()
 
-  def symbolInfo(viewedFrom: ElementModelImpl, symbol: ModelSymbol): SymbolInformation = {
+  def symbolInfo(viewedFrom: ElementModelImpl, symbol: ElementId): SymbolInformation = {
     infos.computeIfAbsent(symbol,
       s => //any doc in the project would do though
         viewedFrom.source.doc.info(s.symbol).orNull)

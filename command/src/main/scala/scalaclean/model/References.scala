@@ -1,11 +1,11 @@
 package scalaclean.model
 
-import scalaclean.model.impl.ModelSymbol
+import scalaclean.model.impl.ElementId
 import scalafix.v1.Symbol
 
 sealed trait Reference extends Ordered[Reference] {
-  def fromSymbol: ModelSymbol
-  def toSymbol: ModelSymbol
+  def fromSymbol: ElementId
+  def toSymbol: ElementId
 
   def fromElement: ModelElement
   def toElement: Option[ModelElement]

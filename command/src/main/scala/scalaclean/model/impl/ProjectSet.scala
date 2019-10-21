@@ -10,10 +10,10 @@ import scala.reflect.ClassTag
 class ProjectSet(projectPropertyPaths: Path *) extends ProjectModel {
   val projects: List[Project] = projectPropertyPaths.toList map { p => Project(p, this)}
 
-  val elements: Map[ModelSymbol, ElementModelImpl] = {
+  val elements: Map[ElementId, ElementModelImpl] = {
     val (elements, rels: immutable.Seq[BasicRelationshipInfo]) = projects.map(_.read).unzip
 
-    val elementsMap: Map[ModelSymbol, ElementModelImpl] = elements.flatten.toVector.map (e => e.symbol -> e).toMap
+    val elementsMap: Map[ElementId, ElementModelImpl] = elements.flatten.toVector.map (e => e.symbol -> e).toMap
 
     val relsFrom = rels.reduce(_ + _)
     val relsTo = relsFrom.byTo
@@ -24,9 +24,9 @@ class ProjectSet(projectPropertyPaths: Path *) extends ProjectModel {
     elementsMap
   }
 
-  override def fromSymbolLocal[T <: ModelElement](symbol: ModelSymbol, startPos: Int, endPos: Int)(implicit tpe: ClassTag[T]): T = {
+  override def fromSymbolLocal[T <: ModelElement](symbol: ElementId, startPos: Int, endPos: Int)(implicit tpe: ClassTag[T]): T = {
     val x = elements.find {
-      case (candidateSymbol: ModelSymbol,em: ValModelImpl) => em.info.startPos == startPos && em.info.endPos == endPos
+      case (candidateSymbol: ElementId,em: ValModelImpl) => em.info.startPos == startPos && em.info.endPos == endPos
       case (candidateSymbol,em: VarModelImpl) => em.info.startPos == startPos && em.info.endPos == endPos
       case _ => false
     }
@@ -39,14 +39,9 @@ class ProjectSet(projectPropertyPaths: Path *) extends ProjectModel {
     }
   }
 
-  override def fromSymbol[T <: ModelElement](symbol: ModelSymbol)(implicit tpe: ClassTag[T]): T = {
-    val targetSymbol = if (symbol.isGlobal) ModelSymbol("G:" + symbol.value) else {
-      elements.keys.find(_.value.contains(symbol.value)).getOrElse {
-        throw new IllegalStateException("Unable to match symbol: " + symbol)
-      }
+  override def fromSymbol[T <: ModelElement](symbol: ElementId)(implicit tpe: ClassTag[T]): T = {
+    val targetSymbol = if (symbol.value.startsWith("G:")) symbol  else ElementId("G:" + symbol.value)
 
-    }
-    //    elements.get(symbol) match {
     elements.get(targetSymbol) match {
       case None => throw new IllegalArgumentException(s"Unknown symbol $symbol")
       case Some(x: T) => x
@@ -54,7 +49,7 @@ class ProjectSet(projectPropertyPaths: Path *) extends ProjectModel {
     }
   }
 
-  override def getSymbol[T <: ModelElement](symbol: ModelSymbol)(implicit tpe: ClassTag[T]): Option[T] = {
+  override def getElement[T <: ModelElement](symbol: ElementId)(implicit tpe: ClassTag[T]): Option[T] = {
     elements.get(symbol) match {
       case None => None
       case Some(x: T) => Some(x)
