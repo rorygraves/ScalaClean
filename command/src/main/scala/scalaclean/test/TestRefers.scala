@@ -1,15 +1,16 @@
 package scalaclean.test
 
 import scalaclean.model._
+
 /**
   * A rule use to test that internal incoming references are set correctly,
   * needs to be run after TestAnalysis
   */
-class Test_internalIncomingReferences extends TestCommon("Test_internalIncomingReferences") {
+class Test_internalIncomingReferences(model: ProjectModel) extends TestCommon("Test_internalIncomingReferences", model) {
   def visit(modelElement: ModelElement): String = {
-    modelElement.internalIncomingReferences.map(_._1.symbol.debugValue).distinct.sorted match  {
+    modelElement.internalIncomingReferences.map(_._1.symbol.debugValue).distinct.sorted match {
       case Nil => ""
-      case refs => refs.mkString(s"internalIncomingReferences(${modelElement.symbol.debugValue}) - "," :: ", "")
+      case refs => refs.mkString(s"internalIncomingReferences(${modelElement.symbol.debugValue}) - ", " :: ", "")
     }
   }
 }
@@ -18,11 +19,12 @@ class Test_internalIncomingReferences extends TestCommon("Test_internalIncomingR
   * A rule use to test that internal outgoing references are set correctly,
   * needs to be run after TestAnalysis
   */
-class Test_internalOutgoingReferences extends TestCommon("Test_internalOutgoingReferences") {
+class Test_internalOutgoingReferences(
+  model: ProjectModel) extends TestCommon("Test_internalOutgoingReferences", model) {
   def visit(modelElement: ModelElement): String = {
-    modelElement.internalOutgoingReferences.map(_._1.symbol.debugValue).distinct.sorted match  {
+    modelElement.internalOutgoingReferences.map(_._1.symbol.debugValue).distinct.sorted match {
       case Nil => ""
-      case refs => refs.mkString(s"internalOutgoingReferences(${modelElement.symbol.debugValue}) - "," :: ", "")
+      case refs => refs.mkString(s"internalOutgoingReferences(${modelElement.symbol.debugValue}) - ", " :: ", "")
     }
   }
 }
@@ -31,11 +33,11 @@ class Test_internalOutgoingReferences extends TestCommon("Test_internalOutgoingR
   * A rule use to test that internal and external outgoing references ar set correctly,
   * needs to be run after TestAnalysis
   */
-class Test_allOutgoingReferences extends TestCommon("Test_allOutgoingReferences") {
+class Test_allOutgoingReferences(model: ProjectModel) extends TestCommon("Test_allOutgoingReferences", model) {
   def visit(modelElement: ModelElement): String = {
-    modelElement.allOutgoingReferences.map(_._2.toSymbol.debugValue).distinct.sorted match  {
+    modelElement.allOutgoingReferences.map(_._2.toSymbol.debugValue).distinct.sorted match {
       case Nil => ""
-      case refs => refs.mkString(s"allOutgoingReferences(${modelElement.symbol.debugValue}) - "," :: ", "")
+      case refs => refs.mkString(s"allOutgoingReferences(${modelElement.symbol.debugValue}) - ", " :: ", "")
     }
   }
 }

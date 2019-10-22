@@ -9,7 +9,7 @@ import org.scalatest.junit.AssertionsForJUnit
 import scalaclean.cli.FileHelper
 import scalaclean.cli.FileHelper.toPlatform
 import scalaclean.model.impl.ProjectSet
-import scalaclean.model.{ModelHelper, ProjectModel}
+import scalaclean.model.ProjectModel
 import scalaclean.test._
 import scalafix.internal.patch.PatchInternals
 import scalafix.internal.reflect.ClasspathOps
@@ -24,51 +24,51 @@ import scala.meta.internal.io.FileIO
 class UnitTests extends FunSuite with AssertionsForJUnit with DiffAssertions {
 
   test("akkaTimeoutTest") {
-    runTest("scalaclean/test/akka/Timeout.scala", new Test_allTransitiveOverrides(), overwrite = true)
+    runTest("scalaclean/test/akka/Timeout.scala", new Test_allTransitiveOverrides(_))
   }
 
   test("nodesTest") {
-    runTest("scalaclean/test/nodes/nodes.scala", new TestNodes())
+    runTest("scalaclean/test/nodes/nodes.scala", new TestNodes(_))
   }
 
   test("internalTransitiveOverriddenByTest") {
-    runTest("scalaclean/test/overriddenBy/internalTransitiveOverriddenBy/internalTransitiveOverriddenBy.scala", new Test_internalTransitiveOverriddenBy())
+    runTest("scalaclean/test/overriddenBy/internalTransitiveOverriddenBy/internalTransitiveOverriddenBy.scala", new Test_internalTransitiveOverriddenBy(_))
   }
 
   test("internalDirectOverriddenBy") {
-    runTest("scalaclean/test/overriddenBy/internalDirectOverriddenBy/internalDirectOverriddenBy.scala", new Test_internalTransitiveOverriddenBy())
+    runTest("scalaclean/test/overriddenBy/internalDirectOverriddenBy/internalDirectOverriddenBy.scala", new Test_internalTransitiveOverriddenBy(_))
   }
 
   test("allDirectOverrides") {
-    runTest("scalaclean/test/overrides/allDirectOverrides/allDirectOverrides.scala", new Test_allDirectOverrides())
+    runTest("scalaclean/test/overrides/allDirectOverrides/allDirectOverrides.scala", new Test_allDirectOverrides(_))
   }
 
   test("allTransitiveOverrides") {
-    runTest("scalaclean/test/overrides/allTransitiveOverrides/allTransitiveOverrides.scala", new Test_allTransitiveOverrides())
+    runTest("scalaclean/test/overrides/allTransitiveOverrides/allTransitiveOverrides.scala", new Test_allTransitiveOverrides(_))
   }
 
   test("internalDirectOverrides") {
-    runTest("scalaclean/test/overrides/internalDirectOverrides/internalDirectOverrides.scala", new Test_internalDirectOverrides())
+    runTest("scalaclean/test/overrides/internalDirectOverrides/internalDirectOverrides.scala", new Test_internalDirectOverrides(_))
   }
 
   test("internalTransitiveOverrides") {
-    runTest("scalaclean/test/overrides/internalTransitiveOverrides/internalTransitiveOverrides.scala", new Test_internalTransitiveOverrides())
+    runTest("scalaclean/test/overrides/internalTransitiveOverrides/internalTransitiveOverrides.scala", new Test_internalTransitiveOverrides(_))
   }
 
   test("allOutgoingReferences") {
-    runTest("scalaclean/test/references/allOutgoingReferences/allOutgoingReferences.scala", new Test_allOutgoingReferences())
+    runTest("scalaclean/test/references/allOutgoingReferences/allOutgoingReferences.scala", new Test_allOutgoingReferences(_))
   }
 
   test("internalIncomingReferences") {
-    runTest("scalaclean/test/references/internalIncomingReferences/internalIncomingReferences.scala", new Test_internalIncomingReferences())
+    runTest("scalaclean/test/references/internalIncomingReferences/internalIncomingReferences.scala", new Test_internalIncomingReferences(_))
   }
 
   test("internalOutgoingReferences") {
-    runTest("scalaclean/test/references/internalOutgoingReferences/internalOutgoingReferences.scala", new Test_internalOutgoingReferences())
+    runTest("scalaclean/test/references/internalOutgoingReferences/internalOutgoingReferences.scala",new Test_internalOutgoingReferences(_))
   }
 
 
-  def runTest(file: String, rule: TestCommon, overwrite: Boolean = false): Unit = {
+  def runTest(file: String, ruleFn: ProjectModel => TestCommon, overwrite: Boolean = false): Unit = {
     val projectName = "unitTestProject"
     //    val scalaCleanWorkspace = ".."
     val ivyDir = toPlatform("$HOME$/.ivy2/cache")
@@ -104,7 +104,6 @@ class UnitTests extends FunSuite with AssertionsForJUnit with DiffAssertions {
 
       val propsFile = srcDir.resolve("ScalaClean.properties")
       val projects = new ProjectSet(propsFile)
-      ModelHelper.model = Some(projects)
 
       runRule(projects)
     }
@@ -117,6 +116,7 @@ class UnitTests extends FunSuite with AssertionsForJUnit with DiffAssertions {
       println("---------------------------------------------------------------------------------------------------")
       // run rule
 
+      val rule = ruleFn(projectModel)
       rule.beforeStart()
       targetFiles.foreach { targetFile =>
         val absFile = inputSourceDirectories.head.resolve(targetFile)

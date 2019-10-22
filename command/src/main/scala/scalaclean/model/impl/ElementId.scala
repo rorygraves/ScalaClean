@@ -1,13 +1,15 @@
 package scalaclean.model.impl
 
+import java.util.concurrent.ConcurrentHashMap
+
 import scalafix.v1.{SemanticDocument, Symbol}
 
 import scala.meta.Tree
 
-case class ElementId(symbol: Symbol) {
-  def isGlobal: Boolean = symbol.isGlobal
+case class ElementId private (isGlobal: Boolean, symbol: Symbol) {
 
-  def value = symbol.value
+
+  def value: String = symbol.value
 
   val debugValue: String = symbol.value
 
@@ -25,8 +27,33 @@ case class ElementId(symbol: Symbol) {
 
 object ElementId {
 
-  def apply(s: String): ElementId = ElementId(Symbol(s))
-  val AppObject: ElementId = ElementId(Symbol("G:scala/App#"))
+  private val cache = new ConcurrentHashMap[String, ElementId]()
+
+  def apply(s: Symbol): ElementId = {
+    val strRep = s.value
+    if(strRep.startsWith("G:"))
+      throw new IllegalArgumentException("Boom")
+    apply(strRep)
+  }
+
+  def apply(s: String): ElementId = {
+
+    if(s.startsWith("G:") || s.startsWith("L:")) {
+      cache.computeIfAbsent(s, s => {
+        val isGlobal = s.startsWith("G:")
+        val symbol = Symbol(s.drop(2))
+        ElementId(isGlobal, symbol)
+      })
+    } else {
+      val symbol =  Symbol(s)
+      if(symbol.isGlobal)
+        apply("G:" + s)
+      else
+        apply("L:" + s)
+    }
+  }
+
+  val AppObject: ElementId = ElementId("G:scala/App#")
 
   def fromTree(tree: Tree)(implicit doc: SemanticDocument): ElementId = {
     import scalafix.v1.{Patch => _, _}

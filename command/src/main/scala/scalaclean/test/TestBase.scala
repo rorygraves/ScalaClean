@@ -11,16 +11,11 @@ import scala.meta.{Decl, Defn, Import, Pat, Pkg, Stat, Term, Tree}
   * A rule use to test the that incoming references ar set correctly,
   * needs to be run after ScalaCleanTestAnalysis
   */
-abstract class TestBase(name: String) extends SemanticRule(name) {
-  var model: ProjectModel = _
+abstract class TestBase(name: String, model: ProjectModel) extends SemanticRule(name) {
 
   override def beforeStart(): Unit = {
     println(s"Test Rule $name beforeStart START")
-
-    // hack to load the model from the helper class
-    this.model = ModelHelper.model.getOrElse(throw new IllegalStateException("No model to work from"))
     println(s"Test Rule $name size ${model.allOf[ModelElement].size}")
-
     println(s"Cleaner Rule $name beforeStart END")
   }
 

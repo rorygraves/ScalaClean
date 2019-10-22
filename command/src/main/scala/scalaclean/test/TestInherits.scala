@@ -5,7 +5,7 @@ import scalaclean.model._
 /**
   * A rule use to test the that overrides as set correctly
   */
-class Test_internalDirectOverrides extends TestCommon("Test_internalDirectOverrides") {
+class Test_internalDirectOverrides(model: ProjectModel) extends TestCommon("Test_internalDirectOverrides", model) {
   def visit(modelElement: ModelElement): String = {
     val overrides = modelElement.internalDirectOverrides.sorted
     overrides match {
@@ -17,7 +17,7 @@ class Test_internalDirectOverrides extends TestCommon("Test_internalDirectOverri
 /**
   * A rule use to test the that overrides as set correctly
   */
-class Test_internalTransitiveOverrides extends TestCommon("Test_internalTransitiveOverrides") {
+class Test_internalTransitiveOverrides(model: ProjectModel) extends TestCommon("Test_internalTransitiveOverrides", model) {
   def visit(modelElement: ModelElement): String = {
     val overrides = modelElement.internalTransitiveOverrides.sorted
     overrides match {
@@ -29,7 +29,7 @@ class Test_internalTransitiveOverrides extends TestCommon("Test_internalTransiti
 /**
   * A rule use to test the that overrides as set correctly
   */
-class Test_allDirectOverrides extends TestCommon("Test_allDirectOverrides") {
+class Test_allDirectOverrides(model: ProjectModel) extends TestCommon("Test_allDirectOverrides", model) {
   def visit(modelElement: ModelElement): String = {
     println("HERE " + modelElement.symbol)
     val overrides = (modelElement.allDirectOverrides map (_._2.debugValue)).sorted
@@ -42,7 +42,7 @@ class Test_allDirectOverrides extends TestCommon("Test_allDirectOverrides") {
 /**
   * A rule use to test the that overrides as set correctly
   */
-class Test_allTransitiveOverrides extends TestCommon("Test_allTransitiveOverrides") {
+class Test_allTransitiveOverrides(model: ProjectModel) extends TestCommon("Test_allTransitiveOverrides", model) {
   def visit(modelElement: ModelElement): String = {
     val overrides = (modelElement.allTransitiveOverrides map (_._2.debugValue)).sorted
     overrides match {
@@ -54,7 +54,7 @@ class Test_allTransitiveOverrides extends TestCommon("Test_allTransitiveOverride
 /**
   * A rule use to test the that overrides as set correctly
   */
-class Test_internalDirectOverriddenBy extends TestCommon("Test_internalDirectOverriddenBy") {
+class Test_internalDirectOverriddenBy(model: ProjectModel) extends TestCommon("Test_internalDirectOverriddenBy", model) {
   def visit(modelElement: ModelElement): String = {
     val overrides = modelElement.internalDirectOverriddenBy.sorted
     overrides match {
@@ -66,7 +66,7 @@ class Test_internalDirectOverriddenBy extends TestCommon("Test_internalDirectOve
 /**
   * A rule use to test the that overrides as set correctly
   */
-class Test_internalTransitiveOverriddenBy extends TestCommon("Test_internalTransitiveOverriddenBy") {
+class Test_internalTransitiveOverriddenBy(model: ProjectModel) extends TestCommon("Test_internalTransitiveOverriddenBy", model) {
   def visit(modelElement: ModelElement): String = {
     val overrides = modelElement.internalTransitiveOverriddenBy.sorted
     overrides match {

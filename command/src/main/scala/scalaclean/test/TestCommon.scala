@@ -2,7 +2,7 @@ package scalaclean.test
 
 import scalaclean.model._
 
-abstract class TestCommon(name: String) extends TestBase(name) {
+abstract class TestCommon(name: String, model: ProjectModel) extends TestBase(name, model) {
   def visit(modelElement: ModelElement): String
   override def visitVar(element: VarModel): String = visit(element)
 

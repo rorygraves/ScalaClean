@@ -23,10 +23,10 @@ object ModelReader {
       line =>
         val tokens = line.split(",")
 
-        val from = SymbolCache(tokens(0))
+        val from = ElementId(tokens(0))
         val fromModel = NewElementIdImpl(tokens(1))
         val relType = tokens(2)
-        val to = SymbolCache(tokens(3))
+        val to = ElementId(tokens(3))
         val toModel = NewElementIdImpl(tokens(4))
 
         val offset = 5
@@ -75,7 +75,7 @@ object ModelReader {
           val tokens = line.split(",")
 
           val typeId = tokens(0)
-          val symbol = SymbolCache(tokens(1))
+          val symbol = ElementId(tokens(1))
           val modelSymbol = NewElementIdImpl(tokens(2))
           val src = project.source(tokens(3))
           val start = tokens(4).toInt
