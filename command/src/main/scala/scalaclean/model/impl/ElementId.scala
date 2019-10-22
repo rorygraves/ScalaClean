@@ -19,6 +19,7 @@ case class ElementId private (isGlobal: Boolean, symbol: Symbol) {
 
   def asNonEmpty: Option[ElementId] = symbol.asNonEmpty.map(s => ElementId(s))
 
+  @deprecated
   def owner: ElementId = ElementId(symbol.owner)
 
   def isNone: Boolean = symbol.isNone

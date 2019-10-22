@@ -5,6 +5,7 @@ import scalaclean.model.impl.ElementId
 object SymbolUtils {
 
   @scala.annotation.tailrec
+  @deprecated //Not really for the ElementId
   def findCommonParent(scope1: ElementId, scope2: ElementId): ElementId = {
     def depth(scope: ElementId): Int = {
       if (scope.isNone) 0 else depth(scope.owner) +1

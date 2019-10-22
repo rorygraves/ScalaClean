@@ -51,7 +51,7 @@ class RelationshipsWriter(file: File, val global: Global) extends SemanticdbOps 
   }
 
   def writeLine(source: HasModelCommon, destination: HasModelCommon, msg: String, summary: String): Unit = {
-    if (source == destination) {
+    if (source.common == destination.common) {
       logger.scopeLog(s" -->[IGNORED-REL] (source == dest) $msg")
     } else {
       if (!writer.writeLine(msg))
