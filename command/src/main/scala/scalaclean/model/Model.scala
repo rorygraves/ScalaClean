@@ -1,9 +1,7 @@
 package scalaclean.model
 
 import scalaclean.model.impl.ElementId
-import scalafix.v1.{Symbol, SymbolInformation}
 
-//import scala.meta.{Decl, Defn, Tree}
 import scala.reflect.ClassTag
 
 sealed trait ModelElement extends Ordered[ModelElement] {
@@ -65,12 +63,6 @@ sealed trait ModelElement extends Ordered[ModelElement] {
   def internalTransitiveOverriddenBy: List[ModelElement]
 
   //end old APIs
-
-  @deprecated
-  def symbolInfo: SymbolInformation
-
-  @deprecated
-  def symbolInfo(anotherSymbol: ElementId): SymbolInformation
 
   //any block may contain many val of the same name!
   //  val foo = {
@@ -397,10 +389,6 @@ package impl {
     override def enclosing: List[ElementModelImpl] = within
 
     override def classOrEnclosing: ClassLike = enclosing.head.classOrEnclosing
-
-    override def symbolInfo: SymbolInformation = project.symbolInfo(this, symbol)
-
-    override def symbolInfo(anotherSymbol: ElementId): SymbolInformation = project.symbolInfo(this, anotherSymbol)
 
     override def fields: List[FieldModel] = children collect {
       case f: FieldModelImpl => f
