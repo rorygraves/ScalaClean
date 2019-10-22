@@ -10,7 +10,7 @@ class Test_internalDirectOverrides(model: ProjectModel) extends TestCommon("Test
     val overrides = modelElement.internalDirectOverrides.sorted
     overrides match {
       case Nil => ""
-      case refs => justSymbols(refs).mkString(s"internalDirectOverrides(${modelElement.symbol.debugValue}) - ", " :: ", "")
+      case refs => debugValues(refs).mkString(s"internalDirectOverrides(${modelElement.symbol.debugValue}) - ", " :: ", "")
     }
   }
 }
@@ -22,7 +22,7 @@ class Test_internalTransitiveOverrides(model: ProjectModel) extends TestCommon("
     val overrides = modelElement.internalTransitiveOverrides.sorted
     overrides match {
       case Nil => ""
-      case refs => justSymbols(refs).mkString(s"internalTransitiveOverrides(${modelElement.symbol.debugValue}) - ", " :: ", "")
+      case refs => debugValues(refs).mkString(s"internalTransitiveOverrides(${modelElement.symbol.debugValue}) - ", " :: ", "")
     }
   }
 }
@@ -59,7 +59,7 @@ class Test_internalDirectOverriddenBy(model: ProjectModel) extends TestCommon("T
     val overrides = modelElement.internalDirectOverriddenBy.sorted
     overrides match {
       case Nil => ""
-      case refs => justSymbols(refs).mkString(s"internalDirectOverriddenBy(${modelElement.symbol.debugValue}) - ", " :: ", "")
+      case refs => debugValues(refs).mkString(s"internalDirectOverriddenBy(${modelElement.symbol.debugValue}) - ", " :: ", "")
     }
   }
 }
@@ -71,7 +71,7 @@ class Test_internalTransitiveOverriddenBy(model: ProjectModel) extends TestCommo
     val overrides = modelElement.internalTransitiveOverriddenBy.sorted
     overrides match {
       case Nil => ""
-      case refs => justSymbols(refs).mkString(s"internalTransitiveOverriddenBy(${modelElement.symbol.debugValue}) - ", " :: ", "")
+      case refs => debugValues(refs).mkString(s"internalTransitiveOverriddenBy(${modelElement.symbol.debugValue}) - ", " :: ", "")
     }
   }
 }

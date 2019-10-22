@@ -16,7 +16,7 @@ abstract class TestCommon(name: String, model: ProjectModel) extends TestBase(na
 
   override def visitTrait(element: TraitModel): String = visit(element)
 
-  def justSymbols(elements: Seq[ModelElement]): Seq[String] = {
-    elements map (_.symbol.symbol.toString())
+  def debugValues(elements: Seq[ModelElement]): Seq[String] = {
+    elements map (_.symbol.debugValue)
   }
 }

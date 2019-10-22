@@ -11,7 +11,7 @@ case class ElementId private (isGlobal: Boolean, symbol: Symbol) {
 
   def value: String = symbol.value
 
-  val debugValue: String = symbol.value
+  def debugValue: String = s"${if (isGlobal) "G" else "L"}:$value"
 
   def isRootPackage: Boolean = symbol.isRootPackage
 
