@@ -339,6 +339,17 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
           val mSymbol = asMSymbol(symbol)
 
           def traverseMethod(method: ModelMethod): Unit = {
+            if (symbol.isConstructor)
+              //FIXME - only for the declared extends/with
+              symbol.enclClass.info.parents.foreach {
+                case t if t.typeSymbol.isTrait =>
+                  val init = t.decl(newTermName("$init$"))
+                  if (init != g.NoSymbol) {
+                    relationsWriter.refers(currentScope, asMSymbol(init), false)
+                  }
+                case _ =>
+              }
+
 
             if(symbol.owner.isClass) {
               val classSym = symbol.owner

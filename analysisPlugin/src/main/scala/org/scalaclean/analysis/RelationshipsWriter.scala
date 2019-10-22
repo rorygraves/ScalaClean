@@ -5,58 +5,63 @@ import java.io.File
 import scala.meta.internal.semanticdb.scalac.SemanticdbOps
 import scala.tools.nsc.Global
 
-class RelationshipsWriter(file: File, val global: Global) extends  SemanticdbOps {
+class RelationshipsWriter(file: File, val global: Global) extends SemanticdbOps {
 
   var logger: ScopeLogging = _
   val writer = new SortedStringWriter(file.toPath)
-  def commonOutput(from: HasModelCommon, token:String, to: HasModelCommon): String = {
+
+  def commonOutput(from: HasModelCommon, token: String, to: HasModelCommon): String = {
     s"${from.csvString},${from.newCsvString},$token,${to.csvString},${to.newCsvString}"
     //    s"${from.csvString},$token,${to.csvString}"
   }
 
   def overrides(overrider: ModelMethod, overridden: HasModelCommon, isDirect: Boolean): Unit = {
-    writeLine(s"${commonOutput(overrider, IoTokens.relOverrides, overridden)},$isDirect",
+    writeLine(overrider, overridden, s"${commonOutput(overrider, IoTokens.relOverrides, overridden)},$isDirect",
       s"${IoTokens.relOverrides} ${overridden.csvString}) Direct:$isDirect")
   }
 
   def refers(container: HasModelCommon, target: HasModelCommon, isSynthetic: Boolean): Unit = {
-    writeLine(s"${commonOutput(container, IoTokens.relRefers, target)},$isSynthetic",
+    writeLine(container, target, s"${commonOutput(container, IoTokens.relRefers, target)},$isSynthetic",
       s"${IoTokens.relRefers} ${target.csvString}) Synthetic:$isSynthetic")
   }
 
   def extendsCls(parentSym: HasModelCommon, childSym: ModelSymbol, direct: Boolean): Unit = {
-    writeLine(s"${commonOutput(childSym, IoTokens.relExtends, parentSym)},$direct",
+    writeLine(parentSym, childSym, s"${commonOutput(childSym, IoTokens.relExtends, parentSym)},$direct",
       s"${IoTokens.relExtends} ${parentSym.csvString} Direct:$direct")
   }
 
   def within(outerSym: ModelSymbol, innerSym: ModelSymbol): Unit = {
-    writeLine(s"${commonOutput(innerSym, IoTokens.relWithin, outerSym)}",
+    writeLine(outerSym, innerSym, s"${commonOutput(innerSym, IoTokens.relWithin, outerSym)}",
       s"${IoTokens.relWithin} ${outerSym.csvString}")
 
   }
 
   def getterFor(method: ModelCommon, field: ModelCommon): Unit = {
-    writeLine(s"${commonOutput(method, IoTokens.relGetter, field)}",
+    writeLine(method, field, s"${commonOutput(method, IoTokens.relGetter, field)}",
       s"${IoTokens.relGetter} ${field.csvString}")
   }
 
   def setterFor(method: ModelCommon, field: ModelCommon): Unit = {
-    writeLine(s"${commonOutput(method, IoTokens.relSetter, field)}",
+    writeLine(method, field, s"${commonOutput(method, IoTokens.relSetter, field)}",
       s"${IoTokens.relSetter} ${field.csvString}")
   }
 
   def endUnit(): Unit = {
     writer.flush()
   }
-  def writeLine(msg: String, summary: String): Unit = {
-    if (! writer.writeLine(msg))
-      logger.scopeLog(s" -->[DUPLICATE-REL] $msg")
 
-    if (logger.debug) {
-      logger.scopeLog(s" -->[RELATIONSHIP] $msg")
-      logger.scopeLog(s" -->[SUMMARY] $summary")
+  def writeLine(source: HasModelCommon, destination: HasModelCommon, msg: String, summary: String): Unit = {
+    if (source == destination) {
+      logger.scopeLog(s" -->[IGNORED-REL] (source == dest) $msg")
+    } else {
+      if (!writer.writeLine(msg))
+        logger.scopeLog(s" -->[DUPLICATE-REL] $msg")
+
+      if (logger.debug) {
+        logger.scopeLog(s" -->[RELATIONSHIP] $msg")
+        logger.scopeLog(s" -->[SUMMARY] $summary")
+      }
     }
-
   }
 
   def finish(): Unit = {

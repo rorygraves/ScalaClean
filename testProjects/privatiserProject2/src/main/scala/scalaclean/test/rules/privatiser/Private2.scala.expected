@@ -13,6 +13,7 @@ object Private2 extends App {
   new Other.usedAndVisible2
   new Other.usedAndVisible2a{}
   new Other.usedAndVisible3{}
+  new Other.usedAndVisible3a with Other.usedAndVisible3b {}
 }
 private[p2] object Other {
 

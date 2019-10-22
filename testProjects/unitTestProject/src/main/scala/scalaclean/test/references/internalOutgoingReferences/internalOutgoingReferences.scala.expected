@@ -9,7 +9,7 @@ class Parent {
 }
 class Child extends Parent{
   def bar(x:Any): Unit = ()
-}/* internalOutgoingReferences(scalaclean/test/references/internalOutgoingReferences/Child#) - scalaclean/test/references/internalOutgoingReferences/Parent# */
+}/* internalOutgoingReferences(G:scalaclean/test/references/internalOutgoingReferences/Child#) - G:scalaclean/test/references/internalOutgoingReferences/Parent# */
 object Special {
   def myVar1 = 1
   def myVar1_=(i: Int) = ()
@@ -41,4 +41,4 @@ object XX {
   }
 
   Special(1) = 7
-}/* internalOutgoingReferences(scalaclean/test/references/internalOutgoingReferences/XX.) - scalaclean/test/references/internalOutgoingReferences/Child# :: scalaclean/test/references/internalOutgoingReferences/Child#bar(). :: scalaclean/test/references/internalOutgoingReferences/Parent#foo(). :: scalaclean/test/references/internalOutgoingReferences/Special. :: scalaclean/test/references/internalOutgoingReferences/Special.`myVar1_=`(). :: scalaclean/test/references/internalOutgoingReferences/Special.`myVar2_=`(). :: scalaclean/test/references/internalOutgoingReferences/Special.apply(). :: scalaclean/test/references/internalOutgoingReferences/Special.myVar2(). :: scalaclean/test/references/internalOutgoingReferences/Special.unapply(). :: scalaclean/test/references/internalOutgoingReferences/Special.update(). :: scalaclean/test/references/internalOutgoingReferences/XX.x. */
+}/* internalOutgoingReferences(G:scalaclean/test/references/internalOutgoingReferences/XX.) - G:scalaclean/test/references/internalOutgoingReferences/Child# :: G:scalaclean/test/references/internalOutgoingReferences/Child#`<init>`(). :: G:scalaclean/test/references/internalOutgoingReferences/Child#bar(). :: G:scalaclean/test/references/internalOutgoingReferences/Parent#foo(). :: G:scalaclean/test/references/internalOutgoingReferences/Special. :: G:scalaclean/test/references/internalOutgoingReferences/Special.`myVar1_=`(). :: G:scalaclean/test/references/internalOutgoingReferences/Special.`myVar2_=`(). :: G:scalaclean/test/references/internalOutgoingReferences/Special.apply(). :: G:scalaclean/test/references/internalOutgoingReferences/Special.myVar2(). :: G:scalaclean/test/references/internalOutgoingReferences/Special.unapply(). :: G:scalaclean/test/references/internalOutgoingReferences/Special.update(). :: G:scalaclean/test/references/internalOutgoingReferences/XX.x. */

@@ -5,22 +5,22 @@ rules = [ Analysis , Test_allOutgoingReferences ]
 package scalaclean.test.references.allOutgoingReferences
 
 class Parent {
-  def foo: Unit = ()/* allOutgoingReferences(scalaclean/test/references/allOutgoingReferences/Parent#foo().) - scala/Unit# */
-}/* allOutgoingReferences(scalaclean/test/references/allOutgoingReferences/Parent#) - scalaclean/test/references/allOutgoingReferences/Parent#`<init>`(). */
+  def foo: Unit = ()/* allOutgoingReferences(G:scalaclean/test/references/allOutgoingReferences/Parent#foo().) - scala/Unit# */
+}/* allOutgoingReferences(G:scalaclean/test/references/allOutgoingReferences/Parent#) - G:scalaclean/test/references/allOutgoingReferences/Parent#`<init>`(). */
 class Child extends Parent{
-  def bar(x:Any): Unit = ()/* allOutgoingReferences(scalaclean/test/references/allOutgoingReferences/Child#bar().) - scala/Any# :: scala/Unit# :: scalaclean/test/references/allOutgoingReferences/Child#bar().(x) */
-}/* allOutgoingReferences(scalaclean/test/references/allOutgoingReferences/Child#) - scalaclean/test/references/allOutgoingReferences/Child#`<init>`(). :: scalaclean/test/references/allOutgoingReferences/Parent# :: scalaclean/test/references/allOutgoingReferences/Parent#`<init>`(). */
+  def bar(x:Any): Unit = ()/* allOutgoingReferences(G:scalaclean/test/references/allOutgoingReferences/Child#bar().) - scala/Any# :: scala/Unit# :: G:scalaclean/test/references/allOutgoingReferences/Child#bar().(x) */
+}/* allOutgoingReferences(G:scalaclean/test/references/allOutgoingReferences/Child#) - G:scalaclean/test/references/allOutgoingReferences/Child#`<init>`(). :: G:scalaclean/test/references/allOutgoingReferences/Parent# :: G:scalaclean/test/references/allOutgoingReferences/Parent#`<init>`(). */
 object Special {
   def myVar1 = 1
-  def myVar1_=(i: Int) = ()/* allOutgoingReferences(scalaclean/test/references/allOutgoingReferences/Special.`myVar1_=`().) - scala/Int# :: scalaclean/test/references/allOutgoingReferences/Special.`myVar1_=`().(i) */
+  def myVar1_=(i: Int) = ()/* allOutgoingReferences(G:scalaclean/test/references/allOutgoingReferences/Special.`myVar1_=`().) - scala/Int# :: G:scalaclean/test/references/allOutgoingReferences/Special.`myVar1_=`().(i) */
 
   def myVar2 = 1
-  def myVar2_=(i: Int) = ()/* allOutgoingReferences(scalaclean/test/references/allOutgoingReferences/Special.`myVar2_=`().) - scala/Int# :: scalaclean/test/references/allOutgoingReferences/Special.`myVar2_=`().(i) */
+  def myVar2_=(i: Int) = ()/* allOutgoingReferences(G:scalaclean/test/references/allOutgoingReferences/Special.`myVar2_=`().) - scala/Int# :: G:scalaclean/test/references/allOutgoingReferences/Special.`myVar2_=`().(i) */
 
   def apply() = 7
-  def unapply(a:Any) = Some(1,2)/* allOutgoingReferences(scalaclean/test/references/allOutgoingReferences/Special.unapply().) - scala/Any# :: scala/Int# :: scala/Some. :: scala/Some.apply(). :: scala/Tuple2# :: scala/Tuple2.apply(). :: scalaclean/test/references/allOutgoingReferences/Special.unapply().(a) */
+  def unapply(a:Any) = Some(1,2)/* allOutgoingReferences(G:scalaclean/test/references/allOutgoingReferences/Special.unapply().) - G:scala/Any# :: G:scala/Int# :: G:scala/Some. :: G:scala/Some.apply(). :: G:scala/Tuple2# :: G:scala/Tuple2.apply(). :: G:G:scalaclean/test/references/allOutgoingReferences/Special.unapply().(a) */
 
-  def update(i: Int, j: Int) = ()/* allOutgoingReferences(scalaclean/test/references/allOutgoingReferences/Special.update().) - scala/Int# :: scalaclean/test/references/allOutgoingReferences/Special.update().(i) :: scalaclean/test/references/allOutgoingReferences/Special.update().(j) */
+  def update(i: Int, j: Int) = ()/* allOutgoingReferences(G:scalaclean/test/references/allOutgoingReferences/Special.update().) - scala/Int# :: G:scalaclean/test/references/allOutgoingReferences/Special.update().(i) :: G:scalaclean/test/references/allOutgoingReferences/Special.update().(j) */
 
 }
 
@@ -34,11 +34,11 @@ object XX {
   println(Special.myVar2)
 
   Special()
-  val x: Any = 1/* allOutgoingReferences(scalaclean/test/references/allOutgoingReferences/XX.x.) - scala/Any# */
+  val x: Any = 1/* allOutgoingReferences(G:scalaclean/test/references/allOutgoingReferences/XX.x.) - scala/Any# */
   x match {
     case i: Int => ???
     case Special(a,b) => ???
   }
 
   Special(1) = 7
-}/* allOutgoingReferences(scalaclean/test/references/allOutgoingReferences/XX.) - local0 :: local1 :: local2 :: scala/Int# :: scala/Int#`+`(+4). :: scala/Predef.`???`(). :: scala/Predef.println(+1). :: scalaclean/test/references/allOutgoingReferences/Child# :: scalaclean/test/references/allOutgoingReferences/Child#`<init>`(). :: scalaclean/test/references/allOutgoingReferences/Child#bar(). :: scalaclean/test/references/allOutgoingReferences/Parent#foo(). :: scalaclean/test/references/allOutgoingReferences/Special. :: scalaclean/test/references/allOutgoingReferences/Special.`myVar1_=`(). :: scalaclean/test/references/allOutgoingReferences/Special.`myVar2_=`(). :: scalaclean/test/references/allOutgoingReferences/Special.apply(). :: scalaclean/test/references/allOutgoingReferences/Special.myVar2(). :: scalaclean/test/references/allOutgoingReferences/Special.unapply(). :: scalaclean/test/references/allOutgoingReferences/Special.update(). :: scalaclean/test/references/allOutgoingReferences/XX.x. */
+}/* allOutgoingReferences(G:scalaclean/test/references/allOutgoingReferences/XX.) - local0 :: local1 :: local2 :: scala/Int# :: scala/Int#`+`(+4). :: scala/Predef.`???`(). :: scala/Predef.println(+1). :: G:scalaclean/test/references/allOutgoingReferences/Child# :: G:scalaclean/test/references/allOutgoingReferences/Child#`<init>`(). :: G:scalaclean/test/references/allOutgoingReferences/Child#bar(). :: G:scalaclean/test/references/allOutgoingReferences/Parent#foo(). :: G:scalaclean/test/references/allOutgoingReferences/Special. :: G:scalaclean/test/references/allOutgoingReferences/Special.`myVar1_=`(). :: G:scalaclean/test/references/allOutgoingReferences/Special.`myVar2_=`(). :: G:scalaclean/test/references/allOutgoingReferences/Special.apply(). :: G:scalaclean/test/references/allOutgoingReferences/Special.myVar2(). :: G:scalaclean/test/references/allOutgoingReferences/Special.unapply(). :: G:scalaclean/test/references/allOutgoingReferences/Special.update(). :: G:scalaclean/test/references/allOutgoingReferences/XX.x. */

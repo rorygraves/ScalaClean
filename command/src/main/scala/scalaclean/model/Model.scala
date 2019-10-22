@@ -98,7 +98,7 @@ sealed trait ModelElement extends Ordered[ModelElement] {
 
   protected def infoName = symbol.displayName
 
-  override def toString: String = s"$infoTypeName $infoName [$infoPosString] $infoDetail [[$symbol]]"
+  override def toString: String = s"$infoTypeName $infoName [$infoPosString] $infoDetail [[${symbol.symbol}]]"
 }
 
 sealed trait ClassLike extends ModelElement {
