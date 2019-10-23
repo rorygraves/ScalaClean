@@ -17,6 +17,12 @@ object Special {
   def myVar2 = 1
   def myVar2_=(i: Int) = ()
 
+  def myVar3 = 1
+  def myVar3_=(i: Int) = ()
+
+  def myVar4 = 1
+  def myVar4_=(i: Int) = ()
+
   def apply() = 7
   def unapply(a:Any) = Some(1,2)
 
@@ -32,6 +38,10 @@ object XX {
 
   Special.myVar2 = 9
   println(Special.myVar2)
+
+  Special.myVar3 = 9
+
+  println(Special.myVar4)
 
   Special()
   val x: Any = 1
