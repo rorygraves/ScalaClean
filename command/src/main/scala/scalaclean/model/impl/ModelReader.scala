@@ -77,13 +77,14 @@ object ModelReader {
           val typeId = tokens(0)
           val symbol = ElementId(tokens(1))
           val modelSymbol = NewElementIdImpl(tokens(2))
-          val src = project.source(tokens(3))
-          val start = tokens(4).toInt
-          val end = tokens(5).toInt
+          val flags = java.lang.Long.parseLong(tokens(3), 16)
+          val src = project.source(tokens(4))
+          val start = tokens(5).toInt
+          val end = tokens(6).toInt
 
           val basicInfo = BasicElementInfo(symbol, modelSymbol, src, start, end)
 
-          val idx = 6
+          val idx = 7
           val ele: ElementModelImpl = typeId match {
             case IoTokens.typeObject =>
               new ObjectModelImpl(basicInfo, relationships)
