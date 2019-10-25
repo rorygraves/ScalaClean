@@ -4,6 +4,8 @@ import java.io.File
 import java.nio.file.{Files, Paths}
 import java.util.Properties
 
+import org.scalaclean.analysis.plugin.ExtensionPlugin
+
 import scala.meta.internal.semanticdb.scalac.SemanticdbOps
 import scala.meta.io.AbsolutePath
 import scala.tools.nsc.plugins.PluginComponent
@@ -12,16 +14,19 @@ import scala.tools.nsc.{Global, Phase}
 
 class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent with SemanticdbOps with ModelSymbolBuilder {
   override val phaseName: String = "scalaclean-compiler-plugin-phase"
-  override val runsAfter: List[String] = List("semanticdb-typer")
 
+  override val runsAfter: List[String] = List("semanticdb-typer")
   // a bit ugly, but the options are read after the component is create - so it is updated by the plugin
   var debug = false
   var sourceDirs: List[String] = List.empty
+  var extensions = Set.empty[ExtensionPlugin]
+  var options: List[String] = Nil
 
   override def newPhase(prev: Phase): Phase = new StdPhase(prev) {
 
     var elementsWriter: ElementsWriter = _
     var relationsWriter: RelationshipsWriter = _
+    var extensionWriter: ExtensionWriter = _
     var traverser: SCUnitTraverser = _
     var files: Set[String] = Set.empty
 
@@ -49,23 +54,26 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
 
       val outputPath = outputPathBase.resolve("META-INF/ScalaClean/")
       outputPath.toFile.mkdirs()
+
       val elementsFile = new File(outputPath.toFile, "scalaclean-elements.csv")
-
-
       if (debug)
         println(s"Writing elements file  to ${elementsFile}")
       elementsWriter = new ElementsWriter(elementsFile)
 
-
       val relationsFile = new File(outputPath.toFile, "scalaclean-relationships.csv")
-
       if (debug)
         println(s"Writing relationships file to to ${relationsFile}")
       relationsWriter = new RelationshipsWriter(relationsFile, global)
 
-      traverser = new SCUnitTraverser(elementsWriter, relationsWriter, debug)
+      val extensionFile = new File(outputPath.toFile, "scalaclean-extensions.csv")
+      if (debug)
+        println(s"Writing extensions file to to ${extensionFile}")
+      extensionWriter = new ExtensionWriter(extensionFile, global)
+
+      traverser = new SCUnitTraverser(elementsWriter, relationsWriter, extensionWriter, debug)
       elementsWriter.logger = traverser
       relationsWriter.logger = traverser
+      extensionWriter.logger = traverser
 
       super.run()
 
@@ -82,6 +90,10 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
         val srcPath = workOutCommonSourcePath(basePaths)
         props.put("srcRoots", srcPath)
         props.put("src", srcPath)
+      }
+
+      options.foreach {
+        p => props.put(s"option.${p}", "")
       }
 
       //      assert(sourceDirs.nonEmpty)
@@ -155,7 +167,14 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
       outer.foreach { o =>
         relationsWriter.within(o, mSymbol)
       }
+      extensions foreach {
+        e =>
+          val data = e.extendedData(mSymbol, mSymbol.tree.asInstanceOf[e.g.Tree])
+          mSymbol.addData(data)
+          extensionWriter.writeExtensions(mSymbol, data)
+      }
       elementsWriter.write(mSymbol)
+
       fn(mSymbol)
       scopeStack = scopeStack.tail
       depth -= 1
@@ -186,7 +205,10 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
   }
 
 
-  class SCUnitTraverser(val elementsWriter: ElementsWriter, val relationsWriter: RelationshipsWriter, val debug: Boolean) extends global.Traverser with ScopeTracking {
+  class SCUnitTraverser(val elementsWriter: ElementsWriter, 
+                        val relationsWriter: RelationshipsWriter, 
+                        val extensionWriter: ExtensionWriter, 
+                        val debug: Boolean) extends global.Traverser with ScopeTracking {
 
     import global._
 
@@ -200,7 +222,7 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
 
     def traverseSource(unit: CompilationUnit): Unit = {
       val sourceFile = unit.source.file.canonicalPath
-      enterScope(ModelSource(ModelCommon(true, s"source:$sourceFile", s"S:$sourceFile", sourceFile, -1, -1, "<NA>"))) {
+      enterScope(ModelSource(unit.body, ModelCommon(true, s"source:$sourceFile", s"S:$sourceFile", sourceFile, -1, -1, "<NA>"))) {
         s =>
           traverse(unit.body)
       }
@@ -254,7 +276,7 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
         case objectDef: ModuleDef =>
           val symbol = objectDef.symbol
           val mSymbol = asMSymbol(symbol)
-          enterScope(ModelObject(mSymbol)) { obj =>
+          enterScope(ModelObject(objectDef, mSymbol)) { obj =>
 
             val directSymbols = symbol.info.parents.map(t => asMSymbol(t.typeSymbol)).toSet
 
@@ -289,8 +311,8 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
           val mSymbol = asMSymbol(symbol)
 
           val cls =
-            if (isTrait) ModelTrait(mSymbol)
-            else ModelClass(mSymbol, symbol.isAbstractClass)
+            if (isTrait) ModelTrait(classDef, mSymbol)
+            else ModelClass(classDef, mSymbol, symbol.isAbstractClass)
           enterScope(cls) { cls =>
 
             val directSymbols = symbol.info.parents.map(t => asMSymbol(t.typeSymbol)).toSet
@@ -310,8 +332,8 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
           val symbol = valDef.symbol
           val mSymbol = asMSymbol(symbol)
           val field =
-            if (symbol.isVar) ModelVar(mSymbol, symbol.isDeferred)
-            else ModelVal(mSymbol, symbol.isDeferred, valDef.symbol.isLazy)
+            if (symbol.isVar) ModelVar(valDef, mSymbol, symbol.isDeferred)
+            else ModelVal(valDef, mSymbol, symbol.isDeferred, valDef.symbol.isLazy)
           enterScope(field) { field =>
             relationsWriter.refers(field, asMSymbol(valDef.tpt.symbol), symbol.isSynthetic)
             if (symbol.isLocalToBlock) {
@@ -396,13 +418,13 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
               super.traverse(tree)
             case _ if symbol.isAccessor && symbol.isGetter =>
               val field = asMSymbol(symbol.accessedOrSelf)
-              enterScope(ModelGetterMethod(mSymbol, declTypeDefined, symbol.isDeferred)) { method =>
+              enterScope(ModelGetterMethod(defdef, mSymbol, declTypeDefined, symbol.isDeferred)) { method =>
                 traverseMethod(method)
                 relationsWriter.getterFor(mSymbol, field)
               }
             case _ if symbol.isAccessor && symbol.isSetter =>
               val field = asMSymbol(symbol.accessedOrSelf)
-              enterScope(ModelSetterMethod(mSymbol, declTypeDefined, symbol.isDeferred)) { method =>
+              enterScope(ModelSetterMethod(defdef, mSymbol, declTypeDefined, symbol.isDeferred)) { method =>
                 traverseMethod(method)
                 relationsWriter.setterFor(mSymbol, field)
               }
@@ -411,7 +433,7 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
             // TODO should we super.traverse(tree) ??
             case _ =>
 
-              enterScope(ModelPlainMethod(mSymbol, declTypeDefined, symbol.isDeferred)) { method =>
+              enterScope(ModelPlainMethod(defdef, mSymbol, declTypeDefined, symbol.isDeferred)) { method =>
                 traverseMethod(method)
               }
           }
