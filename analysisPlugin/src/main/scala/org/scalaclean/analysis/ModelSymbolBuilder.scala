@@ -21,8 +21,9 @@ trait ModelSymbolBuilder extends SemanticdbOps {
       localId(sym)
     case sym  if sym.isMethod =>
       sym.encodedName + sym. paramss.map{ params => params.map(param => param.info.typeSymbol.fullName).mkString(";")}.mkString("(","", ")")
-    case sym if sym.isClass =>  sym.encodedName+"."
+      // need to check for moduleClass first because ModuleClass is a class
     case sym if sym.isModuleOrModuleClass =>  sym.encodedName+"#"
+    case sym if sym.isClass =>  sym.encodedName+"."
     case sym =>  sym.encodedName
   }
   private def fullNameString(sym: global.Symbol): String = {

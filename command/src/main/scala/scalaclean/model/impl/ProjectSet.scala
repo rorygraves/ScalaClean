@@ -18,8 +18,7 @@ class ProjectSet(projectPropertyPaths: Path *) extends ProjectModel {
 
     val skipped = elements.flatten.toVector.groupBy (_.symbol).filter{case (k,v) => v.size != 1}
     val skipped2 = elements.flatten.toVector.groupBy (_.modelElementId).filter{case (k,v) => v.size != 1}
-    assert (elements.flatten.size == modelElements.size)
-//    assert (elementsMap.size == modelElements.size)
+    assert (elements.flatten.size == modelElements.size, "Duplicate elements found")
 
     val relsFrom = rels.reduce(_ + _)
     val relsTo = relsFrom.byTo

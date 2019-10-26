@@ -28,7 +28,7 @@ lazy val mergeSettings = Def.settings(
     val fatJar =
       new File(crossTarget.value + "/" + assemblyJarName.in(assembly).value)
     val _ = assembly.value
-    IO.copy(List(fatJar -> slimJar), CopyOptions(true,false,false))
+    IO.copy(List(fatJar -> slimJar), CopyOptions(overwrite = true,preserveLastModified = false,preserveExecutable = false))
     slimJar
   },
   packagedArtifact.in(Compile).in(packageBin) := {
@@ -37,7 +37,7 @@ lazy val mergeSettings = Def.settings(
     val fatJar =
       new File(crossTarget.value + "/" + assemblyJarName.in(assembly).value)
     val _ = assembly.value
-    IO.copy(List(fatJar -> slimJar), CopyOptions(true,false,false))
+    IO.copy(List(fatJar -> slimJar), CopyOptions(overwrite = true,preserveLastModified = false,preserveExecutable = false))
     (art, slimJar)
   },
   assemblyMergeStrategy.in(assembly) := {
@@ -119,7 +119,7 @@ lazy val unitTestProject = project.in(file("testProjects/unitTestProject")).sett
         s"-Xplugin:${jar.getAbsolutePath}",
         s"-Jdummy=${jar.lastModified}", // ensures recompile
         "-P:scalaclean-analysis-plugin:debug:true",
-        s"-P:scalaclean-analysis-plugin:srcdirs:${srcLocations}",
+        s"-P:scalaclean-analysis-plugin:srcdirs:$srcLocations",
       )
     }
   )
@@ -140,15 +140,15 @@ def testInputProject(id: String, projectLocation: String, dependencies: Classpat
     val srcLocations = (sourceDirectories in Compile).value.mkString(java.io.File.pathSeparator)
     assert(srcLocations.nonEmpty)
     Seq(
-
-//      "-Xprint:typer",
+//      "-Ybrowse:typer",
+      //"-Xprint:typer",
 //      "-Ycompact-trees",
 //      "-Xprint:all",
       "-Yrangepos",
       s"-Xplugin:${jar.getAbsolutePath}",
       s"-Jdummy=${jar.lastModified}", // ensures recompile
        "-P:scalaclean-analysis-plugin:debug:true",
-      s"-P:scalaclean-analysis-plugin:srcdirs:${srcLocations}",
+      s"-P:scalaclean-analysis-plugin:srcdirs:$srcLocations",
     )
 
   },
@@ -171,10 +171,13 @@ lazy val privatiserProject3 = testInputProject("privatiserProject3", "testProjec
 lazy val privatiserProject4 = testInputProject("privatiserProject4", "testProjects/privatiserProject4")
 lazy val privatiserProject5 = testInputProject("privatiserProject5", "testProjects/privatiserProject5")
 
+lazy val scratch = testInputProject("scratch", "testProjects/scratch")
+
 lazy val privatiserTests = project.dependsOn(privatiserProject1, privatiserProject2, privatiserProject3, privatiserProject4, privatiserProject5)
 lazy val deadCodeTests = project.dependsOn(deadCodeProject1, deadCodeProject2, deadCodeProject3, deadCodeProject4, deadCodeProject5)
+lazy val scratchProjects = project.dependsOn(scratch)
 
-lazy val tests = project.dependsOn(command, unitTestProject, privatiserTests, deadCodeTests)
+lazy val tests = project.dependsOn(command, unitTestProject, privatiserTests, deadCodeTests,scratchProjects)
   .settings(
     moduleName := "tests",
     libraryDependencies += "args4j" % "args4j" % "2.0.23",

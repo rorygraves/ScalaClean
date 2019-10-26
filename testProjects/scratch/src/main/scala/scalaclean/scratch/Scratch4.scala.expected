@@ -1,0 +1,7 @@
+package scalaclean.scratch
+
+
+/* *** SCALA CLEAN can't detect usage */class Scratch4 {
+
+  /* *** SCALA CLEAN can't detect usage */var myVar: Int  = 1
+}
