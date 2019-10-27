@@ -56,7 +56,7 @@ trait ModelSymbolBuilder extends SemanticdbOps {
   def asMSymbol(gSym: global.Symbol): ModelCommon = {
 
     mSymbolCache.getOrElseUpdate(gSym,{
-      val isGlobal = gSym.isSemanticdbGlobal
+      val isGlobal = gSym.isSemanticdbGlobal && !gSym.isLocalToBlock
       val sString = gSym.toSemantic
       val (startPos,endPos) = if(gSym.pos == NoPosition) (-1,-1) else (gSym.pos.start, gSym.pos.end)
       val sourceFile = if(gSym.sourceFile != null)

@@ -1,7 +1,13 @@
 package scalaclean.scratch
 
+object ScratchObj {
+  var field = 1
+}
 
 class Scratch4 {
 
-  var myVar: Int  = 1
+  def myMethod(x: Int): Unit = {
+    val z = x
+    ScratchObj.field = z + 1
+  }
 }
