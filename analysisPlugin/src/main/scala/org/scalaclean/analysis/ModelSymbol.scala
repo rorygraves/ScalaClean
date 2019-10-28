@@ -182,13 +182,13 @@ sealed trait ModelSymbol extends HasModelCommon {
       child match {
         case mf: ModelField if (mf.isParameter || !mf.isGlobal) =>
           this.refersRels ++= mf.refersRels
-          this.refersRels ++= mf.refersRels
           None
         case _ =>
           Some(child)
       }
     }
     refersRels = refersRels.filter(_._1.common.isGlobal)
+    refersRels = refersRels.filter(_._1.common.newId != this.common.newId)
   }
 
 }
