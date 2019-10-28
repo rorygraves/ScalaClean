@@ -16,8 +16,8 @@ class ProjectSet(projectPropertyPaths: Path *) extends ProjectModel {
     val elementsMap: Map[ElementId, ElementModelImpl] = elements.flatten.toIterator.map (e => e.symbol -> e).toMap
     val modelElements = elements.flatten.toIterator.map (e => e.modelElementId -> e).toMap
 
-    val skipped = elements.flatten.toVector.groupBy (_.symbol).filter{case (k,v) => v.size != 1}
-    val skipped2 = elements.flatten.toVector.groupBy (_.modelElementId).filter{case (k,v) => v.size != 1}
+//    val skipped = elements.flatten.toVector.groupBy (_.symbol).filter{case (k,v) => v.size != 1}
+//    val skipped2 = elements.flatten.toVector.groupBy (_.modelElementId).filter{case (k,v) => v.size != 1}
     assert (elements.flatten.size == modelElements.size, "Duplicate elements found")
 
     val relsFrom = rels.reduce(_ + _)
@@ -26,6 +26,7 @@ class ProjectSet(projectPropertyPaths: Path *) extends ProjectModel {
     relsFrom.complete(elementsMap, modelElements)
     elementsMap.values foreach (_.complete(elementsMap, modelElements, relsFrom = relsFrom, relsTo = relsTo))
 
+    ModelReader.finished()
     elementsMap
   }
 

@@ -6,4 +6,8 @@ class ScratchTests extends  AbstractProjectTests {
     privatiserProjectTest("scratch")
   }
 
+  test("scratch1") {
+    privatiserProjectTest("scratch1")
+  }
+
 }

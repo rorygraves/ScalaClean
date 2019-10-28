@@ -152,7 +152,7 @@ def testInputProject(id: String, projectLocation: String, dependencies: Classpat
     )
 
   },
-).dependsOn(analysisPlugin).dependsOn(dependencies :_*) // here to ensure rebuild on change
+).dependsOn(analysisPlugin, command).dependsOn(dependencies :_*) // here to ensure rebuild on change
 
 
 lazy val deadCodeProject1 = testInputProject("deadCodeProject1","testProjects/deadCodeProject1")
@@ -172,10 +172,21 @@ lazy val privatiserProject4 = testInputProject("privatiserProject4", "testProjec
 lazy val privatiserProject5 = testInputProject("privatiserProject5", "testProjects/privatiserProject5")
 
 lazy val scratch = testInputProject("scratch", "testProjects/scratch")
-
+lazy val scratch1 = testInputProject("scratch1", "scratchProjects/scratch1")
+  .settings(
+    moduleName := "tests",
+    libraryDependencies += "args4j" % "args4j" % "2.0.23",
+    libraryDependencies += "ch.epfl.scala" %% "scalafix-core" % scalaFixVersion,
+    libraryDependencies += "ch.epfl.scala" % "scalafix-testkit_2.12.8" % scalaFixVersion,
+    libraryDependencies += "junit" % "junit" % "4.12" % Test,
+    libraryDependencies += "org.scalatest" %% "scalatest" % "3.0.8" % Test,
+    scalaVersion := scala212,
+    crossPaths := false,
+    libraryDependencies += "com.novocode" % "junit-interface" % "0.11" % Test,
+  )
 lazy val privatiserTests = project.dependsOn(privatiserProject1, privatiserProject2, privatiserProject3, privatiserProject4, privatiserProject5)
 lazy val deadCodeTests = project.dependsOn(deadCodeProject1, deadCodeProject2, deadCodeProject3, deadCodeProject4, deadCodeProject5)
-lazy val scratchProjects = project.dependsOn(scratch)
+lazy val scratchProjects = project.dependsOn(scratch, scratch1)
 
 lazy val tests = project.dependsOn(command, unitTestProject, privatiserTests, deadCodeTests,scratchProjects)
   .settings(

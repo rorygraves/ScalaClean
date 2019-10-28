@@ -8,8 +8,6 @@ import scala.collection.mutable
 
 
 object ModelReader {
-
-
   def read(project: Project, elementsFilePath: String, relationshipsFilePath: String, extensionFilePath: String):
   (Vector[ElementModelImpl], BasicRelationshipInfo) = {
 
@@ -19,10 +17,21 @@ object ModelReader {
 
     val elements = readElements(project, elementsFilePath, relationships, extById, extByNewId)
     (elements, relationships)
-
   }
 
-  def readExt(extensionFilePath: String): (Map[String, Seq[ExtensionData]], Map[String, Seq[ExtensionData]]) = {
+  def finished(): Unit = {
+    interner.clear()
+    lookup.values.foreach (_.clearData)
+    lookup.clear()
+  }
+  private val interner = mutable.Map.empty[List[ExtensionData], List[ExtensionData]]
+  private val lookup = mutable.Map.empty[String, ExtensionDescriptor[_ <: ExtensionData]]
+  private def compress(data: List[ExtensionData]): List[ExtensionData] = {
+    val sorted = data.sorted
+    interner.getOrElseUpdate(sorted, sorted)
+  }
+
+  private def readExt(extensionFilePath: String): (Map[String, Seq[ExtensionData]], Map[String, Seq[ExtensionData]]) = {
 
     import scala.reflect.runtime.universe
     val runtimeMirror = universe.runtimeMirror(getClass.getClassLoader)
@@ -32,7 +41,6 @@ object ModelReader {
 
     val path = Paths.get(extensionFilePath)
     println(s"reading relationships from $path")
-    val lookup = mutable.Map.empty[String, ExtensionDescriptor[_ <: ExtensionData]]
 
     Files.lines(path) forEach {
       line: String =>
@@ -73,8 +81,8 @@ object ModelReader {
         elementValues2 += ext
 
     }
-    (mapByElementId.map { case (k, b) => k -> b.result },
-      mapByNewElementId.map { case (k, b) => k -> b.result })
+    (mapByElementId.map { case (k, b) => k -> compress(b.result) },
+      mapByNewElementId.map { case (k, b) => k -> compress(b.result) })
 
   }
 

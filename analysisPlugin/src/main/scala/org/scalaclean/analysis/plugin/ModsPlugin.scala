@@ -18,7 +18,7 @@ class ModsPlugin(val sc: ScalaCompilerPluginComponent) extends ExtensionPlugin {
               val basePos = tree.pos.start
               List(VisibilityData(pos.start - basePos, pos.end - basePos, vis, within))
             case None =>
-              List(VisibilityData(0, 0, vis, within))
+              List(VisibilityData(Int.MinValue,Int.MinValue, vis, within))
           }
         } else Nil
         val others: List[ExtensionData] = d.mods.positions.flatMap {

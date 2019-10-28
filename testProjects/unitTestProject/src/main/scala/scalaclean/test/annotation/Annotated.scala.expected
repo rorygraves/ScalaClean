@@ -9,5 +9,5 @@ class annotated {
   @ComplexJava(intValue = 1, doubleValue = 2, stringValue = "XX", booleanValue = true, intValueWithDefault = 99)
   @BasicScala
   @ComplexScala(1, 2, "yy", true, 99)
-  def foo = 0
-}
+  def foo = 0/* annotations(G:scalaclean/test/annotation/annotated#foo().) - AnnotationData[-167,-58,scalaclean.test.annotation.ComplexJava,Map(booleanValue -> true, doubleValue -> 2.0, intValue -> 1, intValueWithDefault -> 99, stringValue -> XX) :: AnnotationData[-181,-172,scalaclean.test.annotation.BasicJava,Map() :: AnnotationData[-38,-4,scalaclean.test.annotation.ComplexScala,Map(0 -> 1, 1 -> 2.0, 2 -> yy, 3 -> true, 4 -> 99) :: AnnotationData[-53,-43,scalaclean.test.annotation.BasicScala,Map() */
+}/* annotations(G:scalaclean/test/annotation/annotated#) - AnnotationData[-131,-48,scalaclean.test.annotation.ComplexJava,Map(booleanValue -> true, doubleValue -> 2.0, intValue -> 1, stringValue -> XX) :: AnnotationData[-143,-134,scalaclean.test.annotation.BasicJava,Map() :: AnnotationData[-32,-2,scalaclean.test.annotation.ComplexScala,Map(0 -> 1, 1 -> 2.0, 2 -> yy, 3 -> true, 4 -> <<<TODO>>>) :: AnnotationData[-45,-35,scalaclean.test.annotation.BasicScala,Map() */
