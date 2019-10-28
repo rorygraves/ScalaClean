@@ -231,13 +231,13 @@ class ScalaCompilerPluginComponent(
       }
 
       println("----------------")
-      sourceSymbol.outputStructure(elementsWriter,relationsWriter)
-      println("----------------")
       sourceSymbol.printStructure()
       println("----------------")
       sourceSymbol.flatten()
       println("----------------")
       sourceSymbol.printStructure()
+      println("----------------")
+      sourceSymbol.outputStructure(elementsWriter,relationsWriter)
       println("----------------")
     }
 

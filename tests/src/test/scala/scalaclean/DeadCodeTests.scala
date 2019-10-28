@@ -1,8 +1,5 @@
 package scalaclean
 
-import org.scalatest.FunSuite
-import scalaclean.cli.{DeadCodeProjectTestRunner, PrivatiserProjectTestRunner}
-
 class DeadCodeTests extends  AbstractProjectTests {
 
   test("deadCode1") {

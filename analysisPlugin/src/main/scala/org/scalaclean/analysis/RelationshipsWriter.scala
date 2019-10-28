@@ -8,7 +8,7 @@ import scala.tools.nsc.Global
 class RelationshipsWriter(file: File, val global: Global) extends SemanticdbOps {
 
   var logger: ScopeLogging = _
-  val writer = new SortedStringWriter(file.toPath)
+  val writer = new StringWriter(file.toPath)
 
   def commonOutput(from: HasModelCommon, token: String, to: HasModelCommon): String = {
     s"${from.csvString},${from.newCsvString},$token,${to.csvString},${to.newCsvString}"

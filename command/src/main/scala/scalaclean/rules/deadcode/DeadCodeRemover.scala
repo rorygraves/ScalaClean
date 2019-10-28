@@ -183,7 +183,7 @@ class DeadCodeRemover(model: ProjectModel, debug: Boolean) extends AbstractRule(
         pats: Seq[Pat.Var], mods: Seq[Mod], stat: Stat, scope: List[Scope]): (Patch, Boolean) = {
 
         val declarationsByUsage: Map[Usage, Seq[(Pat.Var, ModelElement)]] =
-          pats map { p =>
+          pats.filterNot(_.symbol.isLocal) map { p =>
             (p, model.fromSymbolLocal[ModelElement](ElementId(p.symbol), stat.pos.start, stat.pos.end))
           } groupBy (m => m._2.colour)
 
