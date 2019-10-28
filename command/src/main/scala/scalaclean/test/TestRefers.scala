@@ -20,7 +20,7 @@ class Test_internalIncomingReferences(model: ProjectModel) extends TestCommon("T
   * needs to be run after TestAnalysis
   */
 class Test_internalOutgoingReferences(
-  model: ProjectModel) extends TestCommon("Test_internalOutgoingReferences", model) {
+                                       model: ProjectModel) extends TestCommon("Test_internalOutgoingReferences", model) {
   def visit(modelElement: ModelElement): String = {
     modelElement.internalOutgoingReferences.map(_._1.symbol.debugValue).distinct.sorted match {
       case Nil => ""

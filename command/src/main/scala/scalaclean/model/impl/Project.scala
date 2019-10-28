@@ -13,31 +13,33 @@ import scala.meta.internal.symtab.{GlobalSymbolTable, SymbolTable}
 import scala.meta.io.{AbsolutePath, Classpath}
 
 object Project {
+  import org.scalaclean.analysis.PropertyNames._
   def apply(propsPath: Path, projects: ProjectSet): Project = {
     val props = new Properties()
     println("PropsPath = " + propsPath)
     props.load(Files.newBufferedReader(propsPath))
-    val classpathValue = props.getProperty("classpath")
-    val outputPath = props.getProperty("outputDir")
-    val elementsFilePath = props.getProperty("elementsFile")
-    val relationshipsFilePath = props.getProperty("relationshipsFile")
-    val src = props.getProperty("src")
-    val srcBuildBase = props.getProperty("srcBuildBase")
-    val srcFiles = props.getProperty("srcFiles","").split(File.pathSeparatorChar).toSet
-    val srcRoots = props.getProperty("srcRoots").split(File.pathSeparatorChar).toList.sortWith((s1,s2) => s1.length > s1.length || s1 < s2).map(AbsolutePath(_))
+    val classpathValue = props.getProperty(prop_classpath)
+    val outputPath = props.getProperty(prop_outputDir)
+    val elementsFilePath = props.getProperty(prop_elementsFile)
+    val relationshipsFilePath = props.getProperty(prop_relationshipsFile)
+    val extensionsFilePath = props.getProperty(prop_extensionsFile)
+    val src = props.getProperty(prop_src)
+    val srcBuildBase = props.getProperty(prop_srcBuildBase)
+    val srcFiles = props.getProperty(prop_srcFiles,"").split(File.pathSeparatorChar).toSet
+    val srcRoots = props.getProperty(prop_srcRoots).split(File.pathSeparatorChar).toList.sortWith((s1,s2) => s1.length > s1.length || s1 < s2).map(AbsolutePath(_))
     println("srcRoots = "  + srcRoots)
     assert(classpathValue ne null, props.keys)
     assert(outputPath ne null, props.keys)
 
     val classPath = Classpath.apply(classpathValue)
 
-    new Project(projects, classPath, outputPath, src,srcRoots, srcBuildBase, elementsFilePath, relationshipsFilePath, srcFiles)
+    new Project(projects, classPath, outputPath, src,srcRoots, srcBuildBase, elementsFilePath, relationshipsFilePath, extensionsFilePath, srcFiles)
   }
 }
 
 class Project private(
   val projects: ProjectSet, val classPath: Classpath, val outputPath: String, val src: String,val srcRoots: List[AbsolutePath], val srcBuildBase : String,
-  elementsFilePath: String, relationshipsFilePAth: String,
+  elementsFilePath: String, relationshipsFilePath: String, extensionsFilePath: String,
   val srcFiles: Set[String]) {
   def symbolTable: SymbolTable = GlobalSymbolTable(classPath, includeJdk = true)
   lazy val classloader: ClassLoader = new URLClassLoader(Array(new URL("file:" + outputPath +"/")), null)
@@ -50,7 +52,7 @@ class Project private(
         viewedFrom.source.doc.info(s.symbol).orNull)
   }
 
-  def read = ModelReader.read(this, elementsFilePath, relationshipsFilePAth)
+  def read = ModelReader.read(this, elementsFilePath, relationshipsFilePath, extensionsFilePath)
 
   private val sourcesMap = new ConcurrentHashMap[String, SourceData]()
 

@@ -11,7 +11,7 @@ class ExtensionWriter(file: File, val global: Global) extends SemanticdbOps {
       val prefix = s"${mSymbol.csvString},${mSymbol.newCsvString},"
       data foreach {
         d =>
-          writeLine(s"$prefix,${d.getClass.getName},${d.toCsv}", d)
+          writeLine(s"$prefix${d.getClass.getName},${d.toCsv}", d)
       }
     }
   }

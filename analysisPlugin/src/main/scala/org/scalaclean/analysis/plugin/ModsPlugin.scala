@@ -25,7 +25,7 @@ class ModsPlugin(val sc: ScalaCompilerPluginComponent) extends ExtensionPlugin {
           case (Flags.PROTECTED | Flags.PRIVATE, _) => Nil
           case (f,pos) =>
             val basePos = tree.pos.start
-            List(ModData(pos.start - basePos, pos.end - basePos, Flags.flagToString(f)))
+            List(ModData(pos.start - basePos, pos.end - basePos, f, Flags.flagToString(f)))
         }(collection.breakOut)
         vis ::: others
       case _ => Nil

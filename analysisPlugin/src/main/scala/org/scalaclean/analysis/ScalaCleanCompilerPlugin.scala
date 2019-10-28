@@ -1,6 +1,6 @@
 package org.scalaclean.analysis
 
-import org.scalaclean.analysis.plugin.{ExtensionPlugin, ExtensionPluginFactory, ModsPlugin}
+import org.scalaclean.analysis.plugin.{ExtensionPlugin, ExtensionPluginFactory, JunitPlugin, ModsPlugin}
 
 import scala.tools.nsc.Global
 import scala.tools.nsc.plugins.{Plugin, PluginComponent}
@@ -14,6 +14,7 @@ class ScalaCleanCompilerPlugin(override val global: Global) extends Plugin {
 
   //hardcoded for the moment
   component.extensions += ModsPlugin.create(component,"")
+  component.extensions += JunitPlugin.create(component,"")
 
   override def processOptions(
     options: List[String],

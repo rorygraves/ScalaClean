@@ -79,30 +79,32 @@ class ScalaCompilerPluginComponent(
       super.run()
 
       val props = new Properties
-      props.put("classpath", global.settings.classpath.value)
-      props.put("outputDir", outputPathBase.toString())
-      props.put("elementsFile", elementsFile.toString)
-      props.put("relationshipsFile", relationsFile.toString)
+      import PropertyNames._
+      props.put(prop_classpath, global.settings.classpath.value)
+      props.put(prop_outputDir, outputPathBase.toString())
+      props.put(prop_elementsFile, elementsFile.toString)
+      props.put(prop_relationshipsFile, relationsFile.toString)
+      props.put(prop_extensionsFile, extensionFile.toString)
       println("SourceDirs = " + sourceDirs)
       if (sourceDirs.nonEmpty) {
-        props.put("srcRoots", sourceDirs.mkString(File.pathSeparator))
-        props.put("src", sourceDirs.head)
+        props.put(prop_srcRoots, sourceDirs.mkString(File.pathSeparator))
+        props.put(prop_src, sourceDirs.head)
       } else {
         val srcPath = workOutCommonSourcePath(basePaths)
-        props.put("srcRoots", srcPath)
-        props.put("src", srcPath)
+        props.put(prop_srcRoots, srcPath)
+        props.put(prop_src, srcPath)
       }
 
       options.foreach {
-        p => props.put(s"option.${p}", "")
+        p => props.put(s"${prefix_option}.${p}", "")
       }
 
       //      assert(sourceDirs.nonEmpty)
 
       val currentRelativePath = Paths.get("")
       val srcBuildBase = currentRelativePath.toAbsolutePath.toString
-      props.put("srcBuildBase", srcBuildBase)
-      props.put("srcFiles", files.mkString(File.pathSeparator))
+      props.put(prop_srcBuildBase, srcBuildBase)
+      props.put(prop_srcFiles, files.mkString(File.pathSeparator))
 
       val propsFile = outputPath.resolve(s"ScalaClean.properties").toNIO
       if (debug)
@@ -110,6 +112,7 @@ class ScalaCompilerPluginComponent(
       props.store(Files.newBufferedWriter(propsFile), "")
       elementsWriter.finish()
       relationsWriter.finish()
+      extensionWriter.finish()
       if (debug) {
         global.reporter.echo("After Analysis Phase")
         global.reporter.echo(s"  Wrote elements to $elementsFile")

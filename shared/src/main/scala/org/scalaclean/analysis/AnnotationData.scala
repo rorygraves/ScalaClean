@@ -6,7 +6,9 @@ object AnnotationData extends ExtensionDescriptor[AnnotationData] {
     val params = s.split(",").map (_.intern)
     val map: Map[String, String] = params.toList.drop(3).grouped(2).map {
       case k :: v :: Nil => k -> v
-      case _ => ???
+      case x =>
+        println(s"***** $x")
+        x.toString -> "UNKNOWN"
     }.toMap
     new AnnotationData( params(0).toInt,params(1).toInt, params(2), map)
   }
@@ -22,7 +24,7 @@ object AnnotationData extends ExtensionDescriptor[AnnotationData] {
 case class AnnotationData (posOffsetStart: Int, posOffsetEnd: Int, fqName: String, values: Map[String,String]) extends StandardExtensionData{
   override def toCsv: String = {
     val csv = values.toList.sortBy(_._1).map{e => s"${e._1},${e._2}"}.mkString(",", ",", "")
-    s"${posOffsetStart},${posOffsetStart},${fqName},${csv}"
+    s"${posOffsetStart},${posOffsetStart},${fqName}${csv}"
   }
   require(!fqName.contains(","), fqName)
   values.foreach {

@@ -67,6 +67,10 @@ class UnitTests extends FunSuite with AssertionsForJUnit with DiffAssertions {
     runTest("scalaclean/test/references/internalOutgoingReferences/internalOutgoingReferences.scala",new Test_internalOutgoingReferences(_))
   }
 
+  test("annotations") {
+    runTest("scalaclean/test/annotation/Annotated.scala",new Test_annotations(_))
+  }
+
 
   def runTest(file: String, ruleFn: ProjectModel => TestCommon, overwrite: Boolean = false): Unit = {
     val projectName = "unitTestProject"

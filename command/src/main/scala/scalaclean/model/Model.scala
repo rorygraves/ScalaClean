@@ -1,8 +1,10 @@
 package scalaclean.model
 
+import org.scalaclean.analysis.AnnotationData
 import scalaclean.model.impl.ElementId
 
 import scala.reflect.ClassTag
+import org.scalaclean.analysis.ExtensionData
 
 sealed trait ModelElement extends Ordered[ModelElement] {
 
@@ -20,6 +22,14 @@ sealed trait ModelElement extends Ordered[ModelElement] {
   def enclosing: List[ModelElement]
 
   def classOrEnclosing: ClassLike
+
+  def annotationsOf(cls: Class[_]): Iterable[AnnotationData] =
+    annotations filter (_.fqName == cls.getName)
+  def annotations: Iterable[AnnotationData] =
+    extensions collect {
+      case a: AnnotationData => a
+    }
+  def extensions: Iterable[ExtensionData]
 
   //start target APIs
   def outgoingReferences: Iterable[Refers] = allOutgoingReferences map (_._2)
@@ -194,7 +204,9 @@ abstract sealed class NewElementId(val id:String)
 
 package impl {
 
-  case class BasicElementInfo(symbol: ElementId, newElementId: NewElementId, source: SourceData, startPos: Int, endPos: Int)
+  case class BasicElementInfo(symbol: ElementId, newElementId: NewElementId, source: SourceData,
+                              startPos: Int, endPos: Int,
+                              flags: Long, extensions: Seq[ExtensionData])
 
   case class BasicRelationshipInfo(
     refers: Map[ElementId, List[RefersImpl]],
@@ -359,6 +371,8 @@ package impl {
       _overrides = relsFrom.overrides.getOrElse(symbol, Nil)
       overriden = relsTo.overrides.getOrElse(symbol, Nil)
     }
+
+    override def extensions: Iterable[ExtensionData] = info.extensions
 
     val source = info.source
 
