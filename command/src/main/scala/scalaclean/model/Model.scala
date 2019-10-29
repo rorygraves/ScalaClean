@@ -206,7 +206,8 @@ package impl {
 
   case class BasicElementInfo(symbol: ElementId, newElementId: NewElementId, source: SourceData,
                               startPos: Int, endPos: Int,
-                              flags: Long, extensions: Seq[ExtensionData])
+                              flags: Long, extensions: Seq[ExtensionData],
+                              traversal: Int)
 
   case class BasicRelationshipInfo(
     refers: Map[ElementId, List[RefersImpl]],

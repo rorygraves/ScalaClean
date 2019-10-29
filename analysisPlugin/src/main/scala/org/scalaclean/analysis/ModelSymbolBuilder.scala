@@ -8,6 +8,7 @@ import scala.reflect.internal.util.NoPosition
 
 trait ModelSymbolBuilder extends SemanticdbOps {
   val global : scala.tools.nsc.Global
+  def debug: Boolean
   private val symbolNames = mutable.Map[global.Symbol, String]()
   private val localSymbolNames = mutable.Map[global.Symbol, String]()
   private val idGen = new AtomicInteger()
@@ -36,7 +37,8 @@ trait ModelSymbolBuilder extends SemanticdbOps {
     recur(sym)
   }
   private def getNewName(sym: global.Symbol): String = {
-    println(s"getNewName $sym")
+    if (debug)
+      println(s"getNewName $sym")
     symbolNames.getOrElseUpdate(sym, fullNameString(sym))
 //    import global.{ModuleDef, ClassDef, ValDef, DefDef, NoSymbol}
 //

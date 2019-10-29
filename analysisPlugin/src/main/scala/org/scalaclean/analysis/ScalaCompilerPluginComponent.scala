@@ -85,7 +85,8 @@ class ScalaCompilerPluginComponent(
       props.put(prop_elementsFile, elementsFile.toString)
       props.put(prop_relationshipsFile, relationsFile.toString)
       props.put(prop_extensionsFile, extensionFile.toString)
-      println("SourceDirs = " + sourceDirs)
+      if (debug)
+        println("SourceDirs = " + sourceDirs)
       if (sourceDirs.nonEmpty) {
         props.put(prop_srcRoots, sourceDirs.mkString(File.pathSeparator))
         props.put(prop_src, sourceDirs.head)
@@ -161,8 +162,12 @@ class ScalaCompilerPluginComponent(
     }
 
 
+    private var traversal = 0
     def enterScope[T, M <: ModelSymbol](mSymbol: M)(fn: M => T): Unit = {
       val outer = scopeStack.headOption
+      if (outer.isEmpty) traversal = 0
+      traversal += 1
+      mSymbol.traversal = traversal
       outer.foreach(_.addChild(mSymbol))
       if (debug)
         println(s"${indentString}${mSymbol.debugName}")
@@ -175,8 +180,7 @@ class ScalaCompilerPluginComponent(
       extensions foreach {
         e =>
           val data = e.extendedData(mSymbol, mSymbol.tree.asInstanceOf[e.g.Tree])
-          mSymbol.addData(data)
-          extensionWriter.writeExtensions(mSymbol, data)
+          mSymbol.addExtensionData(data)
       }
 
       fn(mSymbol)
@@ -233,15 +237,21 @@ class ScalaCompilerPluginComponent(
           traverse(unit.body)
       }
 
-      println("----------------")
-      sourceSymbol.printStructure()
-      println("----------------")
-      sourceSymbol.flatten()
-      println("----------------")
-      sourceSymbol.printStructure()
-      println("----------------")
-      sourceSymbol.outputStructure(elementsWriter,relationsWriter)
-      println("----------------")
+      if (debug) {
+        println("----------------")
+        sourceSymbol.printStructure()
+        println("----------------")
+      }
+        sourceSymbol.flatten()
+      if (debug) {
+        println("----------------")
+        sourceSymbol.printStructure()
+        println("----------------")
+      }
+      sourceSymbol.outputStructure(elementsWriter,relationsWriter,extensionWriter)
+      if (debug) {
+        println("----------------")
+      }
     }
 
     override def traverse(tree: Tree): Unit = {

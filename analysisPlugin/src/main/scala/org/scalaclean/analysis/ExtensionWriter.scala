@@ -6,7 +6,8 @@ import scala.meta.internal.semanticdb.scalac.SemanticdbOps
 import scala.tools.nsc.Global
 
 class ExtensionWriter(file: File, val global: Global) extends SemanticdbOps {
-  def writeExtensions(mSymbol: ModelSymbol, data: Seq[ExtensionData]): Unit = {
+  def writeExtensions(mSymbol: ModelSymbol): Unit = {
+    val data = mSymbol.extensionData
     if (data.nonEmpty) {
       val prefix = s"${mSymbol.csvString},${mSymbol.newCsvString},"
       data foreach {

@@ -17,6 +17,7 @@ sealed trait ModelSymbol extends HasModelCommon {
   def debugName: String
 
   val common: ModelCommon
+  var traversal:Int = -1
 
   def isGlobal: Boolean = common.isGlobal
 
@@ -39,14 +40,14 @@ sealed trait ModelSymbol extends HasModelCommon {
 
   def gTree(g: Global): g.Tree = tree.asInstanceOf[g.Tree]
 
-  private var _data: List[ExtensionData] = Nil
+  private var _extensionData: List[ExtensionData] = Nil
 
-  def addData(additionalData: List[ExtensionData]): Unit = {
-    if (_data.isEmpty) _data = additionalData
-    else _data = _data.reverse_:::(additionalData)
+  def addExtensionData(additionalData: List[ExtensionData]): Unit = {
+    if (_extensionData.isEmpty) _extensionData = additionalData
+    else _extensionData = _extensionData.reverse_:::(additionalData)
   }
 
-  def data = _data
+  def extensionData = _extensionData
 
   def ioToken: String
 
@@ -143,8 +144,9 @@ sealed trait ModelSymbol extends HasModelCommon {
   }
 
 
-  def outputStructure(eleWriter: ElementsWriter, relWriter: RelationshipsWriter): Unit = {
+  def outputStructure(eleWriter: ElementsWriter, relWriter: RelationshipsWriter, extensionWriter: ExtensionWriter): Unit = {
     eleWriter.write(this)
+    extensionWriter.writeExtensions(this)
 
     extendsRels.foreach { case (ext, direct) =>
       relWriter.extendsCls(ext, this, direct)
@@ -172,7 +174,7 @@ sealed trait ModelSymbol extends HasModelCommon {
     }
 
     children.foreach { child =>
-      child.outputStructure(eleWriter, relWriter)
+      child.outputStructure(eleWriter, relWriter, extensionWriter)
     }
   }
 
