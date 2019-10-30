@@ -2,10 +2,9 @@ package org.scalaclean.analysis
 
 import java.io.File
 
-import scala.meta.internal.semanticdb.scalac.SemanticdbOps
 import scala.tools.nsc.Global
 
-class ExtensionWriter(file: File, val global: Global) extends SemanticdbOps {
+class ExtensionWriter(file: File, val global: Global) {
   def writeExtensions(mSymbol: ModelSymbol): Unit = {
     val data = mSymbol.extensionData
     if (data.nonEmpty) {

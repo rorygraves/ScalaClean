@@ -2,17 +2,15 @@ package org.scalaclean.analysis
 
 import java.io.File
 
-import scala.meta.internal.semanticdb.scalac.SemanticdbOps
 import scala.tools.nsc.Global
 
-class RelationshipsWriter(file: File, val global: Global) extends SemanticdbOps {
+class RelationshipsWriter(file: File, val global: Global) {
 
   var logger: ScopeLogging = _
   val writer = new StringWriter(file.toPath)
 
   def commonOutput(from: HasModelCommon, token: String, to: HasModelCommon): String = {
     s"${from.csvString},${from.newCsvString},$token,${to.csvString},${to.newCsvString}"
-    //    s"${from.csvString},$token,${to.csvString}"
   }
 
   def overrides(overrider: ModelMethod, overridden: HasModelCommon, isDirect: Boolean): Unit = {

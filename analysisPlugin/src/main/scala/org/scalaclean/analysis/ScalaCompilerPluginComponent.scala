@@ -6,14 +6,12 @@ import java.util.Properties
 
 import org.scalaclean.analysis.plugin.ExtensionPlugin
 
-import scala.meta.internal.semanticdb.scalac.SemanticdbOps
-import scala.meta.io.AbsolutePath
 import scala.tools.nsc.plugins.PluginComponent
 import scala.tools.nsc.{Global, Phase}
 
 
 class ScalaCompilerPluginComponent(
-  val global: Global) extends PluginComponent with SemanticdbOps with ModelSymbolBuilder {
+  val global: Global) extends PluginComponent with ModelSymbolBuilder {
   override val phaseName: String = "scalaclean-compiler-plugin-phase"
 
   override val runsAfter: List[String] = List("semanticdb-typer")
@@ -47,11 +45,11 @@ class ScalaCompilerPluginComponent(
       if (debug)
         global.reporter.echo("Before Analysis Phase")
 
-      val outputPathBase: AbsolutePath = AbsolutePath(
-        global.settings.outputDirs.getSingleOutput
-          .flatMap(so => Option(so.file))
-          .map(v => v.getAbsolutePath)
-          .getOrElse(global.settings.d.value))
+      val outputPathBase: java.nio.file.Path =
+        global.settings.outputDirs.getSingleOutput match {
+          case Some(so) => so.file.toPath.toAbsolutePath
+          case None => Paths.get(global.settings.d.value)
+        }
 
       val outputPath = outputPathBase.resolve("META-INF/ScalaClean/")
       outputPath.toFile.mkdirs()

@@ -59,7 +59,6 @@ object SCOptions {
           .action((x, c) => c.copy(files = c.files :+ x))
           .text("target ScalaClean properties files for target projects"),
       ),
-
     )
   }
 
