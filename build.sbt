@@ -93,7 +93,7 @@ lazy val command = project.dependsOn(shared)
     mainClass in assembly := Some("scalaclean.cli.ScalaCleanMain"),
     // exclude some of the semanticdb classes which are imported twice
     assemblyExcludedJars in assembly := {
-      var cp = (fullClasspath in assembly).value
+      val cp = (fullClasspath in assembly).value
       cp.filter { f=>
         f.data.getName.contains("semanticdb-scalac_2.12.8-4.2.1.jar")
       }

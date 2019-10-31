@@ -28,7 +28,7 @@ object AnnotationDataBuilder {
     }
     //TODO cope better with trees - this should cope with @foo(1,2,"hello")
     //TODO cope better with trees - need @foo(x = 1, y = 2, z = "hello")
-    for (i <- 0 until annotation.scalaArgs.length) {
+    for (i <- annotation.scalaArgs.indices) {
       values = values.updated(i.toString, clean(annotation.constantAtIndex(i).map(_.value.toString).getOrElse("<<<TODO>>>")))
     }
     val start = if (pos.isDefined) pos.start - targetPos.start else Int.MinValue

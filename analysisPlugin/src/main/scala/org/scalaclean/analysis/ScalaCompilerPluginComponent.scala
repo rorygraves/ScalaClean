@@ -105,7 +105,7 @@ class ScalaCompilerPluginComponent(
       props.put(prop_srcBuildBase, srcBuildBase)
       props.put(prop_srcFiles, files.mkString(File.pathSeparator))
 
-      val propsFile = outputPath.resolve(s"ScalaClean.properties").toNIO
+      val propsFile = outputPath.resolve(s"ScalaClean.properties")
       if (debug)
         println("Writing props file " + propsFile)
       props.store(Files.newBufferedWriter(propsFile), "")

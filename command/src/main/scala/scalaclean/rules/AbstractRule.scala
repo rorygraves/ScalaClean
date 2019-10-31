@@ -30,13 +30,13 @@ abstract class AbstractRule(val name:String, val model: ProjectModel, debug: Boo
 
   def fix(implicit doc: SemanticDocument): Patch
 
-  def markAll[T <: ModelElement: Manifest](colour: => Colour) = {
+  def markAll[T <: ModelElement: Manifest](colour: => Colour): Unit = {
     model.allOf[T].foreach {
       e => e.mark = colour
     }
   }
   implicit class Coloured(e: ModelElement) {
-    def colour = e.mark.asInstanceOf[Colour]
-    def colour_=(newColour: Colour) = e.mark = newColour
+    def colour: Colour = e.mark.asInstanceOf[Colour]
+    def colour_=(newColour: Colour): Unit = e.mark = newColour
   }
 }

@@ -5,7 +5,7 @@ import scalaclean.model.impl.ElementId
 import scalaclean.rules.AbstractRule
 import scalaclean.util.{Scope, SymbolTreeVisitor, SymbolUtils}
 import scalafix.patch.Patch
-import scalafix.v1.{SemanticDocument, Symbol}
+import scalafix.v1.SemanticDocument
 
 import scala.meta.{Import, Mod, Pat, Stat}
 
@@ -21,14 +21,12 @@ class Privatiser(model: ProjectModel, debug: Boolean) extends AbstractRule("Priv
 
   override def runRule(): Unit = {
     model.allOf[ModelElement].foreach {
-      case e : SourceModel =>
+      case e: SourceModel =>
         e.colour = NoChange("source")
       case e => e.colour = localLevel(e)
     }
-    model.allOf[ModelElement].toList.sortBy(_.infoPosSorted).foreach {
-      case ele =>
-        println(s"${ele}  colour: ${ele.colour}")
-    }
+    model.allOf[ModelElement].toList.sortBy(_.infoPosSorted).foreach(ele =>
+      println(s"$ele  colour: ${ele.colour}"))
   }
 
   val app: ElementId = ElementId.AppObject
@@ -38,7 +36,7 @@ class Privatiser(model: ProjectModel, debug: Boolean) extends AbstractRule("Priv
     else {
       val incoming = {
         element.internalIncomingReferences map (_._1)
-      }.toSet - element
+        }.toSet - element
 
       val enclosing = element.classOrEnclosing
 
@@ -55,15 +53,15 @@ class Privatiser(model: ProjectModel, debug: Boolean) extends AbstractRule("Priv
       incoming foreach { ref: ModelElement =>
         val isFromChild = ref.classOrEnclosing.xtends(enclosing.symbol)
         val access = if (isFromChild)
-          Scoped.Protected(ref.symbol, s"accessed from $ref", false)
+          Scoped.Protected(ref.symbol, s"accessed from $ref", forceProtected = false)
         else
-          Scoped.Private(ref.symbol, s"accessed from $ref").widen( Scoped.Private(element.symbol, s"accessed from $ref"))
+          Scoped.Private(ref.symbol, s"accessed from $ref").widen(Scoped.Private(element.symbol, s"accessed from $ref"))
         res = res.widen(access)
       }
       //we must be visible to anything that overrides us
       element.internalDirectOverriddenBy foreach {
         overriddenBy =>
-          res = res.widen(Scoped.Protected(overriddenBy.symbol, s"overridden in from $overriddenBy", false))
+          res = res.widen(Scoped.Protected(overriddenBy.symbol, s"overridden in from $overriddenBy", forceProtected = false))
       }
 
       //We must be at least as visible as anything that we override
@@ -79,17 +77,17 @@ class Privatiser(model: ProjectModel, debug: Boolean) extends AbstractRule("Priv
           NoChange("inherits from external")
 
 
-//          val info = element.symbolInfo(parentSym)
-//          val reason = s"declared in $parentSym"
-//          val parentVis =
-//            if (info.isProtectedWithin) Scoped.Protected(info.within.get, reason, true)
-//            else if (info.isProtected) Scoped.Protected(v1.Symbol.RootPackage, reason, true)
-//            else if (info.isProtectedThis) ???
-//            else if (info.isPrivateWithin) Scoped.Private(info.within.get, reason)
-//            else if (info.isPrivate) ???
-//            else if (info.isPrivateThis) ???
-//            else Public(reason)
-//          res = res.widen(parentVis)
+        //          val info = element.symbolInfo(parentSym)
+        //          val reason = s"declared in $parentSym"
+        //          val parentVis =
+        //            if (info.isProtectedWithin) Scoped.Protected(info.within.get, reason, true)
+        //            else if (info.isProtected) Scoped.Protected(v1.Symbol.RootPackage, reason, true)
+        //            else if (info.isProtectedThis) ???
+        //            else if (info.isPrivateWithin) Scoped.Private(info.within.get, reason)
+        //            else if (info.isPrivate) ???
+        //            else if (info.isPrivateThis) ???
+        //            else Public(reason)
+        //          res = res.widen(parentVis)
       }
 
       element.colour = res
@@ -101,9 +99,10 @@ class Privatiser(model: ProjectModel, debug: Boolean) extends AbstractRule("Priv
     import scalafix.v1.{Patch => _, _}
 
 
-    val tv = new SymbolTreeVisitor {
+    val tv: SymbolTreeVisitor = new SymbolTreeVisitor {
 
-      override protected def handlerSymbol(symbol: ElementId, mods: Seq[Mod], stat: Stat, scope: List[Scope]): (Patch, Boolean) = {
+      override protected def handlerSymbol(
+        symbol: ElementId, mods: Seq[Mod], stat: Stat, scope: List[Scope]): (Patch, Boolean) = {
         val modelElement = model.fromSymbol[ModelElement](symbol)
         val patch = changeAccessModifier(modelElement.colour, mods, stat, modelElement)
         //do we need to recurse into implementation?
@@ -116,10 +115,11 @@ class Privatiser(model: ProjectModel, debug: Boolean) extends AbstractRule("Priv
         (patch, rewriteContent)
       }
 
-      def info(sym: Symbol) = doc.info(sym).get.isProtectedWithin
+      def info(sym: Symbol): Boolean = doc.info(sym).get.isProtectedWithin
 
 
-      override protected def handlerPats(pats: Seq[Pat.Var], mods: Seq[Mod], stat: Stat, scope: List[Scope]): (Patch, Boolean) = {
+      override protected def handlerPats(
+        pats: Seq[Pat.Var], mods: Seq[Mod], stat: Stat, scope: List[Scope]): (Patch, Boolean) = {
         //for vals and vars we set the access to the broadest of any access of the fields
 
         val access = pats map (p => (model.fromSymbol[ModelElement](ElementId(p.symbol))).colour)
@@ -152,25 +152,26 @@ class Privatiser(model: ProjectModel, debug: Boolean) extends AbstractRule("Priv
       def existingAccess(mods: Seq[Mod]): (Option[Mod], PrivatiserLevel) = {
         val res: Option[(Option[Mod], PrivatiserLevel)] = mods.collectFirst {
           case s@Mod.Private(scope) => (Some(s), Scoped.Private(ElementId.fromTree(scope), "existing"))
-          case s@Mod.Protected(scope) => (Some(s), Scoped.Protected(ElementId.fromTree(scope), "existing", false))
+          case s@Mod.Protected(scope) => (Some(s), Scoped.Protected(ElementId.fromTree(scope), "existing", forceProtected = false))
         }
         res.getOrElse((None, Public("existing")))
       }
 
-      private def changeAccessModifier(level: PrivatiserLevel, mods: Seq[Mod], defn: Stat, aModel: ModelElement): Patch = {
+      private def changeAccessModifier(
+        level: PrivatiserLevel, mods: Seq[Mod], defn: Stat, aModel: ModelElement): Patch = {
         val (mod, existing) = existingAccess(mods)
         val proposed = level.asText(aModel)
 
         val structuredPatch =
-//          if (isWiderThanExisting(level, aModel, mod))
-//          Utils.addError(defn, s" cant widen to $proposed from $existing */")
-//        else
+        //          if (isWiderThanExisting(level, aModel, mod))
+        //          Utils.addError(defn, s" cant widen to $proposed from $existing */")
+        //        else
           (mod, level.shouldReplace(aModel), proposed) match {
-          case (_, _, None) => Patch.empty
-          case (None, _, Some(toReplace)) => Patch.addLeft(defn, s"$toReplace ")
-          case (_, false, Some(toReplace)) => Patch.addLeft(defn, s"$toReplace ")
-          case (Some(existing), true, Some(toReplace)) => Patch.replaceTree(existing, s"$toReplace")
-        }
+            case (_, _, None) => Patch.empty
+            case (None, _, Some(toReplace)) => Patch.addLeft(defn, s"$toReplace ")
+            case (_, false, Some(toReplace)) => Patch.addLeft(defn, s"$toReplace ")
+            case (Some(existing), true, Some(toReplace)) => Patch.replaceTree(existing, s"$toReplace")
+          }
         structuredPatch + level.marker(defn)
       }
     }

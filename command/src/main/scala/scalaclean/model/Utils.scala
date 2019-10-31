@@ -21,7 +21,7 @@ object Utils {
             res ::= field
           case _ =>
         }
-        tree.children.foreach {visitTree(_)}
+        tree.children.foreach {visitTree}
       }
     }
     pats foreach visitor.visitTree

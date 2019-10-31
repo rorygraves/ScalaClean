@@ -37,8 +37,8 @@ trait ModelSymbolBuilder extends SemanticdbOps {
     recur(sym)
   }
   private def getNewName(sym: global.Symbol): String = {
-    if (debug)
-      println(s"getNewName $sym")
+//    if (debug)
+//      println(s"getNewName $sym")
     symbolNames.getOrElseUpdate(sym, fullNameString(sym))
 //    import global.{ModuleDef, ClassDef, ValDef, DefDef, NoSymbol}
 //

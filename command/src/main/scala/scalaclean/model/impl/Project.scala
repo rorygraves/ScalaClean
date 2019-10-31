@@ -7,7 +7,7 @@ import java.nio.file.{Files, Path, Paths}
 import java.util.Properties
 import java.util.concurrent.ConcurrentHashMap
 
-import scalafix.v1.{SymbolInformation}
+import scalafix.v1.SymbolInformation
 
 import scala.meta.internal.symtab.{GlobalSymbolTable, SymbolTable}
 import scala.meta.io.{AbsolutePath, Classpath}
@@ -57,7 +57,7 @@ class Project private(
   private val sourcesMap = new ConcurrentHashMap[String, SourceData]()
 
   def source(name: String) = {
-    sourcesMap.computeIfAbsent(name, p => new SourceData(this, Paths.get(p)))
+    sourcesMap.computeIfAbsent(name, p => SourceData(this, Paths.get(p)))
   }
 
 }

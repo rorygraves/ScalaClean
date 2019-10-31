@@ -330,25 +330,25 @@ package impl {
     self: ClassLikeModelImpl =>
 
     override def directExtends: Set[ElementId] = {
-      extnds collect {
+      extnds.collect {
         case s if s.isDirect => s.toSymbol
-      } toSet
+      }.toSet
     }
 
     override def transitiveExtends: Set[ElementId] = {
-      extnds map (_.toSymbol) toSet
+      extnds.map(_.toSymbol).toSet
     }
 
     override def directExtendedBy: Set[ClassLike] = {
-      (extendedBy collect {
+      extendedBy.collect {
         case e if e.isDirect => e.fromElement
-      }) toSet
+      }.toSet
     }
 
     override def transitiveExtendedBy: Set[ClassLike] = {
-      (extendedBy map {
+      extendedBy.map {
         _.fromElement
-      }) toSet
+      }.toSet
     }
 
   }
