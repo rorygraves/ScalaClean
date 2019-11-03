@@ -26,4 +26,12 @@ class DeadCodeTests extends  AbstractProjectTests {
     deadCodeProjectTest(List("deadCodeProject6a", "deadCodeProject6b"), overwriteTarget = false)
   }
 
+  test("deadCode7-inheritance") {
+    deadCodeProjectTest("deadCodeProject7")
+  }
+
+  test("deadCode8") {
+    deadCodeProjectTest("deadCodeProject8")
+  }
+
 }

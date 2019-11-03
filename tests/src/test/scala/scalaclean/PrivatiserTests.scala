@@ -1,6 +1,6 @@
 package scalaclean
 
-class PrivatiserTests extends  AbstractProjectTests {
+class PrivatiserTests extends AbstractProjectTests {
 
   test("privatiser1") {
     privatiserProjectTest("privatiserProject1")
@@ -20,6 +20,14 @@ class PrivatiserTests extends  AbstractProjectTests {
 
   test("privatiser5") {
     privatiserProjectTest("privatiserProject5")
+  }
+
+  test("privatiser6-annotations") {
+    privatiserProjectTest("privatiserProject6")
+  }
+
+  test("privatiser7") {
+    privatiserProjectTest("privatiserProject7")
   }
 
 }

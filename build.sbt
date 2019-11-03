@@ -164,12 +164,17 @@ lazy val deadCodeProject5 = testInputProject("deadCodeProject5", "testProjects/d
 lazy val deadCodeProject6a = testInputProject("deadCodeProject6a", "testProjects/deadCodeProject6a")
 lazy val deadCodeProject6b = testInputProject("deadCodeProject6b", "testProjects/deadCodeProject6b", deadCodeProject6a)
 
+lazy val deadCodeProject7 = testInputProject("deadCodeProject7", "testProjects/deadCodeProject7")
+lazy val deadCodeProject8 = testInputProject("deadCodeProject8", "testProjects/deadCodeProject8")
+
 
 lazy val privatiserProject1 = testInputProject("privatiserProject1", "testProjects/privatiserProject1")
 lazy val privatiserProject2 = testInputProject("privatiserProject2", "testProjects/privatiserProject2")
 lazy val privatiserProject3 = testInputProject("privatiserProject3", "testProjects/privatiserProject3")
 lazy val privatiserProject4 = testInputProject("privatiserProject4", "testProjects/privatiserProject4")
 lazy val privatiserProject5 = testInputProject("privatiserProject5", "testProjects/privatiserProject5")
+lazy val privatiserProject6 = testInputProject("privatiserProject6", "testProjects/privatiserProject6")
+lazy val privatiserProject7 = testInputProject("privatiserProject7", "testProjects/privatiserProject7")
 
 lazy val scratch = testInputProject("scratch", "testProjects/scratch")
 lazy val scratch1 = testInputProject("scratch1", "scratchProjects/scratch1")
@@ -184,8 +189,10 @@ lazy val scratch1 = testInputProject("scratch1", "scratchProjects/scratch1")
     crossPaths := false,
     libraryDependencies += "com.novocode" % "junit-interface" % "0.11" % Test,
   )
-lazy val privatiserTests = project.dependsOn(privatiserProject1, privatiserProject2, privatiserProject3, privatiserProject4, privatiserProject5)
-lazy val deadCodeTests = project.dependsOn(deadCodeProject1, deadCodeProject2, deadCodeProject3, deadCodeProject4, deadCodeProject5)
+lazy val privatiserTests = project.dependsOn(privatiserProject1, privatiserProject2, privatiserProject3,
+  privatiserProject4, privatiserProject5, privatiserProject6, privatiserProject7)
+lazy val deadCodeTests = project.dependsOn(deadCodeProject1, deadCodeProject2, deadCodeProject3, deadCodeProject4,
+  deadCodeProject5, deadCodeProject6a, deadCodeProject6b, deadCodeProject7, deadCodeProject8)
 lazy val scratchProjects = project.dependsOn(scratch, scratch1)
 
 lazy val tests = project.dependsOn(command, unitTestProject, privatiserTests, deadCodeTests,scratchProjects)

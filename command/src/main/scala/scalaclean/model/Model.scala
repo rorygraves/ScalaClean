@@ -94,7 +94,10 @@ sealed trait ModelElement extends Ordered[ModelElement] {
   protected def infoTypeName: String
 
   protected def infoPosString: String
-  def infoPosSorted: (String,Int,Int)
+  final def infoPosSorted: (String,Int,Int) = (sourceFileName, rawStart, rawEnd)
+  def rawStart: Int
+  def rawEnd: Int
+  def sourceFileName: String
 
   protected def infoDetail = ""
 
@@ -430,7 +433,11 @@ package impl {
       //
     }
 
-    override def infoPosSorted: (String, Int, Int) = (source.path.toString, offsetStart, offsetEnd)
+    override def rawStart: Int = offsetStart
+
+    override def rawEnd: Int = offsetEnd
+
+    override def sourceFileName: String = source.path.toString
   }
 
   abstract sealed class ClassLikeModelImpl(

@@ -7,6 +7,8 @@ import scalaclean.util.{Scope, SymbolTreeVisitor, SymbolUtils}
 import scalafix.patch.Patch
 import scalafix.v1.SemanticDocument
 
+import scala.meta.tokens.Token
+import scala.meta.tokens.Token.{KwDef, KwVal, KwVar}
 import scala.meta.{Import, Mod, Pat, Stat}
 
 class Privatiser(model: ProjectModel, debug: Boolean) extends AbstractRule("Privatiser", model, debug) {
@@ -104,7 +106,7 @@ class Privatiser(model: ProjectModel, debug: Boolean) extends AbstractRule("Priv
       override protected def handlerSymbol(
         symbol: ElementId, mods: Seq[Mod], stat: Stat, scope: List[Scope]): (Patch, Boolean) = {
         val modelElement = model.fromSymbol[ModelElement](symbol)
-        val patch = changeAccessModifier(modelElement.colour, mods, stat, modelElement)
+        val patch = changeAccessModifier(modelElement.colour, mods, stat, modelElement, None)
         //do we need to recurse into implementation?
         val rewriteContent = modelElement match {
           case _: ClassLike => true
@@ -122,9 +124,28 @@ class Privatiser(model: ProjectModel, debug: Boolean) extends AbstractRule("Priv
         pats: Seq[Pat.Var], mods: Seq[Mod], stat: Stat, scope: List[Scope]): (Patch, Boolean) = {
         //for vals and vars we set the access to the broadest of any access of the fields
 
-        val access = pats map (p => (model.fromSymbol[ModelElement](ElementId(p.symbol))).colour)
+        val modelElements: Seq[ModelElement] = pats map {p =>
+          val ele = model.fromSymbol[ModelElement](ElementId(p.symbol))
+          ele match {
+            case v: ValModel => v
+            case v: VarModel => v
+            case s:SetterMethodModel => s.field.getOrElse(s)
+            case g:GetterMethodModel => g.field.getOrElse(g)
+          }}
+
+        val access = modelElements map (_.colour)
         val combined = access.fold[PrivatiserLevel](Undefined)((l, r) => l.widen(r))
-        val patch = changeAccessModifier(combined, mods, stat, model.fromSymbol[ModelElement](ElementId(pats.head.symbol)))
+        val keywordToken = modelElements.head match {
+          case v: ValModel => stat.tokens.find(_.isInstanceOf[KwVal])
+          case v: VarModel => stat.tokens.find(_.isInstanceOf[KwVar])
+          case v: MethodModel => stat.tokens.find(_.isInstanceOf[KwDef])
+        }
+        assert (keywordToken.nonEmpty)
+        if (modelElements.size == 1)
+          assert (keywordToken.get.pos.start <= modelElements.head.rawEnd)
+        else
+          assert (keywordToken.get.pos.start <= modelElements.head.rawStart)
+        val patch = changeAccessModifier(combined, mods, stat, modelElements.head, keywordToken)
         //we never need to recurse into RHS of decls as they are not externally visible
         (patch, false)
       }
@@ -158,9 +179,27 @@ class Privatiser(model: ProjectModel, debug: Boolean) extends AbstractRule("Priv
       }
 
       private def changeAccessModifier(
-        level: PrivatiserLevel, mods: Seq[Mod], defn: Stat, aModel: ModelElement): Patch = {
+        level: PrivatiserLevel, mods: Seq[Mod], defn: Stat, aModel: ModelElement, forcePosition: Option[Token]): Patch = {
         val (mod, existing) = existingAccess(mods)
         val proposed = level.asText(aModel)
+
+        def buildInsertion(toReplace:String) = {
+          forcePosition match {
+            case Some(token) =>
+              Patch.addLeft(token, s"$toReplace ")
+            case None =>
+              val tokens = defn.tokens
+              tokens.find {
+                _.start == aModel.rawStart
+              } match {
+                case Some(token) =>
+                  Patch.addLeft(token, s"$toReplace ")
+                case None =>
+                  //probably quite worrying
+                  Patch.addLeft(defn, s"$toReplace ")
+              }
+          }
+        }
 
         val structuredPatch =
         //          if (isWiderThanExisting(level, aModel, mod))
@@ -168,8 +207,10 @@ class Privatiser(model: ProjectModel, debug: Boolean) extends AbstractRule("Priv
         //        else
           (mod, level.shouldReplace(aModel), proposed) match {
             case (_, _, None) => Patch.empty
-            case (None, _, Some(toReplace)) => Patch.addLeft(defn, s"$toReplace ")
-            case (_, false, Some(toReplace)) => Patch.addLeft(defn, s"$toReplace ")
+            case (None, _, Some(toReplace)) =>
+              buildInsertion(toReplace)
+            case (_, false, Some(toReplace)) =>
+              buildInsertion(toReplace)
             case (Some(existing), true, Some(toReplace)) => Patch.replaceTree(existing, s"$toReplace")
           }
         structuredPatch + level.marker(defn)

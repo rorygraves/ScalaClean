@@ -23,14 +23,14 @@ trait ModelSymbolBuilder extends SemanticdbOps {
     case sym  if sym.isMethod =>
       sym.encodedName + sym. paramss.map{ params => params.map(param => param.info.typeSymbol.fullName).mkString(";")}.mkString("(","", ")")
       // need to check for moduleClass first because ModuleClass is a class
-    case sym if sym.isModuleOrModuleClass =>  sym.encodedName+"#"
+    case sym if sym.isModule =>  sym.encodedName+"#"
+//    case sym if sym.isModuleOrModuleClass =>  sym.encodedName+"#"
     case sym if sym.isClass =>  sym.encodedName+"."
     case sym =>  sym.encodedName
   }
   private def fullNameString(sym: global.Symbol): String = {
     def recur(sym: global.Symbol): String = {
       if (sym.isRootSymbol || sym == global.NoSymbol) sym.nameString
-      else if (sym.owner.isEffectiveRoot) sym.nameString
       else recur(sym.owner) + "/" + localName(sym)
     }
 
