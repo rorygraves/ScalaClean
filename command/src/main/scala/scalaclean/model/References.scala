@@ -64,6 +64,7 @@ package impl {
     }
 
     def fromElement = _from.asInstanceOf[From]
+    def fromElement2 = _from2.asInstanceOf[From]
     def toElement = _to match {
       case s: ElementId => None
       case m: ModelElement => Some(m.asInstanceOf[To])

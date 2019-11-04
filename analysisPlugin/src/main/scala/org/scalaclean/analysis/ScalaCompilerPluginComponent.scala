@@ -6,6 +6,7 @@ import java.util.Properties
 
 import org.scalaclean.analysis.plugin.ExtensionPlugin
 
+import scala.collection.mutable
 import scala.tools.nsc.plugins.PluginComponent
 import scala.tools.nsc.{Global, Phase}
 
@@ -69,7 +70,7 @@ class ScalaCompilerPluginComponent(
         println(s"Writing extensions file to to ${extensionFile}")
       extensionWriter = new ExtensionWriter(extensionFile, global)
 
-      traverser = new SCUnitTraverser(elementsWriter , relationsWriter, extensionWriter, false)
+      traverser = new SCUnitTraverser(elementsWriter , relationsWriter, extensionWriter, debug)
       elementsWriter.logger = traverser
       relationsWriter.logger = traverser
       extensionWriter.logger = traverser
@@ -252,6 +253,32 @@ class ScalaCompilerPluginComponent(
       }
     }
 
+    val visitedType = new mutable.HashSet[global.Symbol]
+
+    def traverseType(tpe: global.Type) : Unit = {
+      visitedType.clear()
+      visitedType.add(global.NoSymbol)
+
+      traverseImpl(tpe)
+
+      def add(symbol: global.Symbol) =
+        if (visitedType.add(symbol))
+          currentScope.addRefers(asMSymbol(symbol), symbol.isSynthetic)
+
+      def traverseImpl(tpe: global.Type) {
+        tpe.foreach { tpePart =>
+          val widened = tpePart.dealiasWiden
+          add(widened.termSymbol)
+          add(widened.typeSymbol)
+          widened match {
+            case ref: global.TypeRefApi =>
+              ref.args foreach traverseImpl
+            case _ =>
+          }
+        }
+      }
+    }
+
     override def traverse(tree: Tree): Unit = {
 
       tree match {
@@ -260,6 +287,7 @@ class ScalaCompilerPluginComponent(
 
           // ignore package symbol for now
           enterTransScope("PackageDef") {
+            traverseType(tree.tpe)
             super.traverse(packageDef)
           }
         case treeSelect: Select =>
@@ -269,18 +297,29 @@ class ScalaCompilerPluginComponent(
             if (hasCurrentGlobalScope) {
               currentScope.addRefers(asMSymbol(treeSelect.symbol), false)
             }
+            traverseType(tree.tpe)
             super.traverse(treeSelect)
           }
         case template: Template =>
-          enterTransScope("Template")(super.traverse(template))
+          enterTransScope("Template"){
+            traverseType(tree.tpe)
+            super.traverse(template)
+          }
         case typeTree: TypeTree =>
           enterTransScope("TypeTree") {
+            traverseType(tree.tpe)
             super.traverse(typeTree)
           }
         case blockTree: Block =>
-          enterTransScope("Block")(super.traverse(blockTree))
+          enterTransScope("Block"){
+            traverseType(tree.tpe)
+            super.traverse(blockTree)
+          }
         case superTree: Super =>
-          enterTransScope("Super")(super.traverse(superTree))
+          enterTransScope("Super"){
+            traverseType(tree.tpe)
+            super.traverse(superTree)
+          }
         case EmptyTree =>
         // do nothing
         case thisTree: This =>
@@ -290,8 +329,11 @@ class ScalaCompilerPluginComponent(
           scopeLog("Literal " + literalTree)
         case identTree: Ident =>
           //          identTree.name
-          enterTransScope("Ident " + identTree.symbol)(super.traverse(identTree))
-          currentScope.addRefers(asMSymbol(identTree.symbol), identTree.symbol.isSynthetic)
+          enterTransScope("Ident " + identTree.symbol){
+            traverseType(tree.tpe)
+            super.traverse(identTree)
+            currentScope.addRefers(asMSymbol(identTree.symbol), identTree.symbol.isSynthetic)
+          }
 
         //          scopeLog("Ident " + identTree.name)
         case importTree: Import =>
@@ -319,10 +361,12 @@ class ScalaCompilerPluginComponent(
 //              relationsWriter.extendsCls(parentMSymbol, obj, direct)
               recordExtendsClass(parentMSymbol, obj, direct = direct)
             }
+            traverseType(tree.tpe)
             super.traverse(tree)
           }
 
         case apply: Apply =>
+          traverseType(tree.tpe)
           val target = asMSymbol(apply.symbol)
           val isSynthetic = apply.symbol.isSynthetic
           currentScope.addRefers(target, isSynthetic)
@@ -338,7 +382,7 @@ class ScalaCompilerPluginComponent(
             if (isTrait) ModelTrait(classDef, mSymbol)
             else ModelClass(classDef, mSymbol, symbol.isAbstractClass)
           enterScope(cls) { cls =>
-
+            traverseType(tree.tpe)
             val directSymbols = symbol.info.parents.map(t => asMSymbol(t.typeSymbol)).toSet
 
             symbol.ancestors foreach { ancestorSymbol =>
@@ -359,6 +403,7 @@ class ScalaCompilerPluginComponent(
             if (symbol.isVar) ModelVar(valDef, mSymbol, symbol.isDeferred, symbol.isParameter)
             else ModelVal(valDef, mSymbol, symbol.isDeferred, valDef.symbol.isLazy, symbol.isParameter)
           enterScope(field) { field =>
+            traverseType(tree.tpe)
             field.addRefers(asMSymbol(valDef.tpt.symbol), symbol.isSynthetic)
             if (symbol.isLocalToBlock) {
 
@@ -443,30 +488,36 @@ class ScalaCompilerPluginComponent(
             case _ if symbol.isAccessor && symbol.isGetter =>
               val field = asMSymbol(symbol.accessedOrSelf)
               enterScope(ModelGetterMethod(defdef, mSymbol, declTypeDefined, symbol.isDeferred)) { method =>
+                traverseType(tree.tpe)
                 traverseMethod(method)
                 method.addGetterFor(field)
               }
             case _ if symbol.isAccessor && symbol.isSetter =>
               val field = asMSymbol(symbol.accessedOrSelf)
               enterScope(ModelSetterMethod(defdef, mSymbol, declTypeDefined, symbol.isDeferred)) { method =>
+                traverseType(tree.tpe)
                 traverseMethod(method)
                 method.addSetterFor(field)
               }
 
             case _ if symbol.isSynthetic =>
+              traverseType(tree.tpe)
             // TODO should we super.traverse(tree) ??
             case _ =>
 
               enterScope(ModelPlainMethod(defdef, mSymbol, declTypeDefined, symbol.isDeferred)) { method =>
+                traverseType(tree.tpe)
                 traverseMethod(method)
               }
           }
 
         case New(x) =>
           scopeLog("--  NEW tree" + tree.getClass)
+          traverseType(tree.tpe)
           super.traverse(tree)
         case unknown =>
           scopeLog("--  unhandled tree" + tree.getClass)
+          traverseType(tree.tpe)
           super.traverse(tree)
       }
     }

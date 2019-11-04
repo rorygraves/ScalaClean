@@ -133,6 +133,7 @@ sealed trait ObjectModel extends ClassLike with FieldModel {
 
   override protected final def infoTypeName: String = "ObjectModel"
 
+  override final def getter: Option[GetterMethodModel] = None
   final override def otherFieldsInSameDeclaration = Nil
 
   type fieldType = ObjectModel
@@ -159,6 +160,7 @@ sealed trait SetterMethodModel extends AccessorModel {
 
 sealed trait FieldModel extends ModelElement {
   type fieldType <: FieldModel
+  def getter : Option[GetterMethodModel]
 
   def otherFieldsInSameDeclaration: Seq[fieldType]
 }
@@ -174,6 +176,7 @@ sealed trait ValModel extends FieldModel {
 sealed trait VarModel extends FieldModel {
   type fieldType = VarModel
 
+  def setter : Option[SetterMethodModel]
   override protected final def infoTypeName: String = "VarModel"
 }
 
@@ -485,7 +488,11 @@ package impl {
       super.complete(elements, modelElements, relsFrom, relsTo)
       relsTo.getter.get(info.symbol) match {
         case None => getter_ = None
-        case Some(f :: Nil) => getter_ = Some(f.fromElement)
+        case Some(f :: Nil) =>
+          if (f.fromElement.isInstanceOf[GetterMethodModelImpl])
+            getter_ = Some(f.fromElement)
+          else if (f.fromElement2.isInstanceOf[GetterMethodModelImpl])
+            getter_ = Some(f.fromElement2)
         case Some(error) => ???
       }
     }

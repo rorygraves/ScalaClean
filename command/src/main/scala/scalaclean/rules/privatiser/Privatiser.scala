@@ -38,7 +38,12 @@ class Privatiser(model: ProjectModel, debug: Boolean) extends AbstractRule("Priv
     else {
       val incoming = {
         element.internalIncomingReferences map (_._1)
-        }.toSet - element
+        }.toSet - element -- (element match {
+        case v: ValModel => v.getter
+        case v: VarModel => v.getter ++ v.setter
+        case a: AccessorModel => a.field
+        case _ => Nil
+      })
 
       val enclosing = element.classOrEnclosing
 
@@ -129,12 +134,28 @@ class Privatiser(model: ProjectModel, debug: Boolean) extends AbstractRule("Priv
           ele match {
             case v: ValModel => v
             case v: VarModel => v
-            case s:SetterMethodModel => s.field.getOrElse(s)
-            case g:GetterMethodModel => g.field.getOrElse(g)
+            case a:AccessorModel => a.field.getOrElse(a)
           }}
 
-        val access = modelElements map (_.colour)
-        val combined = access.fold[PrivatiserLevel](Undefined)((l, r) => l.widen(r))
+        val combined = modelElements.foldLeft [PrivatiserLevel](Undefined){
+          case (level, v:VarModel) =>
+            var res = level.widen(v.colour)
+            v.getter.foreach{g =>
+              if (g.colour ne null)
+                res = res.widen(g.colour)}
+            v.setter.foreach{s =>
+              if (s.colour ne null)
+                res = res.widen(s.colour)}
+            res
+          case (level, v:ValModel) =>
+            var res = level.widen(v.colour)
+            v.getter.foreach{g =>
+              if (g.colour ne null)
+                res = res.widen(g.colour)}
+            res
+          case (level, a:AccessorModel) =>
+            level.widen(a.colour)
+        }
         val keywordToken = modelElements.head match {
           case v: ValModel => stat.tokens.find(_.isInstanceOf[KwVal])
           case v: VarModel => stat.tokens.find(_.isInstanceOf[KwVar])
