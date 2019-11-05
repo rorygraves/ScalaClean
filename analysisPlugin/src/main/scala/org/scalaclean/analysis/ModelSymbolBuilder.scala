@@ -22,9 +22,7 @@ trait ModelSymbolBuilder extends SemanticdbOps {
       localId(sym)
     case sym  if sym.isMethod =>
       sym.encodedName + sym. paramss.map{ params => params.map(param => param.info.typeSymbol.fullName).mkString(";")}.mkString("(","", ")")
-      // need to check for moduleClass first because ModuleClass is a class
     case sym if sym.isModule =>  sym.encodedName+"#"
-//    case sym if sym.isModuleOrModuleClass =>  sym.encodedName+"#"
     case sym if sym.isClass =>  sym.encodedName+"."
     case sym =>  sym.encodedName
   }

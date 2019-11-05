@@ -301,26 +301,24 @@ class ScalaCompilerPluginComponent(
     }
 
     def recordOverrides(model: ClassLike): Unit = {
-      val symbol = model.tree.symbol.asInstanceOf[global.Symbol]
+      val classSymbol = model.tree.symbol.asInstanceOf[global.Symbol]
 
-      val directSymbols = symbol.info.parents.map(t => asMSymbol(t.typeSymbol)).toSet
+      val directSymbols = classSymbol.info.parents.map(t => asMSymbol(t.typeSymbol)).toSet
 
-      symbol.ancestors foreach { ancestorSymbol =>
+      classSymbol.ancestors foreach { ancestorSymbol =>
         val ancestorMSymbol = asMSymbol(ancestorSymbol)
         val direct = directSymbols.contains(ancestorMSymbol)
         recordExtendsClass(ancestorMSymbol, model, direct = direct)
       }
-      val cursor = new overridingPairs.Cursor(symbol)
+      val cursor = new overridingPairs.Cursor(classSymbol)
       while (cursor.hasNext) {
         val entry = cursor.currentPair
-        if (entry.low.owner != symbol) {
-//          val dummyMethodSym = symbol.newMethodSymbol(newTermName(entry.low.simpleName.toString), symbol.pos.focusStart,Flags.SYNTHETIC)
+        if (entry.low.owner != classSymbol) {
 
-          val dummyMethodSym = entry.low.cloneSymbol(symbol)
-          dummyMethodSym.setPos( symbol.pos.focusStart)
+          val dummyMethodSym = entry.low.cloneSymbol(classSymbol)
+          dummyMethodSym.setPos( classSymbol.pos.focusStart)
           dummyMethodSym.setFlag( Flags.SYNTHETIC)
 
-//          symbol.info.decls.enter(symbol.newMethod(newTermName(entry.low.simpleName.toString), NoPosition, Flags.SYNTHETIC), dummyMethodSym)
             enterScope(new ModelPlainMethod(DefDef(dummyMethodSym, new Modifiers(dummyMethodSym.flags,newTermName(""), Nil),global.EmptyTree),
             asMSymbol(dummyMethodSym), false, false)) { meth =>
               //if not recorded above, then maybe this should be a synthetic override
