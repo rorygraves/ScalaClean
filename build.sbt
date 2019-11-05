@@ -166,7 +166,7 @@ lazy val deadCodeProject6b = testInputProject("deadCodeProject6b", "testProjects
 
 lazy val deadCodeProject7 = testInputProject("deadCodeProject7", "testProjects/deadCodeProject7")
 lazy val deadCodeProject8 = testInputProject("deadCodeProject8", "testProjects/deadCodeProject8")
-
+lazy val deadCodeProject9 = testInputProject("deadCodeProject9", "testProjects/deadCodeProject9")
 
 lazy val privatiserProject1 = testInputProject("privatiserProject1", "testProjects/privatiserProject1")
 lazy val privatiserProject2 = testInputProject("privatiserProject2", "testProjects/privatiserProject2")
@@ -192,7 +192,7 @@ lazy val scratch1 = testInputProject("scratch1", "scratchProjects/scratch1")
 lazy val privatiserTests = project.dependsOn(privatiserProject1, privatiserProject2, privatiserProject3,
   privatiserProject4, privatiserProject5, privatiserProject6, privatiserProject7)
 lazy val deadCodeTests = project.dependsOn(deadCodeProject1, deadCodeProject2, deadCodeProject3, deadCodeProject4,
-  deadCodeProject5, deadCodeProject6a, deadCodeProject6b, deadCodeProject7, deadCodeProject8)
+  deadCodeProject5, deadCodeProject6a, deadCodeProject6b, deadCodeProject7, deadCodeProject8, deadCodeProject9)
 lazy val scratchProjects = project.dependsOn(scratch, scratch1)
 
 lazy val tests = project.dependsOn(command, unitTestProject, privatiserTests, deadCodeTests,scratchProjects)

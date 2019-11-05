@@ -144,7 +144,7 @@ sealed trait TraitModel extends ClassLike {
 }
 
 sealed trait MethodModel extends ModelElement
-sealed trait AccessorModel extends MethodModel {
+sealed trait AccessorModel extends MethodModel with FieldOrAccessorModel {
   def field : Option[FieldModel]
 }
 sealed trait PlainMethodModel extends MethodModel {
@@ -158,14 +158,15 @@ sealed trait SetterMethodModel extends AccessorModel {
   def field : Option[VarModel]
 }
 
-sealed trait FieldModel extends ModelElement {
+sealed trait FieldOrAccessorModel extends ModelElement
+sealed trait FieldModel extends FieldOrAccessorModel {
   type fieldType <: FieldModel
   def getter : Option[GetterMethodModel]
 
   def otherFieldsInSameDeclaration: Seq[fieldType]
 }
 
-sealed trait ValModel extends FieldModel {
+sealed trait ValModel extends FieldModel{
   def isLazy: Boolean
 
   type fieldType = ValModel
@@ -173,7 +174,7 @@ sealed trait ValModel extends FieldModel {
   override protected final def infoTypeName: String = "ValModel"
 }
 
-sealed trait VarModel extends FieldModel {
+sealed trait VarModel extends FieldModel{
   type fieldType = VarModel
 
   def setter : Option[SetterMethodModel]

@@ -6,13 +6,14 @@ import java.util.Properties
 
 import org.scalaclean.analysis.plugin.ExtensionPlugin
 
-import scala.collection.mutable
+import scala.collection.immutable.HashSet
+import scala.reflect.internal.Flags
 import scala.tools.nsc.plugins.PluginComponent
 import scala.tools.nsc.{Global, Phase}
 
 
 class ScalaCompilerPluginComponent(
-  val global: Global) extends PluginComponent with ModelSymbolBuilder {
+                                    val global: Global) extends PluginComponent with ModelSymbolBuilder {
   override val phaseName: String = "scalaclean-compiler-plugin-phase"
 
   override val runsAfter: List[String] = List("semanticdb-typer")
@@ -70,7 +71,7 @@ class ScalaCompilerPluginComponent(
         println(s"Writing extensions file to to ${extensionFile}")
       extensionWriter = new ExtensionWriter(extensionFile, global)
 
-      traverser = new SCUnitTraverser(elementsWriter , relationsWriter, extensionWriter, debug)
+      traverser = new SCUnitTraverser(elementsWriter, relationsWriter, extensionWriter, debug)
       elementsWriter.logger = traverser
       relationsWriter.logger = traverser
       extensionWriter.logger = traverser
@@ -162,6 +163,7 @@ class ScalaCompilerPluginComponent(
 
 
     private var traversal = 0
+
     def enterScope[T, M <: ModelSymbol](mSymbol: M)(fn: M => T): Unit = {
       val outer = scopeStack.headOption
       if (outer.isEmpty) traversal = 0
@@ -173,6 +175,7 @@ class ScalaCompilerPluginComponent(
       scopeStack = mSymbol :: scopeStack
       depth += 1
       scopeLog(s"-symbol: ${mSymbol.csvString}")
+      val oldVisited = newVisited()
       outer.foreach { o =>
         mSymbol.addWithin(o)
       }
@@ -181,10 +184,12 @@ class ScalaCompilerPluginComponent(
           val data = e.extendedData(mSymbol, mSymbol.tree.asInstanceOf[e.g.Tree])
           mSymbol.addExtensionData(data)
       }
+      traverseType(mSymbol.tree.tpe.asInstanceOf[global.Type])
 
       fn(mSymbol)
       scopeStack = scopeStack.tail
       depth -= 1
+      resetVisited(oldVisited)
       if (debug)
         println(s"${indentString}/${mSymbol.debugName}")
     }
@@ -213,10 +218,10 @@ class ScalaCompilerPluginComponent(
 
 
   class SCUnitTraverser(
-    val elementsWriter: ElementsWriter,
-    val relationsWriter: RelationshipsWriter,
-    val extensionWriter: ExtensionWriter,
-    val debug: Boolean) extends global.Traverser with ScopeTracking {
+                         val elementsWriter: ElementsWriter,
+                         val relationsWriter: RelationshipsWriter,
+                         val extensionWriter: ExtensionWriter,
+                         val debug: Boolean) extends global.Traverser with ScopeTracking {
 
     import global._
 
@@ -241,29 +246,45 @@ class ScalaCompilerPluginComponent(
         sourceSymbol.printStructure()
         println("----------------")
       }
-        sourceSymbol.flatten()
+      sourceSymbol.flatten()
       if (debug) {
         println("----------------")
         sourceSymbol.printStructure()
         println("----------------")
       }
-      sourceSymbol.outputStructure(elementsWriter,relationsWriter,extensionWriter)
+      sourceSymbol.outputStructure(elementsWriter, relationsWriter, extensionWriter)
       if (debug) {
         println("----------------")
       }
     }
 
-    val visitedType = new mutable.HashSet[global.Symbol]
+    val initialVisited = HashSet[global.Symbol](global.NoSymbol)
+    var visitedTypes = HashSet.empty[global.Symbol]
 
-    def traverseType(tpe: global.Type) : Unit = {
-      visitedType.clear()
-      visitedType.add(global.NoSymbol)
+    def resetVisited(visited: HashSet[global.Symbol]) {
+      visitedTypes = visited
+    }
 
-      traverseImpl(tpe)
+    def newVisited() = {
+      val existing = visitedTypes
+      visitedTypes = initialVisited
+      existing
+    }
 
-      def add(symbol: global.Symbol) =
-        if (visitedType.add(symbol))
+    newVisited()
+
+    def traverseType(tpe: global.Type): Unit = {
+      if (tpe ne null)
+        traverseImpl(tpe)
+
+      def add(symbol: global.Symbol): Boolean = {
+        val added = visitedTypes + symbol
+        if (added ne visitedTypes) {
+          visitedTypes = added
           currentScope.addRefers(asMSymbol(symbol), symbol.isSynthetic)
+          true
+        } else false
+      }
 
       def traverseImpl(tpe: global.Type) {
         tpe.foreach { tpePart =>
@@ -276,6 +297,38 @@ class ScalaCompilerPluginComponent(
             case _ =>
           }
         }
+      }
+    }
+
+    def recordOverrides(model: ClassLike): Unit = {
+      val symbol = model.tree.symbol.asInstanceOf[global.Symbol]
+
+      val directSymbols = symbol.info.parents.map(t => asMSymbol(t.typeSymbol)).toSet
+
+      symbol.ancestors foreach { ancestorSymbol =>
+        val ancestorMSymbol = asMSymbol(ancestorSymbol)
+        val direct = directSymbols.contains(ancestorMSymbol)
+        recordExtendsClass(ancestorMSymbol, model, direct = direct)
+      }
+      val cursor = new overridingPairs.Cursor(symbol)
+      while (cursor.hasNext) {
+        val entry = cursor.currentPair
+        if (entry.low.owner != symbol) {
+//          val dummyMethodSym = symbol.newMethodSymbol(newTermName(entry.low.simpleName.toString), symbol.pos.focusStart,Flags.SYNTHETIC)
+
+          val dummyMethodSym = entry.low.cloneSymbol(symbol)
+          dummyMethodSym.setPos( symbol.pos.focusStart)
+          dummyMethodSym.setFlag( Flags.SYNTHETIC)
+
+//          symbol.info.decls.enter(symbol.newMethod(newTermName(entry.low.simpleName.toString), NoPosition, Flags.SYNTHETIC), dummyMethodSym)
+            enterScope(new ModelPlainMethod(DefDef(dummyMethodSym, new Modifiers(dummyMethodSym.flags,newTermName(""), Nil),global.EmptyTree),
+            asMSymbol(dummyMethodSym), false, false)) { meth =>
+              //if not recorded above, then maybe this should be a synthetic override
+              currentScope.addOverride(asMSymbol(entry.low), true)
+              currentScope.addOverride(asMSymbol(entry.high), true)
+            }
+        }
+        cursor.next()
       }
     }
 
@@ -301,7 +354,7 @@ class ScalaCompilerPluginComponent(
             super.traverse(treeSelect)
           }
         case template: Template =>
-          enterTransScope("Template"){
+          enterTransScope("Template") {
             traverseType(tree.tpe)
             super.traverse(template)
           }
@@ -311,12 +364,12 @@ class ScalaCompilerPluginComponent(
             super.traverse(typeTree)
           }
         case blockTree: Block =>
-          enterTransScope("Block"){
+          enterTransScope("Block") {
             traverseType(tree.tpe)
             super.traverse(blockTree)
           }
         case superTree: Super =>
-          enterTransScope("Super"){
+          enterTransScope("Super") {
             traverseType(tree.tpe)
             super.traverse(superTree)
           }
@@ -329,7 +382,7 @@ class ScalaCompilerPluginComponent(
           scopeLog("Literal " + literalTree)
         case identTree: Ident =>
           //          identTree.name
-          enterTransScope("Ident " + identTree.symbol){
+          enterTransScope("Ident " + identTree.symbol) {
             traverseType(tree.tpe)
             super.traverse(identTree)
             currentScope.addRefers(asMSymbol(identTree.symbol), identTree.symbol.isSynthetic)
@@ -344,8 +397,6 @@ class ScalaCompilerPluginComponent(
           val mSymbol = asMSymbol(symbol)
           enterScope(ModelObject(objectDef, mSymbol)) { obj =>
 
-            val directSymbols = symbol.info.parents.map(t => asMSymbol(t.typeSymbol)).toSet
-
             if (!symbol.owner.isPackageClass) {
               val parentMSym = asMSymbol(symbol.outerClass)
               if (parentMSym.common != outerScope.common) {
@@ -354,14 +405,7 @@ class ScalaCompilerPluginComponent(
                 scopeLog("  outerScope:                " + outerScope)
               }
             }
-
-            symbol.ancestors foreach { parentSymbol =>
-              val parentMSymbol = asMSymbol(parentSymbol)
-              val direct = directSymbols.contains(parentMSymbol)
-//              relationsWriter.extendsCls(parentMSymbol, obj, direct)
-              recordExtendsClass(parentMSymbol, obj, direct = direct)
-            }
-            traverseType(tree.tpe)
+            recordOverrides(obj)
             super.traverse(tree)
           }
 
@@ -382,15 +426,8 @@ class ScalaCompilerPluginComponent(
             if (isTrait) ModelTrait(classDef, mSymbol)
             else ModelClass(classDef, mSymbol, symbol.isAbstractClass)
           enterScope(cls) { cls =>
-            traverseType(tree.tpe)
-            val directSymbols = symbol.info.parents.map(t => asMSymbol(t.typeSymbol)).toSet
+            recordOverrides(cls)
 
-            symbol.ancestors foreach { ancestorSymbol =>
-              val ancestorMSymbol = asMSymbol(ancestorSymbol)
-              val direct = directSymbols.contains(ancestorMSymbol)
-              recordExtendsClass(ancestorMSymbol, cls, direct = direct)
-
-            }
             super.traverse(tree)
           }
 
@@ -403,7 +440,6 @@ class ScalaCompilerPluginComponent(
             if (symbol.isVar) ModelVar(valDef, mSymbol, symbol.isDeferred, symbol.isParameter)
             else ModelVal(valDef, mSymbol, symbol.isDeferred, valDef.symbol.isLazy, symbol.isParameter)
           enterScope(field) { field =>
-            traverseType(tree.tpe)
             field.addRefers(asMSymbol(valDef.tpt.symbol), symbol.isSynthetic)
             if (symbol.isLocalToBlock) {
 
@@ -474,6 +510,13 @@ class ScalaCompilerPluginComponent(
 
                 method.addOverride(asMSymbol(overridden), direct)
               }
+              val cursor = new overridingPairs.Cursor(symbol.owner)
+              while (cursor.hasNext) {
+                val entry = cursor.currentPair
+                if (entry.low == symbol)
+                  method.addOverride(asMSymbol(entry.low), true)
+                cursor.next()
+              }
             }
 
             super.traverse(tree)
@@ -488,14 +531,12 @@ class ScalaCompilerPluginComponent(
             case _ if symbol.isAccessor && symbol.isGetter =>
               val field = asMSymbol(symbol.accessedOrSelf)
               enterScope(ModelGetterMethod(defdef, mSymbol, declTypeDefined, symbol.isDeferred)) { method =>
-                traverseType(tree.tpe)
                 traverseMethod(method)
                 method.addGetterFor(field)
               }
             case _ if symbol.isAccessor && symbol.isSetter =>
               val field = asMSymbol(symbol.accessedOrSelf)
               enterScope(ModelSetterMethod(defdef, mSymbol, declTypeDefined, symbol.isDeferred)) { method =>
-                traverseType(tree.tpe)
                 traverseMethod(method)
                 method.addSetterFor(field)
               }
@@ -504,9 +545,7 @@ class ScalaCompilerPluginComponent(
               traverseType(tree.tpe)
             // TODO should we super.traverse(tree) ??
             case _ =>
-
               enterScope(ModelPlainMethod(defdef, mSymbol, declTypeDefined, symbol.isDeferred)) { method =>
-                traverseType(tree.tpe)
                 traverseMethod(method)
               }
           }

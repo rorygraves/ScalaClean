@@ -194,7 +194,7 @@ sealed trait ModelSymbol extends HasModelCommon {
   }
 
 }
-
+sealed trait ClassLike extends ModelSymbol
 sealed abstract class ModelField extends ModelSymbol
 
 case class ModelCommon(
@@ -254,19 +254,19 @@ case class ModelPlainMethod(
   override def ioToken: String = IoTokens.typePlainMethod
 }
 
-case class ModelObject(tree: Global#ModuleDef, common: ModelCommon) extends ModelSymbol {
+case class ModelObject(tree: Global#ModuleDef, common: ModelCommon) extends ModelSymbol with ClassLike {
   override def debugName: String = "object"
 
   override def ioToken: String = IoTokens.typeObject
 }
 
-case class ModelClass(tree: Global#ClassDef, common: ModelCommon, isAbstract: Boolean) extends ModelSymbol {
+case class ModelClass(tree: Global#ClassDef, common: ModelCommon, isAbstract: Boolean) extends ModelSymbol with ClassLike{
   override def debugName: String = "class"
 
   override def ioToken: String = IoTokens.typeClass
 }
 
-case class ModelTrait(tree: Global#ClassDef, common: ModelCommon) extends ModelSymbol {
+case class ModelTrait(tree: Global#ClassDef, common: ModelCommon) extends ModelSymbol with ClassLike{
   override def debugName: String = "trait"
 
   override def ioToken: String = IoTokens.typeTrait

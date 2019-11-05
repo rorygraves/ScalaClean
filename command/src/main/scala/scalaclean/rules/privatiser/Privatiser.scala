@@ -129,8 +129,8 @@ class Privatiser(model: ProjectModel, debug: Boolean) extends AbstractRule("Priv
         pats: Seq[Pat.Var], mods: Seq[Mod], stat: Stat, scope: List[Scope]): (Patch, Boolean) = {
         //for vals and vars we set the access to the broadest of any access of the fields
 
-        val modelElements: Seq[ModelElement] = pats map {p =>
-          val ele = model.fromSymbol[ModelElement](ElementId(p.symbol))
+        val modelElements: Seq[FieldOrAccessorModel] = pats map {p =>
+          val ele = model.fromSymbol[FieldOrAccessorModel](ElementId(p.symbol))
           ele match {
             case v: ValModel => v
             case v: VarModel => v
