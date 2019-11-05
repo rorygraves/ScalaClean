@@ -21,7 +21,11 @@ trait ModelSymbolBuilder extends SemanticdbOps {
       //but we need to preserve across the same compile!
       localId(sym)
     case sym  if sym.isMethod =>
-      sym.encodedName + sym. paramss.map{ params => params.map(param => param.info.typeSymbol.fullName).mkString(";")}.mkString("(","", ")")
+      sym.encodedName +
+        (if (sym.typeParams.isEmpty)          ""
+        else "["+ sym.typeParams.map{ param => param.info.typeSymbol.fullName}.mkString(";") +"]"
+        ) +
+        sym.paramss.map{ params => params.map(param => param.info.typeSymbol.fullName).mkString(";")}.mkString("(","", ")")
     case sym if sym.isModule =>  sym.encodedName+"#"
     case sym if sym.isClass =>  sym.encodedName+"."
     case sym =>  sym.encodedName

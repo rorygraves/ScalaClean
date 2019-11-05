@@ -14,6 +14,7 @@ package name2 {
     x.immutableSeq(Array(1,2,3))
   }
   object x {
+
     def immutableSeq[T](arr: Array[T]): immutable.Seq[T] = if ((arr ne null) && arr.length > 0) Vector(arr: _*) else Nil
   }
 }
