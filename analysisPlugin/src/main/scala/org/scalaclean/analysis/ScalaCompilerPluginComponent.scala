@@ -319,7 +319,9 @@ class ScalaCompilerPluginComponent(
 
       while (cursor.hasNext) {
         val entry = cursor.currentPair
-        if (entry.low.owner != classSymbol) {
+        if (entry.low.owner != classSymbol &&
+          (entry.low.owner.javaBinaryNameString != "java.lang.Object" ||
+            entry.high.owner.javaBinaryNameString != "scala.Any")) {
 
           val dummyMethodSym = entry.low.cloneSymbol(classSymbol)
           dummyMethodSym.setPos(classSymbol.pos.focusStart)
