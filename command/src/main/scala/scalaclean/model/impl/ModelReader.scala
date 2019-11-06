@@ -21,11 +21,13 @@ object ModelReader {
 
   def finished(): Unit = {
     interner.clear()
-    lookup.values.foreach (_.clearData)
+    lookup.values.foreach(_.clearData)
     lookup.clear()
   }
+
   private val interner = mutable.Map.empty[List[ExtensionData], List[ExtensionData]]
   private val lookup = mutable.Map.empty[String, ExtensionDescriptor[_ <: ExtensionData]]
+
   private def compress(data: List[ExtensionData]): List[ExtensionData] = {
     val sorted = data.sorted
     interner.getOrElseUpdate(sorted, sorted)
@@ -99,32 +101,37 @@ object ModelReader {
 
     Files.lines(path) forEach {
       line =>
-        val tokens = line.split(",")
+        try {
+          val tokens = line.split(",")
 
-        val from = ElementId(tokens(0))
-        val fromModel = NewElementIdImpl(tokens(1))
-        val relType = tokens(2)
-        val to = ElementId(tokens(3))
-        val toModel = NewElementIdImpl(tokens(4))
+          val from = ElementId(tokens(0))
+          val fromModel = NewElementIdImpl(tokens(1))
+          val relType = tokens(2)
+          val to = ElementId(tokens(3))
+          val toModel = NewElementIdImpl(tokens(4))
 
-        val offset = 5
-        relType match {
-          case IoTokens.relRefers =>
-            val isSynthetic = tokens(offset).toBoolean
-            refersToB += new RefersImpl(from, fromModel, to, toModel, isSynthetic)
-          case IoTokens.relExtends =>
-            val isDirect = tokens(offset).toBoolean
-            extendsB += new ExtendsImpl(from, fromModel, to, toModel, isDirect)
-          case IoTokens.relOverrides =>
-            val isDirect = tokens(offset).toBoolean
-            overridesB += new OverridesImpl(from, fromModel, to, toModel, isDirect)
-          case IoTokens.relWithin =>
-            withinB += new WithinImpl(from, fromModel, to, toModel)
-          case IoTokens.relGetter =>
-            getterB += new GetterImpl(from, fromModel, to, toModel)
-          case IoTokens.relSetter =>
-            setterB += new SetterImpl(from, fromModel, to, toModel)
+          val offset = 5
+          relType match {
+            case IoTokens.relRefers =>
+              val isSynthetic = tokens(offset).toBoolean
+              refersToB += new RefersImpl(from, fromModel, to, toModel, isSynthetic)
+            case IoTokens.relExtends =>
+              val isDirect = tokens(offset).toBoolean
+              extendsB += new ExtendsImpl(from, fromModel, to, toModel, isDirect)
+            case IoTokens.relOverrides =>
+              val isDirect = tokens(offset).toBoolean
+              overridesB += new OverridesImpl(from, fromModel, to, toModel, isDirect)
+            case IoTokens.relWithin =>
+              withinB += new WithinImpl(from, fromModel, to, toModel)
+            case IoTokens.relGetter =>
+              getterB += new GetterImpl(from, fromModel, to, toModel)
+            case IoTokens.relSetter =>
+              setterB += new SetterImpl(from, fromModel, to, toModel)
 
+          }
+        } catch {
+          case t: Throwable =>
+            throw new IllegalStateException(s"Failed to parse line $line", t)
         }
     }
     val refersTo = refersToB.result().groupBy(_.fromSymbol)

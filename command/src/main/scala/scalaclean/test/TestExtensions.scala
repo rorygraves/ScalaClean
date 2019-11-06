@@ -7,12 +7,12 @@ import scalaclean.model._
   * needs to be run after TestAnalysis
   */
 class Test_annotations(
-                         model: ProjectModel) extends TestCommon("Test_annotations", model) {
+                        model: ProjectModel) extends TestCommon("Test_annotations", model) {
   def visit(modelElement: ModelElement): String = {
     modelElement.annotations match {
       case Nil => "XX"
       case ann =>
-        val asDebug = (ann.map (_.toString)).toList.sorted
+        val asDebug = (ann.map(_.toString)).toList.sorted
         asDebug.mkString(s"annotations(${modelElement.symbol.debugValue}) - ", " :: ", "")
     }
   }

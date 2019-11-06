@@ -64,10 +64,10 @@ private[privatiser] final case class AccessScope(symbol: ElementId, reason: Stri
 private[privatiser] object Scoped {
   def Private(scope: ElementId, reason: String) = Scoped(AccessScope(scope, reason), AccessScope.None, false)
 
-  def Protected(scope: ElementId, reason: String, forceProtected: Boolean ) = Scoped(AccessScope.None, AccessScope(scope, reason), forceProtected)
+  def Protected(scope: ElementId, reason: String, forceProtected: Boolean) = Scoped(AccessScope.None, AccessScope(scope, reason), forceProtected)
 }
 
-private[privatiser] final case class Scoped(privateScope: AccessScope, protectedScope: AccessScope, forceProtected: Boolean ) extends PrivatiserLevel {
+private[privatiser] final case class Scoped(privateScope: AccessScope, protectedScope: AccessScope, forceProtected: Boolean) extends PrivatiserLevel {
   def isProtected = {
     def commonParentScope =
       if (protectedScope.symbol.isNone) privateScope.symbol
@@ -77,7 +77,9 @@ private[privatiser] final case class Scoped(privateScope: AccessScope, protected
   }
 
   def scope: ElementId = privateScope.symbol
-  def scopeOrDefault(default: ElementId): ElementId =  privateScope.symbol.asNonEmpty.getOrElse(default)
+
+  def scopeOrDefault(default: ElementId): ElementId = privateScope.symbol.asNonEmpty.getOrElse(default)
+
   override def asText(context: ModelElement): Option[String] = {
     val name = if (isProtected) "protected" else "private"
     context.enclosing.headOption match {
@@ -85,7 +87,7 @@ private[privatiser] final case class Scoped(privateScope: AccessScope, protected
 
       case _ =>
         val scope = privateScope.symbol.displayName
-        if(scope.isEmpty)
+        if (scope.isEmpty)
           Some(name)
         else
           Some(s"$name[${privateScope.symbol.displayName}]")
@@ -109,6 +111,6 @@ private[privatiser] final case class Scoped(privateScope: AccessScope, protected
     case other: Scoped =>
       val privateWidened = this.privateScope.widen(other.privateScope)
       if (privateWidened.symbol.isRootPackage) Public(privateWidened.reason)
-      else Scoped(privateWidened,protectedScope.widen(other.protectedScope), forceProtected || other.forceProtected)
+      else Scoped(privateWidened, protectedScope.widen(other.protectedScope), forceProtected || other.forceProtected)
   }
 }

@@ -5,12 +5,12 @@ import java.io.File
 import scopt.OParser
 
 case class SCOptions(
-  mode: String = "",
-  debug: Boolean = false,
-  validate: Boolean = false,
-  replace: Boolean = false,
-  files: Seq[File] = Seq(),
-)
+                      mode: String = "",
+                      debug: Boolean = false,
+                      validate: Boolean = false,
+                      replace: Boolean = false,
+                      files: Seq[File] = Seq(),
+                    )
 
 object SCOptions {
   val deadCodeCmd = "deadcode"

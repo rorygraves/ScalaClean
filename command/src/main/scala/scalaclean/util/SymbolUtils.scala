@@ -8,7 +8,7 @@ object SymbolUtils {
   @deprecated //Not really for the ElementId
   def findCommonParent(scope1: ElementId, scope2: ElementId): ElementId = {
     def depth(scope: ElementId): Int = {
-      if (scope.isNone) 0 else depth(scope.owner) +1
+      if (scope.isNone) 0 else depth(scope.owner) + 1
     }
 
     @scala.annotation.tailrec

@@ -6,6 +6,7 @@ class ElementsWriter(file: File) {
   var logger: ScopeLogging = _
 
   val writer = new SortedStringWriter(file.toPath)
+
   def commonPrefix(model: ModelSymbol): String =
     s"${model.ioToken},${model.csvString},${model.newCsvString},${model.tree.symbol.flags.toHexString},${model.sourceFile},${model.posStart},${model.posEnd},${model.traversal}"
 
@@ -34,16 +35,18 @@ class ElementsWriter(file: File) {
         s"${commonPrefix(model)}"
 
     }
-    if (! writer.writeLine(msg))
+    if (!writer.writeLine(msg))
       logger.scopeLog(s" -->[DUPLICATE_ELE] $msg")
 
     if (logger.debug)
       logger.scopeLog(s" -->[ELEMENT] $msg")
 
   }
+
   def endUnit(): Unit = {
     writer.flush()
   }
+
   def finish(): Unit = {
     writer.close()
   }

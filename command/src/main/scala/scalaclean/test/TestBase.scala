@@ -20,10 +20,15 @@ abstract class TestBase(name: String, model: ProjectModel) extends SemanticRule(
   }
 
   def visitVar(element: VarModel): String
+
   def visitVal(element: ValModel): String
-  def visitMethod(element: MethodModel):String
-  def visitObject(element: ObjectModel):String
+
+  def visitMethod(element: MethodModel): String
+
+  def visitObject(element: ObjectModel): String
+
   def visitClass(element: ClassModel): String
+
   def visitTrait(element: TraitModel): String
 
   override def fix(implicit doc: SemanticDocument): Patch = {
@@ -40,34 +45,39 @@ abstract class TestBase(name: String, model: ProjectModel) extends SemanticRule(
       }
 
       override def handleVar(varDef: Defn.Var, scope: List[Scope]): (Patch, Boolean) = {
-        handleVar(varDef, scope,varDef.pats )
+        handleVar(varDef, scope, varDef.pats)
       }
+
       override def handleVar(varDef: Decl.Var, scope: List[Scope]): (Patch, Boolean) = {
-        handleVar(varDef, scope,varDef.pats )
+        handleVar(varDef, scope, varDef.pats)
       }
+
       def handleVar(varDef: Stat, scope: List[Scope], pats: List[Pat]): (Patch, Boolean) = {
-        val patches = Utils.readVars(pats).map{
+        val patches = Utils.readVars(pats).map {
           varPattern =>
             val varModel = model.fromSymbol[VarModel](ElementId(varPattern.symbol))
-            visitVar( varModel)
+            visitVar(varModel)
         }
         toPatch(patches.filter(!_.isEmpty).mkString("*//*"), varDef)
       }
 
       override def handleVal(valDef: Defn.Val, scope: List[Scope]): (Patch, Boolean) = {
-        handleVal(valDef, scope, valDef.pats )
+        handleVal(valDef, scope, valDef.pats)
       }
+
       override def handleVal(valDef: Decl.Val, scope: List[Scope]): (Patch, Boolean) = {
-        handleVal(valDef, scope,valDef.pats )
+        handleVal(valDef, scope, valDef.pats)
       }
+
       def handleVal(valDef: Stat, scope: List[Scope], pats: List[Pat]): (Patch, Boolean) = {
-        val patches = Utils.readVars(pats).map{
+        val patches = Utils.readVars(pats).map {
           valPattern =>
             val valModel = model.fromSymbol[ValModel](ElementId(valPattern.symbol))
-            visitVal( valModel)
+            visitVal(valModel)
         }
         toPatch(patches.filter(!_.isEmpty).mkString("*//*"), valDef)
       }
+
       override def handlePackage(packageName: Term.Name, pkg: Pkg, scope: List[Scope]): (Patch, Boolean) = {
         continue
       }

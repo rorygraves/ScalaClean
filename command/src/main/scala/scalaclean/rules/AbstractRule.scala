@@ -5,21 +5,23 @@ import scalaclean.model.impl.ElementId
 import scalafix.patch.Patch
 import scalafix.v1.{SemanticDocument, Symbol}
 
-abstract class AbstractRule(val name:String, val model: ProjectModel, debug: Boolean) {
+abstract class AbstractRule(val name: String, val model: ProjectModel, debug: Boolean) {
+  def printSummary: Unit
+
   type Colour <: Mark
 
   final def beforeStart(): Unit = {
-    if(debug)
+    if (debug)
       println(s"$name performing analysis")
 
     markInitial()
 
     runRule()
 
-    if(debug)
+    if (debug)
       debugDump()
 
-    if(debug)
+    if (debug)
       println(s"$name analysis complete")
   }
 
@@ -27,17 +29,19 @@ abstract class AbstractRule(val name:String, val model: ProjectModel, debug: Boo
 
   def markInitial(): Unit
 
-  def runRule() : Unit
+  def runRule(): Unit
 
   def fix(implicit doc: SemanticDocument): Patch
 
-  def markAll[T <: ModelElement: Manifest](colour: => Colour): Unit = {
+  def markAll[T <: ModelElement : Manifest](colour: => Colour): Unit = {
     model.allOf[T].foreach {
       e => e.mark = colour
     }
   }
+
   implicit class Coloured(e: ModelElement) {
     def colour: Colour = e.mark.asInstanceOf[Colour]
+
     def colour_=(newColour: Colour): Unit = e.mark = newColour
   }
 
@@ -66,6 +70,7 @@ abstract class AbstractRule(val name:String, val model: ProjectModel, debug: Boo
   def allTestEntryPoints = {
     allMainMethodEntries ++ allApp
   }
+
   def allJunitTest = {
     model.allOf[MethodModel] collect {
       case method if (method.annotations.exists(_.fqName == "org.junit.Test")) => method

@@ -13,12 +13,12 @@ import scala.meta.internal.symtab.SymbolTable
 
 object DocHelper {
   def readSemanticDoc(
-    classLoader: ClassLoader,
-    symtab: SymbolTable,
-    absSourcePath : AbsolutePath,
-    buildBase: AbsolutePath,
-    targetFile: RelativePath
-  ): v1.SemanticDocument = {
+                       classLoader: ClassLoader,
+                       symtab: SymbolTable,
+                       absSourcePath: AbsolutePath,
+                       buildBase: AbsolutePath,
+                       targetFile: RelativePath
+                     ): v1.SemanticDocument = {
 
     val input = Input.VirtualFile(targetFile.toString, FileIO.slurp(absSourcePath, StandardCharsets.UTF_8))
     val doc = SyntacticDocument.fromInput(input)

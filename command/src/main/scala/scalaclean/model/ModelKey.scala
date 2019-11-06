@@ -24,13 +24,14 @@ object ModelKey {
     override def toCsv: String = s"G:$sym"
   }
 
- case class LocalSymbolKey(sym: Symbol, filename: String) extends ModelKey {
+  case class LocalSymbolKey(sym: Symbol, filename: String) extends ModelKey {
     override def toCsv: String = s"L:$filename::$sym"
   }
 
 }
+
 sealed trait ModelKey {
-  def toCsv :String
+  def toCsv: String
 
 }
 

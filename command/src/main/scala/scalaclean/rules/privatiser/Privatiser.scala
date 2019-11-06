@@ -101,6 +101,15 @@ class Privatiser(model: ProjectModel, debug: Boolean) extends AbstractRule("Priv
       res
     }
   }
+  var elementsObserved = 0
+  var elementsChanged = 0
+
+  override def printSummary: Unit =
+    println (
+      s"""Elements Observed = $elementsObserved
+         |Elements Changed  = $elementsChanged
+         |Effect rate       = ${(elementsChanged.toDouble/elementsObserved.toDouble *10000).toInt/100} %"
+         |""".stripMargin)
 
   override def fix(implicit doc: SemanticDocument): Patch = {
     import scalafix.v1.{Patch => _, _}
@@ -109,64 +118,82 @@ class Privatiser(model: ProjectModel, debug: Boolean) extends AbstractRule("Priv
     val tv: SymbolTreeVisitor = new SymbolTreeVisitor {
 
       override protected def handlerSymbol(
-        symbol: ElementId, mods: Seq[Mod], stat: Stat, scope: List[Scope]): (Patch, Boolean) = {
+                                            symbol: ElementId, mods: Seq[Mod], stat: Stat, scope: List[Scope]): (Patch, Boolean) = {
         val modelElement = model.fromSymbol[ModelElement](symbol)
-        val patch = changeAccessModifier(modelElement.colour, mods, stat, modelElement, None)
-        //do we need to recurse into implementation?
-        val rewriteContent = modelElement match {
-          case _: ClassLike => true
-          case _: MethodModel => false
-          case _: FieldModel => throw new IllegalStateException(s"handlerPats should be called - $modelElement")
-          case _: SourceModel => true
-        }
-        (patch, rewriteContent)
+        if (modelElement.existsInSource) {
+          val patch = changeAccessModifier(modelElement.colour, mods, stat, modelElement, None)
+          //do we need to recurse into implementation?
+          val rewriteContent = modelElement match {
+            case _: ClassLike => true
+            case _: MethodModel => false
+            case _: FieldModel => throw new IllegalStateException(s"handlerPats should be called - $modelElement")
+            case _: SourceModel => true
+          }
+          elementsObserved += 1
+          if (patch != Patch.empty)
+            elementsChanged += 1
+          (patch, rewriteContent)
+        } else continue
       }
 
       def info(sym: Symbol): Boolean = doc.info(sym).get.isProtectedWithin
 
 
       override protected def handlerPats(
-        pats: Seq[Pat.Var], mods: Seq[Mod], stat: Stat, scope: List[Scope]): (Patch, Boolean) = {
+                                          pats: Seq[Pat.Var], mods: Seq[Mod], stat: Stat, scope: List[Scope]): (Patch, Boolean) = {
         //for vals and vars we set the access to the broadest of any access of the fields
 
-        val modelElements: Seq[FieldOrAccessorModel] = pats map {p =>
+        val modelElements: Seq[FieldOrAccessorModel] = pats map { p =>
           val ele = model.fromSymbol[FieldOrAccessorModel](ElementId(p.symbol))
           ele match {
             case v: ValModel => v
             case v: VarModel => v
-            case a:AccessorModel => a.field.getOrElse(a)
-          }}
+            case a: AccessorModel => a.field.getOrElse(a)
+            case _: ObjectModel => ???
+          }
+        }
 
-        val combined = modelElements.foldLeft [PrivatiserLevel](Undefined){
-          case (level, v:VarModel) =>
+        val combined = modelElements.foldLeft[PrivatiserLevel](Undefined) {
+          case (level, v: VarModel) =>
             var res = level.widen(v.colour)
-            v.getter.foreach{g =>
+            v.getter.foreach { g =>
               if (g.colour ne null)
-                res = res.widen(g.colour)}
-            v.setter.foreach{s =>
+                res = res.widen(g.colour)
+            }
+            v.setter.foreach { s =>
               if (s.colour ne null)
-                res = res.widen(s.colour)}
+                res = res.widen(s.colour)
+            }
             res
-          case (level, v:ValModel) =>
+          case (level, v: ValModel) =>
             var res = level.widen(v.colour)
-            v.getter.foreach{g =>
+            v.getter.foreach { g =>
               if (g.colour ne null)
-                res = res.widen(g.colour)}
+                res = res.widen(g.colour)
+            }
             res
-          case (level, a:AccessorModel) =>
+          case (level, a: AccessorModel) =>
             level.widen(a.colour)
+          case (_, _: ObjectModel) => ???
+
         }
         val keywordToken = modelElements.head match {
           case v: ValModel => stat.tokens.find(_.isInstanceOf[KwVal])
           case v: VarModel => stat.tokens.find(_.isInstanceOf[KwVar])
           case v: MethodModel => stat.tokens.find(_.isInstanceOf[KwDef])
+          case _: ObjectModel => ???
         }
-        assert (keywordToken.nonEmpty)
+        assert(keywordToken.nonEmpty)
         if (modelElements.size == 1)
-          assert (keywordToken.get.pos.start <= modelElements.head.rawEnd)
+          assert(keywordToken.get.pos.start <= modelElements.head.rawEnd)
         else
-          assert (keywordToken.get.pos.start <= modelElements.head.rawStart)
+          assert(keywordToken.get.pos.start <= modelElements.head.rawStart)
         val patch = changeAccessModifier(combined, mods, stat, modelElements.head, keywordToken)
+
+        elementsObserved += 1
+        if (patch != Patch.empty)
+          elementsChanged += 1
+
         //we never need to recurse into RHS of decls as they are not externally visible
         (patch, false)
       }
@@ -200,11 +227,11 @@ class Privatiser(model: ProjectModel, debug: Boolean) extends AbstractRule("Priv
       }
 
       private def changeAccessModifier(
-        level: PrivatiserLevel, mods: Seq[Mod], defn: Stat, aModel: ModelElement, forcePosition: Option[Token]): Patch = {
+                                        level: PrivatiserLevel, mods: Seq[Mod], defn: Stat, aModel: ModelElement, forcePosition: Option[Token]): Patch = {
         val (mod, existing) = existingAccess(mods)
         val proposed = level.asText(aModel)
 
-        def buildInsertion(toReplace:String) = {
+        def buildInsertion(toReplace: String) = {
           forcePosition match {
             case Some(token) =>
               Patch.addLeft(token, s"$toReplace ")

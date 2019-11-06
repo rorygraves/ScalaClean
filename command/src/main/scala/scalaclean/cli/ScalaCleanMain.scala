@@ -43,10 +43,10 @@ object ScalaCleanMain {
 class ScalaCleanMain(dcOptions: SCOptions, ruleCreateFn: ProjectModel => AbstractRule) extends DiffAssertions {
 
   def semanticPatch(
-    rule: AbstractRule,
-    sdoc: SemanticDocument,
-    suppress: Boolean
-  ): (String, List[RuleDiagnostic]) = {
+                     rule: AbstractRule,
+                     sdoc: SemanticDocument,
+                     suppress: Boolean
+                   ): (String, List[RuleDiagnostic]) = {
     val fixes = Some(RuleName(rule.name) -> rule.fix(sdoc)).map(Map.empty + _).getOrElse(Map.empty)
     PatchInternals.semantic(fixes, sdoc, suppress)
   }
@@ -99,12 +99,12 @@ class ScalaCleanMain(dcOptions: SCOptions, ruleCreateFn: ProjectModel => Abstrac
 
   /**
     *
-    * @param rule The rule to run
+    * @param rule    The rule to run
     * @param project The target project
     * @return True if diffs were seen or files were changed
     */
   def runRuleOnProject(
-    rule: AbstractRule, project: Project, validateMode: Boolean, replace: Boolean, debug: Boolean): Boolean = {
+                        rule: AbstractRule, project: Project, validateMode: Boolean, replace: Boolean, debug: Boolean): Boolean = {
 
     val symtab: SymbolTable = ClasspathOps.newSymbolTable(project.classPath)
     val classLoader = project.classloader
@@ -119,7 +119,7 @@ class ScalaCleanMain(dcOptions: SCOptions, ruleCreateFn: ProjectModel => Abstrac
     val files: Seq[AbsolutePath] = project.srcFiles.toList.map(AbsolutePath(_))
 
     def findRelativeSrc(
-      absTargetFile: meta.AbsolutePath, basePaths: List[AbsolutePath]): (AbsolutePath, RelativePath) = {
+                         absTargetFile: meta.AbsolutePath, basePaths: List[AbsolutePath]): (AbsolutePath, RelativePath) = {
       val nioTargetFile = absTargetFile.toNIO
       val baseOpt = basePaths.find(bp => nioTargetFile.startsWith(bp.toNIO))
       baseOpt.map(bp => (bp, absTargetFile.toRelative(bp))).getOrElse(throw new IllegalStateException(s"Unable to resolve source root for $absTargetFile"))
@@ -161,6 +161,7 @@ class ScalaCleanMain(dcOptions: SCOptions, ruleCreateFn: ProjectModel => Abstrac
         }
       }
     }
+    rule.printSummary
     changed
   }
 

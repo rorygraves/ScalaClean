@@ -13,12 +13,12 @@ class ScalaCleanCompilerPlugin(override val global: Global) extends Plugin {
   val component = new ScalaCompilerPluginComponent(global)
 
   //hardcoded for the moment
-  component.extensions += ModsPlugin.create(component,"")
-  component.extensions += JunitPlugin.create(component,"")
+  component.extensions += ModsPlugin.create(component, "")
+  component.extensions += JunitPlugin.create(component, "")
 
   override def processOptions(
-    options: List[String],
-    error: String => Unit): Unit = {
+                               options: List[String],
+                               error: String => Unit): Unit = {
 
     import scala.reflect.runtime.universe
     val runtimeMirror = universe.runtimeMirror(getClass.getClassLoader)
@@ -26,12 +26,12 @@ class ScalaCleanCompilerPlugin(override val global: Global) extends Plugin {
     val realOptions = options.distinct
     component.options = realOptions
     for (option <- realOptions) {
-      if(option == "debug:true") {
+      if (option == "debug:true") {
         component.debug = true
-      } else if(option.startsWith("extension:")) {
+      } else if (option.startsWith("extension:")) {
         val end = {
           val end = option.indexOf(':', 10)
-          if ( end == -1) option.length else end
+          if (end == -1) option.length else end
         }
         val fqn = option.substring(10, end)
         val module = runtimeMirror.staticModule(fqn)
@@ -40,14 +40,14 @@ class ScalaCleanCompilerPlugin(override val global: Global) extends Plugin {
           case null => throw new IllegalArgumentException("not a valid Extension FQN - expected the name of an object")
           case invalid => throw new IllegalArgumentException(s"not a valid Extension FQN - ${invalid.getClass.getName()} is not a ${classOf[ExtensionDescriptor[_]].getName}")
         }
-      } else if(option.startsWith("srcdirs:")) {
+      } else if (option.startsWith("srcdirs:")) {
         component.sourceDirs = option.substring(8).split(java.io.File.pathSeparatorChar).toList
       } else
         error(s"Option not recognised: $option")
     }
   }
 
-  override val optionsHelp: Option[String] = Some(//
+  override val optionsHelp: Option[String] = Some( //
     s"""-P:$name:debug:true        Set debugging on the ScalaClean analysis plugin
        |-P:$name:srcdirs           The path of sources, seperated by ${java.io.File.pathSeparatorChar}
        |-P:$name:extension:<fqn>   Add an extension dataset. FQN is the fully qualified name of the appropriate ExtensionDescriptor object

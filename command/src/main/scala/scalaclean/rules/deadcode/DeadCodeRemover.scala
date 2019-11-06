@@ -86,8 +86,8 @@ class DeadCodeRemover(model: ProjectModel, debug: Boolean) extends AbstractRule(
             case (ref, _) => markUsed(ref, purpose, varDef :: path, s"$comment -> varDef(outgoing)")
           }
           markRhs(varDef, varDef :: path, s"$comment -> varDef")
-          //TODO - not sure if this is correct
-          // an inner object is lazy in scala, so probably should only be marked when used
+        //TODO - not sure if this is correct
+        // an inner object is lazy in scala, so probably should only be marked when used
         case obj: ObjectModel =>
           obj.internalOutgoingReferences foreach {
             case (ref, _) => markUsed(ref, purpose, obj :: path, s"$comment -> obj(outgoing)")
@@ -116,13 +116,13 @@ class DeadCodeRemover(model: ProjectModel, debug: Boolean) extends AbstractRule(
       markRhs(element, element :: path, s"$comment -> markRhs")
 
       //enclosing
-      element.enclosing foreach  {
-        enclosed =>  markUsed(enclosed, purpose, element :: path, s"$comment - enclosing")
+      element.enclosing foreach {
+        enclosed => markUsed(enclosed, purpose, element :: path, s"$comment - enclosing")
       }
 
       //overrides
       element.internalTransitiveOverrides foreach {
-        enclosed =>  markUsed(enclosed, purpose, element :: path, s"$comment - overrides")
+        enclosed => markUsed(enclosed, purpose, element :: path, s"$comment - overrides")
       }
     }
   }
@@ -132,28 +132,50 @@ class DeadCodeRemover(model: ProjectModel, debug: Boolean) extends AbstractRule(
     allMainEntryPoints foreach (e => markUsed(e, Main, e :: Nil, ""))
   }
 
+  override def printSummary: Unit =
+    println(s"""
+       |linesRemoved    = $linesRemoved
+       |linesChanged    = $linesChanged
+       |elementsRemoved = $elementsRemoved
+       |elementsVisited = $elementsVisited
+       |""".stripMargin)
+
+  var linesRemoved = 0
+  var linesChanged = 0
+  var elementsRemoved = 0
+  var elementsVisited = 0
+
   override def fix(implicit doc: SemanticDocument): Patch = {
 
     val tv = new SymbolTreeVisitor {
 
       override protected def handlerSymbol(
-        symbol: ElementId, mods: Seq[Mod], stat: Stat, scope: List[Scope]): (Patch, Boolean) = {
+                                            symbol: ElementId, mods: Seq[Mod], stat: Stat, scope: List[Scope]): (Patch, Boolean) = {
         val modelElement = model.fromSymbol[ModelElement](symbol)
-        val usage = modelElement.colour
-        if (usage.isUnused) {
-          val tokens = stat.tokens
-          val firstToken = tokens.head
+        if (modelElement.existsInSource) {
+          val usage = modelElement.colour
+          elementsVisited += 1
+          if (usage.isUnused) {
+            val tokens = stat.tokens
+            val firstToken = tokens.head
 
-          val removedTokens = TokenHelper.whitespaceOrCommentsBefore(firstToken, doc.tokens) ++ tokens
-          val patch = Patch.removeTokens(removedTokens)
-          (patch, false)
+            val removedTokens = TokenHelper.whitespaceOrCommentsBefore(firstToken, doc.tokens) ++ tokens
+            elementsRemoved += 1
+            val first = removedTokens.minBy {
+              _.start
+            }
+            linesRemoved += (stat.pos.endLine - first.pos.startLine + 1)
+            val patch = Patch.removeTokens(removedTokens)
+            (patch, false)
+          } else
+            continue
         } else
           continue
       }
 
       override protected def handlerPats(
-        pats: Seq[Pat.Var], mods: Seq[Mod], stat: Stat, scope: List[Scope]): (Patch, Boolean) = {
-
+                                          pats: Seq[Pat.Var], mods: Seq[Mod], stat: Stat, scope: List[Scope]): (Patch, Boolean) = {
+        elementsVisited += 1
         val declarationsByUsage: Map[Usage, Seq[(Pat.Var, ModelElement)]] =
           pats.filterNot(_.symbol.isLocal) map { p =>
             (p, model.fromSymbolLocal[ModelElement](ElementId(p.symbol), stat.pos.start, stat.pos.end))
@@ -164,13 +186,18 @@ class DeadCodeRemover(model: ProjectModel, debug: Boolean) extends AbstractRule(
             //we can remove the whole declaration
             val tokens = stat.tokens
             val firstToken = tokens.head
-            (Patch.removeTokens(TokenHelper.whitespaceOrCommentsBefore(firstToken, doc.tokens)) + Patch.removeTokens(tokens), false)
+            val removedTokens = TokenHelper.whitespaceOrCommentsBefore(firstToken, doc.tokens) ++ tokens
+            elementsRemoved += 1
+            val first = removedTokens.minBy{ _.start}
+            linesRemoved += (stat.pos.endLine - first.pos.startLine + 1)
+            (Patch.removeTokens(removedTokens), false)
           case Some(unused) =>
             val combinedPatch = unused.foldLeft(Patch.empty) {
               case (patch, (pat, model)) =>
                 patch + Patch.replaceToken(pat.tokens.head, "_")
             }
             val marker = Utils.addMarker(stat, s"consider rewriting pattern as ${unused.size} values are not used")
+            linesChanged += 1
             (combinedPatch + marker, true)
           case _ =>
             continue

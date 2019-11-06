@@ -6,7 +6,7 @@ import scalafix.v1.{SemanticDocument, Symbol}
 
 import scala.meta.Tree
 
-case class ElementId private (isGlobal: Boolean, symbol: Symbol) {
+case class ElementId private(isGlobal: Boolean, symbol: Symbol) {
 
 
   def value: String = symbol.value
@@ -32,22 +32,22 @@ object ElementId {
 
   def apply(s: Symbol): ElementId = {
     val strRep = s.value
-    if(strRep.startsWith("G:"))
+    if (strRep.startsWith("G:"))
       throw new IllegalArgumentException("Boom")
     apply(strRep)
   }
 
   def apply(s: String): ElementId = {
 
-    if(s.startsWith("G:") || s.startsWith("L:")) {
+    if (s.startsWith("G:") || s.startsWith("L:")) {
       cache.computeIfAbsent(s, s => {
         val isGlobal = s.startsWith("G:")
         val symbol = Symbol(s.drop(2))
         ElementId(isGlobal, symbol)
       })
     } else {
-      val symbol =  Symbol(s)
-      if(symbol.isGlobal)
+      val symbol = Symbol(s)
+      if (symbol.isGlobal)
         apply("G:" + s)
       else
         apply("L:" + s)

@@ -3,11 +3,11 @@ package scalaclean
 class ScratchTests extends  AbstractProjectTests {
 
   test("scratch") {
-    privatiserProjectTest("scratch")
+    deadCodeProjectTest("scratch")
   }
 
-  test("scratch1") {
-    privatiserProjectTest("scratch1")
-  }
-
+//  test("scratch1") {
+//    privatiserProjectTest("scratch1")
+//  }
+//
 }

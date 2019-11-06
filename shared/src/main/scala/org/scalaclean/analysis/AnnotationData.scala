@@ -9,7 +9,7 @@ object AnnotationData extends StandardExtensionDescriptor[AnnotationData] {
         println(s"***** $x")
         x.toString -> "UNKNOWN"
     }.toMap
-    new AnnotationData(posOffsetStart,posOffsetEnd, otherParams(0), map)
+    new AnnotationData(posOffsetStart, posOffsetEnd, otherParams(0), map)
   }
 }
 

@@ -48,7 +48,7 @@ abstract class StandardExtensionDescriptor[T <: ExtensionData] extends Extension
 }
 
 trait StandardExtensionData extends ExtensionData {
-    /**
+  /**
     * the start offset from the element
     * Note - we use offsets to promote reuse
     */
@@ -65,6 +65,7 @@ trait StandardExtensionData extends ExtensionData {
   protected def maskToString(offset: Int) = {
     if (offset == Int.MinValue) "<NoPos>" else offset.toString
   }
+
   protected def maskToCSV(offset: Int) = {
     if (offset == Int.MinValue) "" else offset.toString
   }

@@ -21,11 +21,13 @@ object Utils {
             res ::= field
           case _ =>
         }
-        tree.children.foreach {visitTree}
+        tree.children.foreach {
+          visitTree
+        }
       }
     }
     pats foreach visitor.visitTree
-    assert (visitor.res.nonEmpty)
+    assert(visitor.res.nonEmpty)
     visitor.res
   }
 }

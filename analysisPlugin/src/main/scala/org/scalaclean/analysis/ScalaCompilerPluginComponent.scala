@@ -7,6 +7,7 @@ import java.util.Properties
 import org.scalaclean.analysis.plugin.ExtensionPlugin
 
 import scala.collection.immutable.HashSet
+import scala.collection.mutable
 import scala.reflect.internal.Flags
 import scala.tools.nsc.plugins.PluginComponent
 import scala.tools.nsc.{Global, Phase}
@@ -259,8 +260,6 @@ class ScalaCompilerPluginComponent(
     }
 
     val initialVisited = HashSet[global.Symbol](global.NoSymbol)
-    var visitedTypes = HashSet.empty[global.Symbol]
-
     def resetVisited(visited: HashSet[global.Symbol]) {
       visitedTypes = visited
     }
@@ -270,28 +269,33 @@ class ScalaCompilerPluginComponent(
       visitedTypes = initialVisited
       existing
     }
-
     newVisited()
 
+    var visitedTypes = HashSet.empty[global.Symbol]
+
     def traverseType(tpe: global.Type): Unit = {
-      if (tpe ne null)
+      if (tpe ne null )
         traverseImpl(tpe)
 
       def add(symbol: global.Symbol): Boolean = {
-        val added = visitedTypes + symbol
-        if (added ne visitedTypes) {
-          visitedTypes = added
-          currentScope.addRefers(asMSymbol(symbol), symbol.isSynthetic)
-          true
-        } else false
+        if (symbol eq global.NoSymbol) false
+        else {
+          val added = visitedTypes + symbol
+          if (added eq visitedTypes) false
+          else {
+            visitedTypes = added
+            currentScope.addRefers(asMSymbol(symbol), symbol.isSynthetic)
+            true
+          }
+        }
       }
 
       def traverseImpl(tpe: global.Type) {
         tpe.foreach { tpePart =>
           val widened = tpePart.dealiasWiden
-          add(widened.termSymbol)
-          add(widened.typeSymbol)
-          widened match {
+          val added1 = add(widened.termSymbol)
+          val added2 = add(widened.typeSymbol)
+          if (added1 || added2) widened match {
             case ref: global.TypeRefApi =>
               ref.args foreach traverseImpl
             case _ =>
@@ -311,22 +315,31 @@ class ScalaCompilerPluginComponent(
         recordExtendsClass(ancestorMSymbol, model, direct = direct)
       }
       val cursor = new overridingPairs.Cursor(classSymbol)
+      val seen: mutable.Map[Symbol, mutable.Set[Symbol]] = new mutable.HashMap
+
       while (cursor.hasNext) {
         val entry = cursor.currentPair
         if (entry.low.owner != classSymbol) {
 
           val dummyMethodSym = entry.low.cloneSymbol(classSymbol)
-          dummyMethodSym.setPos( classSymbol.pos.focusStart)
-          dummyMethodSym.setFlag( Flags.SYNTHETIC)
+          dummyMethodSym.setPos(classSymbol.pos.focusStart)
+          dummyMethodSym.setFlag(Flags.SYNTHETIC)
 
-            enterScope(new ModelPlainMethod(DefDef(dummyMethodSym, new Modifiers(dummyMethodSym.flags,newTermName(""), Nil),global.EmptyTree),
-            asMSymbol(dummyMethodSym), false, false)) { meth =>
-              //if not recorded above, then maybe this should be a synthetic override
-              currentScope.addOverride(asMSymbol(entry.low), true)
-              currentScope.addOverride(asMSymbol(entry.high), true)
-            }
+          val targetSet = seen.getOrElseUpdate(dummyMethodSym, new mutable.HashSet[Symbol])
+          targetSet += entry.low
+          targetSet += entry.high
         }
         cursor.next()
+      }
+
+      seen foreach { case (dummyMethodSym, targets) =>
+        enterScope(new ModelPlainMethod(DefDef(dummyMethodSym, new Modifiers(dummyMethodSym.flags, newTermName(""), Nil), global.EmptyTree),
+          asMSymbol(dummyMethodSym), false, false)) { meth =>
+          //if not recorded above, then maybe this should be a synthetic override
+          targets.foreach { entry =>
+            currentScope.addOverride(asMSymbol(entry), true)
+          }
+        }
       }
     }
 

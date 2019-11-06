@@ -25,12 +25,15 @@ object Scope {
 }
 
 trait Scope
+
 object TreeVisitor {
   val continue = (Patch.empty, true)
 }
+
 abstract class TreeVisitor()(implicit doc: SemanticDocument) {
 
   protected final def continue = TreeVisitor.continue
+
   final def visitDocument(tree: Tree): Patch = {
 
     visitTree(tree, Nil)
@@ -88,22 +91,25 @@ abstract class TreeVisitor()(implicit doc: SemanticDocument) {
       case varDef: Decl.Var =>
         val newScope = Scope.ValScope(varDef.symbol.displayName) :: scope
         processHandler(varDef, handleVar(varDef, scope), newScope)
-      case importStat : Import =>
+      case importStat: Import =>
         processHandler(importStat, handleImport(importStat, scope), scope)
       case _ =>
-//        println(s"Visiting ${tree.getClass} ${tree.symbol}")
+        //        println(s"Visiting ${tree.getClass} ${tree.symbol}")
         processHandler(tree, handleOther(tree, scope), scope)
     }
   }
 
 
   def handleVar(varDef: Defn.Var, scope: List[Scope]): (Patch, Boolean)
+
   def handleVar(varDef: Decl.Var, scope: List[Scope]): (Patch, Boolean)
 
   def handleVal(valDef: Defn.Val, scope: List[Scope]): (Patch, Boolean)
+
   def handleVal(valDef: Decl.Val, scope: List[Scope]): (Patch, Boolean)
 
   def handleMethod(symbol: ElementId, fullSig: String, method: Defn.Def, scope: List[Scope]): (Patch, Boolean)
+
   def handleMethod(symbol: ElementId, fullSig: String, method: Decl.Def, scope: List[Scope]): (Patch, Boolean)
 
   def handleObject(symbol: ElementId, obj: Defn.Object, scope: List[Scope]): (Patch, Boolean)
@@ -114,6 +120,8 @@ abstract class TreeVisitor()(implicit doc: SemanticDocument) {
 
   //non model entries
   def handleImport(importStatement: Import, scope: List[Scope]): (Patch, Boolean)
+
   def handlePackage(packageName: Term.Name, pkg: Pkg, scope: List[Scope]): (Patch, Boolean)
+
   def handleOther(tree: Tree, scope: List[Scope]): (Patch, Boolean)
 }

@@ -14,6 +14,7 @@ class Test_internalDirectOverrides(model: ProjectModel) extends TestCommon("Test
     }
   }
 }
+
 /**
   * A rule use to test the that overrides as set correctly
   */
@@ -26,6 +27,7 @@ class Test_internalTransitiveOverrides(model: ProjectModel) extends TestCommon("
     }
   }
 }
+
 /**
   * A rule use to test the that overrides as set correctly
   */
@@ -39,6 +41,7 @@ class Test_allDirectOverrides(model: ProjectModel) extends TestCommon("Test_allD
     }
   }
 }
+
 /**
   * A rule use to test the that overrides as set correctly
   */
@@ -51,6 +54,7 @@ class Test_allTransitiveOverrides(model: ProjectModel) extends TestCommon("Test_
     }
   }
 }
+
 /**
   * A rule use to test the that overrides as set correctly
   */
@@ -63,6 +67,7 @@ class Test_internalDirectOverriddenBy(model: ProjectModel) extends TestCommon("T
     }
   }
 }
+
 /**
   * A rule use to test the that overrides as set correctly
   */

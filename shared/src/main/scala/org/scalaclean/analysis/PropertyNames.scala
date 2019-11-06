@@ -2,7 +2,7 @@ package org.scalaclean.analysis
 
 //names of the keys in the project properties
 object PropertyNames {
- val prop_classpath = "classpath"
+  val prop_classpath = "classpath"
   val prop_outputDir = "outputDir"
   val prop_elementsFile = "elementsFile"
   val prop_relationshipsFile = "relationshipsFile"

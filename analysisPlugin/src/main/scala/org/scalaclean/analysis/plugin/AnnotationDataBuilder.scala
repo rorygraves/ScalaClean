@@ -5,12 +5,12 @@ import org.scalaclean.analysis.{AnnotationData, ExtensionData}
 import scala.tools.nsc.Global
 
 object AnnotationDataBuilder {
-  def buildSimpleAnnotation(g:Global)(annotated: g.Tree, annotation: g.AnnotationInfo): ExtensionData = {
+  def buildSimpleAnnotation(g: Global)(annotated: g.Tree, annotation: g.AnnotationInfo): ExtensionData = {
     def print(assoc: g.ClassfileAnnotArg): String = {
       import g._
       assoc match {
-        case LiteralAnnotArg(const) =>const.value.toString
-        case ArrayAnnotArg(args) =>args.map(print).mkString(";")
+        case LiteralAnnotArg(const) => const.value.toString
+        case ArrayAnnotArg(args) => args.map(print).mkString(";")
         case NestedAnnotArg(annInfo) =>
           val clazz = annInfo.tpe.typeSymbol.fullName
           //TODO if we really need it
@@ -19,6 +19,7 @@ object AnnotationDataBuilder {
         case ScalaSigBytes(bytes) => ???
       }
     }
+
     val clazz = annotation.tpe.typeSymbol.fullName
     val targetPos = annotated.pos
     val pos = annotation.pos
@@ -36,8 +37,8 @@ object AnnotationDataBuilder {
     AnnotationData(start, end, clazz, values)
   }
 
-  private def clean(s:String):String = s.//
-    replace(',',';').
+  private def clean(s: String): String = s. //
+    replace(',', ';').
     replace("\n", "\\n").
     replace("\r", "\\r")
 
