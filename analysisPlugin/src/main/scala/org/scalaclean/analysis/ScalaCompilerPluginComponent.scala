@@ -303,6 +303,9 @@ class ScalaCompilerPluginComponent(
         }
       }
     }
+    def isObjectOrAny(sym: Symbol) = {
+      sym == definitions.AnyClass || sym == definitions.ObjectClass
+    }
 
     def recordOverrides(model: ClassLike): Unit = {
       val classSymbol = model.tree.symbol.asInstanceOf[global.Symbol]
@@ -320,8 +323,7 @@ class ScalaCompilerPluginComponent(
       while (cursor.hasNext) {
         val entry = cursor.currentPair
         if (entry.low.owner != classSymbol &&
-          (entry.low.owner.javaBinaryNameString != "java.lang.Object" ||
-            entry.high.owner.javaBinaryNameString != "scala.Any")) {
+          (!isObjectOrAny(entry.low.owner) || !isObjectOrAny(entry.high.owner))) {
 
           val dummyMethodSym = entry.low.cloneSymbol(classSymbol)
           dummyMethodSym.setPos(classSymbol.pos.focusStart)
@@ -449,7 +451,7 @@ class ScalaCompilerPluginComponent(
 
           val symbol = valDef.symbol
           val mSymbol = asMSymbol(symbol)
-          val field =
+          val field: ModelField =
             if (symbol.isVar) ModelVar(valDef, mSymbol, symbol.isDeferred, symbol.isParameter)
             else ModelVal(valDef, mSymbol, symbol.isDeferred, valDef.symbol.isLazy, symbol.isParameter)
           enterScope(field) { field =>
@@ -469,6 +471,29 @@ class ScalaCompilerPluginComponent(
 
             super.traverse(tree)
           }
+          //is it a val on a trait? If so we need to model the accessors for overrides
+          if (symbol.owner.isTrait) {
+            val getter = symbol.getterIn(symbol.owner)
+            val setter = symbol.setterIn(symbol.owner)
+            val access = symbol.accessed
+            if (getter != NoSymbol) {
+              enterScope(new ModelPlainMethod(DefDef(getter, new Modifiers(getter.flags, newTermName(""), Nil), global.EmptyTree),
+                asMSymbol(getter), false, false)) { method =>
+
+                method.addGetterFor(field.common)
+                addMethodOverrides(method, getter)
+              }
+            }
+            if (setter != NoSymbol) {
+              enterScope(new ModelPlainMethod(DefDef(setter, new Modifiers(setter.flags, newTermName(""), Nil), global.EmptyTree),
+                asMSymbol(setter), false, false)) { method =>
+
+                method.addSetterFor(field.common)
+                addMethodOverrides(method, setter)
+              }
+            }
+          }
+
 
         // *********************************************************************************************************
         case defdef: DefDef =>
@@ -492,44 +517,7 @@ class ScalaCompilerPluginComponent(
 
 
             if (symbol.owner.isClass) {
-              val classSym = symbol.owner
-
-              val directParentSymbols = symbol.info.parents.map(t => asMSymbol(t.typeSymbol)).toSet
-
-              scopeLog(s"DirectParentSymbols = $directParentSymbols")
-
-              val directParentSymbols2 = symbol.outerClass
-
-              scopeLog(s"DirectParentSymbols2 = $classSym")
-              scopeLog(s"DirectParentSymbols2 = $directParentSymbols2")
-
-              val directClassParentSymbols = classSym.info.parents.map(t => asMSymbol(t.typeSymbol)).toSet
-
-              scopeLog(s"DirectParentSymbols3 = $directClassParentSymbols")
-
-              classSym.ancestors foreach { ancestorSymbol =>
-                val ancestorMSymbol = asMSymbol(ancestorSymbol)
-                val direct = directClassParentSymbols.contains(ancestorMSymbol)
-                val overridden = symbol.overriddenSymbol(ancestorSymbol)
-                if (overridden != NoSymbol) {
-                  scopeLog(s"    AAAAA ${overridden} $direct")
-                }
-
-              }
-
-              symbol.overrides.foreach { overridden =>
-                val overriddenOwnerMSym = asMSymbol(overridden.owner)
-                val direct = directParentSymbols.contains(overriddenOwnerMSym)
-
-                method.addOverride(asMSymbol(overridden), direct)
-              }
-              val cursor = new overridingPairs.Cursor(symbol.owner)
-              while (cursor.hasNext) {
-                val entry = cursor.currentPair
-                if (entry.low == symbol)
-                  method.addOverride(asMSymbol(entry.low), true)
-                cursor.next()
-              }
+              addMethodOverrides(method, symbol)
             }
 
             super.traverse(tree)
@@ -572,6 +560,47 @@ class ScalaCompilerPluginComponent(
           traverseType(tree.tpe)
           super.traverse(tree)
       }
+    }
+    def addMethodOverrides(method: ModelMethod, symbol: Symbol) : Unit = {
+      val classSym = symbol.owner
+
+      val directParentSymbols = symbol.info.parents.map(t => asMSymbol(t.typeSymbol)).toSet
+
+      scopeLog(s"DirectParentSymbols = $directParentSymbols")
+
+      val directParentSymbols2 = symbol.outerClass
+
+      scopeLog(s"DirectParentSymbols2 = $classSym")
+      scopeLog(s"DirectParentSymbols2 = $directParentSymbols2")
+
+      val directClassParentSymbols = classSym.info.parents.map(t => asMSymbol(t.typeSymbol)).toSet
+
+      scopeLog(s"DirectParentSymbols3 = $directClassParentSymbols")
+
+      classSym.ancestors foreach { ancestorSymbol =>
+        val ancestorMSymbol = asMSymbol(ancestorSymbol)
+        val direct = directClassParentSymbols.contains(ancestorMSymbol)
+        val overridden = symbol.overriddenSymbol(ancestorSymbol)
+        if (overridden != NoSymbol) {
+          scopeLog(s"    AAAAA ${overridden} $direct")
+        }
+
+      }
+
+      symbol.overrides.foreach { overridden =>
+        val overriddenOwnerMSym = asMSymbol(overridden.owner)
+        val direct = directParentSymbols.contains(overriddenOwnerMSym)
+
+        method.addOverride(asMSymbol(overridden), direct)
+      }
+      val cursor = new overridingPairs.Cursor(symbol.owner)
+      while (cursor.hasNext) {
+        val entry = cursor.currentPair
+        if (entry.low == symbol)
+          method.addOverride(asMSymbol(entry.low), true)
+        cursor.next()
+      }
+
     }
   }
 

@@ -102,3 +102,27 @@ object Object_ChildTrait extends ParentTrait {
 //  new Child().foo
 //  new Child().bar(1)
 //}
+
+trait T1 {
+  def v1 : AnyRef
+}
+
+trait T2 extends T1 {
+  def v1 : String
+}
+trait T3 extends T1 {
+  def v1 : String = ""
+}
+trait T4 extends T2 {
+  def v1 : String
+}
+
+trait VT2 extends T1 {
+  val v1 : String
+}
+trait VT3 extends T1 {
+  val v1 : String = ""
+}
+trait VT4 extends VT2 {
+  val v1 : String
+}
