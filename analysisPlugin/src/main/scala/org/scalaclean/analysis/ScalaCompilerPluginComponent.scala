@@ -450,7 +450,7 @@ class ScalaCompilerPluginComponent(
         case valDef: ValDef =>
 
           val symbol = valDef.symbol
-          val mSymbol = asMSymbol(symbol)
+          val mSymbol = asMSymbol(symbol, symbol.owner.isTrait && symbol == symbol.getterIn(symbol.owner))
           val field: ModelField =
             if (symbol.isVar) ModelVar(valDef, mSymbol, symbol.isDeferred, symbol.isParameter)
             else ModelVal(valDef, mSymbol, symbol.isDeferred, valDef.symbol.isLazy, symbol.isParameter)

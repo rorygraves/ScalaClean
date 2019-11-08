@@ -108,21 +108,21 @@ trait T1 {
 }
 
 trait T2 extends T1 {
-  def v1 : String
+  def v1 : String/* internalTransitiveOverrides(G:scalaclean/test/overrides/internalTransitiveOverrides/T2#v1().) - G:scalaclean/test/overrides/internalTransitiveOverrides/T1#v1(). */
 }
 trait T3 extends T1 {
-  def v1 : String = ""
+  def v1 : String = ""/* internalTransitiveOverrides(G:scalaclean/test/overrides/internalTransitiveOverrides/T3#v1().) - G:scalaclean/test/overrides/internalTransitiveOverrides/T1#v1(). */
 }
 trait T4 extends T2 {
-  def v1 : String
+  def v1 : String/* internalTransitiveOverrides(G:scalaclean/test/overrides/internalTransitiveOverrides/T4#v1().) - G:scalaclean/test/overrides/internalTransitiveOverrides/T1#v1(). :: G:scalaclean/test/overrides/internalTransitiveOverrides/T2#v1(). */
 }
 
 trait VT2 extends T1 {
-  val v1 : String
+  val v1 : String/* internalTransitiveOverrides(G:scalaclean/test/overrides/internalTransitiveOverrides/VT2#v1.) - G:scalaclean/test/overrides/internalTransitiveOverrides/T1#v1(). */
 }
 trait VT3 extends T1 {
-  val v1 : String = ""
+  val v1 : String = ""/* internalTransitiveOverrides(G:scalaclean/test/overrides/internalTransitiveOverrides/VT3#v1.) - G:scalaclean/test/overrides/internalTransitiveOverrides/T1#v1(). */
 }
 trait VT4 extends VT2 {
-  val v1 : String
+  val v1 : String/* internalTransitiveOverrides(G:scalaclean/test/overrides/internalTransitiveOverrides/VT4#v1.) - G:scalaclean/test/overrides/internalTransitiveOverrides/T1#v1(). :: G:scalaclean/test/overrides/internalTransitiveOverrides/VT2#v1. */
 }

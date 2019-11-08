@@ -69,11 +69,13 @@ trait ModelSymbolBuilder extends SemanticdbOps {
     //  )
   }
 
+  private val mSymbolCache2 = mutable.Map[global.Symbol, ModelCommon]()
   private val mSymbolCache = mutable.Map[global.Symbol, ModelCommon]()
 
-  def asMSymbol(gSym: global.Symbol): ModelCommon = {
+  def asMSymbol(gSym: global.Symbol, special:Boolean = false): ModelCommon = {
+    val cache = if (special) mSymbolCache2 else mSymbolCache
 
-    mSymbolCache.getOrElseUpdate(gSym, {
+    cache.getOrElseUpdate(gSym, {
       val isGlobal = gSym.isSemanticdbGlobal && !gSym.isLocalToBlock
       val newIsGlobal = gSym.ownersIterator.forall(o => o.isType && !o.isSynthetic)
       val sString = gSym.toSemantic
@@ -82,9 +84,10 @@ trait ModelSymbolBuilder extends SemanticdbOps {
         mungeUnitPath(gSym.sourceFile.toString)
       else
         "-"
-      val name = gSym.nameString
+      val specialSuffix = if (special) "~" else ""
+      val name = gSym.nameString + specialSuffix
 
-      val newName = getNewName(gSym)
+      val newName = getNewName(gSym) + specialSuffix
 
       ModelCommon(isGlobal, sString, newName, sourceFile, startPos, endPos, name)
 
