@@ -2,9 +2,7 @@ package org.scalaclean.analysis
 
 import java.io.File
 
-import scala.tools.nsc.Global
-
-class RelationshipsWriter(file: File, val global: Global) {
+class RelationshipsWriter(file: File) {
 
   var logger: ScopeLogging = _
   val writer = new StringWriter(file.toPath)

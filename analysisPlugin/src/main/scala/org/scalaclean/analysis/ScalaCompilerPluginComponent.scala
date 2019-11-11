@@ -65,12 +65,12 @@ class ScalaCompilerPluginComponent(
       val relationsFile = new File(outputPath.toFile, "scalaclean-relationships.csv")
       if (debug)
         println(s"Writing relationships file to to ${relationsFile}")
-      relationsWriter = new RelationshipsWriter(relationsFile, global)
+      relationsWriter = new RelationshipsWriter(relationsFile)
 
       val extensionFile = new File(outputPath.toFile, "scalaclean-extensions.csv")
       if (debug)
         println(s"Writing extensions file to to ${extensionFile}")
-      extensionWriter = new ExtensionWriter(extensionFile, global)
+      extensionWriter = new ExtensionWriter(extensionFile)
 
       traverser = new SCUnitTraverser(elementsWriter, relationsWriter, extensionWriter, debug)
       elementsWriter.logger = traverser
@@ -260,6 +260,7 @@ class ScalaCompilerPluginComponent(
     }
 
     val initialVisited = HashSet[global.Symbol](global.NoSymbol)
+
     def resetVisited(visited: HashSet[global.Symbol]) {
       visitedTypes = visited
     }
@@ -269,12 +270,13 @@ class ScalaCompilerPluginComponent(
       visitedTypes = initialVisited
       existing
     }
+
     newVisited()
 
     var visitedTypes = HashSet.empty[global.Symbol]
 
     def traverseType(tpe: global.Type): Unit = {
-      if (tpe ne null )
+      if (tpe ne null)
         traverseImpl(tpe)
 
       def add(symbol: global.Symbol): Boolean = {
@@ -303,6 +305,7 @@ class ScalaCompilerPluginComponent(
         }
       }
     }
+
     def isObjectOrAny(sym: Symbol) = {
       sym == definitions.AnyClass || sym == definitions.ObjectClass
     }
@@ -318,32 +321,51 @@ class ScalaCompilerPluginComponent(
         recordExtendsClass(ancestorMSymbol, model, direct = direct)
       }
       val cursor = new overridingPairs.Cursor(classSymbol)
-      val seen: mutable.Map[Symbol, mutable.Set[Symbol]] = new mutable.HashMap
+      val seenJunctionsBetweenParents: mutable.Map[Symbol, mutable.Set[Symbol]] = new mutable.HashMap
 
       while (cursor.hasNext) {
         val entry = cursor.currentPair
-        if (entry.low.owner != classSymbol &&
-          (!isObjectOrAny(entry.low.owner) || !isObjectOrAny(entry.high.owner))) {
+        if (entry.low.owner == classSymbol) {
+          model.remainingChildOverrides.getOrElseUpdate(entry.low, new mutable.HashSet[Global#Symbol]) += entry.high
+        } else if ((!isObjectOrAny(entry.low.owner) || !isObjectOrAny(entry.high.owner))) {
 
           val dummyMethodSym = entry.low.cloneSymbol(classSymbol)
           dummyMethodSym.setPos(classSymbol.pos.focusStart)
           dummyMethodSym.setFlag(Flags.SYNTHETIC)
 
-          val targetSet = seen.getOrElseUpdate(dummyMethodSym, new mutable.HashSet[Symbol])
+          val targetSet = seenJunctionsBetweenParents.getOrElseUpdate(dummyMethodSym, new mutable.HashSet[Symbol])
           targetSet += entry.low
           targetSet += entry.high
         }
         cursor.next()
       }
 
-      seen foreach { case (dummyMethodSym, targets) =>
-        enterScope(new ModelPlainMethod(DefDef(dummyMethodSym, new Modifiers(dummyMethodSym.flags, newTermName(""), Nil), global.EmptyTree),
+      seenJunctionsBetweenParents foreach { case (dummyMethodSym, targets) =>
+        enterScope(ModelPlainMethod(DefDef(dummyMethodSym, new Modifiers(dummyMethodSym.flags, newTermName(""), Nil), global.EmptyTree),
           asMSymbol(dummyMethodSym), false, false)) { meth =>
           //if not recorded above, then maybe this should be a synthetic override
           targets.foreach { entry =>
             currentScope.addOverride(asMSymbol(entry), true)
           }
         }
+      }
+
+    }
+
+    def postProcess(model: ClassLike) = {
+      model.postProcess()
+      model.remainingChildOverrides foreach {
+        case (l, parents) =>
+          val local = l.asInstanceOf[global.Symbol]
+          enterScope(ModelPlainMethod(DefDef(local, new Modifiers(local.flags, newTermName(""), Nil), global.EmptyTree),
+            asMSymbol(local), false, false)) { meth =>
+            //if not recorded above, then maybe this should be a synthetic override
+            parents.foreach { e =>
+              val entry = e.asInstanceOf[global.Symbol]
+              currentScope.addOverride(asMSymbol(entry), true)
+            }
+          }
+
       }
     }
 
@@ -422,6 +444,7 @@ class ScalaCompilerPluginComponent(
             }
             recordOverrides(obj)
             super.traverse(tree)
+            postProcess(obj)
           }
 
         case apply: Apply =>
@@ -442,18 +465,61 @@ class ScalaCompilerPluginComponent(
             else ModelClass(classDef, mSymbol, symbol.isAbstractClass)
           enterScope(cls) { cls =>
             recordOverrides(cls)
-
             super.traverse(tree)
+            postProcess(cls)
           }
 
         // *********************************************************************************************************
         case valDef: ValDef =>
 
           val symbol = valDef.symbol
-          val mSymbol = asMSymbol(symbol, symbol.owner.isTrait && symbol == symbol.getterIn(symbol.owner))
-          val field: ModelField =
-            if (symbol.isVar) ModelVar(valDef, mSymbol, symbol.isDeferred, symbol.isParameter)
-            else ModelVal(valDef, mSymbol, symbol.isDeferred, valDef.symbol.isLazy, symbol.isParameter)
+          val isVar = symbol.isVar
+          val isArtifact = symbol.isArtifact
+
+          val field = currentScope match {
+            case cls: ClassLike =>
+              val getter = symbol.getterIn(symbol.owner)
+              val setter = symbol.setterIn(symbol.owner)
+              val collides = symbol == getter
+              val mSymbol = asMSymbol(symbol, collides)
+              val field = if (isVar) {
+                assert(setter != NoSymbol, s"no setter $mSymbol at ${valDef.pos.line}:${valDef.pos.column}")
+                assert(getter != NoSymbol, s"no getter $mSymbol at ${valDef.pos.line}:${valDef.pos.column}")
+                ModelVar(valDef, mSymbol, symbol.isDeferred, symbol.isParameter)
+              } else {
+                //cant do this get
+                //theres no getter for the synthetic val in val (x,y) = ...
+                //but we need other synthetic vals, and we need to better process this case
+                //assert(getter != NoSymbol, s"no getter $mSymbol at ${valDef.pos.line}:${valDef.pos.column}")
+
+                ModelVal(valDef, mSymbol, symbol.isDeferred, valDef.symbol.isLazy, symbol.isParameter)
+              }
+              cls.addPostProcess( () => {
+                if (!cls.children.contains(asMSymbol(getter))) {
+                  enterScope(ModelGetterMethod(DefDef(getter, new Modifiers(getter.flags, newTermName(""), Nil), global.EmptyTree),
+                    asMSymbol(getter), false, false)) { method =>
+
+                    method.addGetterFor(field.common)
+                    addMethodOverrides(method, getter)
+                  }
+                }
+                if (isVar && !cls.children.contains(asMSymbol(setter))) {
+                  enterScope(ModelSetterMethod(DefDef(setter, new Modifiers(setter.flags, newTermName(""), Nil), global.EmptyTree),
+                    asMSymbol(setter), false, false)) { method =>
+
+                    method.addSetterFor(field.common)
+                    addMethodOverrides(method, setter)
+                  }
+                }
+
+              })
+              field
+            case _ =>
+              val mSymbol = asMSymbol(symbol)
+              if (isVar) ModelVar(valDef, mSymbol, symbol.isDeferred, symbol.isParameter)
+              else ModelVal(valDef, mSymbol, symbol.isDeferred, valDef.symbol.isLazy, symbol.isParameter)
+          }
+
           enterScope(field) { field =>
             field.addRefers(asMSymbol(valDef.tpt.symbol), symbol.isSynthetic)
             if (symbol.isLocalToBlock) {
@@ -470,28 +536,6 @@ class ScalaCompilerPluginComponent(
             }
 
             super.traverse(tree)
-          }
-          //is it a val on a trait? If so we need to model the accessors for overrides
-          if (symbol.owner.isTrait) {
-            val getter = symbol.getterIn(symbol.owner)
-            val setter = symbol.setterIn(symbol.owner)
-            val access = symbol.accessed
-            if (getter != NoSymbol) {
-              enterScope(new ModelPlainMethod(DefDef(getter, new Modifiers(getter.flags, newTermName(""), Nil), global.EmptyTree),
-                asMSymbol(getter), false, false)) { method =>
-
-                method.addGetterFor(field.common)
-                addMethodOverrides(method, getter)
-              }
-            }
-            if (setter != NoSymbol) {
-              enterScope(new ModelPlainMethod(DefDef(setter, new Modifiers(setter.flags, newTermName(""), Nil), global.EmptyTree),
-                asMSymbol(setter), false, false)) { method =>
-
-                method.addSetterFor(field.common)
-                addMethodOverrides(method, setter)
-              }
-            }
           }
 
 
@@ -561,46 +605,45 @@ class ScalaCompilerPluginComponent(
           super.traverse(tree)
       }
     }
-    def addMethodOverrides(method: ModelMethod, symbol: Symbol) : Unit = {
-      val classSym = symbol.owner
 
-      val directParentSymbols = symbol.info.parents.map(t => asMSymbol(t.typeSymbol)).toSet
+    def addMethodOverrides(method: ModelMethod, symbol: Symbol): Unit = method.withinRels.head match {
+      case clsDirectParent: ClassLike =>
+        val classSym = symbol.owner
 
-      scopeLog(s"DirectParentSymbols = $directParentSymbols")
+        val directParentSymbols = symbol.info.parents.map(t => asMSymbol(t.typeSymbol)).toSet
 
-      val directParentSymbols2 = symbol.outerClass
+        scopeLog(s"DirectParentSymbols = $directParentSymbols")
 
-      scopeLog(s"DirectParentSymbols2 = $classSym")
-      scopeLog(s"DirectParentSymbols2 = $directParentSymbols2")
+        val directParentSymbols2 = symbol.outerClass
 
-      val directClassParentSymbols = classSym.info.parents.map(t => asMSymbol(t.typeSymbol)).toSet
+        scopeLog(s"DirectParentSymbols2 = $classSym")
+        scopeLog(s"DirectParentSymbols2 = $directParentSymbols2")
 
-      scopeLog(s"DirectParentSymbols3 = $directClassParentSymbols")
+        val directClassParentSymbols = classSym.info.parents.map(t => asMSymbol(t.typeSymbol)).toSet
 
-      classSym.ancestors foreach { ancestorSymbol =>
-        val ancestorMSymbol = asMSymbol(ancestorSymbol)
-        val direct = directClassParentSymbols.contains(ancestorMSymbol)
-        val overridden = symbol.overriddenSymbol(ancestorSymbol)
-        if (overridden != NoSymbol) {
-          scopeLog(s"    AAAAA ${overridden} $direct")
+        scopeLog(s"DirectParentSymbols3 = $directClassParentSymbols")
+
+        classSym.ancestors foreach { ancestorSymbol =>
+          val ancestorMSymbol = asMSymbol(ancestorSymbol)
+          val direct = directClassParentSymbols.contains(ancestorMSymbol)
+          val overridden = symbol.overriddenSymbol(ancestorSymbol)
+          if (overridden != NoSymbol) {
+            scopeLog(s"    AAAAA ${overridden} $direct")
+          }
         }
 
-      }
+        symbol.overrides.foreach { overridden =>
+          val overriddenOwnerMSym = asMSymbol(overridden.owner)
+          val direct = directParentSymbols.contains(overriddenOwnerMSym)
 
-      symbol.overrides.foreach { overridden =>
-        val overriddenOwnerMSym = asMSymbol(overridden.owner)
-        val direct = directParentSymbols.contains(overriddenOwnerMSym)
+          method.addOverride(asMSymbol(overridden), direct)
+        }
 
-        method.addOverride(asMSymbol(overridden), direct)
-      }
-      val cursor = new overridingPairs.Cursor(symbol.owner)
-      while (cursor.hasNext) {
-        val entry = cursor.currentPair
-        if (entry.low == symbol)
-          method.addOverride(asMSymbol(entry.low), true)
-        cursor.next()
-      }
-
+        clsDirectParent.removeChildOveride(symbol) foreach {
+          _.foreach { o: Global#Symbol => method.addOverride(asMSymbol(o.asInstanceOf[global.Symbol]), true) }
+        }
+        //if it not a top level method then it cant override anything
+      case _ =>
     }
   }
 

@@ -42,14 +42,14 @@ object ModelReader {
     var mapByNewElementId = Map.empty[String, mutable.Builder[ExtensionData, List[ExtensionData]]]
 
     val path = Paths.get(extensionFilePath)
-    println(s"reading relationships from $path")
+    println(s"reading extensions from $path")
 
     Files.lines(path) forEach {
       line: String =>
-        println(line)
+//        println(line)
         val Array(id, newId, fqn, rest) = line.split(",", 4)
         val extBuilder = lookup.getOrElseUpdate(fqn, {
-          println(s"looking up extension $fqn")
+//          println(s"looking up extension $fqn")
           val module = try {
             runtimeMirror.staticModule(fqn)
           } catch {

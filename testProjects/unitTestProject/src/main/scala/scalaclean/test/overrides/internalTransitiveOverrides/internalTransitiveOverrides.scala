@@ -126,3 +126,20 @@ trait VT3 extends T1 {
 trait VT4 extends VT2 {
   val v1 : String
 }
+
+trait VL2 extends T1 {
+  val v1 : String
+}
+trait VL3 extends VL2 {
+  lazy val v1 : String = ""
+}
+
+abstract class VLC2 extends T1 {
+  val v1 : String
+}
+class VLC3 extends VLC2 {
+  lazy val v1 : String = ""
+}
+class VLC3a extends VLC3 {
+  override lazy val v1 : String = ""
+}

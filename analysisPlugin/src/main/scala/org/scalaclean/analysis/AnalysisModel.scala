@@ -1,8 +1,9 @@
 package org.scalaclean.analysis
 
 import scala.collection.immutable.ListSet
-import scala.collection.mutable.ListBuffer
+import scala.collection.mutable
 import scala.tools.nsc.Global
+
 
 trait HasModelCommon {
   def common: ModelCommon
@@ -29,16 +30,11 @@ sealed trait ModelSymbol extends HasModelCommon {
 
   def posEnd: Int = common.posEnd
 
-  //  def  isSynthetic: Boolean
-  //  def  isAbstract: Boolean
-  //  def  isLazy: Boolean
   def isParameter: Boolean = false
 
   def sourceName: String = common.sourceName
 
   val tree: Global#Tree
-
-  def gTree(g: Global): g.Tree = tree.asInstanceOf[g.Tree]
 
   private var _extensionData: List[ExtensionData] = Nil
 
@@ -195,7 +191,26 @@ sealed trait ModelSymbol extends HasModelCommon {
 
 }
 
-sealed trait ClassLike extends ModelSymbol
+sealed trait ClassLike extends ModelSymbol {
+  private var postProcessing = List.empty[() => Unit]
+
+  def addPostProcess(fn: () => Unit) = postProcessing ::= fn
+
+  def postProcess(): Unit = {
+    postProcessing foreach (_.apply())
+  }
+
+
+  /** the overrides that have not yet been processed
+    * After the ClassLike is processed this is  the overrides for each of the def/val in the class
+    * As they are processed they are removed, and the remainder are processed after the class
+    * is completed */
+  val remainingChildOverrides: mutable.Map[Global#Symbol, mutable.Set[Global#Symbol]] = new mutable.HashMap
+
+  def removeChildOveride(child: Global#Symbol) = {
+    remainingChildOverrides.remove(child)
+  }
+}
 
 sealed abstract class ModelField extends ModelSymbol
 

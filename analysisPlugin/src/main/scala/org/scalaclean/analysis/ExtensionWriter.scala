@@ -2,9 +2,7 @@ package org.scalaclean.analysis
 
 import java.io.File
 
-import scala.tools.nsc.Global
-
-class ExtensionWriter(file: File, val global: Global) {
+class ExtensionWriter(file: File) {
   def writeExtensions(mSymbol: ModelSymbol): Unit = {
     val data = mSymbol.extensionData
     if (data.nonEmpty) {
