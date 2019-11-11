@@ -354,18 +354,21 @@ class ScalaCompilerPluginComponent(
 
     def postProcess(model: ClassLike) = {
       model.postProcess()
-      model.remainingChildOverrides foreach {
-        case (l, parents) =>
-          val local = l.asInstanceOf[global.Symbol]
-          enterScope(ModelPlainMethod(DefDef(local, new Modifiers(local.flags, newTermName(""), Nil), global.EmptyTree),
-            asMSymbol(local), false, false)) { meth =>
-            //if not recorded above, then maybe this should be a synthetic override
-            parents.foreach { e =>
-              val entry = e.asInstanceOf[global.Symbol]
-              currentScope.addOverride(asMSymbol(entry), true)
+      if (model.remainingChildOverrides nonEmpty) {
+        scopeLog(s"add additional overrides in class but not in tree")
+        model.remainingChildOverrides foreach {
+          case (l, parents) =>
+            val local = l.asInstanceOf[global.Symbol]
+            enterScope(ModelPlainMethod(DefDef(local, new Modifiers(local.flags, newTermName(""), Nil), global.EmptyTree),
+              asMSymbol(local), false, false)) { meth =>
+              //if not recorded above, then maybe this should be a synthetic override
+              parents.foreach { e =>
+                val entry = e.asInstanceOf[global.Symbol]
+                currentScope.addOverride(asMSymbol(entry), true)
+              }
             }
-          }
 
+        }
       }
     }
 
@@ -495,7 +498,10 @@ class ScalaCompilerPluginComponent(
                 ModelVal(valDef, mSymbol, symbol.isDeferred, valDef.symbol.isLazy, symbol.isParameter)
               }
               cls.addPostProcess( () => {
+                var added = false
                 if (!cls.children.contains(asMSymbol(getter))) {
+                  scopeLog(s"add getter for field $field as is wasn't added directly $getter")
+                  added = true
                   enterScope(ModelGetterMethod(DefDef(getter, new Modifiers(getter.flags, newTermName(""), Nil), global.EmptyTree),
                     asMSymbol(getter), false, false)) { method =>
 
@@ -504,6 +510,8 @@ class ScalaCompilerPluginComponent(
                   }
                 }
                 if (isVar && !cls.children.contains(asMSymbol(setter))) {
+                  scopeLog(s"add setter for field $field as is wasn't added directly $setter")
+                  added = true
                   enterScope(ModelSetterMethod(DefDef(setter, new Modifiers(setter.flags, newTermName(""), Nil), global.EmptyTree),
                     asMSymbol(setter), false, false)) { method =>
 
@@ -511,7 +519,8 @@ class ScalaCompilerPluginComponent(
                     addMethodOverrides(method, setter)
                   }
                 }
-
+                if (added)
+                  scopeLog(s"end accessors for field $field")
               })
               field
             case _ =>
