@@ -243,13 +243,13 @@ class ScalaCompilerPluginComponent(
       }
 
       if (debug) {
-        println("----------------")
+        println("--- BEFORE -------------")
         sourceSymbol.printStructure()
         println("----------------")
       }
       sourceSymbol.flatten()
       if (debug) {
-        println("----------------")
+        println("--- AFTER -------------")
         sourceSymbol.printStructure()
         println("----------------")
       }
@@ -486,8 +486,8 @@ class ScalaCompilerPluginComponent(
               val collides = symbol == getter
               val mSymbol = asMSymbol(symbol, collides)
               val field = if (isVar) {
-                assert(setter != NoSymbol, s"no setter $mSymbol at ${valDef.pos.line}:${valDef.pos.column}")
-                assert(getter != NoSymbol, s"no getter $mSymbol at ${valDef.pos.line}:${valDef.pos.column}")
+  //                assert(setter != NoSymbol, s"no setter $mSymbol at ${valDef.pos.line}:${valDef.pos.column}")
+//                assert(getter != NoSymbol, s"no getter $mSymbol at ${valDef.pos.line}:${valDef.pos.column}")
                 ModelVar(valDef, mSymbol, symbol.isDeferred, symbol.isParameter)
               } else {
                 //cant do this yet
@@ -510,7 +510,7 @@ class ScalaCompilerPluginComponent(
                     addMethodOverrides(method, getter)
                   }
                 }
-                if (isVar && !cls.children.contains(asMSymbol(setter))) {
+                if (isVar  && setter != NoSymbol && !cls.children.contains(asMSymbol(setter))) {
                   scopeLog(s"add setter for field $field as is wasn't added directly $setter")
                   added = true
                   enterScope(ModelSetterMethod(DefDef(setter, new Modifiers(setter.flags, newTermName(""), Nil), global.EmptyTree),

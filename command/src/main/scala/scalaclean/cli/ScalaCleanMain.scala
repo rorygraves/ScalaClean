@@ -94,7 +94,12 @@ class ScalaCleanMain(dcOptions: SCOptions, ruleCreateFn: ProjectModel => Abstrac
   }
 
   def writeToFile(path: AbsolutePath, content: String): Unit = {
-    Files.write(path.toNIO, content.getBytes)
+    try {
+      Files.write(path.toNIO, content.getBytes)
+    } catch {
+      case t: Throwable =>
+        println(s"CANT WRITE $path")
+    }
   }
 
   /**

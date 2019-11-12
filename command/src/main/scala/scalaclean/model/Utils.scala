@@ -27,7 +27,7 @@ object Utils {
       }
     }
     pats foreach visitor.visitTree
-    assert(visitor.res.nonEmpty)
+//    assert(visitor.res.nonEmpty)
     visitor.res
   }
 }

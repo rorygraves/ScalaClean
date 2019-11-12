@@ -119,21 +119,25 @@ class Privatiser(model: ProjectModel, debug: Boolean) extends AbstractRule("Priv
 
       override protected def handlerSymbol(
                                             symbol: ElementId, mods: Seq[Mod], stat: Stat, scope: List[Scope]): (Patch, Boolean) = {
-        val modelElement = model.fromSymbol[ModelElement](symbol)
-        if (modelElement.existsInSource) {
-          val patch = changeAccessModifier(modelElement.colour, mods, stat, modelElement, None)
-          //do we need to recurse into implementation?
-          val rewriteContent = modelElement match {
-            case _: ClassLike => true
-            case _: MethodModel => false
-            case _: FieldModel => throw new IllegalStateException(s"handlerPats should be called - $modelElement")
-            case _: SourceModel => true
-          }
-          elementsObserved += 1
-          if (patch != Patch.empty)
-            elementsChanged += 1
-          (patch, rewriteContent)
-        } else continue
+        if(symbol.symbol.isLocal) continue else {
+
+
+          val modelElement = model.fromSymbol[ModelElement](symbol)
+          if (modelElement.existsInSource) {
+            val patch = changeAccessModifier(modelElement.colour, mods, stat, modelElement, None)
+            //do we need to recurse into implementation?
+            val rewriteContent = modelElement match {
+              case _: ClassLike => true
+              case _: MethodModel => false
+              case _: FieldModel => throw new IllegalStateException(s"handlerPats should be called - $modelElement")
+              case _: SourceModel => true
+            }
+            elementsObserved += 1
+            if (patch != Patch.empty)
+              elementsChanged += 1
+            (patch, rewriteContent)
+          } else continue
+        }
       }
 
       def info(sym: Symbol): Boolean = doc.info(sym).get.isProtectedWithin

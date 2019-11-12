@@ -151,34 +151,46 @@ class DeadCodeRemover(model: ProjectModel, debug: Boolean) extends AbstractRule(
 
       override protected def handlerSymbol(
                                             symbol: ElementId, mods: Seq[Mod], stat: Stat, scope: List[Scope]): (Patch, Boolean) = {
-        val modelElement = model.fromSymbol[ModelElement](symbol)
-        if (modelElement.existsInSource) {
-          val usage = modelElement.colour
-          elementsVisited += 1
-          if (usage.isUnused) {
-            val tokens = stat.tokens
-            val firstToken = tokens.head
+        if(symbol.symbol.isLocal || symbol.symbol.isNone) continue
+        else {
+          val modelElementOpt = model.getElement[ModelElement](symbol)
+          modelElementOpt match {
+            case None =>
+              continue
+            case Some(modelElement) =>
 
-            val removedTokens = TokenHelper.whitespaceOrCommentsBefore(firstToken, doc.tokens) ++ tokens
-            elementsRemoved += 1
-            val first = removedTokens.minBy {
-              _.start
-            }
-            linesRemoved += (stat.pos.endLine - first.pos.startLine + 1)
-            val patch = Patch.removeTokens(removedTokens)
-            (patch, false)
-          } else
-            continue
-        } else
-          continue
+              if (modelElement.existsInSource) {
+                val usage = modelElement.colour
+                elementsVisited += 1
+                if (usage.isUnused) {
+                  val tokens = stat.tokens
+                  val firstToken = tokens.head
+
+                  val removedTokens = TokenHelper.whitespaceOrCommentsBefore(firstToken, doc.tokens) ++ tokens
+                  elementsRemoved += 1
+                  val first = removedTokens.minBy {
+                    _.start
+                  }
+                  linesRemoved += (stat.pos.endLine - first.pos.startLine + 1)
+                  val patch = Patch.removeTokens(removedTokens)
+                  (patch, false)
+                } else
+                  continue
+              } else
+                continue
+          }
+        }
       }
 
       override protected def handlerPats(
                                           pats: Seq[Pat.Var], mods: Seq[Mod], stat: Stat, scope: List[Scope]): (Patch, Boolean) = {
         elementsVisited += 1
         val declarationsByUsage: Map[Usage, Seq[(Pat.Var, ModelElement)]] =
-          pats.filterNot(_.symbol.isLocal) map { p =>
-            (p, model.fromSymbolLocal[ModelElement](ElementId(p.symbol), stat.pos.start, stat.pos.end))
+          pats.filterNot(v => v.symbol.isLocal  || v.symbol.isNone ) map { p =>
+            println(p.symbol)
+            println(ElementId(p.symbol))
+            val mElement = model.fromSymbolLocal[ModelElement](ElementId(p.symbol), stat.pos.start, stat.pos.end)
+            (p, mElement)
           } groupBy (m => m._2.colour)
 
         declarationsByUsage.get(Usage.unused) match {

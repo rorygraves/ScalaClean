@@ -118,6 +118,9 @@ package impl {
   final class ExtendsImpl(from: ElementId, fromModel: NewElementId, to: ElementId, toModel: NewElementId, val isDirect: Boolean)
     extends ReferenceImpl[ClassLike, ClassLike](from, fromModel, to, toModel) with Extends {
 
+    if(fromModel.toString.contains("Local#16200") || toModel.toString.contains("Local#16200"))
+      throw new IllegalStateException("AGGG")
+
     override def complete(elements: Map[ElementId, ElementModelImpl], modelElements: Map[NewElementId, ElementModelImpl]): Unit = {
       super.complete(elements, modelElements)
       assert(fromElement.isInstanceOf[ClassLike], s"$fromElement is not a ClassLike")
@@ -127,6 +130,7 @@ package impl {
 
   final class OverridesImpl(from: ElementId, fromModel: NewElementId, to: ElementId, toModel: NewElementId, val isDirect: Boolean)
     extends ReferenceImpl(from, fromModel, to, toModel) with Overrides {
+
     override def toString: String = s"Overrides(${from} -> ${to}, isDirect = $isDirect"
   }
 

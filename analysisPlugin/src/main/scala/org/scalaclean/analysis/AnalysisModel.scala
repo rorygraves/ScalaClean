@@ -221,7 +221,7 @@ case class ModelCommon(
   override def common: ModelCommon = this
 
   override def csvString: String = {
-    val globalStr = if (isGlobal) "G:" else "L:"
+    val globalStr = if (isGlobal) "G:" else s"L:$sourceName/"
     s"$globalStr$id"
   }
 

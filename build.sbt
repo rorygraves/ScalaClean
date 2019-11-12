@@ -141,7 +141,7 @@ def testInputProject(id: String, projectLocation: String, showTrees: Boolean = f
     assert(srcLocations.nonEmpty)
     if (showTrees)
       List(
-        "-Ybrowse:typer",
+//        "-Ybrowse:typer",
         "-Xprint:typer")
     else List() :::
     List(
