@@ -30,12 +30,12 @@ class ProjectSet(projectPropertyPaths: Path*) extends ProjectModel {
 
       println("Duplicate OLD SYMBOLS ")
       orig.foreach { case (s, values) =>
-        println("  " + s)
+        println(s"  $s")
       }
 
       println("Duplicate NEW SYMBOLS ")
       newTokens.foreach { case (s, values) =>
-        println("  " + s)
+        println(s"  $s")
         values.foreach { v =>
           println(s"    $v")
 

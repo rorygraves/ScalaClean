@@ -47,7 +47,7 @@ sealed trait ModelSymbol extends HasModelCommon {
 
   def ioToken: String
 
-  var children = Vector[ModelSymbol]()
+  var children = Map[ModelCommon, ModelSymbol]()
 
   var extendsRels: ListSet[(HasModelCommon, Boolean)] = ListSet.empty
   var overridesRels: ListSet[(HasModelCommon, Boolean)] = ListSet.empty
@@ -81,7 +81,7 @@ sealed trait ModelSymbol extends HasModelCommon {
   }
 
   def addChild(modelSymbol: ModelSymbol): Unit = {
-    children :+= modelSymbol
+    children = children + (modelSymbol.common -> modelSymbol)
   }
 
 
@@ -134,7 +134,7 @@ sealed trait ModelSymbol extends HasModelCommon {
       println(s"setterFor: ${setterTarget.newCsvString}")
     }
 
-    children.foreach { child =>
+    children.values.foreach { child =>
       child.printStructureInt(depth + 1)
     }
   }
@@ -169,24 +169,25 @@ sealed trait ModelSymbol extends HasModelCommon {
       relWriter.setterFor(this.common, setterTarget)
     }
 
-    children.foreach { child =>
+    children.values.foreach { child =>
       child.outputStructure(eleWriter, relWriter, extensionWriter)
     }
   }
 
   def flatten(): Unit = {
-    children = children.flatMap { child =>
+    children = children.flatMap { case t@(common, child) =>
       child.flatten()
       child match {
         case mf: ModelField if (mf.isParameter || !mf.isGlobal) =>
           this.refersRels ++= mf.refersRels
           None
         case _ =>
-          Some(child)
+          Some(t)
       }
     }
     refersRels = refersRels.filter(_._1.common.isGlobal)
     refersRels = refersRels.filter(_._1.common.newId != this.common.newId)
+
   }
 
 }

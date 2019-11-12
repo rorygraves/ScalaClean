@@ -490,16 +490,17 @@ class ScalaCompilerPluginComponent(
                 assert(getter != NoSymbol, s"no getter $mSymbol at ${valDef.pos.line}:${valDef.pos.column}")
                 ModelVar(valDef, mSymbol, symbol.isDeferred, symbol.isParameter)
               } else {
-                //cant do this get
-                //theres no getter for the synthetic val in val (x,y) = ...
+                //cant do this yet
+                //there's no getter for the synthetic val in val (x,y) = ...
                 //but we need other synthetic vals, and we need to better process this case
+                //also for StaticAnnotation
                 //assert(getter != NoSymbol, s"no getter $mSymbol at ${valDef.pos.line}:${valDef.pos.column}")
 
                 ModelVal(valDef, mSymbol, symbol.isDeferred, valDef.symbol.isLazy, symbol.isParameter)
               }
               cls.addPostProcess( () => {
                 var added = false
-                if (!cls.children.contains(asMSymbol(getter))) {
+                if (getter != NoSymbol && !cls.children.contains(asMSymbol(getter))) {
                   scopeLog(s"add getter for field $field as is wasn't added directly $getter")
                   added = true
                   enterScope(ModelGetterMethod(DefDef(getter, new Modifiers(getter.flags, newTermName(""), Nil), global.EmptyTree),
@@ -619,38 +620,44 @@ class ScalaCompilerPluginComponent(
       case clsDirectParent: ClassLike =>
         val classSym = symbol.owner
 
-        val directParentSymbols = symbol.info.parents.map(t => asMSymbol(t.typeSymbol)).toSet
-
-        scopeLog(s"DirectParentSymbols = $directParentSymbols")
-
-        val directParentSymbols2 = symbol.outerClass
-
-        scopeLog(s"DirectParentSymbols2 = $classSym")
-        scopeLog(s"DirectParentSymbols2 = $directParentSymbols2")
-
-        val directClassParentSymbols = classSym.info.parents.map(t => asMSymbol(t.typeSymbol)).toSet
-
-        scopeLog(s"DirectParentSymbols3 = $directClassParentSymbols")
-
-        classSym.ancestors foreach { ancestorSymbol =>
-          val ancestorMSymbol = asMSymbol(ancestorSymbol)
-          val direct = directClassParentSymbols.contains(ancestorMSymbol)
-          val overridden = symbol.overriddenSymbol(ancestorSymbol)
-          if (overridden != NoSymbol) {
-            scopeLog(s"    AAAAA ${overridden} $direct")
-          }
+        val directSymbols: Set[global.Symbol] = clsDirectParent.removeChildOveride(symbol) match {
+          case None => Set()
+          case Some(syms) =>
+            syms.asInstanceOf[mutable.Set[global.Symbol]].toSet
         }
+
+        directSymbols foreach { s =>
+          method.addOverride(asMSymbol(s), true)
+        }
+
+//        val directParentSymbols: Set[ModelCommon] = symbol.info.parents.map(t => asMSymbol(t.typeSymbol)).toSet
+//
+//        scopeLog(s"DirectParentSymbols = $directParentSymbols")
+//
+//        val directParentSymbols2 = symbol.outerClass
+//
+//        scopeLog(s"DirectParentSymbols2 = $classSym")
+//        scopeLog(s"DirectParentSymbols2 = $directParentSymbols2")
+//
+//        val directClassParentSymbols = classSym.info.parents.map(t => asMSymbol(t.typeSymbol)).toSet
+//
+//        scopeLog(s"DirectParentSymbols3 = $directClassParentSymbols")
+//
+//        classSym.ancestors foreach { ancestorSymbol =>
+//          val ancestorMSymbol = asMSymbol(ancestorSymbol)
+//          val direct = directSymbols.contains(ancestorSymbol)
+//          val overridden = symbol.overriddenSymbol(ancestorSymbol)
+//          if (overridden != NoSymbol) {
+//            scopeLog(s"    AAAAA ${overridden} $direct")
+//          }
+//        }
 
         symbol.overrides.foreach { overridden =>
-          val overriddenOwnerMSym = asMSymbol(overridden.owner)
-          val direct = directParentSymbols.contains(overriddenOwnerMSym)
-
-          method.addOverride(asMSymbol(overridden), direct)
+//          val overriddenOwnerMSym = asMSymbol(overridden.owner)
+          if (!directSymbols.contains(overridden))
+            method.addOverride(asMSymbol(overridden), false)
         }
 
-        clsDirectParent.removeChildOveride(symbol) foreach {
-          _.foreach { o: Global#Symbol => method.addOverride(asMSymbol(o.asInstanceOf[global.Symbol]), true) }
-        }
         //if it not a top level method then it cant override anything
       case _ =>
     }

@@ -126,7 +126,7 @@ lazy val unitTestProject = project.in(file("testProjects/unitTestProject")).sett
 
 
 // template for dead code projects
-def testInputProject(id: String, projectLocation: String, dependencies: ClasspathDep[ProjectReference]*) = sbt.Project.apply(id, file(projectLocation)).settings(
+def testInputProject(id: String, projectLocation: String, showTrees: Boolean = false)(dependencies: ClasspathDep[ProjectReference]*) = sbt.Project.apply(id, file(projectLocation)).settings(
   addCompilerPlugin("org.scalameta" % "semanticdb-scalac_2.12.9" % "4.2.3"),
   scalacOptions += "-Yrangepos",
   libraryDependencies += "org.scalaz" %% "scalaz-core" % "7.2.27",
@@ -139,9 +139,12 @@ def testInputProject(id: String, projectLocation: String, dependencies: Classpat
     val jar = (assembly in Compile in analysisPlugin).value
     val srcLocations = (sourceDirectories in Compile).value.mkString(java.io.File.pathSeparator)
     assert(srcLocations.nonEmpty)
-    Seq(
-//      "-Ybrowse:typer",
-      //"-Xprint:typer",
+    if (showTrees)
+      List(
+        "-Ybrowse:typer",
+        "-Xprint:typer")
+    else List() :::
+    List(
 //      "-Ycompact-trees",
 //      "-Xprint:all",
       "-Yrangepos",
@@ -155,30 +158,30 @@ def testInputProject(id: String, projectLocation: String, dependencies: Classpat
 ).dependsOn(analysisPlugin, command).dependsOn(dependencies :_*) // here to ensure rebuild on change
 
 
-lazy val deadCodeProject1 = testInputProject("deadCodeProject1","testProjects/deadCodeProject1")
-lazy val deadCodeProject2 = testInputProject("deadCodeProject2", "testProjects/deadCodeProject2")
-lazy val deadCodeProject3 = testInputProject("deadCodeProject3", "testProjects/deadCodeProject3")
-lazy val deadCodeProject4 = testInputProject("deadCodeProject4", "testProjects/deadCodeProject4")
-lazy val deadCodeProject5 = testInputProject("deadCodeProject5", "testProjects/deadCodeProject5")
+lazy val deadCodeProject1 = testInputProject("deadCodeProject1","testProjects/deadCodeProject1")()
+lazy val deadCodeProject2 = testInputProject("deadCodeProject2", "testProjects/deadCodeProject2")()
+lazy val deadCodeProject3 = testInputProject("deadCodeProject3", "testProjects/deadCodeProject3")()
+lazy val deadCodeProject4 = testInputProject("deadCodeProject4", "testProjects/deadCodeProject4")()
+lazy val deadCodeProject5 = testInputProject("deadCodeProject5", "testProjects/deadCodeProject5")()
 
-lazy val deadCodeProject6a = testInputProject("deadCodeProject6a", "testProjects/deadCodeProject6a")
-lazy val deadCodeProject6b = testInputProject("deadCodeProject6b", "testProjects/deadCodeProject6b", deadCodeProject6a)
+lazy val deadCodeProject6a = testInputProject("deadCodeProject6a", "testProjects/deadCodeProject6a")()
+lazy val deadCodeProject6b = testInputProject("deadCodeProject6b", "testProjects/deadCodeProject6b")(deadCodeProject6a)
 
-lazy val deadCodeProject7 = testInputProject("deadCodeProject7", "testProjects/deadCodeProject7")
-lazy val deadCodeProject8 = testInputProject("deadCodeProject8", "testProjects/deadCodeProject8")
-lazy val deadCodeProject9 = testInputProject("deadCodeProject9", "testProjects/deadCodeProject9")
-lazy val deadCodeProject10_vals = testInputProject("deadCodeProject10_vals", "testProjects/deadCodeProject10-vals")
+lazy val deadCodeProject7 = testInputProject("deadCodeProject7", "testProjects/deadCodeProject7")()
+lazy val deadCodeProject8 = testInputProject("deadCodeProject8", "testProjects/deadCodeProject8")()
+lazy val deadCodeProject9 = testInputProject("deadCodeProject9", "testProjects/deadCodeProject9")()
+lazy val deadCodeProject10_vals = testInputProject("deadCodeProject10_vals", "testProjects/deadCodeProject10-vals")()
 
-lazy val privatiserProject1 = testInputProject("privatiserProject1", "testProjects/privatiserProject1")
-lazy val privatiserProject2 = testInputProject("privatiserProject2", "testProjects/privatiserProject2")
-lazy val privatiserProject3 = testInputProject("privatiserProject3", "testProjects/privatiserProject3")
-lazy val privatiserProject4 = testInputProject("privatiserProject4", "testProjects/privatiserProject4")
-lazy val privatiserProject5 = testInputProject("privatiserProject5", "testProjects/privatiserProject5")
-lazy val privatiserProject6 = testInputProject("privatiserProject6", "testProjects/privatiserProject6")
-lazy val privatiserProject7 = testInputProject("privatiserProject7", "testProjects/privatiserProject7")
+lazy val privatiserProject1 = testInputProject("privatiserProject1", "testProjects/privatiserProject1")()
+lazy val privatiserProject2 = testInputProject("privatiserProject2", "testProjects/privatiserProject2")()
+lazy val privatiserProject3 = testInputProject("privatiserProject3", "testProjects/privatiserProject3")()
+lazy val privatiserProject4 = testInputProject("privatiserProject4", "testProjects/privatiserProject4")()
+lazy val privatiserProject5 = testInputProject("privatiserProject5", "testProjects/privatiserProject5")()
+lazy val privatiserProject6 = testInputProject("privatiserProject6", "testProjects/privatiserProject6")()
+lazy val privatiserProject7 = testInputProject("privatiserProject7", "testProjects/privatiserProject7")()
 
-lazy val scratch = testInputProject("scratch", "testProjects/scratch")
-lazy val scratch1 = testInputProject("scratch1", "scratchProjects/scratch1")
+lazy val scratch = testInputProject("scratch", "testProjects/scratch", true)()
+lazy val scratch1 = testInputProject("scratch1", "scratchProjects/scratch1", true)()
   .settings(
     moduleName := "tests",
     libraryDependencies += "args4j" % "args4j" % "2.0.23",
