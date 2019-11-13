@@ -208,18 +208,13 @@ trait ProjectModel {
 
   def fromSymbol[T <: ModelElement](symbol: ElementId)(implicit tpe: ClassTag[T]): T
 
-  def fromSymbolLocal[T <: ModelElement](symbol: ElementId, startPos: Int, endPos: Int)(implicit tpe: ClassTag[T]): T = {
-    fromSymbol(symbol)
-  }
-
-
   def getElement[T <: ModelElement](symbol: ElementId)(implicit tpe: ClassTag[T]): Option[T]
 
   def size: Int
 
   def allOf[T <: ModelElement : ClassTag]: Iterator[T]
 
-  def printStructure() = allOf[ClassLike] foreach {
+  def printStructure(): Unit = allOf[ClassLike] foreach {
     cls => println(s"class ${cls.fullName}")
   }
 }

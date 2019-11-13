@@ -54,23 +54,6 @@ class ProjectSet(projectPropertyPaths: Path*) extends ProjectModel {
     elementsMap
   }
 
-  override def fromSymbolLocal[T <: ModelElement](symbol: ElementId, startPos: Int, endPos: Int)(implicit tpe: ClassTag[T]): T = {
-    val foundEntry: Option[(ElementId, ElementModelImpl)] = elements.find {
-      case (candidateSymbol, em: ValModelImpl) if em.info.startPos == startPos && em.info.endPos == endPos => true
-      case (candidateSymbol, em: VarModelImpl) if em.info.startPos == startPos && em.info.endPos == endPos => true
-      case (elementId, em) if(symbol == elementId) =>
-        true
-      case _ => false
-    }
-
-    foundEntry.map(_._2) match {
-      case None => throw new IllegalArgumentException(s"Unknown symbol $symbol")
-      case Some(x: T) => x
-      case Some(x) => throw new IllegalArgumentException(s"Unexpected symbol $symbol - found a $x when expecting a ${tpe.runtimeClass}")
-
-    }
-  }
-
   override def fromSymbol[T <: ModelElement](symbol: ElementId)(implicit tpe: ClassTag[T]): T = {
     val targetSymbol = if (symbol.value.startsWith("G:")) symbol else ElementId("G:" + symbol.value)
 
