@@ -473,11 +473,28 @@ class ScalaCompilerPluginComponent(
           }
 
         // *********************************************************************************************************
-        case valDef: ValDef =>
+        //cope with compound field declarations e.g. val (a,b,c,_ ) = ....
+        case valDef: ValDef if valDef.mods.isArtifact && valDef.mods.isSynthetic =>
+          val symbol = valDef.symbol
+          val fields = ModelFields(valDef, asMSymbol(symbol), symbol.isLazy)
+          enterScope(fields) { fields =>
+            symbol.updateAttachment(fields)
+            //we don't bother traversing the types of the symbol as they will be traversed on the actual fields
+            super.traverse(tree)
+          }
+//        case defDef: DefDef if defDef.mods.isArtifact && defDef.mods.isSynthetic && defDef.symbol.isAccessor =>
+////          defDef.
+//          scopeLog(s"skip synthetic accessor ${defDef.name}")
 
+        // *********************************************************************************************************
+        case valDef: ValDef =>
           val symbol = valDef.symbol
           val isVar = symbol.isVar
-          val isArtifact = symbol.isArtifact
+          val fields: Option[ModelFields] = valDef.rhs match {
+             case Select(qualifier, name) =>
+               qualifier.symbol.attachments.get[ModelFields]
+             case _ => None
+           }
 
           val field = currentScope match {
             case cls: ClassLike =>
@@ -488,7 +505,7 @@ class ScalaCompilerPluginComponent(
               val field = if (isVar) {
   //                assert(setter != NoSymbol, s"no setter $mSymbol at ${valDef.pos.line}:${valDef.pos.column}")
 //                assert(getter != NoSymbol, s"no getter $mSymbol at ${valDef.pos.line}:${valDef.pos.column}")
-                ModelVar(valDef, mSymbol, symbol.isDeferred, symbol.isParameter)
+                ModelVar(valDef, mSymbol, symbol.isDeferred, symbol.isParameter, fields)
               } else {
                 //cant do this yet
                 //there's no getter for the synthetic val in val (x,y) = ...
@@ -496,7 +513,7 @@ class ScalaCompilerPluginComponent(
                 //also for StaticAnnotation
                 //assert(getter != NoSymbol, s"no getter $mSymbol at ${valDef.pos.line}:${valDef.pos.column}")
 
-                ModelVal(valDef, mSymbol, symbol.isDeferred, valDef.symbol.isLazy, symbol.isParameter)
+                ModelVal(valDef, mSymbol, symbol.isDeferred, valDef.symbol.isLazy, symbol.isParameter, fields)
               }
               cls.addPostProcess( () => {
                 var added = false
@@ -510,7 +527,7 @@ class ScalaCompilerPluginComponent(
                     addMethodOverrides(method, getter)
                   }
                 }
-                if (isVar  && setter != NoSymbol && !cls.children.contains(asMSymbol(setter))) {
+                if (isVar && setter != NoSymbol && !cls.children.contains(asMSymbol(setter))) {
                   scopeLog(s"add setter for field $field as is wasn't added directly $setter")
                   added = true
                   enterScope(ModelSetterMethod(DefDef(setter, new Modifiers(setter.flags, newTermName(""), Nil), global.EmptyTree),
@@ -526,12 +543,14 @@ class ScalaCompilerPluginComponent(
               field
             case _ =>
               val mSymbol = asMSymbol(symbol)
-              if (isVar) ModelVar(valDef, mSymbol, symbol.isDeferred, symbol.isParameter)
-              else ModelVal(valDef, mSymbol, symbol.isDeferred, valDef.symbol.isLazy, symbol.isParameter)
+              if (isVar) ModelVar(valDef, mSymbol, symbol.isDeferred, symbol.isParameter, fields)
+              else ModelVal(valDef, mSymbol, symbol.isDeferred, valDef.symbol.isLazy, symbol.isParameter, fields)
           }
 
           enterScope(field) { field =>
             field.addRefers(asMSymbol(valDef.tpt.symbol), symbol.isSynthetic)
+            fields foreach (_.addField(field))
+            //TODO why this restriction - if anything why not the inverse?
             if (symbol.isLocalToBlock) {
 
               def typeRels(typeTarget: Type): Unit = {

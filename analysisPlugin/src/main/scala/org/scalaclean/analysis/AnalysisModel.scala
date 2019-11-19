@@ -213,7 +213,9 @@ sealed trait ClassLike extends ModelSymbol {
   }
 }
 
-sealed abstract class ModelField extends ModelSymbol
+sealed abstract class ModelField extends ModelSymbol {
+  val fields: Option[ModelFields]
+}
 
 case class ModelCommon(
                         isGlobal: Boolean, id: String, newId: String, sourceFile: String, posStart: Int, posEnd: Int,
@@ -228,8 +230,25 @@ case class ModelCommon(
   override def newCsvString: String = newId
 }
 
+case class ModelFields(
+                        tree: Global#ValDef, common: ModelCommon, isLazy: Boolean) extends ModelSymbol {
+  //TODO should validate that there is some reference, but the references may not match `fieldCount`, but can't exceed it
+  //TODO should validate that fields are consistent
+  private var fields = List.empty[ModelField]
+  def addField(field: ModelField): Unit = {
+    fields ::= field
+  }
+
+  def syntheticName = tree.name
+  def fieldCount = tree.tpe.typeArgs.size
+  override def debugName: String = "(compound fields)"
+
+  override def ioToken: String = IoTokens.typeFields
+}
+
 case class ModelVar(
-                     tree: Global#ValDef, common: ModelCommon, isAbstract: Boolean, override val isParameter: Boolean) extends ModelField {
+                     tree: Global#ValDef, common: ModelCommon, isAbstract: Boolean,
+                     override val isParameter: Boolean, fields: Option[ModelFields]) extends ModelField {
   override def debugName: String = "var"
 
   override def ioToken: String = IoTokens.typeVar
@@ -237,7 +256,7 @@ case class ModelVar(
 
 case class ModelVal(
                      tree: Global#ValDef, common: ModelCommon, isAbstract: Boolean, isLazy: Boolean,
-                     override val isParameter: Boolean) extends ModelField {
+                     override val isParameter: Boolean, fields: Option[ModelFields]) extends ModelField {
   override def debugName: String = "val"
 
   override def ioToken: String = IoTokens.typeVal

@@ -118,7 +118,7 @@ lazy val unitTestProject = project.in(file("testProjects/unitTestProject")).sett
         "-Yrangepos",
         s"-Xplugin:${jar.getAbsolutePath}",
         s"-Jdummy=${jar.lastModified}", // ensures recompile
-        "-P:scalaclean-analysis-plugin:debug:true",
+//        "-P:scalaclean-analysis-plugin:debug:true",
         s"-P:scalaclean-analysis-plugin:srcdirs:$srcLocations",
       )
     }
@@ -139,21 +139,21 @@ def testInputProject(id: String, projectLocation: String, showTrees: Boolean = f
     val jar = (assembly in Compile in analysisPlugin).value
     val srcLocations = (sourceDirectories in Compile).value.mkString(java.io.File.pathSeparator)
     assert(srcLocations.nonEmpty)
-    if (showTrees)
+    val extras = if (showTrees)
       List(
-//        "-Ybrowse:typer",
+        "-P:scalaclean-analysis-plugin:debug:true",
+        "-Ybrowse:typer",
         "-Xprint:typer")
-    else List() :::
+    else List[String]()
     List(
 //      "-Ycompact-trees",
 //      "-Xprint:all",
       "-Yrangepos",
       s"-Xplugin:${jar.getAbsolutePath}",
       s"-Jdummy=${jar.lastModified}", // ensures recompile
-       "-P:scalaclean-analysis-plugin:debug:true",
+//       "-P:scalaclean-analysis-plugin:debug:true",
       s"-P:scalaclean-analysis-plugin:srcdirs:$srcLocations",
-    )
-
+    ) ::: extras
   },
 ).dependsOn(analysisPlugin, command).dependsOn(dependencies :_*) // here to ensure rebuild on change
 

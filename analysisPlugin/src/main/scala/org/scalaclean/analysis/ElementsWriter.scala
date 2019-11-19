@@ -14,7 +14,7 @@ class ElementsWriter(file: File) {
   def write(modelSymbol: ModelSymbol) = {
     val msg = modelSymbol match {
       case model: ModelMethod =>
-        s"${commonPrefix(model)},${model.isAbstract},${model.sourceName},${model.isAbstract}"
+        s"${commonPrefix(model)},${model.isAbstract},${model.sourceName},${model.isTyped}"
 
       case model: ModelClass =>
         commonPrefix(model)
@@ -25,11 +25,14 @@ class ElementsWriter(file: File) {
       case model: ModelObject =>
         commonPrefix(model)
 
+      case model: ModelFields =>
+        s"${commonPrefix(model)},${model.syntheticName},${model.isLazy},${model.fieldCount}"
+
       case model: ModelVal =>
-        s"${commonPrefix(model)},${model.isAbstract},${model.sourceName},${model.isLazy}"
+        s"${commonPrefix(model)},${model.isAbstract},${model.sourceName},${model.fields.map(_.newCsvString).getOrElse("")},${model.isLazy}"
 
       case model: ModelVar =>
-        s"${commonPrefix(model)},${model.isAbstract},${model.sourceName}"
+        s"${commonPrefix(model)},${model.isAbstract},${model.sourceName},${model.fields.map(_.newCsvString).getOrElse("")}"
 
       case model: ModelSource =>
         s"${commonPrefix(model)}"

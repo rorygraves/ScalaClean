@@ -14,10 +14,8 @@ class ExtensionWriter(file: File) {
     }
   }
 
-
   var logger: ScopeLogging = _
   val writer = new SortedStringWriter(file.toPath)
-
 
   def endUnit(): Unit = {
     writer.flush()

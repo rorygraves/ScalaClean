@@ -19,6 +19,7 @@ object IoTokens {
   val typePlainMethod = "def"
   val typeVal = "val"
   val typeVar = "var"
+  val typeFields = "(fields)"
   val typeSource = "source"
 
 }

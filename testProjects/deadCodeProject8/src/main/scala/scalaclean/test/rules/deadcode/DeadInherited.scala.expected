@@ -7,7 +7,6 @@ class Entry1 extends Parent1 with Another1
 
 trait Parent1 {
   def foo = 1
-  def unused: Int = 1
 }
 trait Another1 {
   def foo:Int

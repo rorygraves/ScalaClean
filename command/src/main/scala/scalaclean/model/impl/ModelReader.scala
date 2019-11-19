@@ -160,7 +160,9 @@ object ModelReader {
     Files.lines(path) forEach {
       line =>
         try {
-          val tokens = line.split(",")
+          val tokens: Array[String] = if (line.endsWith(",")){
+            line.split(",") :+ ""
+          } else line.split(",")
 
           val typeId = tokens(0)
           val symbol = ElementId(tokens(1))
@@ -181,15 +183,22 @@ object ModelReader {
               new TraitModelImpl(basicInfo, relationships)
             case IoTokens.typeClass =>
               new ClassModelImpl(basicInfo, relationships)
+            case IoTokens.typeFields =>
+              val valName = tokens(idx).intern()
+              val isLazy = tokens(idx + 1).toBoolean
+              val fieldCount = tokens(idx + 2).toInt
+              new FieldsModelImpl(basicInfo, relationships, valName, isLazy, fieldCount)
             case IoTokens.typeVal =>
               val isAbstract = tokens(idx).toBoolean
               val valName = tokens(idx + 1).intern()
-              val isLazy = tokens(idx + 2).toBoolean
-              new ValModelImpl(basicInfo, relationships, valName, isAbstract, isLazy)
+              val fields = tokens(idx + 2).intern()
+              val isLazy = tokens(idx + 3).toBoolean
+              new ValModelImpl(basicInfo, relationships, valName, isAbstract, fields, isLazy)
             case IoTokens.typeVar =>
               val isAbstract = tokens(idx).toBoolean
               val varName = tokens(idx + 1).intern()
-              new VarModelImpl(basicInfo, relationships, varName, isAbstract)
+              val fields = tokens(idx + 2).intern()
+              new VarModelImpl(basicInfo, relationships, varName, isAbstract, fields)
             case IoTokens.typePlainMethod =>
               val isAbstract = tokens(idx).toBoolean
               val methodName = tokens(idx + 1).intern()

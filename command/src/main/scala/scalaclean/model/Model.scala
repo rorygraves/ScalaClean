@@ -1,7 +1,7 @@
 package scalaclean.model
 
 import org.scalaclean.analysis.{AnnotationData, ExtensionData}
-import scalaclean.model.impl.ElementId
+import scalaclean.model.impl.{ElementId, FieldModelImpl}
 
 import scala.reflect.ClassTag
 
@@ -92,7 +92,6 @@ sealed trait ModelElement extends Ordered[ModelElement] {
 
   def innerClassLike: Seq[ClassLike]
 
-
   protected def infoTypeName: String
 
   protected def infoPosString: String
@@ -143,7 +142,7 @@ sealed trait ObjectModel extends ClassLike with FieldModel {
 
   override final def getter: Option[GetterMethodModel] = None
 
-  final override def otherFieldsInSameDeclaration = Nil
+  final def otherFieldsInSameDeclaration = Nil
 
   type fieldType = ObjectModel
 }
@@ -179,7 +178,15 @@ sealed trait FieldModel extends FieldOrAccessorModel {
 
   def getter: Option[GetterMethodModel]
 
-  def otherFieldsInSameDeclaration: Seq[fieldType]
+  def fieldsInSameDeclaration: Seq[fieldType]
+}
+
+sealed trait FieldsModel extends ModelElement {
+  protected def typeName: String = "fields"
+
+  override protected def infoTypeName: String = "FieldsModel"
+
+  def fieldsInDeclaration: Seq[FieldModel]
 }
 
 sealed trait ValModel extends FieldModel {
@@ -494,15 +501,16 @@ package impl {
 
   abstract sealed class FieldModelImpl(
                                         info: BasicElementInfo, relationships: BasicRelationshipInfo,
-                                        val fieldName: String, val isAbstract: Boolean)
+                                        val fieldName: String, val isAbstract: Boolean, _fields: String)
     extends ElementModelImpl(info, relationships) with FieldModel {
-    override def otherFieldsInSameDeclaration: Seq[fieldType] = ???
+    override def fieldsInSameDeclaration: Seq[fieldType] = (declaredIn.map (_.fieldsInDeclaration)).getOrElse(Nil).asInstanceOf[Seq[fieldType]]
 
     override def complete(elements: Map[ElementId, ElementModelImpl],
                           modelElements: Map[NewElementId, ElementModelImpl],
                           relsFrom: BasicRelationshipInfo,
                           relsTo: BasicRelationshipInfo): Unit = {
       super.complete(elements, modelElements, relsFrom, relsTo)
+
       relsTo.getter.get(info.symbol) match {
         case None => getter_ = None
         case Some(f :: Nil) =>
@@ -512,7 +520,23 @@ package impl {
             getter_ = Some(f.fromElement2)
         case Some(error) => ???
       }
+      val fieldImpl = fields_ match {
+        case "" => None
+        case f: String =>
+          Some(modelElements(NewElementIdImpl(f)).asInstanceOf[FieldsModelImpl])
+        case _ => ???
+      }
+      fieldImpl foreach (_.addField(this))
+      fields_ = fieldImpl
     }
+
+    /** before completion the name of the compound field
+     * after completion Option[FieldsModel]
+     */
+
+    private var fields_ : AnyRef = _fields
+
+    def declaredIn = fields_.asInstanceOf[Option[FieldsModel]]
 
     private var getter_ : Option[GetterMethodModel] = _
 
@@ -528,6 +552,8 @@ package impl {
   class ObjectModelImpl(info: BasicElementInfo, relationships: BasicRelationshipInfo)
     extends ClassLikeModelImpl(info, relationships) with ObjectModel {
     override protected def typeName: String = "object"
+
+    override def fieldsInSameDeclaration: Seq[ObjectModel] = Nil
   }
 
   class TraitModelImpl(info: BasicElementInfo, relationships: BasicRelationshipInfo)
@@ -589,10 +615,23 @@ package impl {
     def field = field_
   }
 
+  class FieldsModelImpl(
+                                         val info: BasicElementInfo, relationships: BasicRelationshipInfo,
+                                         fieldName: String, isLazy: Boolean, size: Int
+                                       ) extends ElementModelImpl(info, relationships) with FieldsModel {
+
+    private var _fields = List.empty[FieldModel]
+    def addField(impl: FieldModelImpl): Unit = {
+      _fields ::= impl
+    }
+
+    override def fieldsInDeclaration: Seq[FieldModel] = _fields
+  }
+
   class ValModelImpl(
                       val info: BasicElementInfo, relationships: BasicRelationshipInfo,
-                      fieldName: String, isAbstract: Boolean, val isLazy: Boolean)
-    extends FieldModelImpl(info, relationships, fieldName, isAbstract) with ValModel {
+                      fieldName: String, isAbstract: Boolean, fields: String, val isLazy: Boolean)
+    extends FieldModelImpl(info, relationships, fieldName, isAbstract, fields) with ValModel {
     override protected def typeName: String = "trait"
 
     protected override def infoDetail = s"${super.infoDetail} lazy=$isLazy"
@@ -601,8 +640,8 @@ package impl {
 
   class VarModelImpl(
                       val info: BasicElementInfo, relationships: BasicRelationshipInfo,
-                      fieldName: String, isAbstract: Boolean)
-    extends FieldModelImpl(info, relationships, fieldName, isAbstract) with VarModel {
+                      fieldName: String, isAbstract: Boolean, fields: String)
+    extends FieldModelImpl(info, relationships, fieldName, isAbstract, fields) with VarModel {
     override protected def typeName: String = "var"
 
     override def complete(elements: Map[ElementId, ElementModelImpl],
