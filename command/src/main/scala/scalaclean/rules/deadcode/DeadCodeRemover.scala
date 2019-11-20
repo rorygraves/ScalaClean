@@ -124,6 +124,17 @@ class DeadCodeRemover(model: ProjectModel, debug: Boolean) extends AbstractRule(
       element.internalTransitiveOverrides foreach {
         enclosed => markUsed(enclosed, purpose, element :: path, s"$comment - overrides")
       }
+      element match {
+        case getter:GetterMethodModel =>
+          getter.field foreach {
+            f => markUsed (f,  purpose, element :: path, s"$comment - field ")
+          }
+        case setter:SetterMethodModel =>
+          setter.field foreach {
+            f => markUsed (f,  purpose, element :: path, s"$comment - field ")
+          }
+        case _ =>
+      }
     }
   }
 
