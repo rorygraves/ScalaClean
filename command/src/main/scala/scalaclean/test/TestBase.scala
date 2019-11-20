@@ -55,7 +55,7 @@ abstract class TestBase(name: String, model: ProjectModel) extends SemanticRule(
       def handleVar(varDef: Stat, scope: List[Scope], pats: List[Pat]): (Patch, Boolean) = {
         val patches = Utils.readVars(pats).map {
           varPattern =>
-            val varModel = model.fromSymbol[VarModel](ElementId(varPattern.symbol))
+            val varModel = model.legacySymbol[VarModel](ElementId(varPattern.symbol))
             visitVar(varModel)
         }
         toPatch(patches.filter(!_.isEmpty).mkString("*//*"), varDef)
@@ -72,7 +72,7 @@ abstract class TestBase(name: String, model: ProjectModel) extends SemanticRule(
       def handleVal(valDef: Stat, scope: List[Scope], pats: List[Pat]): (Patch, Boolean) = {
         val patches = Utils.readVars(pats).map {
           valPattern =>
-            val valModel = model.fromSymbol[ValModel](ElementId(valPattern.symbol))
+            val valModel = model.legacySymbol[ValModel](ElementId(valPattern.symbol))
             visitVal(valModel)
         }
         toPatch(patches.filter(!_.isEmpty).mkString("*//*"), valDef)
@@ -83,23 +83,23 @@ abstract class TestBase(name: String, model: ProjectModel) extends SemanticRule(
       }
 
       override def handleMethod(symbol: ElementId, fullSig: String, method: Defn.Def, scope: List[Scope]): (Patch, Boolean) = {
-        toPatch(visitMethod(model.fromSymbol[MethodModel](symbol)), method)
+        toPatch(visitMethod(model.legacySymbol[MethodModel](symbol)), method)
       }
 
       override def handleMethod(symbol: ElementId, fullSig: String, method: Decl.Def, scope: List[Scope]): (Patch, Boolean) = {
-        toPatch(visitMethod(model.fromSymbol[MethodModel](symbol)), method)
+        toPatch(visitMethod(model.legacySymbol[MethodModel](symbol)), method)
       }
 
       override def handleObject(symbol: ElementId, obj: Defn.Object, scope: List[Scope]): (Patch, Boolean) = {
-        toPatch(visitObject(model.fromSymbol[ObjectModel](symbol)), obj)
+        toPatch(visitObject(model.legacySymbol[ObjectModel](symbol)), obj)
       }
 
       override def handleClass(symbol: ElementId, cls: Defn.Class, scope: List[Scope]): (Patch, Boolean) = {
-        toPatch(visitClass(model.fromSymbol[ClassModel](symbol)), cls)
+        toPatch(visitClass(model.legacySymbol[ClassModel](symbol)), cls)
       }
 
       override def handleTrait(symbol: ElementId, cls: Defn.Trait, scope: List[Scope]): (Patch, Boolean) = {
-        toPatch(visitTrait(model.fromSymbol[TraitModel](symbol)), cls)
+        toPatch(visitTrait(model.legacySymbol[TraitModel](symbol)), cls)
       }
 
 

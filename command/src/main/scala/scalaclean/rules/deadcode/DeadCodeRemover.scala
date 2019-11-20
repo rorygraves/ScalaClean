@@ -25,8 +25,8 @@ class DeadCodeRemover(model: ProjectModel, debug: Boolean) extends AbstractRule(
   override def debugDump(): Unit = {
     println("-------------------------------------------------------------")
 
-    val used = model.allOf[ModelElement].filter(!_.colour.isUnused).toList.map(_.symbol).sortBy(_.toString())
-    val unused = model.allOf[ModelElement].filter(_.colour.isUnused).toList.map(_.symbol).sortBy(_.toString())
+    val used = model.allOf[ModelElement].filter(!_.colour.isUnused).toList.map(_.legacySymbol).sortBy(_.toString())
+    val unused = model.allOf[ModelElement].filter(_.colour.isUnused).toList.map(_.legacySymbol).sortBy(_.toString())
 
     println("Used symbols =  " + used.size)
     println("Unused size = " + unused.size)
@@ -153,7 +153,7 @@ class DeadCodeRemover(model: ProjectModel, debug: Boolean) extends AbstractRule(
                                             symbol: ElementId, mods: Seq[Mod], stat: Stat, scope: List[Scope]): (Patch, Boolean) = {
         if(symbol.symbol.isLocal || symbol.symbol.isNone) continue
         else {
-          val modelElementOpt = model.getElement[ModelElement](symbol)
+          val modelElementOpt = model.getLegacySymbol[ModelElement](symbol)
           modelElementOpt match {
             case None =>
               continue
@@ -189,7 +189,7 @@ class DeadCodeRemover(model: ProjectModel, debug: Boolean) extends AbstractRule(
           pats.filterNot(v => v.symbol.isLocal  || v.symbol.isNone ) map { p =>
             println(p.symbol)
             println(ElementId(p.symbol))
-            val mElement: ModelElement = model.fromSymbol[ModelElement](ElementId(p.symbol))
+            val mElement: ModelElement = model.legacySymbol[ModelElement](ElementId(p.symbol))
             (p, mElement)
           } groupBy (m => m._2.colour)
 
@@ -226,7 +226,7 @@ class DeadCodeRemover(model: ProjectModel, debug: Boolean) extends AbstractRule(
         val byUsage = importees.groupBy {
           i =>
             val symbol = i.symbol(doc)
-            model.getElement[ModelElement](ElementId(symbol)).map(_.colour)
+            model.getLegacySymbol[ModelElement](ElementId(symbol)).map(_.colour)
         }
         byUsage.get(Some(Usage.unused)) match {
           case Some(_) if byUsage.size == 1 =>

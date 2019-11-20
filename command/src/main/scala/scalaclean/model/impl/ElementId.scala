@@ -54,7 +54,6 @@ object ElementId {
     }
   }
 
-  val AppObject: ElementId = ElementId("G:scala/App#")
 
   def fromTree(tree: Tree)(implicit doc: SemanticDocument): ElementId = {
     import scalafix.v1.{Patch => _, _}

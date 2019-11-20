@@ -8,9 +8,9 @@ import scalaclean.model._
   */
 class Test_internalIncomingReferences(model: ProjectModel) extends TestCommon("Test_internalIncomingReferences", model) {
   def visit(modelElement: ModelElement): String = {
-    modelElement.internalIncomingReferences.map(_._1.symbol.debugValue).distinct.sorted match {
+    modelElement.internalIncomingReferences.map(_._1.legacySymbol.debugValue).distinct.sorted match {
       case Nil => ""
-      case refs => refs.mkString(s"internalIncomingReferences(${modelElement.symbol.debugValue}) - ", " :: ", "")
+      case refs => refs.mkString(s"internalIncomingReferences(${modelElement.legacySymbol.debugValue}) - ", " :: ", "")
     }
   }
 }
@@ -22,9 +22,9 @@ class Test_internalIncomingReferences(model: ProjectModel) extends TestCommon("T
 class Test_internalOutgoingReferences(
                                        model: ProjectModel) extends TestCommon("Test_internalOutgoingReferences", model) {
   def visit(modelElement: ModelElement): String = {
-    modelElement.internalOutgoingReferences.map(_._1.symbol.debugValue).distinct.sorted match {
+    modelElement.internalOutgoingReferences.map(_._1.legacySymbol.debugValue).distinct.sorted match {
       case Nil => ""
-      case refs => refs.mkString(s"internalOutgoingReferences(${modelElement.symbol.debugValue}) - ", " :: ", "")
+      case refs => refs.mkString(s"internalOutgoingReferences(${modelElement.legacySymbol.debugValue}) - ", " :: ", "")
     }
   }
 }
@@ -35,9 +35,9 @@ class Test_internalOutgoingReferences(
   */
 class Test_allOutgoingReferences(model: ProjectModel) extends TestCommon("Test_allOutgoingReferences", model) {
   def visit(modelElement: ModelElement): String = {
-    modelElement.allOutgoingReferences.map(_._2.toSymbol.debugValue).distinct.sorted match {
+    modelElement.allOutgoingReferences.map(_._2.toNewElementId.id).distinct.sorted match {
       case Nil => ""
-      case refs => refs.mkString(s"allOutgoingReferences(${modelElement.symbol.debugValue}) - ", " :: ", "")
+      case refs => refs.mkString(s"allOutgoingReferences(${modelElement.legacySymbol.debugValue}) - ", " :: ", "")
     }
   }
 }

@@ -104,29 +104,27 @@ object ModelReader {
         try {
           val tokens = line.split(",")
 
-          val from = ElementId(tokens(0))
-          val fromModel = NewElementIdImpl(tokens(1))
-          val relType = tokens(2)
-          val to = ElementId(tokens(3))
-          val toModel = NewElementIdImpl(tokens(4))
+          val from = NewElementIdImpl(tokens(0))
+          val relType = tokens(1)
+          val to = NewElementIdImpl(tokens(2))
 
-          val offset = 5
+          val offset = 3
           relType match {
             case IoTokens.relRefers =>
               val isSynthetic = tokens(offset).toBoolean
-              refersToB += new RefersImpl(from, fromModel, to, toModel, isSynthetic)
+              refersToB += new RefersImpl(from, to, isSynthetic)
             case IoTokens.relExtends =>
               val isDirect = tokens(offset).toBoolean
-              extendsB += new ExtendsImpl(from, fromModel, to, toModel, isDirect)
+              extendsB += new ExtendsImpl(from, to, isDirect)
             case IoTokens.relOverrides =>
               val isDirect = tokens(offset).toBoolean
-              overridesB += new OverridesImpl(from, fromModel, to, toModel, isDirect)
+              overridesB += new OverridesImpl(from, to, isDirect)
             case IoTokens.relWithin =>
-              withinB += new WithinImpl(from, fromModel, to, toModel)
+              withinB += new WithinImpl(from, to)
             case IoTokens.relGetter =>
-              getterB += new GetterImpl(from, fromModel, to, toModel)
+              getterB += new GetterImpl(from, to)
             case IoTokens.relSetter =>
-              setterB += new SetterImpl(from, fromModel, to, toModel)
+              setterB += new SetterImpl(from, to)
 
           }
         } catch {
@@ -134,12 +132,12 @@ object ModelReader {
             throw new IllegalStateException(s"Failed to parse line $line", t)
         }
     }
-    val refersTo = refersToB.result().groupBy(_.fromSymbol)
-    val extends_ = extendsB.result().groupBy(_.fromSymbol)
-    val overrides = overridesB.result().groupBy(_.fromSymbol)
-    val within = withinB.result().groupBy(_.fromSymbol)
-    val getter = getterB.result().groupBy(_.fromSymbol)
-    val setter = setterB.result().groupBy(_.fromSymbol)
+    val refersTo = refersToB.result().groupBy(_.fromNewElementId)
+    val extends_ = extendsB.result().groupBy(_.fromNewElementId)
+    val overrides = overridesB.result().groupBy(_.fromNewElementId)
+    val within = withinB.result().groupBy(_.fromNewElementId)
+    val getter = getterB.result().groupBy(_.fromNewElementId)
+    val setter = setterB.result().groupBy(_.fromNewElementId)
 
     BasicRelationshipInfo(
       refersTo,

@@ -31,8 +31,6 @@ class Privatiser(model: ProjectModel, debug: Boolean) extends AbstractRule("Priv
       println(s"$ele  colour: ${ele.colour}"))
   }
 
-  val app: ElementId = ElementId.AppObject
-
   private def localLevel(element: ModelElement): PrivatiserLevel = {
     if (element.colour != Undefined) element.colour
     else {
@@ -49,7 +47,7 @@ class Privatiser(model: ProjectModel, debug: Boolean) extends AbstractRule("Priv
 
       //is it defined by the signature
       var res: PrivatiserLevel = element match {
-        case o: ObjectModel if o.xtends(app) =>
+        case o: ObjectModel if o.xtends(ElementIds.AppObject) =>
           NoChange("its an App and needs to be public")
         //      case any: ModelElement if any.hasAnnotation[ExternalAccess] => Some(NoChange(any.getAnnotation[ExternalAccess]))
         //      case method:MethodModel if (method.overidesExternal)=>  res.combine(Level of parent method)
@@ -58,28 +56,28 @@ class Privatiser(model: ProjectModel, debug: Boolean) extends AbstractRule("Priv
       }
 
       incoming foreach { ref: ModelElement =>
-        val isFromChild = ref.classOrEnclosing.xtends(enclosing.symbol)
+        val isFromChild = ref.classOrEnclosing.xtends(enclosing.modelElementId)
         val access = if (isFromChild)
-          Scoped.Protected(ref.symbol, s"accessed from $ref", forceProtected = false)
+          Scoped.Protected(ref.legacySymbol, s"accessed from $ref", forceProtected = false)
         else
-          Scoped.Private(ref.symbol, s"accessed from $ref").widen(Scoped.Private(element.symbol, s"accessed from $ref"))
+          Scoped.Private(ref.legacySymbol, s"accessed from $ref").widen(Scoped.Private(element.legacySymbol, s"accessed from $ref"))
         res = res.widen(access)
       }
       //we must be visible to anything that overrides us
       element.internalDirectOverriddenBy foreach {
         overriddenBy =>
-          res = res.widen(Scoped.Protected(overriddenBy.symbol, s"overridden in from $overriddenBy", forceProtected = false))
+          res = res.widen(Scoped.Protected(overriddenBy.legacySymbol, s"overridden in from $overriddenBy", forceProtected = false))
       }
 
       //We must be at least as visible as anything that we override
       element.allDirectOverrides foreach {
-        case (Some(overridenModel), _, _) =>
+        case (Some(overridenModel), _) =>
           val overridenVisibility = localLevel(overridenModel) match {
             case s: Scoped if s.isProtected => s.copy(forceProtected = true)
             case other => other
           }
           res = res.widen(overridenVisibility)
-        case (None, parentSym, parentModelSym) =>
+        case (None, _) =>
           //if it is not in the model, then we will leave this as is
           NoChange("inherits from external")
 
@@ -122,7 +120,7 @@ class Privatiser(model: ProjectModel, debug: Boolean) extends AbstractRule("Priv
         if(symbol.symbol.isLocal) continue else {
 
 
-          val modelElement = model.fromSymbol[ModelElement](symbol)
+          val modelElement = model.legacySymbol[ModelElement](symbol)
           if (modelElement.existsInSource) {
             val patch = changeAccessModifier(modelElement.colour, mods, stat, modelElement, None)
             //do we need to recurse into implementation?
@@ -149,7 +147,7 @@ class Privatiser(model: ProjectModel, debug: Boolean) extends AbstractRule("Priv
         //for vals and vars we set the access to the broadest of any access of the fields
 
         val modelElements: Seq[FieldOrAccessorModel] = pats map { p =>
-          val ele = model.fromSymbol[FieldOrAccessorModel](ElementId(p.symbol))
+          val ele = model.legacySymbol[FieldOrAccessorModel](ElementId(p.symbol))
           ele match {
             case v: ValModel => v
             case v: VarModel => v

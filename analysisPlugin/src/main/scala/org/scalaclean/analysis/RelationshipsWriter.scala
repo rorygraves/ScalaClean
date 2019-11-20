@@ -8,7 +8,7 @@ class RelationshipsWriter(file: File) {
   val writer = new StringWriter(file.toPath)
 
   def commonOutput(from: HasModelCommon, token: String, to: HasModelCommon): String = {
-    s"${from.csvString},${from.newCsvString},$token,${to.csvString},${to.newCsvString}"
+    s"${from.newCsvString},$token,${to.newCsvString}"
   }
 
   def overrides(overrider: ModelMethod, overridden: HasModelCommon, isDirect: Boolean): Unit = {

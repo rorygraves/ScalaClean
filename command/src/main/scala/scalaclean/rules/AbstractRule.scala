@@ -62,7 +62,7 @@ abstract class AbstractRule(val name: String, val model: ProjectModel, debug: Bo
   }
 
   def allApp = {
-    val app = ElementId.AppObject
+    val app = ElementIds.AppObject
     for (obj <- model.allOf[ObjectModel] if (obj.xtends(app)))
       yield obj
   }

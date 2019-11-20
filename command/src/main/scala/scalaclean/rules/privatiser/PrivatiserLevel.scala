@@ -83,7 +83,7 @@ private[privatiser] final case class Scoped(privateScope: AccessScope, protected
   override def asText(context: ModelElement): Option[String] = {
     val name = if (isProtected) "protected" else "private"
     context.enclosing.headOption match {
-      case Some(enclosing) if scopeOrDefault(enclosing.symbol) == enclosing.symbol => Some(name)
+      case Some(enclosing) if scopeOrDefault(enclosing.legacySymbol) == enclosing.legacySymbol => Some(name)
 
       case _ =>
         val scope = privateScope.symbol.displayName
