@@ -68,12 +68,20 @@ abstract class AbstractRule(val name: String, val model: ProjectModel, debug: Bo
   }
 
   def allTestEntryPoints = {
-    allMainMethodEntries ++ allApp
+    allJunitTest
   }
 
+  private val junitAnnotationEntryPoints = Set(
+    "org.junit.Test",
+    "org.junit.Before",
+    "org.junit.After",
+    "org.junit.BeforeClass",
+    "org.junit.AfterClass",
+  )
   def allJunitTest = {
-    model.allOf[MethodModel] collect {
-      case method if (method.annotations.exists(_.fqName == "org.junit.Test")) => method
+    model.allOf[MethodModel].filter { method =>
+      method.annotations.exists{ a =>
+        junitAnnotationEntryPoints.contains(a.fqName)}
     }
   }
 
