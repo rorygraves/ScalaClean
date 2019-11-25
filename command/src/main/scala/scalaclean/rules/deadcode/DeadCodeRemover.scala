@@ -234,32 +234,35 @@ class DeadCodeRemover(model: ProjectModel, debug: Boolean) extends AbstractRule(
       }
 
       override def handleImport(importStatement: Import, scope: List[Scope]): (Patch, Boolean) = {
-        assert(importStatement.importers.size == 1)
-        //TODO - need to ensure that all symbols related are the same import are of the same status
-
-        val importers = importStatement.importers
-        val importees = importers.head.importees
-        val byUsage = importees.groupBy {
-          i =>
-            val symbol = i.symbol(doc)
-            model.getLegacySymbol[ModelElement](ElementId(symbol)).map(_.colour)
-        }
-        byUsage.get(Some(Usage.unused)) match {
-          case Some(_) if byUsage.size == 1 =>
-            //we can remove the whole declaration
-            val tokens = importStatement.tokens
-            val firstToken = tokens.head
-            (Patch.removeTokens(TokenHelper.whitespaceTokensBefore(firstToken, doc.tokens)) + Patch.removeTokens(tokens), false)
-          case Some(unused) =>
-            val combinedPatch = unused.foldLeft(Patch.empty) {
-              case (patch, importee) =>
-                patch + Patch.removeImportee(importee)
-            }
-            (combinedPatch, false)
-          case _ =>
-            (Patch.empty, false)
-        }
+        (Patch.empty, false)
       }
+//      override def handleImport(importStatement: Import, scope: List[Scope]): (Patch, Boolean) = {
+//        assert(importStatement.importers.size == 1)
+//        //TODO - need to ensure that all symbols related are the same import are of the same status
+//
+//        val importers = importStatement.importers
+//        val importees = importers.head.importees
+//        val byUsage = importees.groupBy {
+//          i =>
+//            val symbol = i.symbol(doc)
+//            model.getLegacySymbol[ModelElement](ElementId(symbol)).map(_.colour)
+//        }
+//        byUsage.get(Some(Usage.unused)) match {
+//          case Some(_) if byUsage.size == 1 =>
+//            //we can remove the whole declaration
+//            val tokens = importStatement.tokens
+//            val firstToken = tokens.head
+//            (Patch.removeTokens(TokenHelper.whitespaceTokensBefore(firstToken, doc.tokens)) + Patch.removeTokens(tokens), false)
+//          case Some(unused) =>
+//            val combinedPatch = unused.foldLeft(Patch.empty) {
+//              case (patch, importee) =>
+//                patch + Patch.removeImportee(importee)
+//            }
+//            (combinedPatch, false)
+//          case _ =>
+//            (Patch.empty, false)
+//        }
+//      }
     }
     tv.visitDocument(doc.tree)
   }

@@ -6,9 +6,9 @@ package name1 {
     x.immutableSeq(Array(getClass))
   }
   object x {
-    def immutableSeq(arr: Array[Class[_]]): immutable.Seq[Class[_]] = immutableSeq[Class[_]](arr)
+    def immutableSeq(arr: Array[Class[_]]): immutable.Seq[Class[_]] = ???
 
-    def immutableSeq[T](arr: Array[T]): immutable.Seq[T] = if ((arr ne null) && arr.length > 0) Vector(arr: _*) else Nil
+    def immutableSeq[T](arr: Array[T]): immutable.Seq[T] = ???
   }
 }
 package name2 {
@@ -16,8 +16,8 @@ package name2 {
     x.immutableSeq(Array(1,2,3))
   }
   object x {
-    def immutableSeq(arr: Array[Class[_]]): immutable.Seq[Class[_]] = immutableSeq[Class[_]](arr)
+    def immutableSeq(arr: Array[Class[_]]): immutable.Seq[Class[_]] = ???
 
-    def immutableSeq[T](arr: Array[T]): immutable.Seq[T] = if ((arr ne null) && arr.length > 0) Vector(arr: _*) else Nil
+    def immutableSeq[T](arr: Array[T]): immutable.Seq[T] = ???
   }
 }

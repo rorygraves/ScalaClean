@@ -181,27 +181,17 @@ lazy val privatiserProject6 = testInputProject("privatiserProject6", "testProjec
 lazy val privatiserProject7 = testInputProject("privatiserProject7", "testProjects/privatiserProject7")()
 
 lazy val scratch = testInputProject("scratch", "testProjects/scratch", true)()
-lazy val scratch1 = testInputProject("scratch1", "scratchProjects/scratch1", true)()
-  .settings(
-    moduleName := "tests",
-    libraryDependencies += "args4j" % "args4j" % "2.0.23",
-    libraryDependencies += "ch.epfl.scala" %% "scalafix-core" % scalaFixVersion,
-    libraryDependencies += "ch.epfl.scala" % "scalafix-testkit_2.12.8" % scalaFixVersion,
-    libraryDependencies += "junit" % "junit" % "4.12" % Test,
-    libraryDependencies += "org.scalatest" %% "scalatest" % "3.0.8" % Test,
-    scalaVersion := scala212,
-    crossPaths := false,
-    libraryDependencies += "com.novocode" % "junit-interface" % "0.11" % Test,
-  )
-lazy val privatiserTests = project.dependsOn(privatiserProject1, privatiserProject2, privatiserProject3,
+
+lazy val privatiserTests = List(privatiserProject1, privatiserProject2, privatiserProject3,
   privatiserProject4, privatiserProject5, privatiserProject6, privatiserProject7)
-lazy val deadCodeTests = project.dependsOn(deadCodeProject1, deadCodeProject2, deadCodeProject3, deadCodeProject4,
+lazy val deadCodeTests = List(deadCodeProject1, deadCodeProject2, deadCodeProject3, deadCodeProject4,
   deadCodeProject5, deadCodeProject6a, deadCodeProject6b, deadCodeProject7, deadCodeProject8, deadCodeProject9,
   deadCodeProject10_vals
 )
-lazy val scratchProjects = project.dependsOn(scratch, scratch1)
+lazy val scratchProjects = List(scratch)
+lazy val testDep = List(command, unitTestProject) ::: privatiserTests ::: deadCodeTests ::: scratchProjects
 
-lazy val tests = project.dependsOn(command, unitTestProject, privatiserTests, deadCodeTests,scratchProjects)
+lazy val tests = project.dependsOn(testDep map (classpathDependency(_)) : _*)
   .settings(
     moduleName := "tests",
     libraryDependencies += "args4j" % "args4j" % "2.0.23",

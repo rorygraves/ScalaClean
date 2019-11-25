@@ -6,8 +6,7 @@ package name1 {
     x.immutableSeq(Array(getClass))
   }
   object x {
-
-    def immutableSeq[T](arr: Array[T]): immutable.Seq[T] = ???
+    def immutableSeq(arr: Array[Class[_]]): immutable.Seq[Class[_]] = ???
   }
 }
 package name2 {
