@@ -1,7 +1,7 @@
 package scalaclean.model
 
 import org.scalaclean.analysis.{AnnotationData, ExtensionData}
-import scalaclean.model.impl.{ElementId, FieldModelImpl}
+import scalaclean.model.impl.ElementId
 
 import scala.reflect.ClassTag
 
@@ -16,6 +16,8 @@ sealed trait ModelElement extends Ordered[ModelElement] {
   var mark: Mark = _
 
   def name: String
+
+  def flags: Long
 
   //usually just one element. Can be >1 for  RHS of a val (a,b,c) = ...
   //where a,b,c are the enclosing
@@ -34,7 +36,7 @@ sealed trait ModelElement extends Ordered[ModelElement] {
   def extensions: Iterable[ExtensionData]
 
   //start target APIs
-  def outgoingReferences: Iterable[Refers] = allOutgoingReferences map (_._2)
+  // def outgoingReferences: Iterable[Refers] = allOutgoingReferences map (_._2)
 
   def overrides: Iterable[Overrides] = {
     val direct: Set[NewElementId] = (allDirectOverrides map (_._2)).toSet
@@ -44,11 +46,13 @@ sealed trait ModelElement extends Ordered[ModelElement] {
   }
 
   //should be in the following form
-  //  def outgoingReferences: Iterable[Refers]
+  def outgoingReferences: Iterable[Refers]
+
   //  def outgoingReferencedInternal[T <: ModelElement]: Iterable[T]
   //  def outgoingReferencedExternal: Iterable[Symbol]
   //
-  //  def incomingReferences: Iterable[Refers]
+  def incomingReferences: Iterable[Refers]
+
   //  def incomingReferencedInternal[T <: ModelElement]: Iterable[T]
 
   //end target APIs
@@ -90,6 +94,8 @@ sealed trait ModelElement extends Ordered[ModelElement] {
 
   def innerClassLike: Seq[ClassLike]
 
+  def isAbstract: Boolean
+
   protected def infoTypeName: String
 
   protected def infoPosString: String
@@ -122,6 +128,7 @@ sealed trait ClassLike extends ModelElement {
 
   def transitiveExtends: Set[NewElementId]
 
+  /** Dont use these */
   def directExtendedBy: Set[ClassLike]
 
   def transitiveExtendedBy: Set[ClassLike]
@@ -236,18 +243,19 @@ abstract sealed class NewElementId(val id: String) {
 
 package impl {
 
-  case class BasicElementInfo(symbol: ElementId, newElementId: NewElementId, source: SourceData,
-                              startPos: Int, endPos: Int,
-                              flags: Long, extensions: Seq[ExtensionData],
-                              traversal: Int)
+  case class BasicElementInfo(
+    symbol: ElementId, newElementId: NewElementId, source: SourceData,
+    startPos: Int, endPos: Int,
+    flags: Long, extensions: Seq[ExtensionData],
+    traversal: Int)
 
   case class BasicRelationshipInfo(
-                                    refers: Map[NewElementId, List[RefersImpl]],
-                                    extnds: Map[NewElementId, List[ExtendsImpl]],
-                                    overrides: Map[NewElementId, List[OverridesImpl]],
-                                    within: Map[NewElementId, List[WithinImpl]],
-                                    getter: Map[NewElementId, List[GetterImpl]],
-                                    setter: Map[NewElementId, List[SetterImpl]]) {
+    refers: Map[NewElementId, List[RefersImpl]],
+    extnds: Map[NewElementId, List[ExtendsImpl]],
+    overrides: Map[NewElementId, List[OverridesImpl]],
+    within: Map[NewElementId, List[WithinImpl]],
+    getter: Map[NewElementId, List[GetterImpl]],
+    setter: Map[NewElementId, List[SetterImpl]]) {
     def complete(modelElements: Map[NewElementId, ElementModelImpl]): Unit = {
       refers.values.foreach(_.foreach(_.complete(modelElements)))
       extnds.values.foreach(_.foreach(_.complete(modelElements)))
@@ -285,12 +293,19 @@ package impl {
         this.setter ++ that.setter
       )
       //there should be no overlaps
-      assert(res.refers.size == this.refers.size + that.refers.size)
-      assert(res.extnds.size == this.extnds.size + that.extnds.size)
-      assert(res.overrides.size == this.overrides.size + that.overrides.size)
-      assert(res.within.size == this.within.size + that.within.size)
-      assert(res.getter.size == this.getter.size + that.getter.size)
-      assert(res.setter.size == this.setter.size + that.setter.size)
+//      assert(res.refers.size == this.refers.size + that.refers.size)
+//      assert(res.extnds.size == this.extnds.size + that.extnds.size)
+//      if(res.overrides.size != this.overrides.size + that.overrides.size) {
+//        val m1 = res.overrides.keySet
+//        val m2 = this.overrides.keySet ++ that.overrides.keySet
+//        val diff = (m1 -- m2) ++ (m2 -- m1)
+//        println(diff)
+//        //assert(res.overrides.size == this.overrides.size + that.overrides.size)
+//      }
+//      assert(res.overrides.size == this.overrides.size + that.overrides.size)
+//      assert(res.within.size == this.within.size + that.within.size)
+//      assert(res.getter.size == this.getter.size + that.getter.size)
+//      assert(res.setter.size == this.setter.size + that.setter.size)
 
       res
     }
@@ -386,15 +401,16 @@ package impl {
   }
 
   abstract sealed class ElementModelImpl(
-                                          info: BasicElementInfo, relationships: BasicRelationshipInfo) extends ModelElement
+    info: BasicElementInfo, relationships: BasicRelationshipInfo) extends ModelElement
     with LegacyReferences with LegacyOverrides {
     def complete(
-                  modelElements: Map[NewElementId, ElementModelImpl],
-                  relsFrom: BasicRelationshipInfo,
-                  relsTo: BasicRelationshipInfo): Unit = {
-      within = relsFrom.within.getOrElse(modelElementId, Nil) map {
+      modelElements: Map[NewElementId, ElementModelImpl],
+      relsFrom: BasicRelationshipInfo,
+      relsTo: BasicRelationshipInfo): Unit = {
+
+      within = (relsFrom.within.getOrElse(modelElementId, Nil) map {
         _.toElement.get.asInstanceOf[ElementModelImpl]
-      }
+      }).distinct
       children = relsTo.within.getOrElse(modelElementId, Nil) map {
         _.fromElement.asInstanceOf[ElementModelImpl]
       }
@@ -417,6 +433,8 @@ package impl {
     override val modelElementId = info.newElementId
 
     override def name = legacySymbol.displayName
+
+    override def flags: Long = info.flags
 
     //start set by `complete`
     var within: List[ElementModelImpl] = _
@@ -456,7 +474,7 @@ package impl {
     override protected def infoPosString: String = {
       s"${offsetStart}-${offsetEnd}"
 
-      // TODO Disabled as we don't want to laod the tree to work out line / column right now
+      // TODO Disabled as we don't want to load the tree to work out line / column right now
       //    val pos = tree.pos
       //    s"${pos.startLine}:${pos.startColumn} - ${pos.endLine}:${pos.endColumn}"
       //
@@ -468,20 +486,28 @@ package impl {
 
     override def sourceFileName: String = source.path.toString
 
-    override def existsInSource: Boolean = rawStart < rawEnd
+    override def incomingReferences: Iterable[Refers] = refersFrom
+
+    override def outgoingReferences: Iterable[Refers] = refersTo
+
+    override def isAbstract: Boolean = false
+
+    override val existsInSource: Boolean = offsetEnd != offsetStart
+//
+//    override def existsInSource: Boolean = rawStart < rawEnd
   }
 
   abstract sealed class ClassLikeModelImpl(
-                                            info: BasicElementInfo, relationships: BasicRelationshipInfo) extends ElementModelImpl(info, relationships)
+    info: BasicElementInfo, relationships: BasicRelationshipInfo) extends ElementModelImpl(info, relationships)
     with ClassLike with LegacyExtends {
 
     var extnds: List[Extends] = _
     var extendedBy: List[Extends] = _
 
     override def complete(
-                           modelElements: Map[NewElementId, ElementModelImpl],
-                           relsFrom: BasicRelationshipInfo,
-                           relsTo: BasicRelationshipInfo): Unit = {
+      modelElements: Map[NewElementId, ElementModelImpl],
+      relsFrom: BasicRelationshipInfo,
+      relsTo: BasicRelationshipInfo): Unit = {
       super.complete(modelElements, relsFrom, relsTo)
       extnds = relsFrom.extnds.getOrElse(modelElementId, Nil)
       extendedBy = relsTo.extnds.getOrElse(modelElementId, Nil)
@@ -503,14 +529,15 @@ package impl {
   }
 
   abstract sealed class FieldModelImpl(
-                                        info: BasicElementInfo, relationships: BasicRelationshipInfo,
-                                        val fieldName: String, val isAbstract: Boolean, _fields: String)
+    info: BasicElementInfo, relationships: BasicRelationshipInfo,
+    val fieldName: String, override val isAbstract: Boolean, _fields: String)
     extends ElementModelImpl(info, relationships) with FieldModel {
-    override def fieldsInSameDeclaration: Seq[fieldType] = (declaredIn.map (_.fieldsInDeclaration)).getOrElse(Nil).asInstanceOf[Seq[fieldType]]
+    override def fieldsInSameDeclaration: Seq[fieldType] = (declaredIn.map(_.fieldsInDeclaration)).getOrElse(Nil).asInstanceOf[Seq[fieldType]]
 
-    override def complete(modelElements: Map[NewElementId, ElementModelImpl],
-                          relsFrom: BasicRelationshipInfo,
-                          relsTo: BasicRelationshipInfo): Unit = {
+    override def complete(
+      modelElements: Map[NewElementId, ElementModelImpl],
+      relsFrom: BasicRelationshipInfo,
+      relsTo: BasicRelationshipInfo): Unit = {
       super.complete(modelElements, relsFrom, relsTo)
 
       relsTo.getter.get(info.newElementId) match {
@@ -533,8 +560,8 @@ package impl {
     }
 
     /** before completion the name of the compound field
-     * after completion Option[FieldsModel]
-     */
+      * after completion Option[FieldsModel]
+      */
 
     private var fields_ : AnyRef = _fields
 
@@ -564,22 +591,23 @@ package impl {
   }
 
   class PlainMethodModelImpl(
-                              info: BasicElementInfo, relationships: BasicRelationshipInfo,
-                              val methodName: String, val isAbstract: Boolean, val hasDeclaredType: Boolean)
+    info: BasicElementInfo, relationships: BasicRelationshipInfo,
+    val methodName: String, override val isAbstract: Boolean, val hasDeclaredType: Boolean)
     extends ElementModelImpl(info, relationships) with PlainMethodModel {
     override protected def typeName: String = "def"
 
   }
 
   class GetterMethodModelImpl(
-                               info: BasicElementInfo, relationships: BasicRelationshipInfo,
-                               val methodName: String, val isAbstract: Boolean, val hasDeclaredType: Boolean)
+    info: BasicElementInfo, relationships: BasicRelationshipInfo,
+    val methodName: String, override val isAbstract: Boolean, val hasDeclaredType: Boolean)
     extends ElementModelImpl(info, relationships) with GetterMethodModel {
     override protected def typeName: String = "def[getter]"
 
-    override def complete(modelElements: Map[NewElementId, ElementModelImpl],
-                          relsFrom: BasicRelationshipInfo,
-                          relsTo: BasicRelationshipInfo): Unit = {
+    override def complete(
+      modelElements: Map[NewElementId, ElementModelImpl],
+      relsFrom: BasicRelationshipInfo,
+      relsTo: BasicRelationshipInfo): Unit = {
       super.complete(modelElements, relsFrom, relsTo)
       relsFrom.getter.get(info.newElementId) match {
         case None => field_ = None
@@ -594,14 +622,15 @@ package impl {
   }
 
   class SetterMethodModelImpl(
-                               info: BasicElementInfo, relationships: BasicRelationshipInfo,
-                               val methodName: String, val isAbstract: Boolean, val hasDeclaredType: Boolean)
+    info: BasicElementInfo, relationships: BasicRelationshipInfo,
+    val methodName: String, override val isAbstract: Boolean, val hasDeclaredType: Boolean)
     extends ElementModelImpl(info, relationships) with SetterMethodModel {
     override protected def typeName: String = "def[setter]"
 
-    override def complete(modelElements: Map[NewElementId, ElementModelImpl],
-                          relsFrom: BasicRelationshipInfo,
-                          relsTo: BasicRelationshipInfo): Unit = {
+    override def complete(
+      modelElements: Map[NewElementId, ElementModelImpl],
+      relsFrom: BasicRelationshipInfo,
+      relsTo: BasicRelationshipInfo): Unit = {
       super.complete(modelElements, relsFrom, relsTo)
       relsFrom.setter.get(info.newElementId) match {
         case None => field_ = None
@@ -616,11 +645,12 @@ package impl {
   }
 
   class FieldsModelImpl(
-                                         val info: BasicElementInfo, relationships: BasicRelationshipInfo,
-                                         fieldName: String, isLazy: Boolean, size: Int
-                                       ) extends ElementModelImpl(info, relationships) with FieldsModel {
+    val info: BasicElementInfo, relationships: BasicRelationshipInfo,
+    fieldName: String, isLazy: Boolean, size: Int
+  ) extends ElementModelImpl(info, relationships) with FieldsModel {
 
     private var _fields = List.empty[FieldModel]
+
     def addField(impl: FieldModelImpl): Unit = {
       _fields ::= impl
     }
@@ -629,8 +659,8 @@ package impl {
   }
 
   class ValModelImpl(
-                      val info: BasicElementInfo, relationships: BasicRelationshipInfo,
-                      fieldName: String, isAbstract: Boolean, fields: String, val isLazy: Boolean)
+    val info: BasicElementInfo, relationships: BasicRelationshipInfo,
+    fieldName: String, isAbstract: Boolean, fields: String, val isLazy: Boolean)
     extends FieldModelImpl(info, relationships, fieldName, isAbstract, fields) with ValModel {
     override protected def typeName: String = "trait"
 
@@ -639,14 +669,15 @@ package impl {
   }
 
   class VarModelImpl(
-                      val info: BasicElementInfo, relationships: BasicRelationshipInfo,
-                      fieldName: String, isAbstract: Boolean, fields: String)
+    val info: BasicElementInfo, relationships: BasicRelationshipInfo,
+    fieldName: String, isAbstract: Boolean, fields: String)
     extends FieldModelImpl(info, relationships, fieldName, isAbstract, fields) with VarModel {
     override protected def typeName: String = "var"
 
-    override def complete(modelElements: Map[NewElementId, ElementModelImpl],
-                          relsFrom: BasicRelationshipInfo,
-                          relsTo: BasicRelationshipInfo): Unit = {
+    override def complete(
+      modelElements: Map[NewElementId, ElementModelImpl],
+      relsFrom: BasicRelationshipInfo,
+      relsTo: BasicRelationshipInfo): Unit = {
       super.complete(modelElements, relsFrom, relsTo)
       relsTo.setter.get(info.newElementId) match {
         case None => setter_ = None
@@ -662,7 +693,8 @@ package impl {
   }
 
   class SourceModelImpl(
-                         val info: BasicElementInfo, relationships: BasicRelationshipInfo) extends ElementModelImpl(info, relationships) with SourceModel {
+    val info: BasicElementInfo,
+    relationships: BasicRelationshipInfo) extends ElementModelImpl(info, relationships) with SourceModel {
 
     def filename = info.source.path
 

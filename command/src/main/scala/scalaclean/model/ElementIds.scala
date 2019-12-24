@@ -6,4 +6,5 @@ object ElementIds {
   //FIXME
   val AppObject: NewElementId = NewElementIdImpl("<root>/scala@/App.")
 
+  val allAppObjects :List[NewElementId] = List(AppObject)
 }

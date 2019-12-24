@@ -31,7 +31,7 @@ class Privatiser(model: ProjectModel, debug: Boolean) extends AbstractRule("Priv
       println(s"$ele  colour: ${ele.colour}"))
   }
 
-  private def localLevel(element: ModelElement): PrivatiserLevel = {
+  def localLevel(element: ModelElement): PrivatiserLevel = {
     if (element.colour != Undefined) element.colour
     else {
       val incoming = {
@@ -102,11 +102,11 @@ class Privatiser(model: ProjectModel, debug: Boolean) extends AbstractRule("Priv
   var elementsObserved = 0
   var elementsChanged = 0
 
-  override def printSummary: Unit =
+  override def printSummary(projectname: String): Unit =
     println (
       s"""Elements Observed = $elementsObserved
          |Elements Changed  = $elementsChanged
-         |Effect rate       = ${(elementsChanged.toDouble/elementsObserved.toDouble *10000).toInt/100} %"
+         |Effect rate       = ${(elementsChanged.toDouble / elementsObserved.toDouble * 10000).toInt / 100} %"
          |""".stripMargin)
 
   override def fix(implicit doc: SemanticDocument): Patch = {
@@ -117,9 +117,9 @@ class Privatiser(model: ProjectModel, debug: Boolean) extends AbstractRule("Priv
 
       override protected def handlerSymbol(
                                             symbol: ElementId, mods: Seq[Mod], stat: Stat, scope: List[Scope]): (Patch, Boolean) = {
-        if(symbol.symbol.isLocal) continue else {
+        if(symbol.isGlobal) {
 
-
+          // TODO Check for not existing  model.getElement[ModelElement] match { case Some(ms) if(me.existsInsource)=> ... case None => continue }
           val modelElement = model.legacySymbol[ModelElement](symbol)
           if (modelElement.existsInSource) {
             val patch = changeAccessModifier(modelElement.colour, mods, stat, modelElement, None)
@@ -136,7 +136,8 @@ class Privatiser(model: ProjectModel, debug: Boolean) extends AbstractRule("Priv
               elementsChanged += 1
             (patch, rewriteContent)
           } else continue
-        }
+        } else
+          continue
       }
 
       def info(sym: Symbol): Boolean = doc.info(sym).get.isProtectedWithin
@@ -146,7 +147,11 @@ class Privatiser(model: ProjectModel, debug: Boolean) extends AbstractRule("Priv
                                           pats: Seq[Pat.Var], mods: Seq[Mod], stat: Stat, scope: List[Scope]): (Patch, Boolean) = {
         //for vals and vars we set the access to the broadest of any access of the fields
 
-        val modelElements: Seq[FieldOrAccessorModel] = pats map { p =>
+
+//        if(pats.head.symbol.isGlobal) {
+//          val modelElements: Seq[FieldOrAccessorModel] = pats.flatMap( p => model.getElement(FieldOrAccessorModel](ElementId(p.symbol))
+
+          val modelElements: Seq[FieldOrAccessorModel] = pats map { p =>
           val ele = model.legacySymbol[FieldOrAccessorModel](ElementId(p.symbol))
           ele match {
             case v: ValModel => v

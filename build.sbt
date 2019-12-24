@@ -142,7 +142,7 @@ def testInputProject(id: String, projectLocation: String, showTrees: Boolean = f
     val extras = if (showTrees)
       List(
         "-P:scalaclean-analysis-plugin:debug:true",
-        "-Ybrowse:typer",
+//        "-Ybrowse:typer",
         "-Xprint:typer")
     else List[String]()
     List(

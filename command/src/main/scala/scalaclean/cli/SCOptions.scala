@@ -15,6 +15,8 @@ case class SCOptions(
 object SCOptions {
   val deadCodeCmd = "deadcode"
   val privatiserCmd = "privatiser"
+  val simpleDeadCodeCmd = "simpledeadcode"
+  val simplePrivatiserCmd = "simpleprivatiser"
 
 
   val optionsParser: OParser[Unit, SCOptions] = {
@@ -49,6 +51,16 @@ object SCOptions {
         .required()
         .action((_, c) => c.copy(mode = "privatiser"))
         .text("Run Privatiser")
+        .children(sharedOptions: _*),
+      cmd(simpleDeadCodeCmd)
+        .required()
+        .action((_, c) => c.copy(mode = "simpledeadcode"))
+        .text("Run simple dead code")
+        .children(sharedOptions: _*),
+      cmd(simplePrivatiserCmd)
+        .required()
+        .action((_, c) => c.copy(mode = "simpleprivatiser"))
+        .text("Run simple privatiser")
         .children(sharedOptions: _*)
     )
   }

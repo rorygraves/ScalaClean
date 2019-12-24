@@ -15,8 +15,8 @@ object AnnotationData extends StandardExtensionDescriptor[AnnotationData] {
 
 /** information about an annotation.
   *
-  * @param fqName         th name of the annotationClass
-  * @param values         qualifier e.g. x in private[x]
+  * @param fqName         the name of the annotationClass
+  * @param values         arguments and values passed to the annotation
   * @param posOffsetStart the start offset from the element with this visibility
   * @param posOffsetEnd   the end offset from the element with this visibility
   */

@@ -6,7 +6,7 @@ import scalafix.patch.Patch
 import scalafix.v1.{SemanticDocument, Symbol}
 
 abstract class AbstractRule(val name: String, val model: ProjectModel, debug: Boolean) {
-  def printSummary: Unit
+  def printSummary(projectname: String): Unit
 
   type Colour <: Mark
 
@@ -61,10 +61,11 @@ abstract class AbstractRule(val name: String, val model: ProjectModel, debug: Bo
       }).flatten
   }
 
-  def allApp = {
-    val app = ElementIds.AppObject
-    for (obj <- model.allOf[ObjectModel] if (obj.xtends(app)))
+  def allApp: Iterator[ObjectModel] = {
+    val allAppObjects = ElementIds.allAppObjects
+    for (obj <- model.allOf[ObjectModel] if allAppObjects.exists(appLike => obj.xtends(appLike)))
       yield obj
+
   }
 
   def allTestEntryPoints = {

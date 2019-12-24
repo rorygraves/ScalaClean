@@ -2,6 +2,7 @@ package org.scalaclean.analysis.plugin
 
 import org.scalaclean.analysis.{AnnotationData, ExtensionData}
 
+import scala.reflect.internal.util.{NoPosition, Position}
 import scala.tools.nsc.Global
 
 object AnnotationDataBuilder {
@@ -22,7 +23,7 @@ object AnnotationDataBuilder {
 
     val clazz = annotation.tpe.typeSymbol.fullName
     val targetPos = annotated.pos
-    val pos = annotation.pos
+    val pos = if(annotation.pos == NoPosition) Position.range(targetPos.source, 0,0,0) else annotation.pos
     var values = Map.empty[String, String]
     annotation.assocs foreach {
       case (name, assoc) => values = values.updated(name.toString, clean(print(assoc)))

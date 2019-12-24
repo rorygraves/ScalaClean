@@ -6,7 +6,8 @@ import java.nio.file.{Files, Paths}
 import scalaclean.model.ProjectModel
 import scalaclean.model.impl.{Project, ProjectSet}
 import scalaclean.rules.AbstractRule
-import scalaclean.rules.deadcode.DeadCodeRemover
+import scalaclean.rules.deadcode.{DeadCodeRemover, SimpleDeadCode }
+import scalaclean.rules.privatiser.{Privatiser, SimplePrivatiser }
 import scalafix.internal.patch.PatchInternals
 import scalafix.internal.reflect.ClasspathOps
 import scalafix.lint.RuleDiagnostic
@@ -26,9 +27,13 @@ object ScalaCleanMain {
       case Some(options) =>
         val commandFn: ProjectModel => AbstractRule = options.mode match {
           case SCOptions.privatiserCmd =>
-            model => new DeadCodeRemover(model, options.debug)
+            model => new Privatiser(model, options.debug)
+          case SCOptions.simplePrivatiserCmd =>
+            model => new SimplePrivatiser(model, options.debug)
           case SCOptions.deadCodeCmd =>
             model => new DeadCodeRemover(model, options.debug)
+          case SCOptions.simpleDeadCodeCmd =>
+            model => new SimpleDeadCode(model, options.debug)
           case _ =>
             throw new IllegalStateException(s"Invalid command argument ${options.mode}")
         }
@@ -162,7 +167,7 @@ class ScalaCleanMain(dcOptions: SCOptions, ruleCreateFn: ProjectModel => Abstrac
         }
       }
     }
-    rule.printSummary
+    rule.printSummary("ALL")
     changed
   }
 

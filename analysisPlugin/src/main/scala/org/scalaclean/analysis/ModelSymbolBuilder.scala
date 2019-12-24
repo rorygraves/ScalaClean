@@ -10,6 +10,7 @@ trait ModelSymbolBuilder extends SemanticdbOps {
   val global: scala.tools.nsc.Global
 
   def debug: Boolean
+  def sourceDirs: List[String]
 
   private val symbolNames = mutable.Map[global.Symbol, String]()
   private val localSymbolNames = mutable.Map[global.Symbol, String]()
@@ -97,10 +98,9 @@ trait ModelSymbolBuilder extends SemanticdbOps {
 
   // TODO this is a total hack - need to discover the source root of the compilation unit and remove
   def mungeUnitPath(input: String): String = {
-    val idx = input.indexOf("src/main/scala")
-    if (idx != -1)
-      input.substring(idx + "src/main/scala".length + 1)
-    else input
+    val sourceDirForInput = sourceDirs.find(input.startsWith).getOrElse(throw new IllegalArgumentException(s"Missing src dir for $input"))
+    val idx = input.indexOf(sourceDirForInput) + sourceDirForInput.length + 1
+    input.substring(idx)
   }
 
 }

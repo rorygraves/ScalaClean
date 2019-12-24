@@ -66,6 +66,11 @@ package impl {
       case m: ModelElement => Some(m.asInstanceOf[To])
     }
 
+//    def toElement2 = _to2 match {
+//      case s:NewElementId => None
+//      case m: ModelElement => Some(m.asInstanceOf[To])
+//    }
+
     def fromNewElementId: NewElementId = modelSymbol(_from)
 
     def toNewElementId: NewElementId = modelSymbol(_to)
@@ -86,6 +91,8 @@ package impl {
 
     override def complete(elements: Map[NewElementId, ElementModelImpl]): Unit = {
       super.complete(elements)
+//      assert(fromElement2.isInstanceOf[ClassLike], s"$fromElement is not a ClassLike")
+//      assert(toElement2 map (_.isInstanceOf[ClassLike]) getOrElse (true))
       assert(fromElement.isInstanceOf[ClassLike], s"$fromElement is not a ClassLike")
       assert(toElement map (_.isInstanceOf[ClassLike]) getOrElse (true))
     }
@@ -111,6 +118,8 @@ package impl {
     extends ReferenceImpl(from, to) with Within {
     override def complete(elements: Map[NewElementId, ElementModelImpl]): Unit = {
       super.complete(elements)
+//      assert(fromElement2.isInstanceOf[ElementModelImpl])
+//      assert(toElement2.isDefined, s"to reference $toNewElementId not found for $from")
       assert(fromElement.isInstanceOf[ElementModelImpl])
       assert(toElement.isDefined, s"to reference $toNewElementId not found for $from")
     }
