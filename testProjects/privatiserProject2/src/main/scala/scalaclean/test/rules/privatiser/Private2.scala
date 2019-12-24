@@ -113,7 +113,7 @@ object Other {
     Yx+Yy+Yz
   }
 
-  //some declarations wit internal structure
+  //some declarations with internal structure
   //should not be traversed as the content is not visible
 
   val a = {

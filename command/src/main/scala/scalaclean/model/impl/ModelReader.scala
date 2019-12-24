@@ -2,20 +2,22 @@ package scalaclean.model.impl
 
 import java.nio.file.{Files, Paths}
 
-import org.scalaclean.analysis.{ExtensionData, ExtensionDescriptor, IoTokens}
+import org.scalaclean.analysis.plugin.{ModData, VisibilityData}
+import org.scalaclean.analysis.{AnnotationData, ExtensionData, ExtensionDescriptor, IoTokens}
+import scalaclean.model.ElementId
 
 import scala.collection.mutable
 
 
 object ModelReader {
-  def read(project: Project, elementsFilePath: String, relationshipsFilePath: String, extensionFilePath: String):
+  def read(project: Project, elementsFilePath: String, relationshipsFilePath: String, extensionFilePath: String, sourceDirSep: String):
   (Vector[ElementModelImpl], BasicRelationshipInfo) = {
 
 
     val relationships = readRels(relationshipsFilePath)
-    val (extById, extByNewId) = readExt(extensionFilePath)
+    val extById = readExt(extensionFilePath)
 
-    val elements = readElements(project, elementsFilePath, relationships, extById, extByNewId)
+    val elements = readElements(project, elementsFilePath, relationships, extById, sourceDirSep)
     (elements, relationships)
   }
 
@@ -33,10 +35,13 @@ object ModelReader {
     interner.getOrElseUpdate(sorted, sorted)
   }
 
-  private def readExt(extensionFilePath: String): (Map[String, Seq[ExtensionData]], Map[String, Seq[ExtensionData]]) = {
+  private val builder = Map(
+    "org.scalaclean.analysis.plugin.ModData" -> ModData,
+    "org.scalaclean.analysis.plugin.VisibilityData" -> VisibilityData,
+    "org.scalaclean.analysis.AnnotationData" -> AnnotationData,
+  )
 
-    import scala.reflect.runtime.universe
-    val runtimeMirror = universe.runtimeMirror(getClass.getClassLoader)
+  private def readExt(extensionFilePath: String): Map[String, Seq[ExtensionData]] = {
 
     var mapByLegacyElementId = Map.empty[String, mutable.Builder[ExtensionData, List[ExtensionData]]]
     var mapByElementId = Map.empty[String, mutable.Builder[ExtensionData, List[ExtensionData]]]
@@ -48,28 +53,22 @@ object ModelReader {
       line: String =>
 //        println(line)
         val Array(id, newId, fqn, rest) = line.split(",", 4)
-        val extBuilder = lookup.getOrElseUpdate(fqn, {
-//          println(s"looking up extension $fqn")
-          val module = try {
-            runtimeMirror.staticModule(fqn)
-          } catch {
-            case e: Exception =>
-              throw new Exception(s"failed to lookup '$fqn' from line '$line'")
-          }
-          runtimeMirror.reflectModule(module).instance match {
-            case valid: ExtensionDescriptor[_] => valid
-            case null => throw new IllegalArgumentException("not a valid Extension FQN - expected the name of an object")
-            case invalid => throw new IllegalArgumentException(s"not a valid Extension FQN - ${invalid.getClass.getName} is not a ${classOf[ExtensionDescriptor[_]].getName}")
-          }
-        })
+//        val extBuilder = lookup.getOrElseUpdate(fqn, {
+////          println(s"looking up extension $fqn")
+//          val module = try {
+//            runtimeMirror.staticModule(fqn)
+//          } catch {
+//            case e: Exception =>
+//              throw new Exception(s"failed to lookup '$fqn' from line '$line'")
+//          }
+//          runtimeMirror.reflectModule(module).instance match {
+//            case valid: ExtensionDescriptor[_] => valid
+//            case null => throw new IllegalArgumentException("not a valid Extension FQN - expected the name of an object")
+//            case invalid => throw new IllegalArgumentException(s"not a valid Extension FQN - ${invalid.getClass.getName()} is not a ${classOf[ExtensionDescriptor[_]].getName}")
+//          }
+//        })
+        val extBuilder = builder(fqn)
         val ext: ExtensionData = extBuilder.fromCsv(rest)
-        val elementValues1 = mapByLegacyElementId.get(id) match {
-          case None =>
-            val builder = List.newBuilder[ExtensionData]
-            mapByLegacyElementId = mapByLegacyElementId.updated(id, builder)
-            builder
-          case Some(builder) => builder
-        }
 
         val elementValues2 = mapByElementId.get(newId) match {
           case None =>
@@ -79,12 +78,10 @@ object ModelReader {
           case Some(builder) => builder
         }
 
-        elementValues1 += ext
         elementValues2 += ext
 
     }
-    (mapByLegacyElementId.map { case (k, b) => k -> compress(b.result) },
-      mapByElementId.map { case (k, b) => k -> compress(b.result) })
+    mapByElementId.map { case (k, b) => k -> compress(b.result) }
 
   }
 
@@ -104,9 +101,9 @@ object ModelReader {
         try {
           val tokens = line.split(",")
 
-          val from = ElementIdImpl(tokens(0))
+          val from = ElementId(tokens(0))
           val relType = tokens(1)
-          val to = ElementIdImpl(tokens(2))
+          val to = ElementId(tokens(2))
 
           val offset = 3
           relType match {
@@ -150,7 +147,8 @@ object ModelReader {
   }
 
   private def readElements(project: Project, elementsFilePath: String, relationships: BasicRelationshipInfo,
-                           byId: Map[String, Seq[ExtensionData]], byNewId: Map[String, Seq[ExtensionData]]) = {
+                           byId: Map[String, Seq[ExtensionData]],
+                           sourceDirSep: String): Vector[ElementModelImpl] = {
     val path = Paths.get(elementsFilePath)
     println(s"reading elements from $path")
 
@@ -163,17 +161,17 @@ object ModelReader {
           } else line.split(",")
 
           val typeId = tokens(0)
-          val symbol = LegacyElementId(tokens(1))
-          val modelSymbol = ElementIdImpl(tokens(2))
+          val elementId = ElementId(tokens(2))
           val flags = java.lang.Long.parseLong(tokens(3), 16)
-          val src = project.source(tokens(4))
+          val src = project.source(tokens(4).replace(sourceDirSep, java.io.File.separator))
           val start = tokens(5).toInt
           val end = tokens(6).toInt
-          val traversal = tokens(7).toInt
+          val focus = tokens(7).toInt
+          val traversal = tokens(8).toInt
 
-          val basicInfo = BasicElementInfo(symbol, modelSymbol, src, start, end, flags, byNewId.getOrElse(tokens(2), Nil), traversal)
+          val basicInfo = BasicElementInfo(elementId, src, start, end, focus, flags, byId.getOrElse(tokens(2), Nil), traversal)
 
-          val idx = 8
+          val idx = 9
           val ele: ElementModelImpl = typeId match {
             case IoTokens.typeObject =>
               new ObjectModelImpl(basicInfo, relationships)

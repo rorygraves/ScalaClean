@@ -1,11 +1,14 @@
 package scalaclean.rules
 
 import scalaclean.model._
-import scalafix.patch.Patch
-import scalafix.v1.SemanticDocument
+import scalaclean.util.PatchStats
+import scalafix.v1.SyntacticDocument
+
+import scala.meta.io.AbsolutePath
 
 abstract class AbstractRule(val name: String, val model: ProjectModel, debug: Boolean) {
-  def printSummary(): Unit
+  val patchStats = new PatchStats
+  def printSummary(projectName: String): Unit = patchStats.printSummary(projectName)
 
   type Colour <: Mark
 
@@ -30,7 +33,7 @@ abstract class AbstractRule(val name: String, val model: ProjectModel, debug: Bo
 
   def runRule(): Unit
 
-  def fix(implicit doc: SemanticDocument): Patch
+  def fix(targetFile: AbsolutePath, syntacticDocument: () => SyntacticDocument): List[SCPatch]
 
   def markAll[T <: ModelElement : Manifest](colour: => Colour): Unit = {
     model.allOf[T].foreach {
@@ -51,18 +54,16 @@ abstract class AbstractRule(val name: String, val model: ProjectModel, debug: Bo
   }
 
   def allMainMethodEntries: Iterator[ModelElement] = {
-
-    (for (obj <- model.allOf[ObjectModel] if obj.isTopLevel;
-          method <- obj.methods if method.name == "main") //&& method.paramsType = stringArray
-      yield {
-        List(method, obj)
-      }).flatten
+    model.allOf[ObjectModel].filter(_.isTopLevel).flatMap { om =>
+      om.methods.collect { case mm: PlainMethodModel if mm.methodName == "main" => mm }
+    }
   }
 
   def allApp: Iterator[ObjectModel] = {
-    val app = ElementIds.AppObject
-    for (obj <- model.allOf[ObjectModel] if obj.xtends(app))
+    val allAppObjects = ElementIds.allAppObjects
+    for (obj <- model.allOf[ObjectModel] if allAppObjects.exists(appLike => obj.xtends(appLike)))
       yield obj
+
   }
 
   def allTestEntryPoints: Iterator[MethodModel] = {
@@ -76,11 +77,26 @@ abstract class AbstractRule(val name: String, val model: ProjectModel, debug: Bo
     "org.junit.BeforeClass",
     "org.junit.AfterClass",
   )
+
   def allJunitTest: Iterator[MethodModel] = {
     model.allOf[MethodModel].filter { method =>
-      method.annotations.exists{ a =>
-        junitAnnotationEntryPoints.contains(a.fqName)}
+      method.annotations.exists { a =>
+        junitAnnotationEntryPoints.contains(a.fqName)
+      }
     }
   }
+
+
+  def allSerialisationEntries: Iterator[MethodModel] = {
+    model.allOf[MethodModel].filter { method =>
+      (method.name == "writeObject" /*        && method.params == objectOutputStream */) ||
+        (method.name == "readObject" /*       && method.params == objectInputStream */) ||
+        (method.name == "readObjectNoData" /* && method.params == empty */) ||
+        (method.name == "writeReplace" /*     && method.params == empty */) ||
+        (method.name == "readResolve" /*      && method.params == empty */)
+    }
+    // ++
+  }
+
 
 }

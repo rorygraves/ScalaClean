@@ -53,7 +53,7 @@ package impl {
 
     private[this] def modelSymbol(ref: AnyRef): ElementId = ref match {
       case s: ElementId => s
-      case m: ModelElement => m.elementId
+      case m: ModelElement => m.modelElementId
     }
 
     def fromElement: From = _from.asInstanceOf[From]

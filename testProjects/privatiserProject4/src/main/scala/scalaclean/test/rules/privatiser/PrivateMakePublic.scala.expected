@@ -30,11 +30,11 @@ package x2.scalaclean.test.rules.privatiser.MakePublic {
   }
   object Other3 {
     val myVal = 1
-    /* *** SCALA CLEAN can't detect usage */var myVar = 1
-    /* *** SCALA CLEAN can't detect usage */def myDef = 1
-    /* *** SCALA CLEAN can't detect usage */object myObj
-    /* *** SCALA CLEAN can't detect usage */trait myTrait
-    private[myClass] class myClass
+    private[this] var myVar = 1
+    private[this] def myDef = 1
+    private[this] object myObj
+    private[this] trait myTrait
+    private[this] class myClass
   }
   object Access{
     def access2() = {

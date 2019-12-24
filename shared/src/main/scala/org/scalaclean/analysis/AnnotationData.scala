@@ -15,8 +15,8 @@ object AnnotationData extends StandardExtensionDescriptor[AnnotationData] {
 
 /** information about an annotation.
   *
-  * @param fqName         th name of the annotationClass
-  * @param values         qualifier e.g. x in private[x]
+  * @param fqName         the name of the annotationClass
+  * @param values         arguments and values passed to the annotation
   * @param posOffsetStart the start offset from the element with this visibility
   * @param posOffsetEnd   the end offset from the element with this visibility
   */
@@ -26,10 +26,10 @@ case class AnnotationData(posOffsetStart: Int, posOffsetEnd: Int, fqName: String
 
   override def restToCSV: String = {
     val csv = if (values.isEmpty) "" else values.toList.sortBy(_._1).map { e => s"${e._1},${e._2}" }.mkString(",", ",", "")
-    s",$fqName$csv"
+    s""",$fqName$csv"""
   }
 
-  override def toString: String = s"AnnotationData[${maskToString(posOffsetStart)},${maskToString(posOffsetEnd)},$fqName,${SortedMap.empty[String, String] ++ values}"
+  override protected def restToString: String = s"$fqName,${SortedMap.empty[String, String] ++ values}"
 
   require(!fqName.contains(","), fqName)
   values.foreach {

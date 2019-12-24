@@ -2,14 +2,19 @@ package org.scalaclean.analysis
 
 import java.util.concurrent.atomic.AtomicInteger
 
+import scalaclean.model.ElementId
+import scalaclean.model.impl.{FieldPathImpl}
+
 import scala.collection.mutable
 import scala.meta.internal.semanticdb.scalac.SemanticdbOps
 import scala.reflect.internal.util.NoPosition
+import scala.tools.nsc.Global
 
 trait ModelSymbolBuilder extends SemanticdbOps {
   val global: scala.tools.nsc.Global
 
   def debug: Boolean
+  def sourceDirs: List[String]
 
   private val symbolNames = mutable.Map[global.Symbol, String]()
   private val ownerSymbolNames = mutable.Map[global.Symbol, LocalSymbolNames]()
@@ -88,24 +93,33 @@ trait ModelSymbolBuilder extends SemanticdbOps {
   private val mSymbolCache2 = mutable.Map[global.Symbol, ModelCommon]()
   private val mSymbolCache = mutable.Map[global.Symbol, ModelCommon]()
 
-  def asMSymbol(gSym: global.Symbol, special:Boolean = false): ModelCommon = {
-    val cache = if (special) mSymbolCache2 else mSymbolCache
+  def externalSymbol(gSym: Global#Symbol): ModelCommon = {
+    asMSymbol(gSym.asInstanceOf[global.Symbol])
+  }
+
+  def asMSymbol(gSym: global.Symbol): ModelCommon = {
+    asMSymbolX(gSym, false)
+  }
+  def asMSymbolForceField(gSym: global.Symbol): ModelCommon = {
+    val unforced = asMSymbolX(gSym, false)
+    if (unforced.elementId.isInstanceOf[FieldPathImpl]) unforced
+    else asMSymbolX(gSym, true)
+  }
+  private def asMSymbolX(gSym: global.Symbol, forceField:Boolean): ModelCommon = {
+    val cache = if (forceField) mSymbolCache2 else mSymbolCache
 
     cache.getOrElseUpdate(gSym, {
       val isGlobal = gSym.isSemanticdbGlobal && !gSym.isLocalToBlock
-//      val newIsGlobal = gSym.ownersIterator.forall(o => o.isType && !o.isSynthetic)
-      val sString = gSym.toSemantic
-      val (startPos, endPos) = if (gSym.pos == NoPosition) (-1, -1) else (gSym.pos.start, gSym.pos.end)
+      val newIsGlobal = gSym.ownersIterator.forall(o => o.isType && !o.isSynthetic)
+      val (startPos, endPos, focusPos) = if (gSym.pos == NoPosition) (-1, -1, -1) else (gSym.pos.start, gSym.pos.end, gSym.pos.focus.start)
       val sourceFile = if (gSym.sourceFile != null)
         mungeUnitPath(gSym.sourceFile.toString)
       else
         "-"
-      val specialSuffix = if (special) "~" else ""
-      val name = gSym.nameString + specialSuffix
 
-      val newName = getNewName(gSym) + specialSuffix
+      val newName = if (forceField) ElementId.applyAndForceField(gSym) else ElementId(gSym) //getNewName(gSym) + specialSuffix
 
-      ModelCommon(isGlobal, sString, newName, sourceFile, startPos, endPos, name)
+      ModelCommon(isGlobal, newName, sourceFile, startPos, endPos, focusPos, gSym.nameString)
 
     }
     )
@@ -113,10 +127,9 @@ trait ModelSymbolBuilder extends SemanticdbOps {
 
   // TODO this is a total hack - need to discover the source root of the compilation unit and remove
   def mungeUnitPath(input: String): String = {
-    val idx = input.indexOf("src/main/scala")
-    if (idx != -1)
-      input.substring(idx + "src/main/scala".length + 1)
-    else input
+    val sourceDirForInput = sourceDirs.find(input.startsWith).getOrElse(throw new IllegalArgumentException(s"Missing src dir for $input"))
+    val idx = input.indexOf(sourceDirForInput) + sourceDirForInput.length + 1
+    input.substring(idx)
   }
 
 }

@@ -8,21 +8,21 @@ trait GrandParentTrait {
 
 }
 trait ParentTrait extends GrandParentTrait {
-  def d1: Int/* internalTransitiveOverrides(<root>/scalaclean/test/overrides/internalTransitiveOverrides/ParentTrait#/{M}d1().) - <root>/scalaclean/test/overrides/internalTransitiveOverrides/GrandParentTrait#/{M}d1(). */
-  def d2(a: Int): Int = ???/* internalTransitiveOverrides(<root>/scalaclean/test/overrides/internalTransitiveOverrides/ParentTrait#/{M}d2(scala.Int).) - <root>/scalaclean/test/overrides/internalTransitiveOverrides/GrandParentTrait#/{M}d2(scala.Int). */
+  def d1: Int/* internalTransitiveOverrides(<root>/scalaclean@/test@/overrides@/internalTransitiveOverrides@/ParentTrait./{M}d1()) - <root>/scalaclean@/test@/overrides@/internalTransitiveOverrides@/GrandParentTrait./{M}d1() */
+  def d2(a: Int): Int = ???/* internalTransitiveOverrides(<root>/scalaclean@/test@/overrides@/internalTransitiveOverrides@/ParentTrait./{M}d2(scala.Int)) - <root>/scalaclean@/test@/overrides@/internalTransitiveOverrides@/GrandParentTrait./{M}d2(scala.Int) */
   def d3(): () => Int = ???
 }
 trait ChildTrait extends ParentTrait {
-  def d1: Int = 1/* internalTransitiveOverrides(<root>/scalaclean/test/overrides/internalTransitiveOverrides/ChildTrait#/{M}d1().) - <root>/scalaclean/test/overrides/internalTransitiveOverrides/GrandParentTrait#/{M}d1(). :: <root>/scalaclean/test/overrides/internalTransitiveOverrides/ParentTrait#/{M}d1(). */
-  override def d2(a: Int): Int = ???/* internalTransitiveOverrides(<root>/scalaclean/test/overrides/internalTransitiveOverrides/ChildTrait#/{M}d2(scala.Int).) - <root>/scalaclean/test/overrides/internalTransitiveOverrides/GrandParentTrait#/{M}d2(scala.Int). :: <root>/scalaclean/test/overrides/internalTransitiveOverrides/ParentTrait#/{M}d2(scala.Int). */
-  override def d3(): () => Int = ???/* internalTransitiveOverrides(<root>/scalaclean/test/overrides/internalTransitiveOverrides/ChildTrait#/{M}d3().) - <root>/scalaclean/test/overrides/internalTransitiveOverrides/ParentTrait#/{M}d3(). */
+  def d1: Int = 1/* internalTransitiveOverrides(<root>/scalaclean@/test@/overrides@/internalTransitiveOverrides@/ChildTrait./{M}d1()) - <root>/scalaclean@/test@/overrides@/internalTransitiveOverrides@/GrandParentTrait./{M}d1() :: <root>/scalaclean@/test@/overrides@/internalTransitiveOverrides@/ParentTrait./{M}d1() */
+  override def d2(a: Int): Int = ???/* internalTransitiveOverrides(<root>/scalaclean@/test@/overrides@/internalTransitiveOverrides@/ChildTrait./{M}d2(scala.Int)) - <root>/scalaclean@/test@/overrides@/internalTransitiveOverrides@/GrandParentTrait./{M}d2(scala.Int) :: <root>/scalaclean@/test@/overrides@/internalTransitiveOverrides@/ParentTrait./{M}d2(scala.Int) */
+  override def d3(): () => Int = ???/* internalTransitiveOverrides(<root>/scalaclean@/test@/overrides@/internalTransitiveOverrides@/ChildTrait./{M}d3()) - <root>/scalaclean@/test@/overrides@/internalTransitiveOverrides@/ParentTrait./{M}d3() */
   def d2a(a:Int) = d2 _
 
 }
 trait GChildTrait extends ChildTrait {
-  override def d1: Int = 1/* internalTransitiveOverrides(<root>/scalaclean/test/overrides/internalTransitiveOverrides/GChildTrait#/{M}d1().) - <root>/scalaclean/test/overrides/internalTransitiveOverrides/ChildTrait#/{M}d1(). :: <root>/scalaclean/test/overrides/internalTransitiveOverrides/GrandParentTrait#/{M}d1(). :: <root>/scalaclean/test/overrides/internalTransitiveOverrides/ParentTrait#/{M}d1(). */
-  override def d2(a: Int): Int = ???/* internalTransitiveOverrides(<root>/scalaclean/test/overrides/internalTransitiveOverrides/GChildTrait#/{M}d2(scala.Int).) - <root>/scalaclean/test/overrides/internalTransitiveOverrides/ChildTrait#/{M}d2(scala.Int). :: <root>/scalaclean/test/overrides/internalTransitiveOverrides/GrandParentTrait#/{M}d2(scala.Int). :: <root>/scalaclean/test/overrides/internalTransitiveOverrides/ParentTrait#/{M}d2(scala.Int). */
-  override def d3(): () => Int = () => 1/* internalTransitiveOverrides(<root>/scalaclean/test/overrides/internalTransitiveOverrides/GChildTrait#/{M}d3().) - <root>/scalaclean/test/overrides/internalTransitiveOverrides/ChildTrait#/{M}d3(). :: <root>/scalaclean/test/overrides/internalTransitiveOverrides/ParentTrait#/{M}d3(). */
+  override def d1: Int = 1/* internalTransitiveOverrides(<root>/scalaclean@/test@/overrides@/internalTransitiveOverrides@/GChildTrait./{M}d1()) - <root>/scalaclean@/test@/overrides@/internalTransitiveOverrides@/ChildTrait./{M}d1() :: <root>/scalaclean@/test@/overrides@/internalTransitiveOverrides@/GrandParentTrait./{M}d1() :: <root>/scalaclean@/test@/overrides@/internalTransitiveOverrides@/ParentTrait./{M}d1() */
+  override def d2(a: Int): Int = ???/* internalTransitiveOverrides(<root>/scalaclean@/test@/overrides@/internalTransitiveOverrides@/GChildTrait./{M}d2(scala.Int)) - <root>/scalaclean@/test@/overrides@/internalTransitiveOverrides@/ChildTrait./{M}d2(scala.Int) :: <root>/scalaclean@/test@/overrides@/internalTransitiveOverrides@/GrandParentTrait./{M}d2(scala.Int) :: <root>/scalaclean@/test@/overrides@/internalTransitiveOverrides@/ParentTrait./{M}d2(scala.Int) */
+  override def d3(): () => Int = () => 1/* internalTransitiveOverrides(<root>/scalaclean@/test@/overrides@/internalTransitiveOverrides@/GChildTrait./{M}d3()) - <root>/scalaclean@/test@/overrides@/internalTransitiveOverrides@/ChildTrait./{M}d3() :: <root>/scalaclean@/test@/overrides@/internalTransitiveOverrides@/ParentTrait./{M}d3() */
 
 }
 trait Trait_ChildTrait extends ParentTrait {
@@ -36,13 +36,13 @@ trait Trait_ChildTrait extends ParentTrait {
 
   override def hashCode(): Int = super.hashCode()
 
-  override def d1: Int = ???/* internalTransitiveOverrides(<root>/scalaclean/test/overrides/internalTransitiveOverrides/Trait_ChildTrait#/{M}d1().) - <root>/scalaclean/test/overrides/internalTransitiveOverrides/GrandParentTrait#/{M}d1(). :: <root>/scalaclean/test/overrides/internalTransitiveOverrides/ParentTrait#/{M}d1(). */
+  override def d1: Int = ???/* internalTransitiveOverrides(<root>/scalaclean@/test@/overrides@/internalTransitiveOverrides@/Trait_ChildTrait./{M}d1()) - <root>/scalaclean@/test@/overrides@/internalTransitiveOverrides@/GrandParentTrait./{M}d1() :: <root>/scalaclean@/test@/overrides@/internalTransitiveOverrides@/ParentTrait./{M}d1() */
 
-  override def d2(a: Int): Int = ???/* internalTransitiveOverrides(<root>/scalaclean/test/overrides/internalTransitiveOverrides/Trait_ChildTrait#/{M}d2(scala.Int).) - <root>/scalaclean/test/overrides/internalTransitiveOverrides/GrandParentTrait#/{M}d2(scala.Int). :: <root>/scalaclean/test/overrides/internalTransitiveOverrides/ParentTrait#/{M}d2(scala.Int). */
+  override def d2(a: Int): Int = ???/* internalTransitiveOverrides(<root>/scalaclean@/test@/overrides@/internalTransitiveOverrides@/Trait_ChildTrait./{M}d2(scala.Int)) - <root>/scalaclean@/test@/overrides@/internalTransitiveOverrides@/GrandParentTrait./{M}d2(scala.Int) :: <root>/scalaclean@/test@/overrides@/internalTransitiveOverrides@/ParentTrait./{M}d2(scala.Int) */
 
-  override def d2a(a: Int)(b: Int): Int = ???/* internalTransitiveOverrides(<root>/scalaclean/test/overrides/internalTransitiveOverrides/Trait_ChildTrait#/{M}d2a(scala.Int)(scala.Int).) - <root>/scalaclean/test/overrides/internalTransitiveOverrides/GrandParentTrait#/{M}d2a(scala.Int)(scala.Int). */
+  override def d2a(a: Int)(b: Int): Int = ???/* internalTransitiveOverrides(<root>/scalaclean@/test@/overrides@/internalTransitiveOverrides@/Trait_ChildTrait./{M}d2a(scala.Intscala.Int)) - <root>/scalaclean@/test@/overrides@/internalTransitiveOverrides@/GrandParentTrait./{M}d2a(scala.Intscala.Int) */
 
-  override def d3()(): Int = ???/* internalTransitiveOverrides(<root>/scalaclean/test/overrides/internalTransitiveOverrides/Trait_ChildTrait#/{M}d3()().) - <root>/scalaclean/test/overrides/internalTransitiveOverrides/GrandParentTrait#/{M}d3()(). */
+  override def d3()(): Int = ???/* internalTransitiveOverrides(<root>/scalaclean@/test@/overrides@/internalTransitiveOverrides@/Trait_ChildTrait./{M}d3()) - <root>/scalaclean@/test@/overrides@/internalTransitiveOverrides@/GrandParentTrait./{M}d3() */
 }
 class Class_ChildTrait extends ParentTrait {
   override def equals(obj: Any): Boolean = super.equals(obj)
@@ -55,13 +55,13 @@ class Class_ChildTrait extends ParentTrait {
 
   override def hashCode(): Int = super.hashCode()
 
-  override def d1: Int = ???/* internalTransitiveOverrides(<root>/scalaclean/test/overrides/internalTransitiveOverrides/Class_ChildTrait#/{M}d1().) - <root>/scalaclean/test/overrides/internalTransitiveOverrides/GrandParentTrait#/{M}d1(). :: <root>/scalaclean/test/overrides/internalTransitiveOverrides/ParentTrait#/{M}d1(). */
+  override def d1: Int = ???/* internalTransitiveOverrides(<root>/scalaclean@/test@/overrides@/internalTransitiveOverrides@/Class_ChildTrait./{M}d1()) - <root>/scalaclean@/test@/overrides@/internalTransitiveOverrides@/GrandParentTrait./{M}d1() :: <root>/scalaclean@/test@/overrides@/internalTransitiveOverrides@/ParentTrait./{M}d1() */
 
-  override def d2(a: Int): Int = ???/* internalTransitiveOverrides(<root>/scalaclean/test/overrides/internalTransitiveOverrides/Class_ChildTrait#/{M}d2(scala.Int).) - <root>/scalaclean/test/overrides/internalTransitiveOverrides/GrandParentTrait#/{M}d2(scala.Int). :: <root>/scalaclean/test/overrides/internalTransitiveOverrides/ParentTrait#/{M}d2(scala.Int). */
+  override def d2(a: Int): Int = ???/* internalTransitiveOverrides(<root>/scalaclean@/test@/overrides@/internalTransitiveOverrides@/Class_ChildTrait./{M}d2(scala.Int)) - <root>/scalaclean@/test@/overrides@/internalTransitiveOverrides@/GrandParentTrait./{M}d2(scala.Int) :: <root>/scalaclean@/test@/overrides@/internalTransitiveOverrides@/ParentTrait./{M}d2(scala.Int) */
 
-  override def d2a(a: Int)(b: Int): Int = ???/* internalTransitiveOverrides(<root>/scalaclean/test/overrides/internalTransitiveOverrides/Class_ChildTrait#/{M}d2a(scala.Int)(scala.Int).) - <root>/scalaclean/test/overrides/internalTransitiveOverrides/GrandParentTrait#/{M}d2a(scala.Int)(scala.Int). */
+  override def d2a(a: Int)(b: Int): Int = ???/* internalTransitiveOverrides(<root>/scalaclean@/test@/overrides@/internalTransitiveOverrides@/Class_ChildTrait./{M}d2a(scala.Intscala.Int)) - <root>/scalaclean@/test@/overrides@/internalTransitiveOverrides@/GrandParentTrait./{M}d2a(scala.Intscala.Int) */
 
-  override def d3()(): Int = ???/* internalTransitiveOverrides(<root>/scalaclean/test/overrides/internalTransitiveOverrides/Class_ChildTrait#/{M}d3()().) - <root>/scalaclean/test/overrides/internalTransitiveOverrides/GrandParentTrait#/{M}d3()(). */
+  override def d3()(): Int = ???/* internalTransitiveOverrides(<root>/scalaclean@/test@/overrides@/internalTransitiveOverrides@/Class_ChildTrait./{M}d3()) - <root>/scalaclean@/test@/overrides@/internalTransitiveOverrides@/GrandParentTrait./{M}d3() */
 }
 object Object_ChildTrait extends ParentTrait {
   override def equals(obj: Any): Boolean = super.equals(obj)
@@ -74,13 +74,13 @@ object Object_ChildTrait extends ParentTrait {
 
   override def hashCode(): Int = super.hashCode()
 
-  override def d1: Int = ???/* internalTransitiveOverrides(<root>/scalaclean/test/overrides/internalTransitiveOverrides/Object_ChildTrait/{M}d1().) - <root>/scalaclean/test/overrides/internalTransitiveOverrides/GrandParentTrait#/{M}d1(). :: <root>/scalaclean/test/overrides/internalTransitiveOverrides/ParentTrait#/{M}d1(). */
+  override def d1: Int = ???/* internalTransitiveOverrides(<root>/scalaclean@/test@/overrides@/internalTransitiveOverrides@/Object_ChildTrait@/{M}d1()) - <root>/scalaclean@/test@/overrides@/internalTransitiveOverrides@/GrandParentTrait./{M}d1() :: <root>/scalaclean@/test@/overrides@/internalTransitiveOverrides@/ParentTrait./{M}d1() */
 
-  override def d2(a: Int): Int = ???/* internalTransitiveOverrides(<root>/scalaclean/test/overrides/internalTransitiveOverrides/Object_ChildTrait/{M}d2(scala.Int).) - <root>/scalaclean/test/overrides/internalTransitiveOverrides/GrandParentTrait#/{M}d2(scala.Int). :: <root>/scalaclean/test/overrides/internalTransitiveOverrides/ParentTrait#/{M}d2(scala.Int). */
+  override def d2(a: Int): Int = ???/* internalTransitiveOverrides(<root>/scalaclean@/test@/overrides@/internalTransitiveOverrides@/Object_ChildTrait@/{M}d2(scala.Int)) - <root>/scalaclean@/test@/overrides@/internalTransitiveOverrides@/GrandParentTrait./{M}d2(scala.Int) :: <root>/scalaclean@/test@/overrides@/internalTransitiveOverrides@/ParentTrait./{M}d2(scala.Int) */
 
-  override def d2a(a: Int)(b: Int): Int = ???/* internalTransitiveOverrides(<root>/scalaclean/test/overrides/internalTransitiveOverrides/Object_ChildTrait/{M}d2a(scala.Int)(scala.Int).) - <root>/scalaclean/test/overrides/internalTransitiveOverrides/GrandParentTrait#/{M}d2a(scala.Int)(scala.Int). */
+  override def d2a(a: Int)(b: Int): Int = ???/* internalTransitiveOverrides(<root>/scalaclean@/test@/overrides@/internalTransitiveOverrides@/Object_ChildTrait@/{M}d2a(scala.Intscala.Int)) - <root>/scalaclean@/test@/overrides@/internalTransitiveOverrides@/GrandParentTrait./{M}d2a(scala.Intscala.Int) */
 
-  override def d3()(): Int = ???/* internalTransitiveOverrides(<root>/scalaclean/test/overrides/internalTransitiveOverrides/Object_ChildTrait/{M}d3()().) - <root>/scalaclean/test/overrides/internalTransitiveOverrides/GrandParentTrait#/{M}d3()(). */
+  override def d3()(): Int = ???/* internalTransitiveOverrides(<root>/scalaclean@/test@/overrides@/internalTransitiveOverrides@/Object_ChildTrait@/{M}d3()) - <root>/scalaclean@/test@/overrides@/internalTransitiveOverrides@/GrandParentTrait./{M}d3() */
 }
 
 
@@ -104,38 +104,38 @@ trait T1 {
 }
 
 trait T2 extends T1 {
-  def v1 : String/* internalTransitiveOverrides(<root>/scalaclean/test/overrides/internalTransitiveOverrides/T2#/{M}v1().) - <root>/scalaclean/test/overrides/internalTransitiveOverrides/T1#/{M}v1(). */
+  def v1 : String/* internalTransitiveOverrides(<root>/scalaclean@/test@/overrides@/internalTransitiveOverrides@/T2./{M}v1()) - <root>/scalaclean@/test@/overrides@/internalTransitiveOverrides@/T1./{M}v1() */
 }
 trait T3 extends T1 {
-  def v1 : String = ""/* internalTransitiveOverrides(<root>/scalaclean/test/overrides/internalTransitiveOverrides/T3#/{M}v1().) - <root>/scalaclean/test/overrides/internalTransitiveOverrides/T1#/{M}v1(). */
+  def v1 : String = ""/* internalTransitiveOverrides(<root>/scalaclean@/test@/overrides@/internalTransitiveOverrides@/T3./{M}v1()) - <root>/scalaclean@/test@/overrides@/internalTransitiveOverrides@/T1./{M}v1() */
 }
 trait T4 extends T2 {
-  def v1 : String/* internalTransitiveOverrides(<root>/scalaclean/test/overrides/internalTransitiveOverrides/T4#/{M}v1().) - <root>/scalaclean/test/overrides/internalTransitiveOverrides/T1#/{M}v1(). :: <root>/scalaclean/test/overrides/internalTransitiveOverrides/T2#/{M}v1(). */
+  def v1 : String/* internalTransitiveOverrides(<root>/scalaclean@/test@/overrides@/internalTransitiveOverrides@/T4./{M}v1()) - <root>/scalaclean@/test@/overrides@/internalTransitiveOverrides@/T1./{M}v1() :: <root>/scalaclean@/test@/overrides@/internalTransitiveOverrides@/T2./{M}v1() */
 }
 
 trait VT2 extends T1 {
-  val v1 : String
+  val v1 : String/* internalTransitiveOverrides(<root>/scalaclean@/test@/overrides@/internalTransitiveOverrides@/VT2./{M}v1()) - <root>/scalaclean@/test@/overrides@/internalTransitiveOverrides@/T1./{M}v1() */
 }
 trait VT3 extends T1 {
-  val v1 : String = ""
+  val v1 : String = ""/* internalTransitiveOverrides(<root>/scalaclean@/test@/overrides@/internalTransitiveOverrides@/VT3./{M}v1()) - <root>/scalaclean@/test@/overrides@/internalTransitiveOverrides@/T1./{M}v1() */
 }
 trait VT4 extends VT2 {
-  val v1 : String
+  val v1 : String/* internalTransitiveOverrides(<root>/scalaclean@/test@/overrides@/internalTransitiveOverrides@/VT4./{M}v1()) - <root>/scalaclean@/test@/overrides@/internalTransitiveOverrides@/T1./{M}v1() :: <root>/scalaclean@/test@/overrides@/internalTransitiveOverrides@/VT2./{M}v1() */
 }
 
 trait VL2 extends T1 {
-  val v1 : String
+  val v1 : String/* internalTransitiveOverrides(<root>/scalaclean@/test@/overrides@/internalTransitiveOverrides@/VL2./{M}v1()) - <root>/scalaclean@/test@/overrides@/internalTransitiveOverrides@/T1./{M}v1() */
 }
 trait VL3 extends VL2 {
-  lazy val v1 : String = ""
+  lazy val v1 : String = ""/* internalTransitiveOverrides(<root>/scalaclean@/test@/overrides@/internalTransitiveOverrides@/VL3./{M}v1()) - <root>/scalaclean@/test@/overrides@/internalTransitiveOverrides@/T1./{M}v1() :: <root>/scalaclean@/test@/overrides@/internalTransitiveOverrides@/VL2./{M}v1() */
 }
 
 abstract class VLC2 extends T1 {
-  val v1 : String
+  val v1 : String/* internalTransitiveOverrides(<root>/scalaclean@/test@/overrides@/internalTransitiveOverrides@/VLC2./{M}v1()) - <root>/scalaclean@/test@/overrides@/internalTransitiveOverrides@/T1./{M}v1() */
 }
 class VLC3 extends VLC2 {
-  lazy val v1 : String = ""
+  lazy val v1 : String = ""/* internalTransitiveOverrides(<root>/scalaclean@/test@/overrides@/internalTransitiveOverrides@/VLC3./{M}v1()) - <root>/scalaclean@/test@/overrides@/internalTransitiveOverrides@/T1./{M}v1() :: <root>/scalaclean@/test@/overrides@/internalTransitiveOverrides@/VLC2./{M}v1() */
 }
 class VLC3a extends VLC3 {
-  override lazy val v1 : String = ""
+  override lazy val v1 : String = ""/* internalTransitiveOverrides(<root>/scalaclean@/test@/overrides@/internalTransitiveOverrides@/VLC3a./{M}v1()) - <root>/scalaclean@/test@/overrides@/internalTransitiveOverrides@/T1./{M}v1() :: <root>/scalaclean@/test@/overrides@/internalTransitiveOverrides@/VLC2./{M}v1() :: <root>/scalaclean@/test@/overrides@/internalTransitiveOverrides@/VLC3./{M}v1() */
 }

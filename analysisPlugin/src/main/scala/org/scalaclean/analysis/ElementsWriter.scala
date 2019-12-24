@@ -9,7 +9,7 @@ class ElementsWriter(file: File) {
 
   def commonPrefix(model: ModelSymbol): List[Any] = {
     import model._
-    List(ioToken, csvString, newCsvString, tree.symbol.flags.toHexString, sourceFile, posStart, posEnd, traversal)
+    List(ioToken, legacyCsvIDString, newCsvString, tree.symbol.flags.toHexString, sourceFile, posStart, posEnd, posFocus, traversal)
   }
 
   def write(modelSymbol: ModelSymbol): Unit = {

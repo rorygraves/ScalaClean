@@ -54,6 +54,7 @@ lazy val mergeSettings = Def.settings(
 lazy val shared = project
   .settings(
     moduleName := "shared",
+    libraryDependencies += "org.scala-lang" % "scala-reflect" % scala212,
     scalaVersion := scala212)
 
 lazy val analysisPlugin = project.dependsOn(shared).settings(
@@ -62,23 +63,7 @@ lazy val analysisPlugin = project.dependsOn(shared).settings(
     libraryDependencies += "org.scala-lang" % "scala-compiler" % scala212,
     libraryDependencies += "org.scala-lang" % "scala-reflect" % scala212,
     mergeSettings,
-
     libraryDependencies += "org.scalameta" % "semanticdb-scalac-core" % scalametaVersion cross CrossVersion.full,
-    addCompilerPlugin("org.scalameta"      % "semanticdb-scalac"      % scalametaVersion cross CrossVersion.full),
-
-    scalacOptions in Test ++= {
-      // we depend on the assembly jar
-      val jar = (assembly in Compile).value
-      Seq(
-        "-Yrangepos",
-        s"-Xplugin:${jar.getAbsolutePath}",
-        s"-Jdummy=${jar.lastModified}", // ensures recompile
-        "-P:semanticdb:synthetics:on",
-        "-P:scalaclean-analysis-plugin:debug:true",
-        "-Xprint:typer",
-      )
-
-    },
     fork in Test := true
   )
 
@@ -88,34 +73,23 @@ lazy val command = project.dependsOn(shared)
   .settings(
     moduleName := "command",
     scalaVersion := scala212,
-    libraryDependencies += "args4j"           %  "args4j"           % "2.33",
-    libraryDependencies += "com.github.scopt" %% "scopt"            % "4.0.0-RC2",
-    libraryDependencies += "ch.epfl.scala"    %% "scalafix-core"    % scalaFixVersion,
-    libraryDependencies += "ch.epfl.scala"    %  "scalafix-testkit" % scalaFixVersion cross CrossVersion.full,
+    libraryDependencies += "args4j" % "args4j" % "2.33",
+    libraryDependencies += "com.github.scopt" %% "scopt" % "4.0.0-RC2",
+    libraryDependencies += "ch.epfl.scala" %% "scalafix-core" % scalaFixVersion,
 
     mainClass in assembly := Some("scalaclean.cli.ScalaCleanMain"),
-    // exclude some of the semanticdb classes which are imported twice
-    assemblyExcludedJars in assembly := {
-      val cp = (fullClasspath in assembly).value
-      cp.filter { f=>
-        f.data.getName.contains("semanticdb-scalac_")
-      }
-    }
   )
 
 
 lazy val unitTestProject = project.in(file("testProjects/unitTestProject")).settings(
-  addCompilerPlugin("org.scalameta" % "semanticdb-scalac" % scalametaVersion cross CrossVersion.full),
-  scalacOptions += "-P:semanticdb:synthetics:on",
   skip in publish := true,
 
     scalacOptions  ++= {
       // we depend on the assembly jar
-      //    val baseDirectory.value /"custom_lib"
       val jar = (assembly in Compile in analysisPlugin).value
       val srcLocations = (sourceDirectories in Compile).value.mkString(java.io.File.pathSeparator)
       Seq(
-        //      "-Xprint:typer",
+        //  "-Xprint:typer",
         //      "-Ycompact-trees",
         "-Yrangepos",
         s"-Xplugin:${jar.getAbsolutePath}",
@@ -129,9 +103,7 @@ lazy val unitTestProject = project.in(file("testProjects/unitTestProject")).sett
 
 // template for dead code projects
 def testInputProject(id: String, projectLocation: String, showTrees: Boolean = false)(dependencies: ClasspathDep[ProjectReference]*) = sbt.Project.apply(id, file(projectLocation)).settings(
-  addCompilerPlugin("org.scalameta" % "semanticdb-scalac" % scalametaVersion cross CrossVersion.full),
   scalacOptions += "-Yrangepos",
-  scalacOptions += "-P:semanticdb:synthetics:on",
   skip in publish := true,
 
   scalacOptions  ++= {
@@ -142,8 +114,8 @@ def testInputProject(id: String, projectLocation: String, showTrees: Boolean = f
     assert(srcLocations.nonEmpty)
     val extras = if (showTrees)
       List(
-        "-P:scalaclean-analysis-plugin:debug:true",
-        "-Ybrowse:typer",
+//        "-P:scalaclean-analysis-plugin:debug:true",
+//        "-Ybrowse:typer",
         "-Xprint:typer")
     else List[String]()
     List(
@@ -196,12 +168,10 @@ lazy val testDep = List(command, unitTestProject) ::: privatiserTests ::: deadCo
 lazy val tests = project.dependsOn(testDep map (classpathDependency(_)) : _*)
   .settings(
     moduleName := "tests",
-    libraryDependencies += "args4j"            %  "args4j"           % "2.33",
-    libraryDependencies += "ch.epfl.scala"     %% "scalafix-core"    % scalaFixVersion,
-    libraryDependencies += "ch.epfl.scala"     %  "scalafix-testkit" % scalaFixVersion cross CrossVersion.full,
-    libraryDependencies += "junit"             %  "junit"            % junitVersion           % Test,
-    libraryDependencies += "org.scalatest"     %% "scalatest"        % scalaTestVersion       % Test,
-    libraryDependencies += "org.scalatestplus" %% "junit-4-12"       % s"$scalaTestVersion.0" % Test,
+    libraryDependencies += "args4j" % "args4j" % "2.33",
+    libraryDependencies += "ch.epfl.scala" %% "scalafix-core" % scalaFixVersion,
+    libraryDependencies += "junit" % "junit" % junitVersion % Test,
+    libraryDependencies += "org.scalatest" %% "scalatest" % scalaTestVersion % Test,
     scalaVersion := scala212,
     crossPaths := false,
     libraryDependencies += "com.novocode" % "junit-interface" % "0.11" % Test,

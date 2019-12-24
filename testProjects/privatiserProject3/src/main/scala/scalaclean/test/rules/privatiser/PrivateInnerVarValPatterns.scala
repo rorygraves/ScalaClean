@@ -2,7 +2,7 @@ package scalaclean.test.rules.privatiser
 
 object PrivateInnerVarValPatterns extends App {
 
-  //not used = should be flagged with comments
+  //not used = should be marked private[this
   val (a1, b1, c1) = (1, 2, 3)
 
   //private - only used in within PrivateInnerVarValPatterns

@@ -5,6 +5,7 @@ import java.nio.file.{Files, Paths}
 import java.util.Properties
 
 import org.scalaclean.analysis.plugin.ExtensionPlugin
+import scalaclean.model.ElementId
 
 import scala.collection.immutable.HashSet
 import scala.collection.mutable
@@ -14,10 +15,10 @@ import scala.tools.nsc.{Global, Phase}
 
 
 class ScalaCompilerPluginComponent(
-                                    val global: Global) extends PluginComponent with ModelSymbolBuilder {
+  val global: Global) extends PluginComponent with ModelSymbolBuilder {
   override val phaseName: String = "scalaclean-compiler-plugin-phase"
 
-  override val runsAfter: List[String] = List("semanticdb-typer")
+  override val runsAfter: List[String] = List("typer")
   // a bit ugly, but the options are read after the component is create - so it is updated by the plugin
   var debug = false
   var sourceDirs: List[String] = List.empty
@@ -65,7 +66,6 @@ class ScalaCompilerPluginComponent(
       val relationsFile = new File(outputPath.toFile, "scalaclean-relationships.csv")
       if (debug)
         println(s"Writing relationships file to to $relationsFile")
-
       relationsWriter = new RelationshipsWriter(relationsFile)
 
       val extensionFile = new File(outputPath.toFile, "scalaclean-extensions.csv")
@@ -82,6 +82,8 @@ class ScalaCompilerPluginComponent(
 
       val props = new Properties
       import PropertyNames._
+      props.put(prop_sourceOsPathSeparator, java.io.File.pathSeparator)
+      props.put(prop_sourceOsDirSeparator, java.io.File.separator)
       props.put(prop_classpath, global.settings.classpath.value)
       props.put(prop_outputDir, outputPathBase.toString)
       props.put(prop_elementsFile, elementsFile.toString)
@@ -176,14 +178,14 @@ class ScalaCompilerPluginComponent(
         println(s"$indentString${mSymbol.debugName}")
       scopeStack = mSymbol :: scopeStack
       depth += 1
-      scopeLog(s"-symbol: ${mSymbol.csvString}")
+      scopeLog(s"-symbol: ${mSymbol.legacyCsvIDString}")
       val oldVisited = newVisited()
       outer.foreach { o =>
         mSymbol.addWithin(o)
       }
       extensions foreach {
         e =>
-          val data = e.extendedData(mSymbol, mSymbol.tree.asInstanceOf[e.g.Tree])
+          val data = e.extendedData(mSymbol, mSymbol.tree.asInstanceOf[e.g.Tree], scopeStack.tail)
           mSymbol.addExtensionData(data)
       }
       traverseType(mSymbol.tree.tpe.asInstanceOf[global.Type])
@@ -218,10 +220,10 @@ class ScalaCompilerPluginComponent(
   }
 
   class SCUnitTraverser(
-                         val elementsWriter: ElementsWriter,
-                         val relationsWriter: RelationshipsWriter,
-                         val extensionWriter: ExtensionWriter,
-                         val debug: Boolean) extends global.Traverser with ScopeTracking {
+    val elementsWriter: ElementsWriter,
+    val relationsWriter: RelationshipsWriter,
+    val extensionWriter: ExtensionWriter,
+    val debug: Boolean) extends global.Traverser with ScopeTracking {
 
     import global._
 
@@ -234,8 +236,9 @@ class ScalaCompilerPluginComponent(
     val logTransScope = true
 
     def traverseSource(unit: CompilationUnit): Unit = {
-      val sourceFile = unit.source.file.canonicalPath
-      val sourceSymbol = ModelSource(unit.body, ModelCommon(isGlobal = true, s"source:$sourceFile", s"S:$sourceFile", sourceFile, -1, -1, "<NA>"))
+      val sourceFile = unit.source.file.file.toPath
+      val sourceFileStr = sourceFile.toString
+      val sourceSymbol = ModelSource(unit.body, ModelCommon(true, ElementId(sourceFile), sourceFileStr, -1, -1, -1, "<NA>"))
       enterScope(sourceSymbol) {
         _ =>
           traverse(unit.body)
@@ -383,7 +386,7 @@ class ScalaCompilerPluginComponent(
           }
         case treeSelect: Select =>
           enterTransScope("Select") {
-            scopeLog("-symbol: " + asMSymbol(treeSelect.symbol).csvString)
+            scopeLog("-symbol: " + asMSymbol(treeSelect.symbol).legacyCsvIDString)
             // avoids an issue with packages which we ScalaClean doesn't currently understand
             if (hasCurrentGlobalScope) {
               currentScope.addRefers(asMSymbol(treeSelect.symbol), isSynthetic = false)
@@ -483,29 +486,28 @@ class ScalaCompilerPluginComponent(
             //we don't bother traversing the types of the symbol as they will be traversed on the actual fields
             super.traverse(tree)
           }
-//        case defDef: DefDef if defDef.mods.isArtifact && defDef.mods.isSynthetic && defDef.symbol.isAccessor =>
-////          defDef.
-//          scopeLog(s"skip synthetic accessor ${defDef.name}")
+        //        case defDef: DefDef if defDef.mods.isArtifact && defDef.mods.isSynthetic && defDef.symbol.isAccessor =>
+        ////          defDef.
+        //          scopeLog(s"skip synthetic accessor ${defDef.name}")
 
         // *********************************************************************************************************
         case valDef: ValDef =>
           val symbol = valDef.symbol
           val isVar = symbol.isVar
           val fields: Option[ModelFields] = valDef.rhs match {
-             case Select(qualifier, name) =>
-               Option(qualifier.symbol).flatMap(_.attachments.get[ModelFields])
-             case _ => None
-           }
+            case Select(qualifier, name) =>
+              Option(qualifier.symbol).flatMap(_.attachments.get[ModelFields])
+            case _ => None
+          }
 
           val field = currentScope match {
             case cls: ClassLike =>
               val getter = symbol.getterIn(symbol.owner)
-              val setter = symbol.setterIn(symbol.owner)
-              val collides = symbol == getter
-              val mSymbol = asMSymbol(symbol, collides)
+              val setter = if (isVar) symbol.setterIn(symbol.owner) else NoSymbol
+              val mSymbol = asMSymbolForceField(symbol)
               val field = if (isVar) {
-  //                assert(setter != NoSymbol, s"no setter $mSymbol at ${valDef.pos.line}:${valDef.pos.column}")
-//                assert(getter != NoSymbol, s"no getter $mSymbol at ${valDef.pos.line}:${valDef.pos.column}")
+                //                assert(setter != NoSymbol, s"no setter $mSymbol at ${valDef.pos.line}:${valDef.pos.column}")
+                //                assert(getter != NoSymbol, s"no getter $mSymbol at ${valDef.pos.line}:${valDef.pos.column}")
                 ModelVar(valDef, mSymbol, symbol.isDeferred, symbol.isParameter, fields)
               } else {
                 //cant do this yet
@@ -516,28 +518,47 @@ class ScalaCompilerPluginComponent(
 
                 ModelVal(valDef, mSymbol, symbol.isDeferred, valDef.symbol.isLazy, symbol.isParameter, fields)
               }
-              cls.addPostProcess( () => {
+              cls.addPostProcess(() => {
+                val getterSym = if (getter == NoSymbol) null else asMSymbol(getter)
+                val setterSym = if (setter == NoSymbol) null else asMSymbol(setter)
                 var added = false
-                if (getter != NoSymbol && !cls.children.contains(asMSymbol(getter))) {
+                if (getter != NoSymbol && !cls.children.contains(getterSym)) {
                   scopeLog(s"add getter for field $field as is wasn't added directly $getter")
                   added = true
                   enterScope(ModelGetterMethod(DefDef(getter, new Modifiers(getter.flags, newTermName(""), Nil), global.EmptyTree),
-                    asMSymbol(getter), isTyped = false, isAbstract = false)) { method =>
+                    getterSym, false, false)) { method =>
 
                     method.addGetterFor(field.common)
+                    method.addedAccessor = true
                     addMethodOverrides(method, getter)
                   }
                 }
-                if (isVar && setter != NoSymbol && !cls.children.contains(asMSymbol(setter))) {
+                if (isVar && setter != NoSymbol && !cls.children.contains(setterSym)) {
                   scopeLog(s"add setter for field $field as is wasn't added directly $setter")
                   added = true
                   enterScope(ModelSetterMethod(DefDef(setter, new Modifiers(setter.flags, newTermName(""), Nil), global.EmptyTree),
                     asMSymbol(setter), isTyped = false, isAbstract = false)) { method =>
 
                     method.addSetterFor(field.common)
+                    method.addedAccessor = true
                     addMethodOverrides(method, setter)
                   }
                 }
+                //when children could not find the field - e.g. a trait var
+                cls.children foreach {
+                  case (c , getter: ModelGetterMethod)  if c == getterSym =>
+                    if (!getter.addedAccessor) {
+                      getter.addGetterFor(field.common)
+                      getter.addedAccessor = true
+                    }
+                  case (c , setter: ModelSetterMethod)  if c == setterSym =>
+                    if (!setter.addedAccessor) {
+                      setter.addSetterFor(field.common)
+                      setter.addedAccessor = true
+                    }
+                  case _ =>
+                }
+
                 if (added)
                   scopeLog(s"end accessors for field $field")
               })
@@ -604,16 +625,20 @@ class ScalaCompilerPluginComponent(
               // this simplified the model navigation
               super.traverse(tree)
             case _ if symbol.isAccessor && symbol.isGetter =>
-              val field = asMSymbol(symbol.accessedOrSelf)
               enterScope(ModelGetterMethod(defdef, mSymbol, declTypeDefined, symbol.isDeferred)) { method =>
                 traverseMethod(method)
-                method.addGetterFor(field)
+                if (symbol.accessedOrSelf != symbol) {
+                  method.addGetterFor(asMSymbol(symbol.accessedOrSelf))
+                  method.addedAccessor = true
+                }
               }
             case _ if symbol.isAccessor && symbol.isSetter =>
-              val field = asMSymbol(symbol.accessedOrSelf)
               enterScope(ModelSetterMethod(defdef, mSymbol, declTypeDefined, symbol.isDeferred)) { method =>
                 traverseMethod(method)
-                method.addSetterFor(field)
+                if (symbol.accessedOrSelf != symbol) {
+                  method.addSetterFor( asMSymbol(symbol.accessedOrSelf))
+                  method.addedAccessor = true
+                }
               }
 
             case _ if symbol.isSynthetic =>
@@ -650,35 +675,35 @@ class ScalaCompilerPluginComponent(
           method.addOverride(asMSymbol(s), direct = true)
         }
 
-//        val directParentSymbols: Set[ModelCommon] = symbol.info.parents.map(t => asMSymbol(t.typeSymbol)).toSet
-//
-//        scopeLog(s"DirectParentSymbols = $directParentSymbols")
-//
-//        val directParentSymbols2 = symbol.outerClass
-//
-//        scopeLog(s"DirectParentSymbols2 = $classSym")
-//        scopeLog(s"DirectParentSymbols2 = $directParentSymbols2")
-//
-//        val directClassParentSymbols = classSym.info.parents.map(t => asMSymbol(t.typeSymbol)).toSet
-//
-//        scopeLog(s"DirectParentSymbols3 = $directClassParentSymbols")
-//
-//        classSym.ancestors foreach { ancestorSymbol =>
-//          val ancestorMSymbol = asMSymbol(ancestorSymbol)
-//          val direct = directSymbols.contains(ancestorSymbol)
-//          val overridden = symbol.overriddenSymbol(ancestorSymbol)
-//          if (overridden != NoSymbol) {
-//            scopeLog(s"    ${overridden} $direct")
-//          }
-//        }
+        //        val directParentSymbols: Set[ModelCommon] = symbol.info.parents.map(t => asMSymbol(t.typeSymbol)).toSet
+        //
+        //        scopeLog(s"DirectParentSymbols = $directParentSymbols")
+        //
+        //        val directParentSymbols2 = symbol.outerClass
+        //
+        //        scopeLog(s"DirectParentSymbols2 = $classSym")
+        //        scopeLog(s"DirectParentSymbols2 = $directParentSymbols2")
+        //
+        //        val directClassParentSymbols = classSym.info.parents.map(t => asMSymbol(t.typeSymbol)).toSet
+        //
+        //        scopeLog(s"DirectParentSymbols3 = $directClassParentSymbols")
+        //
+        //        classSym.ancestors foreach { ancestorSymbol =>
+        //          val ancestorMSymbol = asMSymbol(ancestorSymbol)
+        //          val direct = directSymbols.contains(ancestorSymbol)
+        //          val overridden = symbol.overriddenSymbol(ancestorSymbol)
+        //          if (overridden != NoSymbol) {
+        //            scopeLog(s"    AAAAA ${overridden} $direct")
+        //          }
+        //        }
 
         symbol.overrides.foreach { overridden =>
-//          val overriddenOwnerMSym = asMSymbol(overridden.owner)
+          //          val overriddenOwnerMSym = asMSymbol(overridden.owner)
           if (!directSymbols.contains(overridden))
             method.addOverride(asMSymbol(overridden), direct = false)
         }
 
-        //if it not a top level method then it cant override anything
+      //if it not a top level method then it cant override anything
       case _ =>
     }
   }

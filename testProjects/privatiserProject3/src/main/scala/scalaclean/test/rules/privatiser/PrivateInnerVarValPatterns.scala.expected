@@ -2,8 +2,8 @@ package scalaclean.test.rules.privatiser
 
 object PrivateInnerVarValPatterns extends App {
 
-  //not used = should be flagged with comments
-  /* *** SCALA CLEAN can't detect usage */val (a1, b1, c1) = (1, 2, 3)
+  //not used = should be marked private[this
+  private[this] val (a1, b1, c1) = (1, 2, 3)
 
   //private - only used in within PrivateInnerVarValPatterns
   private val (a2, b2, c2) = (1, 2, 3)
@@ -17,7 +17,7 @@ object PrivateInnerVarValPatterns extends App {
   //private - b13 accessed only used in within PrivateInnerVarValPatterns
   private var (a13, b13, c13) = (1, 2, 3)
 
-  /* *** SCALA CLEAN can't detect usage */object usage {
+  private[this] object usage {
     print(a2 + b2 + c2)
     print(b3)
     print(a12 + b12 + c12)

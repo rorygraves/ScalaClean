@@ -1,17 +1,16 @@
 package scalaclean.rules.deadcode
 
 import scalaclean.model._
-import scalaclean.model.impl.LegacyElementId
 import scalaclean.rules.AbstractRule
-import scalaclean.util.{Scope, SymbolTreeVisitor, TokenHelper}
-import scalafix.v1._
+import scalaclean.util.{ElementTreeVisitor, PatchStats, ScalaCleanTreePatcher}
+import scalafix.v1.SyntacticDocument
 
-import scala.meta.{Import, Mod, Pat, Stat}
+import scala.meta.io.AbsolutePath
 
 /**
-  * A rule that removes unreferenced classes,
-  * needs to be run after Analysis
-  */
+ * A rule that removes unreferenced classes,
+ * needs to be run after Analysis
+ */
 class DeadCodeRemover(model: ProjectModel, debug: Boolean) extends AbstractRule("ScalaCleanDeadCodeRemover", model, debug) {
 
   type Colour = Usage
@@ -23,54 +22,25 @@ class DeadCodeRemover(model: ProjectModel, debug: Boolean) extends AbstractRule(
   }
 
   override def debugDump(): Unit = {
-    println("-------------------------------------------------------------")
-
-    val used = model.allOf[ModelElement].filter(!_.colour.isUnused).toList.map(_.legacySymbol).sortBy(_.toString())
-    val unused = model.allOf[ModelElement].filter(_.colour.isUnused).toList.map(_.legacySymbol).sortBy(_.toString())
-
-    println("Used symbols =  " + used.size)
-    println("Unused size = " + unused.size)
-    println("Used Elements: ")
-    used foreach (e => println("  " + e))
-    println("Unused Elements: ")
-    unused foreach (e => println("  " + e))
-    println("-------------------------------------------------------------")
-
+//    println("-------------------------------------------------------------")
+//
+//    val used = model.allOf[ModelElement].filter(!_.colour.isUnused).toList.map(_.legacySymbol).sortBy(_.toString())
+//    val unused = model.allOf[ModelElement].filter(_.colour.isUnused).toList.map(_.legacySymbol).sortBy(_.toString())
+//
+//    println("Used symbols =  " + used.size)
+//    println("Unused size = " + unused.size)
+//    println("Used Elements: ")
+//    used foreach (e => println("  " + e))
+//    println("Unused Elements: ")
+//    unused foreach (e => println("  " + e))
+//    println("-------------------------------------------------------------")
+//
   }
 
-
-  object Main extends Purpose {
-    override def id: Int = 1
-  }
-
-  object Test extends Purpose {
-    override def id: Int = 1 << 1
-  }
-
-  object Usage {
-    private val usages = Array.tabulate(3) {
-      Usage(_)
-    }
-    val unused: Usage = usages(0)
-  }
-
-  case class Usage(purposes: Int) extends Mark {
-    def withPurpose(purpose: Purpose): Usage = {
-      Usage.usages(purposes | purpose.id)
-    }
-
-    def hasPurpose(purpose: Purpose): Boolean =
-      0 != (purposes & purpose.id)
-
-    def isUnused: Boolean = {
-      purposes == 0
-    }
-  }
 
   override def markInitial(): Unit = {
     markAll[ModelElement](Usage.unused)
   }
-
 
   def markUsed(element: ModelElement, markEnclosing: Boolean, purpose: Purpose, path: List[ModelElement], comment: String): Unit = {
     def markRhs(element: ModelElement, path: List[ModelElement], comment: String): Unit = {
@@ -130,9 +100,11 @@ class DeadCodeRemover(model: ProjectModel, debug: Boolean) extends AbstractRule(
         enclosed => markUsed(enclosed, markEnclosing = false, purpose, element :: path, s"$comment - overrides")
       }
       element match {
-        case getter: GetterMethodModel => getter.field.foreach(f => markUsed(f, markEnclosing = true, purpose, element :: path, s"$comment - field "))
-        case setter: SetterMethodModel => setter.field.foreach(f => markUsed(f, markEnclosing = true, purpose, element :: path, s"$comment - field "))
-        case _                         =>
+        case accessor: AccessorModel =>
+          accessor.field foreach {
+            f => markUsed(f, markEnclosing = true, purpose, element :: path, s"$comment - field ")
+          }
+        case _ =>
       }
     }
   }
@@ -140,122 +112,103 @@ class DeadCodeRemover(model: ProjectModel, debug: Boolean) extends AbstractRule(
 
   override def runRule(): Unit = {
     allMainEntryPoints foreach (e => markUsed(e, markEnclosing = true, Main, e :: Nil, ""))
+    allJunitTest foreach (e => markUsed(e, markEnclosing = true, Test, e :: Nil, ""))
+    allSerialisationEntries foreach (e => markUsed(e, markEnclosing = false, Main, e :: Nil, "serialisationCode"))
   }
 
-  override def printSummary(): Unit =
-    println(s"""
-       |linesRemoved    = $linesRemoved
-       |linesChanged    = $linesChanged
-       |elementsRemoved = $elementsRemoved
-       |elementsVisited = $elementsVisited
-       |""".stripMargin)
 
-  var linesRemoved = 0
-  var linesChanged = 0
-  var elementsRemoved = 0
-  var elementsVisited = 0
+  override def fix(targetFile: AbsolutePath, syntacticDocument: () => SyntacticDocument): List[SCPatch] = {
 
-  override def fix(implicit doc: SemanticDocument): Patch = {
+    val targetFileName = targetFile.toString
+    // find source model
+    val sModel = model.allOf[SourceModel].filter(_.toString.contains(targetFileName)).toList.headOption.getOrElse(throw new IllegalStateException(s"Unable to find source model for $targetFileName"))
 
-    val tv = new SymbolTreeVisitor {
+    object visitor extends ScalaCleanTreePatcher(patchStats, syntacticDocument) {
 
-      override protected def handlerSymbol(
-                                            symbol: LegacyElementId, mods: Seq[Mod], stat: Stat, scope: List[Scope]): (Patch, Boolean) = {
-        if(symbol.symbol.isLocal || symbol.symbol.isNone) continue
-        else {
-          val modelElementOpt = model.getLegacySymbol[ModelElement](symbol)
-          modelElementOpt match {
-            case None =>
-              continue
-            case Some(modelElement) =>
+      override protected def visitInSource(element: ModelElement): Boolean = {
+        element match {
+          case field: FieldModel if field.inCompoundFieldDeclaration =>
+            // do nothing - do not recurse
+            false
+          case gmm: GetterMethodModel if(gmm.field.forall(_.existsInSource)) =>
 
-              if (modelElement.existsInSource) {
-                val usage = modelElement.colour
-                elementsVisited += 1
-                if (usage.isUnused) {
-                  val tokens = stat.tokens
-                  val firstToken = tokens.head
-
-                  val removedTokens = TokenHelper.whitespaceOrCommentsBefore(firstToken, doc.tokens) ++ tokens
-                  elementsRemoved += 1
-                  val first = removedTokens.minBy {
-                    _.start
-                  }
-                  linesRemoved += (stat.pos.endLine - first.pos.startLine + 1)
-                  val patch = Patch.removeTokens(removedTokens)
-                  (patch, false)
-                } else
-                  continue
-              } else
-                continue
-          }
-        }
-      }
-
-      override protected def handlerPats(
-                                          pats: Seq[Pat.Var], mods: Seq[Mod], stat: Stat, scope: List[Scope]): (Patch, Boolean) = {
-        elementsVisited += 1
-        val declarationsByUsage: Map[Usage, Seq[(Pat.Var, ModelElement)]] =
-          pats.filterNot(v => v.symbol.isLocal  || v.symbol.isNone ) map { p =>
-            val mElement: ModelElement = model.legacySymbol[ModelElement](LegacyElementId(p.symbol))
-            (p, mElement)
-          } groupBy (m => m._2.colour)
-
-        declarationsByUsage.get(Usage.unused) match {
-          case Some(_) if declarationsByUsage.size == 1 =>
-            //we can remove the whole declaration
-            val tokens = stat.tokens
-            val firstToken = tokens.head
-            val removedTokens = TokenHelper.whitespaceOrCommentsBefore(firstToken, doc.tokens) ++ tokens
-            elementsRemoved += 1
-            val first = removedTokens.minBy{ _.start}
-            linesRemoved += (stat.pos.endLine - first.pos.startLine + 1)
-            (Patch.removeTokens(removedTokens), false)
-          case Some(unused) =>
-            val combinedPatch = unused.foldLeft(Patch.empty) {
-              case (patch, (pat, model)) =>
-                patch + Patch.replaceToken(pat.tokens.head, "_")
+            false
+          case fields: FieldsModel =>
+            log("FieldsModel - " + fields.name)
+            // fields are a bit special. They will be marked as used (by the implementation of the var/val that uses it)
+            // but we take a deeper look here - there are 3 cases
+            // 1. all of the child fields are used - leave as is
+            // 2. None of the fields are used - remove the whole declaration
+            // 3. some of the fields are used - replace the unused fields with `-` and leave a comment
+            val decls = fields.fieldsInDeclaration
+            assert(decls.nonEmpty)
+            val unused = decls.filter {
+              _.colour.isUnused
             }
-            val marker = Utils.addMarker(stat, s"consider rewriting pattern as ${unused.size} values are not used")
-            linesChanged += 1
-            (combinedPatch + marker, true)
-          case _ =>
-            continue
+            if (unused.isEmpty) {
+              //case 1 no change
+              true
+            } else if (unused.size == decls.size) {
+              //case 2
+              remove(fields, "all fields in patmat unused")
+              //no need to recurse
+              false
+            } else {
+              //case 3
+              addComment(fields, s"consider rewriting pattern as ${unused.size} values are not used", "mutiple fields unused")
 
+              unused foreach { f =>
+                replaceFromFocus(f, "_",s"${f.name} unused in patmat")
+              }
+              true
+            }
+
+          case element =>
+            log(" basic element handling")
+            if (element.colour.isUnused && element.existsInSource) {
+              remove(element, s"Simple ${element.name} (${element.getClass} unused")
+              false
+            }
+            else
+              true
         }
       }
-
-      override def handleImport(importStatement: Import, scope: List[Scope]): (Patch, Boolean) = {
-        (Patch.empty, false)
-      }
-//      override def handleImport(importStatement: Import, scope: List[Scope]): (Patch, Boolean) = {
-//        assert(importStatement.importers.size == 1)
-//        //TODO - need to ensure that all symbols related are the same import are of the same status
-//
-//        val importers = importStatement.importers
-//        val importees = importers.head.importees
-//        val byUsage = importees.groupBy {
-//          i =>
-//            val symbol = i.symbol(doc)
-//            model.getLegacySymbol[ModelElement](ElementId(symbol)).map(_.colour)
-//        }
-//        byUsage.get(Some(Usage.unused)) match {
-//          case Some(_) if byUsage.size == 1 =>
-//            //we can remove the whole declaration
-//            val tokens = importStatement.tokens
-//            val firstToken = tokens.head
-//            (Patch.removeTokens(TokenHelper.whitespaceTokensBefore(firstToken, doc.tokens)) + Patch.removeTokens(tokens), false)
-//          case Some(unused) =>
-//            val combinedPatch = unused.foldLeft(Patch.empty) {
-//              case (patch, importee) =>
-//                patch + Patch.removeImportee(importee)
-//            }
-//            (combinedPatch, false)
-//          case _ =>
-//            (Patch.empty, false)
-//        }
-//      }
     }
-    tv.visitDocument(doc.tree)
+
+    visitor.visit(sModel)
+
+    val result = visitor.result
+    println("--------NEW----------")
+    result.foreach(println)
+    println("------------------")
+
+
+    result.map(s => SCPatch(s.startPos, s.endPos, s.replacementText))
   }
+
+  case class Usage(existingPurposes: Int = 0) extends Mark {
+    def withPurpose(addedPurpose: Purpose): Usage = {
+      Usage(existingPurposes | addedPurpose.id)
+    }
+
+    def hasPurpose(purpose: Purpose): Boolean =
+      0 != (existingPurposes & purpose.id)
+
+    def isUnused: Boolean = {
+      existingPurposes == 0
+    }
+  }
+
+  object Main extends Purpose {
+    override def id: Int = 1
+  }
+
+  object Test extends Purpose {
+    override def id: Int = 1 << 1
+  }
+
+  object Usage {
+    val unused: Usage = new Usage(0)
+  }
+
 }

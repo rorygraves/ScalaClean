@@ -1,23 +1,19 @@
 package scalaclean.cli
 
+import java.io.{PrintWriter, StringWriter}
 import java.nio.charset.StandardCharsets
 import java.nio.file.{Files, Paths}
 
-import scalaclean.model.ProjectModel
 import scalaclean.model.impl.{Project, ProjectSet}
+import scalaclean.model.{ProjectModel, SCPatch}
 import scalaclean.rules.AbstractRule
-import scalaclean.rules.deadcode.DeadCodeRemover
-import scalafix.internal.patch.PatchInternals
-import scalafix.internal.reflect.ClasspathOps
-import scalafix.lint.RuleDiagnostic
-import scalafix.rule.RuleName
-import scalafix.scalaclean.cli.DocHelper
-import scalafix.testkit.DiffAssertions
-import scalafix.v1.SemanticDocument
+import scalaclean.rules.deadcode.{DeadCodeRemover, SimpleDeadCode}
+import scalaclean.rules.privatiser.{Privatiser, SimplePrivatiser}
+import scalaclean.util.{DiffAssertions, DocHelper}
+import scalafix.v1.SyntacticDocument
 
 import scala.meta._
 import scala.meta.internal.io.FileIO
-import scala.meta.internal.symtab.SymbolTable
 
 
 object ScalaCleanMain {
@@ -26,9 +22,13 @@ object ScalaCleanMain {
       case Some(options) =>
         val commandFn: ProjectModel => AbstractRule = options.mode match {
           case SCOptions.privatiserCmd =>
-            model => new DeadCodeRemover(model, options.debug)
+            model => new Privatiser(model, options.debug)
+          case SCOptions.simplePrivatiserCmd =>
+            model => new SimplePrivatiser(model, options.debug)
           case SCOptions.deadCodeCmd =>
             model => new DeadCodeRemover(model, options.debug)
+          case SCOptions.simpleDeadCodeCmd =>
+            model => new SimpleDeadCode(model, options.debug)
           case _ =>
             throw new IllegalStateException(s"Invalid command argument ${options.mode}")
         }
@@ -40,20 +40,69 @@ object ScalaCleanMain {
 }
 
 
-class ScalaCleanMain(dcOptions: SCOptions, ruleCreateFn: ProjectModel => AbstractRule) extends DiffAssertions {
+class ScalaCleanMain(options: SCOptions, ruleCreateFn: ProjectModel => AbstractRule) extends DiffAssertions {
 
-  def semanticPatch(
-    rule: AbstractRule,
-    sdoc: SemanticDocument,
-    suppress: Boolean
-  ): (String, List[RuleDiagnostic]) = {
-    val fixes = Some(RuleName(rule.name) -> rule.fix(sdoc)).map(Map.empty + _).getOrElse(Map.empty)
-    PatchInternals.semantic(fixes, sdoc, suppress)
+  def generateHTML(generated: String, original: String): Unit = {
+    import scala.io.Source
+    val cssText: String = Source.fromResource("default-style.css").mkString
+
+    writeToFile(AbsolutePath("/tmp/code.css"), cssText)
+    val sw = new StringWriter()
+    val pw = new PrintWriter(sw)
+    pw.println(
+      """
+        |<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+        |<html xmlns="http://www.w3.org/1999/xhtml">
+        |    <head>
+        |        <title>XXXXX</title>
+        |        <link rel="stylesheet" type="text/css" href="code.css" title="Style">
+        |    </head>
+        |    <body onload="initializeLinked()">
+        |        <pre>
+        |""".stripMargin)
+
+    pw.println(generated)
+    pw.println("--------------------")
+    pw.println("--------------------")
+    pw.println(original)
+    pw.println("--------------------")
+
+    pw.println(
+      """        </pre>
+        |    </body>
+        |</html>
+        |""".stripMargin
+    )
+
+    pw.flush()
+    val str = sw.toString
+    writeToFile(AbsolutePath("/tmp/code.html"), str)
+    //    Runtime.getRuntime.exec("open /tmp/code.html")
+    //    System.exit(1)
+
+
+  }
+
+  def applyRule(
+                 targetFile: AbsolutePath,
+                 rule: AbstractRule,
+                 syntacticDocument: ()=> SyntacticDocument,
+                 suppress: Boolean,
+                 source: String,
+               ): String = {
+
+    // actually run the rule
+    val fixes: Seq[SCPatch] = rule.fix(targetFile, syntacticDocument)
+    val fixedSource = SCPatchUtil.applyFixes(source, fixes)
+
+//    generateHTML(fixedSource, source)
+
+    fixedSource
   }
 
   def run(): Boolean = {
 
-    val projectProps = dcOptions.files.map(f => Paths.get(f.toString))
+    val projectProps = options.files.map(f => Paths.get(f.toString))
 
     val projectSet = new ProjectSet(projectProps: _*)
 
@@ -64,9 +113,9 @@ class ScalaCleanMain(dcOptions: SCOptions, ruleCreateFn: ProjectModel => Abstrac
 
     var changed = false
     projectSet.projects foreach { project =>
-      changed |= runRuleOnProject(rule, project, dcOptions.validate, dcOptions.replace, dcOptions.debug)
+      changed |= runRuleOnProject(rule, project, options.validate, options.replace, options.debug)
     }
-    if (dcOptions.debug)
+    if (options.debug)
       println(s"DEBUG: Changed = $changed")
     changed
   }
@@ -98,28 +147,22 @@ class ScalaCleanMain(dcOptions: SCOptions, ruleCreateFn: ProjectModel => Abstrac
   }
 
   /**
-    *
-    * @param rule The rule to run
-    * @param project The target project
-    * @return True if diffs were seen or files were changed
-    */
+   *
+   * @param rule    The rule to run
+   * @param project The target project
+   * @return True if diffs were seen or files were changed
+   */
   def runRuleOnProject(
-    rule: AbstractRule, project: Project, validateMode: Boolean, replace: Boolean, debug: Boolean): Boolean = {
-
-    val symtab: SymbolTable = ClasspathOps.newSymbolTable(project.classPath)
-    val classLoader = project.classloader
+                        rule: AbstractRule, project: Project, validateMode: Boolean, replace: Boolean, debug: Boolean): Boolean = {
 
     var changed = false
 
     println("---------------------------------------------------------------------------------------------------")
 
-    val srcBase = AbsolutePath(project.src)
-    val base = AbsolutePath(project.srcBuildBase)
-
     val files: Seq[AbsolutePath] = project.srcFiles.toList.map(AbsolutePath(_))
 
     def findRelativeSrc(
-      absTargetFile: meta.AbsolutePath, basePaths: List[AbsolutePath]): (AbsolutePath, RelativePath) = {
+                         absTargetFile: meta.AbsolutePath, basePaths: List[AbsolutePath]): (AbsolutePath, RelativePath) = {
 
       val nioTargetFile = absTargetFile.toNIO
       val baseOpt = basePaths.find(bp => nioTargetFile.startsWith(bp.toNIO))
@@ -128,12 +171,13 @@ class ScalaCleanMain(dcOptions: SCOptions, ruleCreateFn: ProjectModel => Abstrac
 
     files.foreach { absTargetFile =>
       val (relBase, targetFile) = findRelativeSrc(absTargetFile, project.srcRoots)
-      val sdoc = DocHelper.readSemanticDoc(classLoader, symtab, absTargetFile, base, targetFile)
-      val (fixed, _) = semanticPatch(rule, sdoc, suppress = false)
 
-      // compare results
-      val tokens = fixed.tokenize.get
-      val obtained = tokens.mkString
+      val existingFilePath = relBase.resolve(targetFile)
+      val existingFile = FileIO.slurp(existingFilePath, StandardCharsets.UTF_8)
+
+      val syntacticDocument = () => DocHelper.readSyntacticDoc(absTargetFile, targetFile)
+
+      val obtained = applyRule(absTargetFile, rule, syntacticDocument, suppress = false, existingFile)
 
       if (validateMode) {
         val expectedFile = expectedPathForTarget(relBase, targetFile)
@@ -162,7 +206,7 @@ class ScalaCleanMain(dcOptions: SCOptions, ruleCreateFn: ProjectModel => Abstrac
         }
       }
     }
-    rule.printSummary()
+    rule.printSummary("ALL")
     changed
   }
 

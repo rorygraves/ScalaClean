@@ -10,31 +10,17 @@ import scala.reflect.ClassTag
 class ProjectSet(projectPropertyPaths: Path*) extends ProjectModel {
   val projects: List[Project] = projectPropertyPaths.toList map { p => Project(p, this) }
 
-  val (legacyElements: Map[LegacyElementId, Seq[ElementModelImpl]], elements: Map[ElementId, ElementModelImpl]) = {
+  val elements: Map[ElementId, ElementModelImpl] = {
     val (elements, rels: immutable.Seq[BasicRelationshipInfo]) = projects.map(_.read).unzip
 
-    val elementsMap: Map[LegacyElementId, Seq[ElementModelImpl]] = elements.flatten.groupBy(_.legacySymbol)
-    val modelElements = elements.flatten.toIterator.map(e => e.elementId -> e).toMap
-
-    def duplicates = {
-      val skipped = elementsMap.filter { case (k, v) => v.size != 1 }
-      val skipped2 = elements.flatten.groupBy(_.elementId).filter { case (k, v) => v.size != 1 }
-
-      (skipped, skipped2)
-
-    }
+    val modelElements = elements.flatten.toIterator.map(e => e.modelElementId -> e).toMap
 
     if (elements.flatten.size != modelElements.size) {
 
-      val (orig, newTokens) = duplicates
+      val duplicates = elements.flatten.groupBy(_.modelElementId).filter { case (k, v) => v.size != 1 }
 
-      println("Duplicate OLD SYMBOLS ")
-      orig.foreach { case (s, values) =>
-        println(s"  $s")
-      }
-
-      println("Duplicate NEW SYMBOLS ")
-      newTokens.foreach { case (s, values) =>
+      println("Duplicate SYMBOLS ")
+      duplicates.foreach { case (s, values) =>
         println(s"  $s")
         values.foreach { v =>
           println(s"    $v")
@@ -51,25 +37,7 @@ class ProjectSet(projectPropertyPaths: Path*) extends ProjectModel {
     modelElements.values foreach (_.complete(modelElements, relsFrom = relsFrom, relsTo = relsTo))
 
     ModelReader.finished()
-    (elementsMap, modelElements)
-  }
-
-  override def legacySymbol[T <: ModelElement](symbol: LegacyElementId)(implicit tpe: ClassTag[T]): T = {
-    val targetSymbol = if (symbol.value.startsWith("G:")) symbol else LegacyElementId("G:" + symbol.value)
-
-    legacyElements.get(targetSymbol) match {
-      case None => throw new IllegalArgumentException(s"Unknown symbol $symbol")
-      case Some(x) => x.collectFirst {case x: T => x} getOrElse (
-        throw new IllegalArgumentException(s"Unexpected symbol $symbol - found a $x when expecting a ${tpe.runtimeClass}"))
-    }
-  }
-
-  override def getLegacySymbol[T <: ModelElement](symbol: LegacyElementId)(implicit tpe: ClassTag[T]): Option[T] = {
-    legacyElements.get(symbol) match {
-      case None => None
-      case Some(x) => x.collectFirst {case x: T => x} orElse (
-        throw new IllegalArgumentException(s"Unexpected symbol $symbol - found a $x when expecting a ${tpe.runtimeClass}"))
-    }
+    modelElements
   }
 
   override def element[T <: ModelElement](id: ElementId)(implicit tpe: ClassTag[T]): T = {

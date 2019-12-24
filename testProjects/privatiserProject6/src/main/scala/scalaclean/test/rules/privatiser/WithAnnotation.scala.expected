@@ -6,5 +6,5 @@ object Entry extends App {
 @deprecated
 private[withannotation] class Entry {
   @deprecated
-  private[withannotation] def foo:Int = foo+1
+  private def foo:Int = foo+1
 }

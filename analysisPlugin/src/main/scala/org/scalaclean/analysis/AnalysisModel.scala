@@ -1,5 +1,7 @@
 package org.scalaclean.analysis
 
+import scalaclean.model.ElementId
+
 import scala.collection.immutable.ListSet
 import scala.collection.mutable
 import scala.tools.nsc.Global
@@ -8,7 +10,7 @@ import scala.tools.nsc.Global
 trait HasModelCommon {
   def common: ModelCommon
 
-  def csvString: String = common.csvString
+  def legacyCsvIDString: String = common.legacyCsvIDString
 
   def newCsvString: String = common.newCsvString
 }
@@ -33,13 +35,13 @@ sealed trait ModelSymbol extends HasModelCommon {
 
   def isGlobal: Boolean = common.isGlobal
 
-  def semanticRep: String = common.id
-
   def sourceFile: String = common.sourceFile
 
   def posStart: Int = common.posStart
 
   def posEnd: Int = common.posEnd
+
+  def posFocus: Int = common.posFocus
 
   def isParameter: Boolean = false
 
@@ -208,7 +210,7 @@ sealed trait ModelSymbol extends HasModelCommon {
       }
     }
     refersRels = refersRels.filter(_._1.common.isGlobal)
-    refersRels = refersRels.filter(_._1.common.newId != this.common.newId)
+    refersRels = refersRels.filter(_._1.common.elementId != this.common.elementId)
 
   }
 
@@ -237,19 +239,21 @@ sealed trait ClassLike extends ModelSymbol {
 
 sealed abstract class ModelField extends ModelSymbol {
   val fields: Option[ModelFields]
+  val tree: Global#ValDef
 }
 
 case class ModelCommon(
-                        isGlobal: Boolean, id: String, newId: String, sourceFile: String, posStart: Int, posEnd: Int,
+                        isGlobal: Boolean, elementId: ElementId, sourceFile: String, posStart: Int, posEnd: Int, posFocus: Int,
                         sourceName: String) extends HasModelCommon {
   override def common: ModelCommon = this
 
-  override def csvString: String = {
-    val globalStr = if (isGlobal) "G:" else s"L:$sourceName/"
-    s"$globalStr$id"
+  //TODO remove isGlobal and sourceName as they should come from newId
+  // TODO Remove this and wire through the reader/writer
+  override def legacyCsvIDString: String = {
+    "UNUSED"
   }
 
-  override def newCsvString: String = newId
+  override def newCsvString: String = elementId.id
 }
 
 case class ModelFields(
@@ -261,8 +265,8 @@ case class ModelFields(
     fields ::= field
   }
 
-  def syntheticName = tree.name
-  def fieldCount = tree.tpe.typeArgs.size
+  def syntheticName: Global#TermName = tree.name
+  def fieldCount: Int = tree.tpe.typeArgs.size
 }
 
 case class ModelVar(
@@ -280,8 +284,12 @@ sealed trait ModelMethod extends ModelSymbol {
   val isAbstract: Boolean
 }
 
-case class ModelGetterMethod(tree: Global#DefDef, common: ModelCommon, isTyped: Boolean, isAbstract: Boolean) extends ModelMethod
-case class ModelSetterMethod(tree: Global#DefDef, common: ModelCommon, isTyped: Boolean, isAbstract: Boolean) extends ModelMethod
+sealed trait ModelAccessorMethod extends ModelMethod {
+  var addedAccessor = false
+}
+
+case class ModelGetterMethod(tree: Global#DefDef, common: ModelCommon, isTyped: Boolean, isAbstract: Boolean) extends ModelAccessorMethod
+case class ModelSetterMethod(tree: Global#DefDef, common: ModelCommon, isTyped: Boolean, isAbstract: Boolean) extends ModelAccessorMethod
 case class ModelPlainMethod(tree: Global#DefDef, common: ModelCommon, isTyped: Boolean, isAbstract: Boolean) extends ModelMethod
 case class ModelObject(tree: Global#ModuleDef, common: ModelCommon) extends ModelSymbol with ClassLike
 case class ModelClass(tree: Global#ClassDef, common: ModelCommon, isAbstract: Boolean) extends ModelSymbol with ClassLike

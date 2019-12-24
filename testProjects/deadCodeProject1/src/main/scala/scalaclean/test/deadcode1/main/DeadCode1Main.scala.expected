@@ -1,0 +1,48 @@
+package scalaclean.test.deadcode1.main
+
+import scalaclean.test.deadcode1.main.Outer.Inner3
+
+object AppWithMain1 {
+  def main(args: Array[String]): Unit = {
+    val used = Used1
+    println(used.aMethod())
+    Outer.Inner1
+    ()
+  }
+}
+object Used1 {
+  def aMethod(): Unit = {}
+}
+
+object AppWithMain2 {
+  import Outer._
+  def main(): Unit = {
+    val used = Used2
+    println(used.aMethod())
+    Inner2
+    ()
+  }
+}
+
+object Used2 {
+  def aMethod(): Unit = {}
+}
+
+object App1 extends App {
+  val used = Used3
+  println(used.aMethod())
+  Inner3
+  ()
+}
+object Used3 {
+  def aMethod(): Unit = {}
+}
+
+object Outer {
+  //referenced by AppWithMain1
+  object Inner1
+  //referenced by AppWithMain2
+  object Inner2
+  //referenced by App1
+  object Inner3
+}
