@@ -1,6 +1,6 @@
-package scalaclean.test.rules.deadcode.Import
+package scalaclean.test.deadcode4
 
-import scalaclean.test.rules.deadcode.Import.Outer.{overloaded, Inner2 => I2}
+import scalaclean.test.deadcode4.Outer.{overloaded, Inner2 => I2}
 
 object App1 extends App {
   Outer.Inner

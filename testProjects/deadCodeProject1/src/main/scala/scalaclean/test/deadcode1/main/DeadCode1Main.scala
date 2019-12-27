@@ -1,6 +1,6 @@
-package scalaclean.test.rules.deadcode.deadmain
+package scalaclean.test.deadcode1.main
 
-import scalaclean.test.rules.deadcode.deadmain.Outer.Inner3
+import scalaclean.test.deadcode1.main.Outer.Inner3
 
 object AppWithMain1 {
   def main(args: Array[String]): Unit = {
@@ -12,6 +12,8 @@ object AppWithMain1 {
 }
 object Used1 {
   def aMethod(): Unit = {}
+  def aMethod(notUsed:Int): Unit = {}
+  def notUsedMethod(): Unit = {}
 }
 
 object AppWithMain2 {
@@ -24,8 +26,14 @@ object AppWithMain2 {
   }
 }
 
+trait UnusedTrait {
+  def unusedTraitMethod(x:Int)
+}
+
 object Used2 {
   def aMethod(): Unit = {}
+  def aMethod(notUsed:Int): Unit = {}
+  def notUsedMethod(): Unit = {}
 }
 
 object App1 extends App {
@@ -36,6 +44,8 @@ object App1 extends App {
 }
 object Used3 {
   def aMethod(): Unit = {}
+  def aMethod(notUsed:Int): Unit = {}
+  def notUsedMethod(): Unit = {}
 }
 
 object Outer {
@@ -45,4 +55,7 @@ object Outer {
   object Inner2
   //referenced by App1
   object Inner3
+
+  object NotUsed
 }
+case class UnusedClass(value: String)

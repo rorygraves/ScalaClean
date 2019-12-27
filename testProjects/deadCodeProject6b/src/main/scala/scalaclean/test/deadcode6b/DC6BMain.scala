@@ -1,6 +1,6 @@
-package org.scalaclean.testprojects.deadcode6b
+package scalaclean.test.deadcode6b
 
-import org.scalaclean.testprojects.deadcode6a.DC6UsedClass
+import scalaclean.test.deadcode6a.DC6UsedClass
 
 object DC6BMain {
   def main(args: Array[String]): Unit = {

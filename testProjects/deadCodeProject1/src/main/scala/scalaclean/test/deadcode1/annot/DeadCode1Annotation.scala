@@ -1,6 +1,6 @@
-package scalaclean.test.rules.deadcode.deadannotation
+package scalaclean.test.deadcode1.annot
 
-object App1 extends App {}
+object AnnotApp1 extends App {}
 case class UnusedClass(value: String)
 
 @deprecated

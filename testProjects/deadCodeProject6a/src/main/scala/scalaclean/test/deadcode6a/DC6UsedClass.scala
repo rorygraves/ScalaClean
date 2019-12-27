@@ -1,4 +1,4 @@
-package org.scalaclean.testprojects.deadcode6a
+package scalaclean.test.deadcode6a
 
 // Used by deadcode6b - must be tested in conjunction
 class DC6UsedClass {
