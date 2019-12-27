@@ -33,6 +33,8 @@ abstract class AbstractRule(val name: String, val model: ProjectModel, debug: Bo
 
   def fix(implicit doc: SemanticDocument): Patch
 
+  def fix2(implicit doc: SemanticDocument): List[(Int, Int, String)] = List.empty
+
   def markAll[T <: ModelElement : Manifest](colour: => Colour): Unit = {
     model.allOf[T].foreach {
       e => e.mark = colour
@@ -79,10 +81,12 @@ abstract class AbstractRule(val name: String, val model: ProjectModel, debug: Bo
     "org.junit.BeforeClass",
     "org.junit.AfterClass",
   )
+
   def allJunitTest = {
     model.allOf[MethodModel].filter { method =>
-      method.annotations.exists{ a =>
-        junitAnnotationEntryPoints.contains(a.fqName)}
+      method.annotations.exists { a =>
+        junitAnnotationEntryPoints.contains(a.fqName)
+      }
     }
   }
 

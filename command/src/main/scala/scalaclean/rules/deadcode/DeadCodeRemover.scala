@@ -6,12 +6,13 @@ import scalaclean.rules.AbstractRule
 import scalaclean.util.{Scope, SymbolTreeVisitor, TokenHelper}
 import scalafix.v1._
 
+import scala.collection.mutable.ListBuffer
 import scala.meta.{Import, Mod, Pat, Stat}
 
 /**
-  * A rule that removes unreferenced classes,
-  * needs to be run after Analysis
-  */
+ * A rule that removes unreferenced classes,
+ * needs to be run after Analysis
+ */
 class DeadCodeRemover(model: ProjectModel, debug: Boolean) extends AbstractRule("ScalaCleanDeadCodeRemover", model, debug) {
 
   type Colour = Usage
@@ -37,7 +38,6 @@ class DeadCodeRemover(model: ProjectModel, debug: Boolean) extends AbstractRule(
     println("-------------------------------------------------------------")
 
   }
-
 
 
   override def markInitial(): Unit = {
@@ -102,13 +102,13 @@ class DeadCodeRemover(model: ProjectModel, debug: Boolean) extends AbstractRule(
         enclosed => markUsed(enclosed, markEnclosing = false, purpose, element :: path, s"$comment - overrides")
       }
       element match {
-        case getter:GetterMethodModel =>
+        case getter: GetterMethodModel =>
           getter.field foreach {
-            f => markUsed (f, markEnclosing = true, purpose, element :: path, s"$comment - field ")
+            f => markUsed(f, markEnclosing = true, purpose, element :: path, s"$comment - field ")
           }
-        case setter:SetterMethodModel =>
+        case setter: SetterMethodModel =>
           setter.field foreach {
-            f => markUsed (f, markEnclosing = true, purpose, element :: path, s"$comment - field ")
+            f => markUsed(f, markEnclosing = true, purpose, element :: path, s"$comment - field ")
           }
         case _ =>
       }
@@ -122,18 +122,117 @@ class DeadCodeRemover(model: ProjectModel, debug: Boolean) extends AbstractRule(
   }
 
   override def printSummary(projectName: String): Unit =
-    println(s"""
-       |Project name    = $projectName
-       |linesRemoved    = $linesRemoved
-       |linesChanged    = $linesChanged
-       |elementsRemoved = $elementsRemoved
-       |elementsVisited = $elementsVisited
-       |""".stripMargin)
+    println(
+      s"""
+         |Project name    = $projectName
+         |linesRemoved    = $linesRemoved
+         |linesChanged    = $linesChanged
+         |elementsRemoved = $elementsRemoved
+         |elementsVisited = $elementsVisited
+         |""".stripMargin)
 
   var linesRemoved = 0
   var linesChanged = 0
   var elementsRemoved = 0
   var elementsVisited = 0
+
+
+  override def fix2(implicit doc: SemanticDocument): List[(Int,Int,String)] = {
+
+    val lb = new ListBuffer[(Int, Int, String)]()
+    val tv = new SymbolTreeVisitor {
+
+      override protected def handlerSymbol(
+                                            symbol: ElementId, mods: Seq[Mod], stat: Stat, scope: List[Scope]): (Patch, Boolean) = {
+        if (symbol.symbol.isLocal || symbol.symbol.isNone) continue
+        else {
+          val modelElementOpt = model.getLegacySymbol[ModelElement](symbol)
+          modelElementOpt match {
+            case None =>
+              continue
+            case Some(modelElement) =>
+
+              if (modelElement.existsInSource) {
+                val usage = modelElement.colour
+                elementsVisited += 1
+                if (usage.isUnused) {
+                  val tokens = stat.tokens
+                  val firstToken = tokens.head
+
+                  val removedTokens = TokenHelper.whitespaceOrCommentsBefore(firstToken, doc.tokens) ++ tokens
+                  elementsRemoved += 1
+                  val first = removedTokens.minBy {
+                    _.start
+                  }
+                  linesRemoved += (stat.pos.endLine - first.pos.startLine + 1)
+                  val endPos = stat.pos.end
+                  val startPos = first.pos.start
+                  println("StartPos = " + startPos + "  ->  " + endPos + "=> \"\"")
+                  lb.append((startPos, endPos, ""))
+                  val patch = Patch.removeTokens(removedTokens)
+                  (patch, false)
+                } else
+                  continue
+              } else
+                continue
+          }
+        }
+      }
+
+      override protected def handlerPats(
+                                          pats: Seq[Pat.Var], mods: Seq[Mod], stat: Stat, scope: List[Scope]): (Patch, Boolean) = {
+        elementsVisited += 1
+        val declarationsByUsage: Map[Usage, Seq[(Pat.Var, ModelElement)]] =
+          pats.filterNot(v => v.symbol.isLocal || v.symbol.isNone) map { p =>
+            val mElement: ModelElement = model.legacySymbol[ModelElement](ElementId(p.symbol))
+            (p, mElement)
+          } groupBy (m => m._2.colour)
+
+        declarationsByUsage.get(Usage.unused) match {
+          case Some(_) if declarationsByUsage.size == 1 =>
+            //we can remove the whole declaration
+            val tokens = stat.tokens
+            val firstToken = tokens.head
+            val removedTokens = TokenHelper.whitespaceOrCommentsBefore(firstToken, doc.tokens) ++ tokens
+            elementsRemoved += 1
+            val first = removedTokens.minBy {
+              _.start
+            }
+            linesRemoved += (stat.pos.endLine - first.pos.startLine + 1)
+
+            val endPos = stat.pos.end
+            val startPos = first.pos.start
+            println("StartPos = " + startPos + "  ->  " + endPos + "=> \"\"")
+            lb.append((startPos, endPos, ""))
+            (Patch.removeTokens(removedTokens), false)
+          case Some(unused) =>
+            val combinedPatch = unused.foldLeft(Patch.empty) {
+              case (patch, (pat, model)) => {
+                val token = pat.tokens.head
+                val endPos = token.end
+                val startPos = token.start
+                println("StartPos = " + startPos + "  ->  " + endPos + "=> \"_\"")
+                lb.append((startPos, endPos, "_"))
+                patch + Patch.replaceToken(token, "_")
+              }
+            }
+            val marker = Utils.addMarker(stat, s"consider rewriting pattern as ${unused.size} values are not used")
+            linesChanged += 1
+            (combinedPatch + marker, true)
+          case _ =>
+            continue
+
+        }
+      }
+
+      override def handleImport(importStatement: Import, scope: List[Scope]): (Patch, Boolean) = continue
+
+    }
+    tv.visitDocument(doc.tree)
+
+    lb.toList
+  }
+
 
   override def fix(implicit doc: SemanticDocument): Patch = {
 
@@ -141,7 +240,7 @@ class DeadCodeRemover(model: ProjectModel, debug: Boolean) extends AbstractRule(
 
       override protected def handlerSymbol(
                                             symbol: ElementId, mods: Seq[Mod], stat: Stat, scope: List[Scope]): (Patch, Boolean) = {
-        if(symbol.symbol.isLocal || symbol.symbol.isNone) continue
+        if (symbol.symbol.isLocal || symbol.symbol.isNone) continue
         else {
           val modelElementOpt = model.getLegacySymbol[ModelElement](symbol)
           modelElementOpt match {
@@ -176,15 +275,15 @@ class DeadCodeRemover(model: ProjectModel, debug: Boolean) extends AbstractRule(
                                           pats: Seq[Pat.Var], mods: Seq[Mod], stat: Stat, scope: List[Scope]): (Patch, Boolean) = {
         elementsVisited += 1
         val declarationsByUsage: Map[Usage, Seq[(Pat.Var, ModelElement)]] =
-          pats.filterNot(v => v.symbol.isLocal  || v.symbol.isNone ) map { p =>
+          pats.filterNot(v => v.symbol.isLocal || v.symbol.isNone) map { p =>
             val mElement: ModelElement = model.legacySymbol[ModelElement](ElementId(p.symbol))
             (p, mElement)
           } groupBy (m => m._2.colour)
         // incoming
-//        val declarationsByUsage: Map[Usage, Seq[(Pat.Var, ModelElement)]] =
-//          pats.collect {
-//            case p if p.symbol.isGlobal && model.getElement[ModelElement](ElementId(p.symbol)).isDefined=> (p, model.fromSymbol[ModelElement](ElementId(p.symbol)))
-//          } groupBy (m => m._2.colour)
+        //        val declarationsByUsage: Map[Usage, Seq[(Pat.Var, ModelElement)]] =
+        //          pats.collect {
+        //            case p if p.symbol.isGlobal && model.getElement[ModelElement](ElementId(p.symbol)).isDefined=> (p, model.fromSymbol[ModelElement](ElementId(p.symbol)))
+        //          } groupBy (m => m._2.colour)
 
         declarationsByUsage.get(Usage.unused) match {
           case Some(_) if declarationsByUsage.size == 1 =>
@@ -193,7 +292,9 @@ class DeadCodeRemover(model: ProjectModel, debug: Boolean) extends AbstractRule(
             val firstToken = tokens.head
             val removedTokens = TokenHelper.whitespaceOrCommentsBefore(firstToken, doc.tokens) ++ tokens
             elementsRemoved += 1
-            val first = removedTokens.minBy{ _.start}
+            val first = removedTokens.minBy {
+              _.start
+            }
             linesRemoved += (stat.pos.endLine - first.pos.startLine + 1)
             (Patch.removeTokens(removedTokens), false)
           case Some(unused) =>
@@ -211,36 +312,37 @@ class DeadCodeRemover(model: ProjectModel, debug: Boolean) extends AbstractRule(
       }
 
       override def handleImport(importStatement: Import, scope: List[Scope]): (Patch, Boolean) = continue
-//      {
-//        (Patch.empty, false)
-//      }
-//      override def handleImport(importStatement: Import, scope: List[Scope]): (Patch, Boolean) = {
-//        assert(importStatement.importers.size == 1)
-//        //TODO - need to ensure that all symbols related are the same import are of the same status
-//
-//        val importers = importStatement.importers
-//        val importees = importers.head.importees
-//        val byUsage = importees.groupBy {
-//          i =>
-//            val symbol = i.symbol(doc)
-//            model.getLegacySymbol[ModelElement](ElementId(symbol)).map(_.colour)
-//        }
-//        byUsage.get(Some(Usage.unused)) match {
-//          case Some(_) if byUsage.size == 1 =>
-//            //we can remove the whole declaration
-//            val tokens = importStatement.tokens
-//            val firstToken = tokens.head
-//            (Patch.removeTokens(TokenHelper.whitespaceTokensBefore(firstToken, doc.tokens)) + Patch.removeTokens(tokens), false)
-//          case Some(unused) =>
-//            val combinedPatch = unused.foldLeft(Patch.empty) {
-//              case (patch, importee) =>
-//                patch + Patch.removeImportee(importee)
-//            }
-//            (combinedPatch, false)
-//          case _ =>
-//            (Patch.empty, false)
-//        }
-//      }
+
+      //      {
+      //        (Patch.empty, false)
+      //      }
+      //      override def handleImport(importStatement: Import, scope: List[Scope]): (Patch, Boolean) = {
+      //        assert(importStatement.importers.size == 1)
+      //        //TODO - need to ensure that all symbols related are the same import are of the same status
+      //
+      //        val importers = importStatement.importers
+      //        val importees = importers.head.importees
+      //        val byUsage = importees.groupBy {
+      //          i =>
+      //            val symbol = i.symbol(doc)
+      //            model.getLegacySymbol[ModelElement](ElementId(symbol)).map(_.colour)
+      //        }
+      //        byUsage.get(Some(Usage.unused)) match {
+      //          case Some(_) if byUsage.size == 1 =>
+      //            //we can remove the whole declaration
+      //            val tokens = importStatement.tokens
+      //            val firstToken = tokens.head
+      //            (Patch.removeTokens(TokenHelper.whitespaceTokensBefore(firstToken, doc.tokens)) + Patch.removeTokens(tokens), false)
+      //          case Some(unused) =>
+      //            val combinedPatch = unused.foldLeft(Patch.empty) {
+      //              case (patch, importee) =>
+      //                patch + Patch.removeImportee(importee)
+      //            }
+      //            (combinedPatch, false)
+      //          case _ =>
+      //            (Patch.empty, false)
+      //        }
+      //      }
     }
     tv.visitDocument(doc.tree)
   }

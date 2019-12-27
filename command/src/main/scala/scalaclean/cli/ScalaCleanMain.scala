@@ -6,17 +6,19 @@ import java.nio.file.{Files, Paths}
 import scalaclean.model.ProjectModel
 import scalaclean.model.impl.{Project, ProjectSet}
 import scalaclean.rules.AbstractRule
-import scalaclean.rules.deadcode.{DeadCodeRemover, SimpleDeadCode }
-import scalaclean.rules.privatiser.{Privatiser, SimplePrivatiser }
+import scalaclean.rules.deadcode.{DeadCodeRemover, SimpleDeadCode}
+import scalaclean.rules.privatiser.{Privatiser, SimplePrivatiser}
 import scalafix.internal.patch.PatchInternals
 import scalafix.internal.reflect.ClasspathOps
 import scalafix.lint.RuleDiagnostic
+import scalafix.patch.Patch
 import scalafix.rule.RuleName
 import scalafix.scalaclean.cli.DocHelper
 import scalafix.testkit.DiffAssertions
 import scalafix.v1.SemanticDocument
 
 import scala.meta._
+import scala.meta.inputs.Input.VirtualFile
 import scala.meta.internal.io.FileIO
 import scala.meta.internal.symtab.SymbolTable
 
@@ -52,8 +54,48 @@ class ScalaCleanMain(dcOptions: SCOptions, ruleCreateFn: ProjectModel => Abstrac
     sdoc: SemanticDocument,
     suppress: Boolean
   ): (String, List[RuleDiagnostic]) = {
-    val fixes = Some(RuleName(rule.name) -> rule.fix(sdoc)).map(Map.empty + _).getOrElse(Map.empty)
+    val fixes: Map[RuleName, Patch] = Map(RuleName(rule.name) -> rule.fix(sdoc))
     PatchInternals.semantic(fixes, sdoc, suppress)
+  }
+
+  def semanticPatchNew(
+                     rule: AbstractRule,
+                     sdoc: SemanticDocument,
+                     suppress: Boolean,
+                     source: String
+                   ): String = {
+    println(s"------ ${sdoc.input.asInstanceOf[VirtualFile].path}  ------")
+    val fixes = rule.fix2(sdoc)
+
+    val sb = new StringBuilder
+    var currentPos = 0
+    var remaining = source
+    fixes foreach { case (start,end,text) =>
+      println(s" start $start  end $end text '$text' curPos = $currentPos  remaining= ${remaining.length}  buffer = ${sb.length}" )
+      if(start > currentPos) {
+        val diff = start-currentPos
+        println(s"  Taking $diff characters")
+        sb.append(remaining.take(diff))
+        remaining = remaining.drop(diff)
+        currentPos = start
+      }
+
+      val toDrop = end - start
+        sb.append(">>>>>")
+      println(s"  dropping $toDrop chars")
+        sb.append(remaining.take(toDrop))
+      remaining = remaining.drop(toDrop)
+        sb.append("<<<<<")
+//      sb.append(text)
+      currentPos = end
+    }
+
+    sb.append(remaining)
+
+    println("-------------------------")
+    println(sb.toString())
+    println("-------------------------")
+    sb.toString()
   }
 
   def run(): Boolean = {
@@ -133,12 +175,20 @@ class ScalaCleanMain(dcOptions: SCOptions, ruleCreateFn: ProjectModel => Abstrac
 
     files.foreach { absTargetFile =>
       val (relBase, targetFile) = findRelativeSrc(absTargetFile, project.srcRoots)
+
+      val existingFilePath = expectedPathForTarget(relBase, targetFile)
+      val existingFile = FileIO.slurp(existingFilePath, StandardCharsets.UTF_8)
+
       val sdoc = DocHelper.readSemanticDoc(classLoader, symtab, absTargetFile, base, targetFile)
+
+      val fixedNew = semanticPatchNew(rule, sdoc, suppress = false, existingFile)
       val (fixed, _) = semanticPatch(rule, sdoc, suppress = false)
 
       // compare results
-      val tokens = fixed.tokenize.get
-      val obtained = tokens.mkString
+//      val tokens = fixed.tokenize.get
+//      val obtained = tokens.mkString
+//      assert(obtained == fixed)
+      val obtained = fixed // we don't need to retokenise this I think
 
       if (validateMode) {
         val expectedFile = expectedPathForTarget(relBase, targetFile)

@@ -21,15 +21,7 @@ import scalafix.v1.SemanticDocument
 import scala.meta._
 import scala.meta.internal.io.FileIO
 
-class UnitTests extends FunSuite with AssertionsForJUnit with DiffAssertions {
-
-  test("akkaTimeoutTest") {
-    runTest("scalaclean/test/akka/Timeout.scala", new Test_allTransitiveOverrides(_))
-  }
-
-  test("internalOutgoingReferences") {
-    runTest("scalaclean/test/references/internalOutgoingReferences/internalOutgoingReferences.scala",new Test_internalOutgoingReferences(_))
-  }
+trait AbstractUnitTests extends FunSuite with AssertionsForJUnit with DiffAssertions {
 
   def runTest(file: String, ruleFn: ProjectModel => TestCommon, overwrite: Boolean = false): Unit = {
     val projectName = "unitTestProject"
@@ -52,10 +44,10 @@ class UnitTests extends FunSuite with AssertionsForJUnit with DiffAssertions {
     val inputSourceDirectories: List[AbsolutePath] = Classpath(toPlatform(s"$scalaCleanWorkspace/testProjects/$projectName/src/main/scala")).entries
 
     def semanticPatch(
-      rule: TestCommon,
-      sdoc: SemanticDocument,
-      suppress: Boolean
-    ): (String, List[RuleDiagnostic]) = {
+                       rule: TestCommon,
+                       sdoc: SemanticDocument,
+                       suppress: Boolean
+                     ): (String, List[RuleDiagnostic]) = {
       val fixes = Some(rule.name -> rule.fix(sdoc)).map(Map.empty + _).getOrElse(Map.empty)
       PatchInternals.semantic(fixes, sdoc, suppress)
     }
@@ -118,5 +110,15 @@ class UnitTests extends FunSuite with AssertionsForJUnit with DiffAssertions {
 
     run()
   }
+}
 
+class UnitTests extends AbstractUnitTests {
+
+  test("akkaTimeoutTest") {
+    runTest("scalaclean/test/akka/Timeout.scala", new Test_allTransitiveOverrides(_))
+  }
+
+  test("internalOutgoingReferences") {
+    runTest("scalaclean/test/references/internalOutgoingReferences/internalOutgoingReferences.scala",new Test_internalOutgoingReferences(_))
+  }
 }
