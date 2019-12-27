@@ -8,8 +8,8 @@ import org.scalatest.FunSuite
 import org.scalatest.junit.AssertionsForJUnit
 import scalaclean.cli.FileHelper
 import scalaclean.cli.FileHelper.toPlatform
-import scalaclean.model.impl.ProjectSet
 import scalaclean.model.ProjectModel
+import scalaclean.model.impl.ProjectSet
 import scalaclean.test._
 import scalafix.internal.patch.PatchInternals
 import scalafix.internal.reflect.ClasspathOps
@@ -21,15 +21,49 @@ import scalafix.v1.SemanticDocument
 import scala.meta._
 import scala.meta.internal.io.FileIO
 
-class UnitTests extends FunSuite with AssertionsForJUnit with DiffAssertions {
+// These unit tests are asp
+class BrokenUnitTests extends FunSuite with AssertionsForJUnit with DiffAssertions {
 
-  test("akkaTimeoutTest") {
-    runTest("scalaclean/test/akka/Timeout.scala", new Test_allTransitiveOverrides(_))
+  test("nodesTest") {
+    runTest("scalaclean/test/nodes/nodes.scala", new TestNodes(_))
   }
 
-  test("internalOutgoingReferences") {
-    runTest("scalaclean/test/references/internalOutgoingReferences/internalOutgoingReferences.scala",new Test_internalOutgoingReferences(_))
+  test("internalTransitiveOverriddenByTest") {
+    runTest("scalaclean/test/overriddenBy/internalTransitiveOverriddenBy/internalTransitiveOverriddenBy.scala", new Test_internalTransitiveOverriddenBy(_))
   }
+
+  test("internalDirectOverriddenBy") {
+    runTest("scalaclean/test/overriddenBy/internalDirectOverriddenBy/internalDirectOverriddenBy.scala", new Test_internalTransitiveOverriddenBy(_))
+  }
+
+  test("allDirectOverrides") {
+    runTest("scalaclean/test/overrides/allDirectOverrides/allDirectOverrides.scala", new Test_allDirectOverrides(_))
+  }
+
+  test("allTransitiveOverrides") {
+    runTest("scalaclean/test/overrides/allTransitiveOverrides/allTransitiveOverrides.scala", new Test_allTransitiveOverrides(_))
+  }
+
+  test("internalDirectOverrides") {
+    runTest("scalaclean/test/overrides/internalDirectOverrides/internalDirectOverrides.scala", new Test_internalDirectOverrides(_))
+  }
+
+  test("internalTransitiveOverrides") {
+    runTest("scalaclean/test/overrides/internalTransitiveOverrides/internalTransitiveOverrides.scala", new Test_internalTransitiveOverrides(_))
+  }
+
+  test("allOutgoingReferences") {
+    runTest("scalaclean/test/references/allOutgoingReferences/allOutgoingReferences.scala", new Test_allOutgoingReferences(_))
+  }
+
+  test("internalIncomingReferences") {
+    runTest("scalaclean/test/references/internalIncomingReferences/internalIncomingReferences.scala", new Test_internalIncomingReferences(_))
+  }
+
+  test("annotations") {
+    runTest("scalaclean/test/annotation/Annotated.scala",new Test_annotations(_))
+  }
+
 
   def runTest(file: String, ruleFn: ProjectModel => TestCommon, overwrite: Boolean = false): Unit = {
     val projectName = "unitTestProject"
