@@ -1,5 +1,6 @@
 package scalaclean.cli
 
+import java.io.{PrintWriter, StringWriter}
 import java.nio.charset.StandardCharsets
 import java.nio.file.{Files, Paths}
 
@@ -8,17 +9,12 @@ import scalaclean.model.impl.{Project, ProjectSet}
 import scalaclean.rules.AbstractRule
 import scalaclean.rules.deadcode.{DeadCodeRemover, SimpleDeadCode}
 import scalaclean.rules.privatiser.{Privatiser, SimplePrivatiser}
-import scalafix.internal.patch.PatchInternals
 import scalafix.internal.reflect.ClasspathOps
-import scalafix.lint.RuleDiagnostic
-import scalafix.patch.Patch
-import scalafix.rule.RuleName
 import scalafix.scalaclean.cli.DocHelper
 import scalafix.testkit.DiffAssertions
 import scalafix.v1.SemanticDocument
 
 import scala.meta._
-import scala.meta.inputs.Input.VirtualFile
 import scala.meta.internal.io.FileIO
 import scala.meta.internal.symtab.SymbolTable
 
@@ -49,52 +45,91 @@ object ScalaCleanMain {
 
 class ScalaCleanMain(dcOptions: SCOptions, ruleCreateFn: ProjectModel => AbstractRule) extends DiffAssertions {
 
-  def semanticPatch(
-    rule: AbstractRule,
-    sdoc: SemanticDocument,
-    suppress: Boolean
-  ): (String, List[RuleDiagnostic]) = {
-    val fixes: Map[RuleName, Patch] = Map(RuleName(rule.name) -> rule.fix(sdoc))
-    PatchInternals.semantic(fixes, sdoc, suppress)
+  def generateHTML(generated: String, altSource: String) = {
+    import scala.io.Source
+    val cssText : String = Source.fromResource("default-style.css").mkString
+
+    writeToFile(AbsolutePath("/tmp/code.css"), cssText)
+    val sw = new StringWriter()
+    val pw = new PrintWriter(sw)
+    pw.println(
+      """
+        |<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+        |<html xmlns="http://www.w3.org/1999/xhtml">
+        |    <head>
+        |        <title>XXXXX</title>
+        |        <link rel="stylesheet" type="text/css" href="code.css" title="Style">
+        |    </head>
+        |    <body onload="initializeLinked()">
+        |        <pre>
+        |""".stripMargin)
+
+    pw.println(generated)
+    pw.println("--------------------")
+    pw.println("--------------------")
+    pw.println(altSource)
+    pw.println("--------------------")
+
+    pw.println(
+      """        </pre>
+        |    </body>
+        |</html>
+        |""".stripMargin
+    )
+
+    pw.flush()
+    val str = sw.toString
+    writeToFile(AbsolutePath("/tmp/code.html"), str)
+//    Runtime.getRuntime.exec("open /tmp/code.html")
+//    System.exit(1)
+
+
   }
 
-  def semanticPatchNew(
+  def semanticPatch(
                      rule: AbstractRule,
                      sdoc: SemanticDocument,
                      suppress: Boolean,
-                     source: String
+                     source: String,
+                      altPathCode: String
                    ): String = {
-    println(s"------ ${sdoc.input.asInstanceOf[VirtualFile].path}  ------")
-    val fixes = rule.fix2(sdoc)
+    val fixes = rule.fix(sdoc)
 
     val sb = new StringBuilder
     var currentPos = 0
     var remaining = source
+
+    println(s"-- ${remaining.length} remaining")
+
     fixes foreach { case (start,end,text) =>
       println(s" start $start  end $end text '$text' curPos = $currentPos  remaining= ${remaining.length}  buffer = ${sb.length}" )
       if(start > currentPos) {
         val diff = start-currentPos
-        println(s"  Taking $diff characters")
+        println(s"--  Taking $diff characters")
         sb.append(remaining.take(diff))
         remaining = remaining.drop(diff)
         currentPos = start
       }
 
       val toDrop = end - start
-        sb.append(">>>>>")
-      println(s"  dropping $toDrop chars")
-        sb.append(remaining.take(toDrop))
+//        sb.append(">>>>>")
+      println(s"--  dropping $toDrop chars - ${remaining.length} remaining '${remaining.take(toDrop)}''")
+//        sb.append(remaining.take(toDrop))
       remaining = remaining.drop(toDrop)
-        sb.append("<<<<<")
-//      sb.append(text)
+//        sb.append("<<<<<")
+      sb.append(text)
       currentPos = end
     }
 
+    println("adding remaining " + remaining)
     sb.append(remaining)
 
     println("-------------------------")
     println(sb.toString())
     println("-------------------------")
+
+    generateHTML(sb.toString(),  altPathCode)
+
     sb.toString()
   }
 
@@ -176,18 +211,13 @@ class ScalaCleanMain(dcOptions: SCOptions, ruleCreateFn: ProjectModel => Abstrac
     files.foreach { absTargetFile =>
       val (relBase, targetFile) = findRelativeSrc(absTargetFile, project.srcRoots)
 
-      val existingFilePath = expectedPathForTarget(relBase, targetFile)
+      val existingFilePath = relBase.resolve(targetFile)
       val existingFile = FileIO.slurp(existingFilePath, StandardCharsets.UTF_8)
 
       val sdoc = DocHelper.readSemanticDoc(classLoader, symtab, absTargetFile, base, targetFile)
 
-      val fixedNew = semanticPatchNew(rule, sdoc, suppress = false, existingFile)
-      val (fixed, _) = semanticPatch(rule, sdoc, suppress = false)
+      val fixed = semanticPatch(rule, sdoc, suppress = false, existingFile, "fixed")
 
-      // compare results
-//      val tokens = fixed.tokenize.get
-//      val obtained = tokens.mkString
-//      assert(obtained == fixed)
       val obtained = fixed // we don't need to retokenise this I think
 
       if (validateMode) {

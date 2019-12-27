@@ -1,14 +1,15 @@
 package scalaclean.model
 
 import scalafix.v1.Patch
+import scalapb.descriptors.ScalaType.Message
 
 import scala.meta.{Pat, Stat, Tree}
 
 object Utils {
-  def addError(stat: Stat, message: String) =
-    Patch.addLeft(stat.tokens.head, s"/* *** SCALA CLEAN ERROR $message */")
+  def addMarker2(stat: Stat, message: String): Option[(Int, Int, String)] =
+    Some((stat.tokens.head.start, stat.tokens.head.start, s"/* *** SCALA CLEAN $message */"))
 
-  def addMarker(stat: Stat, message: String) =
+  def addMarker(stat: Stat, message: String): Patch =
     Patch.addLeft(stat.tokens.head, s"/* *** SCALA CLEAN $message */")
 
   def readVars(pats: List[Pat]): List[Pat.Var] = {
@@ -27,7 +28,6 @@ object Utils {
       }
     }
     pats foreach visitor.visitTree
-//    assert(visitor.res.nonEmpty)
     visitor.res
   }
 }

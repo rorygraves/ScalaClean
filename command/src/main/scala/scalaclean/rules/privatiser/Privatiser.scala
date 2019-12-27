@@ -7,6 +7,7 @@ import scalaclean.util.{Scope, SymbolTreeVisitor, SymbolUtils}
 import scalafix.patch.Patch
 import scalafix.v1.SemanticDocument
 
+import scala.collection.mutable.ListBuffer
 import scala.meta.tokens.Token
 import scala.meta.tokens.Token.{KwDef, KwVal, KwVar}
 import scala.meta.{Import, Mod, Pat, Stat}
@@ -109,7 +110,9 @@ class Privatiser(model: ProjectModel, debug: Boolean) extends AbstractRule("Priv
          |Effect rate       = ${(elementsChanged.toDouble / elementsObserved.toDouble * 10000).toInt / 100} %"
          |""".stripMargin)
 
-  override def fix(implicit doc: SemanticDocument): Patch = {
+  override def fix(implicit doc: SemanticDocument): List[(Int, Int, String)] = {
+    val lb = new ListBuffer[(Int, Int, String)]
+
     import scalafix.v1.{Patch => _, _}
 
 
@@ -148,10 +151,10 @@ class Privatiser(model: ProjectModel, debug: Boolean) extends AbstractRule("Priv
         //for vals and vars we set the access to the broadest of any access of the fields
 
 
-//        if(pats.head.symbol.isGlobal) {
-//          val modelElements: Seq[FieldOrAccessorModel] = pats.flatMap( p => model.getElement(FieldOrAccessorModel](ElementId(p.symbol))
+        //        if(pats.head.symbol.isGlobal) {
+        //          val modelElements: Seq[FieldOrAccessorModel] = pats.flatMap( p => model.getElement(FieldOrAccessorModel](ElementId(p.symbol))
 
-          val modelElements: Seq[FieldOrAccessorModel] = pats map { p =>
+        val modelElements: Seq[FieldOrAccessorModel] = pats map { p =>
           val ele = model.legacySymbol[FieldOrAccessorModel](ElementId(p.symbol))
           ele match {
             case v: ValModel => v
@@ -242,6 +245,7 @@ class Privatiser(model: ProjectModel, debug: Boolean) extends AbstractRule("Priv
         def buildInsertion(toReplace: String) = {
           forcePosition match {
             case Some(token) =>
+              lb.append((token.start, token.start, s"$toReplace "))
               Patch.addLeft(token, s"$toReplace ")
             case None =>
               val tokens = defn.tokens
@@ -249,9 +253,11 @@ class Privatiser(model: ProjectModel, debug: Boolean) extends AbstractRule("Priv
                 _.start == aModel.rawStart
               } match {
                 case Some(token) =>
+                  lb.append((token.start, token.start, s"$toReplace "))
                   Patch.addLeft(token, s"$toReplace ")
                 case None =>
                   //probably quite worrying
+                  lb.append((defn.pos.start, defn.pos.start, s"$toReplace "))
                   Patch.addLeft(defn, s"$toReplace ")
               }
           }
@@ -267,12 +273,21 @@ class Privatiser(model: ProjectModel, debug: Boolean) extends AbstractRule("Priv
               buildInsertion(toReplace)
             case (_, false, Some(toReplace)) =>
               buildInsertion(toReplace)
-            case (Some(existing), true, Some(toReplace)) => Patch.replaceTree(existing, s"$toReplace")
+            case (Some(existing), true, Some(toReplace)) =>
+              lb.append((existing.pos.start, existing.pos.end, s"$toReplace"))
+              Patch.replaceTree(existing, s"$toReplace")
           }
+        level.marker2(defn).foreach(v => lb.append(v))
         structuredPatch + level.marker(defn)
+
       }
     }
 
     tv.visitDocument(doc.tree)
+
+
+
+    lb.toList.sortBy(_._1)
   }
+
 }

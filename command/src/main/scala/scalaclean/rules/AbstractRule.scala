@@ -31,9 +31,7 @@ abstract class AbstractRule(val name: String, val model: ProjectModel, debug: Bo
 
   def runRule(): Unit
 
-  def fix(implicit doc: SemanticDocument): Patch
-
-  def fix2(implicit doc: SemanticDocument): List[(Int, Int, String)] = List.empty
+  def fix(implicit doc: SemanticDocument): List[(Int, Int, String)]
 
   def markAll[T <: ModelElement : Manifest](colour: => Colour): Unit = {
     model.allOf[T].foreach {

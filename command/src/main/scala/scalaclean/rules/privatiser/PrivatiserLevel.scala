@@ -17,6 +17,8 @@ private[privatiser] sealed trait PrivatiserLevel extends Mark {
   def widen(level: PrivatiserLevel): PrivatiserLevel
 
   def marker(stat: Stat): Patch = Patch.empty
+
+  def marker2(stat: Stat): Option[(Int,Int,String)] = None
 }
 
 private[privatiser] case class Public(reason: String) extends PrivatiserLevel {
@@ -46,6 +48,8 @@ private[privatiser] case object Undefined extends PrivatiserLevel {
   override def asText(context: ModelElement): Option[String] = None
 
   override def marker(stat: Stat): Patch = Utils.addMarker(stat, "can't detect usage")
+
+  override def marker2(stat: Stat): Option[(Int,Int,String)] = Utils.addMarker2(stat, "can't detect usage")
 }
 
 private[privatiser] object AccessScope {
