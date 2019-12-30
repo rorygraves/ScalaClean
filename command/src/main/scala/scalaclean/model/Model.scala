@@ -1,7 +1,7 @@
 package scalaclean.model
 
 import org.scalaclean.analysis.{AnnotationData, ExtensionData}
-import scalaclean.model.impl.ElementId
+import scalaclean.model.impl.{ElementId, ElementModelImpl}
 
 import scala.reflect.ClassTag
 
@@ -93,6 +93,8 @@ sealed trait ModelElement extends Ordered[ModelElement] {
   def methods: List[MethodModel]
 
   def innerClassLike: Seq[ClassLike]
+
+  def allChildren: List[ElementModelImpl]
 
   def isAbstract: Boolean
 
@@ -454,6 +456,7 @@ package impl {
 
     override def classOrEnclosing: ClassLike = enclosing.head.classOrEnclosing
 
+    override def allChildren: List[ElementModelImpl] = children
     override def fields: List[FieldModel] = children collect {
       case f: FieldModelImpl => f
     }
@@ -516,7 +519,7 @@ package impl {
 
     override def classOrEnclosing: ClassLike = this
 
-    override def fullName: String = ???
+    override def fullName: String = info.newElementId.toString
 
     override def xtends[T](implicit cls: ClassTag[T]): Boolean = {
       //FIXME

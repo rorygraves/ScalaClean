@@ -8,6 +8,7 @@ import scalafix.patch.Patch
 import scalafix.v1.{SemanticDocument, SyntacticDocument}
 
 import scala.collection.mutable.ListBuffer
+import scala.meta.io.AbsolutePath
 import scala.meta.tokens.Token
 import scala.meta.tokens.Token.{KwDef, KwVal, KwVar}
 import scala.meta.{Import, Mod, Pat, Stat}
@@ -110,11 +111,10 @@ class Privatiser(model: ProjectModel, debug: Boolean) extends AbstractRule("Priv
          |Effect rate       = ${(elementsChanged.toDouble / elementsObserved.toDouble * 10000).toInt / 100} %"
          |""".stripMargin)
 
-  override def fix(syntacticDocument: SyntacticDocument)(implicit semanticDocument: SemanticDocument): List[(Int, Int, String)] = {
+  override def fix(targetFile: AbsolutePath, syntacticDocument: SyntacticDocument)(implicit semanticDocument: SemanticDocument): List[(Int, Int, String)] = {
     val lb = new ListBuffer[(Int, Int, String)]
 
     import scalafix.v1.{Patch => _, _}
-
 
     val tv: SymbolTreeVisitor = new SymbolTreeVisitor {
 

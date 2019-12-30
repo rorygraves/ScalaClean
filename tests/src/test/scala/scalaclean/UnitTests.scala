@@ -77,11 +77,8 @@ trait AbstractUnitTests extends FunSuite with AssertionsForJUnit with DiffAssert
       targetFiles.foreach { targetFile =>
         val absFile = inputSourceDirectories.head.resolve(targetFile)
         val (syntacticDocument, semanticDocument) = DocHelper.readSemanticDoc(classLoader, symtab, absFile, sourceRoot, targetFile)
-        val (fixed, messages) = semanticPatch(rule, syntacticDocument, semanticDocument, suppress = false)
+        val (obtained, _) = semanticPatch(rule, syntacticDocument, semanticDocument, suppress = false)
 
-        // compare results
-        val tokens = fixed.tokenize.get
-        val obtained = tokens.mkString
 
         val targetOutput = RelativePath(targetFile.toString() + ".expected")
         val outputFile = inputSourceDirectories.head.resolve(targetOutput)

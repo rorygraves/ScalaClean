@@ -47,7 +47,7 @@ class ScalaCleanMain(options: SCOptions, ruleCreateFn: ProjectModel => AbstractR
 
   def generateHTML(generated: String, original: String): Unit = {
     import scala.io.Source
-    val cssText : String = Source.fromResource("default-style.css").mkString
+    val cssText: String = Source.fromResource("default-style.css").mkString
 
     writeToFile(AbsolutePath("/tmp/code.css"), cssText)
     val sw = new StringWriter()
@@ -80,22 +80,23 @@ class ScalaCleanMain(options: SCOptions, ruleCreateFn: ProjectModel => AbstractR
     pw.flush()
     val str = sw.toString
     writeToFile(AbsolutePath("/tmp/code.html"), str)
-//    Runtime.getRuntime.exec("open /tmp/code.html")
-//    System.exit(1)
+    //    Runtime.getRuntime.exec("open /tmp/code.html")
+    //    System.exit(1)
 
 
   }
 
   def applyRule(
+                 targetFile: AbsolutePath,
                  rule: AbstractRule,
                  syntacticDocument: SyntacticDocument,
                  semanticDocument: SemanticDocument,
                  suppress: Boolean,
                  source: String,
-                   ): String = {
+               ): String = {
 
     // actually run the rule
-    val fixes: Seq[(Int, Int, String)] = rule.fix(syntacticDocument)(semanticDocument)
+    val fixes: Seq[(Int, Int, String)] = rule.fix(targetFile, syntacticDocument)(semanticDocument)
     val fixedSource = applyFixes(source, fixes)
 
     generateHTML(fixedSource, source)
@@ -108,35 +109,37 @@ class ScalaCleanMain(options: SCOptions, ruleCreateFn: ProjectModel => AbstractR
     var currentPos = 0
     var remaining = source
 
-    println(s"-- ${remaining.length} remaining")
+    val debug = false
 
-    fixes foreach { case (start,end,text) =>
-      println(s" start $start  end $end text '$text' curPos = $currentPos  remaining= ${remaining.length}  buffer = ${sb.length}" )
-      if(start > currentPos) {
-        val diff = start-currentPos
-        println(s"--  Taking $diff characters")
+    if(debug) println(s"-- ${remaining.length} remaining")
+
+    fixes foreach { case (start, end, text) =>
+      if(debug) println(s" start $start  end $end text '$text' curPos = $currentPos  remaining= ${remaining.length}  buffer = ${sb.length}")
+      if (start > currentPos) {
+        val diff = start - currentPos
+        if(debug) println(s"--  Taking $diff characters")
         sb.append(remaining.take(diff))
         remaining = remaining.drop(diff)
         currentPos = start
       }
 
       val toDrop = end - start
-//        sb.append(">>>>>")
-      println(s"--  dropping $toDrop chars - ${remaining.length} remaining '${remaining.take(toDrop)}''")
-//        sb.append(remaining.take(toDrop))
+      //        sb.append(">>>>>")
+      if(debug) println(s"--  dropping $toDrop chars - ${remaining.length} remaining '${remaining.take(toDrop)}''")
+      //        sb.append(remaining.take(toDrop))
       remaining = remaining.drop(toDrop)
-//        sb.append("<<<<<")
+      //        sb.append("<<<<<")
       sb.append(text)
       currentPos = end
     }
 
-    println("adding remaining " + remaining)
+    if(debug) println("adding remaining " + remaining)
     sb.append(remaining)
 
     val result = sb.toString
-    println("-------------------------")
-    println(result)
-    println("-------------------------")
+    if(debug) println("-------------------------")
+    if(debug) println(result)
+    if(debug) println("-------------------------")
 
     result
   }
@@ -188,13 +191,13 @@ class ScalaCleanMain(options: SCOptions, ruleCreateFn: ProjectModel => AbstractR
   }
 
   /**
-    *
-    * @param rule The rule to run
-    * @param project The target project
-    * @return True if diffs were seen or files were changed
-    */
+   *
+   * @param rule    The rule to run
+   * @param project The target project
+   * @return True if diffs were seen or files were changed
+   */
   def runRuleOnProject(
-    rule: AbstractRule, project: Project, validateMode: Boolean, replace: Boolean, debug: Boolean): Boolean = {
+                        rule: AbstractRule, project: Project, validateMode: Boolean, replace: Boolean, debug: Boolean): Boolean = {
 
     val symtab: SymbolTable = ClasspathOps.newSymbolTable(project.classPath)
     val classLoader = project.classloader
@@ -209,7 +212,7 @@ class ScalaCleanMain(options: SCOptions, ruleCreateFn: ProjectModel => AbstractR
     val files: Seq[AbsolutePath] = project.srcFiles.toList.map(AbsolutePath(_))
 
     def findRelativeSrc(
-      absTargetFile: meta.AbsolutePath, basePaths: List[AbsolutePath]): (AbsolutePath, RelativePath) = {
+                         absTargetFile: meta.AbsolutePath, basePaths: List[AbsolutePath]): (AbsolutePath, RelativePath) = {
 
       val nioTargetFile = absTargetFile.toNIO
       val baseOpt = basePaths.find(bp => nioTargetFile.startsWith(bp.toNIO))
@@ -225,7 +228,7 @@ class ScalaCleanMain(options: SCOptions, ruleCreateFn: ProjectModel => AbstractR
       val (syntacticDocument, semanticDocument) = DocHelper.readSemanticDoc(classLoader, symtab, absTargetFile, base, targetFile)
 
 
-      val obtained = applyRule(rule, syntacticDocument, semanticDocument, suppress = false, existingFile)
+      val obtained = applyRule(absTargetFile, rule, syntacticDocument, semanticDocument, suppress = false, existingFile)
 
       if (validateMode) {
         val expectedFile = expectedPathForTarget(relBase, targetFile)

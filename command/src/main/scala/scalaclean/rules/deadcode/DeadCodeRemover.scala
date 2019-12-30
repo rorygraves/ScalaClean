@@ -1,12 +1,13 @@
 package scalaclean.rules.deadcode
 
 import scalaclean.model._
-import scalaclean.model.impl.ElementId
+import scalaclean.model.impl.{ElementId, ElementModelImpl}
 import scalaclean.rules.AbstractRule
 import scalaclean.util.{Scope, SymbolTreeVisitor, TokenHelper}
 import scalafix.v1._
 
 import scala.collection.mutable.ListBuffer
+import scala.meta.io.AbsolutePath
 import scala.meta.{Import, Mod, Pat, Stat}
 
 /**
@@ -106,15 +107,6 @@ class DeadCodeRemover(model: ProjectModel, debug: Boolean) extends AbstractRule(
           accessor.field foreach {
             f => markUsed(f, markEnclosing = true, purpose, element :: path, s"$comment - field ")
           }
-//
-//        case getter: GetterMethodModel =>
-//          getter.field foreach {
-//            f => markUsed(f, markEnclosing = true, purpose, element :: path, s"$comment - field ")
-//          }
-//        case setter: SetterMethodModel =>
-//          setter.field foreach {
-//            f => markUsed(f, markEnclosing = true, purpose, element :: path, s"$comment - field ")
-//          }
         case _ =>
       }
     }
@@ -142,8 +134,54 @@ class DeadCodeRemover(model: ProjectModel, debug: Boolean) extends AbstractRule(
   var elementsVisited = 0
 
 
-  override def fix(syntacticDocument: SyntacticDocument)(implicit semanticDocument: SemanticDocument): List[(Int,Int,String)] = {
+  override def fix(targetFile: AbsolutePath, syntacticDocument: SyntacticDocument)(implicit semanticDocument: SemanticDocument): List[(Int, Int, String)] = {
 
+    val targetFileName = targetFile.toString
+    // find source model
+    val sModel = model.allOf[SourceModel].filter(_.toString.contains(targetFileName)).toList.headOption.getOrElse(throw new IllegalStateException(s"Unable to find source model for $targetFileName"))
+
+
+    val tokens = syntacticDocument.tokens.tokens
+
+    val topLevelElements = sModel.innerClassLike.flatMap { cm =>
+      if(cm.existsInSource) {
+        Some(cm)
+      }else
+        None
+    }.sortBy(_.rawStart)
+
+
+    val lb2 = new ListBuffer[(Int, Int, String)]()
+    def recurse(element: ElementModelImpl): List[(Int, Int, String)] = {
+      val usage = element.colour
+      if(element.existsInSource && usage.isUnused) {
+        println(element.name + "  " + usage.isUnused)
+        println("-- ")
+        println("  cm.rawStart = " + element.rawStart)
+        val start = element.annotations.map(a => element.rawStart + a.posOffsetStart -1).headOption.getOrElse(element.rawStart)
+        println("  annotStart = " + start)
+        val candidateBeginToken = tokens.find(t => t.start >= start && t.start <= t.end).head
+        println("  annotStart = " + candidateBeginToken)
+        val newBeingToken = TokenHelper.whitespaceOrCommentsBefore(candidateBeginToken, syntacticDocument.tokens)
+        println("  newBeginToken = " + newBeingToken)
+        val newStartPos = newBeingToken.headOption.map(_.start).getOrElse(start)
+        println("  newStartPos = " + newStartPos)
+
+        lb2.append((newStartPos, element.rawEnd, ""))
+        List((newStartPos, element.rawEnd, ""))
+
+      } else {
+        element.allChildren.flatMap(recurse)
+      }
+    }
+    val toDelete = sModel.allChildren.flatMap { element => recurse(element) }
+
+    println("--------NEW----------")
+    lb2.toList.sortBy(_._1).foreach(println)
+    println("------------------")
+
+
+    return lb2.toList.sortBy(_._1)
     val lb = new ListBuffer[(Int, Int, String)]()
     val tv = new SymbolTreeVisitor {
 
@@ -214,7 +252,6 @@ class DeadCodeRemover(model: ProjectModel, debug: Boolean) extends AbstractRule(
             val combinedPatch = unused.foldLeft(Patch.empty) {
               case (patch, (pat, _)) =>
                 val token = pat.tokens.head
-                println("TOKEN = " + token)
                 val endPos = token.end
                 val startPos = token.start
                 println("StartPos = " + startPos + "  ->  " + endPos + "=> \"_\"")
