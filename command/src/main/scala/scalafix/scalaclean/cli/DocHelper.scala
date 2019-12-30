@@ -18,18 +18,19 @@ object DocHelper {
                        absSourcePath: AbsolutePath,
                        buildBase: AbsolutePath,
                        targetFile: RelativePath
-                     ): v1.SemanticDocument = {
+                     ): (v1.SyntacticDocument, v1.SemanticDocument) = {
 
     val input = Input.VirtualFile(targetFile.toString, FileIO.slurp(absSourcePath, StandardCharsets.UTF_8))
-    val doc = SyntacticDocument.fromInput(input)
+    val syntacticDocument = SyntacticDocument.fromInput(input)
 
     val semanticDBPath = absSourcePath.toRelative(buildBase)
 
-    FixUtils.fromPath(
-      doc,
+    val semanticDocument = FixUtils.fromPath(
+      syntacticDocument,
       semanticDBPath,
       classLoader,
       symtab)
 
+    (syntacticDocument, semanticDocument)
   }
 }

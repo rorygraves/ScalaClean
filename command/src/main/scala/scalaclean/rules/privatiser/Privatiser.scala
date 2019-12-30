@@ -3,9 +3,9 @@ package scalaclean.rules.privatiser
 import scalaclean.model._
 import scalaclean.model.impl.ElementId
 import scalaclean.rules.AbstractRule
-import scalaclean.util.{Scope, SymbolTreeVisitor, SymbolUtils}
+import scalaclean.util.{Scope, SymbolTreeVisitor}
 import scalafix.patch.Patch
-import scalafix.v1.SemanticDocument
+import scalafix.v1.{SemanticDocument, SyntacticDocument}
 
 import scala.collection.mutable.ListBuffer
 import scala.meta.tokens.Token
@@ -110,7 +110,7 @@ class Privatiser(model: ProjectModel, debug: Boolean) extends AbstractRule("Priv
          |Effect rate       = ${(elementsChanged.toDouble / elementsObserved.toDouble * 10000).toInt / 100} %"
          |""".stripMargin)
 
-  override def fix(implicit doc: SemanticDocument): List[(Int, Int, String)] = {
+  override def fix(syntacticDocument: SyntacticDocument)(implicit semanticDocument: SemanticDocument): List[(Int, Int, String)] = {
     val lb = new ListBuffer[(Int, Int, String)]
 
     import scalafix.v1.{Patch => _, _}
@@ -143,7 +143,7 @@ class Privatiser(model: ProjectModel, debug: Boolean) extends AbstractRule("Priv
           continue
       }
 
-      def info(sym: Symbol): Boolean = doc.info(sym).get.isProtectedWithin
+      def info(sym: Symbol): Boolean = semanticDocument.info(sym).get.isProtectedWithin
 
 
       override protected def handlerPats(
@@ -211,24 +211,6 @@ class Privatiser(model: ProjectModel, debug: Boolean) extends AbstractRule("Priv
 
       override def handleImport(importStatement: Import, scope: List[Scope]): (Patch, Boolean) = continue
 
-      private def isWiderThanExisting(level: PrivatiserLevel, element: ModelElement, existing: Option[Mod]): Boolean = {
-        level match {
-          case scoped@Scoped(privateScope, _, _) =>
-            existing match {
-              case None => false
-              case Some(Mod.Private(scope)) =>
-                !scope.symbol.isNone &&
-                  SymbolUtils.findCommonParent(ElementId.fromTree(scope), privateScope.symbol) != ElementId.fromTree(scope)
-              case Some(Mod.Protected(scope)) =>
-                !scope.symbol.isNone &&
-                  SymbolUtils.findCommonParent(ElementId.fromTree(scope), privateScope.symbol) != ElementId.fromTree(scope)
-            }
-          case Undefined => false
-          case Public(_) => existing.isDefined
-          case NoChange(_) => false
-        }
-      }
-
       def existingAccess(mods: Seq[Mod]): (Option[Mod], PrivatiserLevel) = {
         val res: Option[(Option[Mod], PrivatiserLevel)] = mods.collectFirst {
           case s@Mod.Private(scope) => (Some(s), Scoped.Private(ElementId.fromTree(scope), "existing"))
@@ -242,7 +224,7 @@ class Privatiser(model: ProjectModel, debug: Boolean) extends AbstractRule("Priv
         val (mod, existing) = existingAccess(mods)
         val proposed = level.asText(aModel)
 
-        def buildInsertion(toReplace: String) = {
+        def buildInsertion(toReplace: String): Patch = {
           forcePosition match {
             case Some(token) =>
               lb.append((token.start, token.start, s"$toReplace "))
@@ -283,7 +265,7 @@ class Privatiser(model: ProjectModel, debug: Boolean) extends AbstractRule("Priv
       }
     }
 
-    tv.visitDocument(doc.tree)
+    tv.visitDocument(semanticDocument.tree)
 
 
 

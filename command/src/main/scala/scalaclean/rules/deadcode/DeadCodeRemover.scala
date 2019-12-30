@@ -102,14 +102,19 @@ class DeadCodeRemover(model: ProjectModel, debug: Boolean) extends AbstractRule(
         enclosed => markUsed(enclosed, markEnclosing = false, purpose, element :: path, s"$comment - overrides")
       }
       element match {
-        case getter: GetterMethodModel =>
-          getter.field foreach {
+        case accessor: AccessorModel =>
+          accessor.field foreach {
             f => markUsed(f, markEnclosing = true, purpose, element :: path, s"$comment - field ")
           }
-        case setter: SetterMethodModel =>
-          setter.field foreach {
-            f => markUsed(f, markEnclosing = true, purpose, element :: path, s"$comment - field ")
-          }
+//
+//        case getter: GetterMethodModel =>
+//          getter.field foreach {
+//            f => markUsed(f, markEnclosing = true, purpose, element :: path, s"$comment - field ")
+//          }
+//        case setter: SetterMethodModel =>
+//          setter.field foreach {
+//            f => markUsed(f, markEnclosing = true, purpose, element :: path, s"$comment - field ")
+//          }
         case _ =>
       }
     }
@@ -137,7 +142,7 @@ class DeadCodeRemover(model: ProjectModel, debug: Boolean) extends AbstractRule(
   var elementsVisited = 0
 
 
-  override def fix(implicit doc: SemanticDocument): List[(Int,Int,String)] = {
+  override def fix(syntacticDocument: SyntacticDocument)(implicit semanticDocument: SemanticDocument): List[(Int,Int,String)] = {
 
     val lb = new ListBuffer[(Int, Int, String)]()
     val tv = new SymbolTreeVisitor {
@@ -159,18 +164,18 @@ class DeadCodeRemover(model: ProjectModel, debug: Boolean) extends AbstractRule(
                   val tokens = stat.tokens
                   val firstToken = tokens.head
 
-                  val removedTokens = TokenHelper.whitespaceOrCommentsBefore(firstToken, doc.tokens) ++ tokens
+                  val removedTokens = TokenHelper.whitespaceOrCommentsBefore(firstToken, semanticDocument.tokens) ++ tokens
                   elementsRemoved += 1
                   val first = removedTokens.minBy {
                     _.start
                   }
                   linesRemoved += (stat.pos.endLine - first.pos.startLine + 1)
-                  val endPos = stat.pos.end
+
                   val startPos = first.pos.start
+                  val endPos = stat.pos.end
                   println("StartPos = " + startPos + "  ->  " + endPos + "=> \"\"")
                   lb.append((startPos, endPos, ""))
-                  val patch = Patch.removeTokens(removedTokens)
-                  (patch, false)
+                  (Patch.removeTokens(removedTokens), false)
                 } else
                   continue
               } else
@@ -193,21 +198,21 @@ class DeadCodeRemover(model: ProjectModel, debug: Boolean) extends AbstractRule(
             //we can remove the whole declaration
             val tokens = stat.tokens
             val firstToken = tokens.head
-            val removedTokens = TokenHelper.whitespaceOrCommentsBefore(firstToken, doc.tokens) ++ tokens
+            val removedTokens = TokenHelper.whitespaceOrCommentsBefore(firstToken, semanticDocument.tokens) ++ tokens
             elementsRemoved += 1
             val first = removedTokens.minBy {
               _.start
             }
             linesRemoved += (stat.pos.endLine - first.pos.startLine + 1)
 
-            val endPos = stat.pos.end
             val startPos = first.pos.start
+            val endPos = stat.pos.end
             println("StartPos = " + startPos + "  ->  " + endPos + "=> \"\"")
             lb.append((startPos, endPos, ""))
             (Patch.removeTokens(removedTokens), false)
           case Some(unused) =>
             val combinedPatch = unused.foldLeft(Patch.empty) {
-              case (patch, (pat, model)) => {
+              case (patch, (pat, _)) =>
                 val token = pat.tokens.head
                 println("TOKEN = " + token)
                 val endPos = token.end
@@ -215,12 +220,11 @@ class DeadCodeRemover(model: ProjectModel, debug: Boolean) extends AbstractRule(
                 println("StartPos = " + startPos + "  ->  " + endPos + "=> \"_\"")
                 lb.append((startPos, endPos, "_"))
                 patch + Patch.replaceToken(pat.tokens.head, "_")
-              }
             }
             val marker = Utils.addMarker(stat, s"consider rewriting pattern as ${unused.size} values are not used")
             Utils.addMarker2(stat, s"consider rewriting pattern as ${unused.size} values are not used").foreach(lb.append(_))
             linesChanged += 1
-            (combinedPatch /*+ marker*/, true)
+            (combinedPatch + marker, true)
           case _ =>
             continue
 
@@ -230,7 +234,7 @@ class DeadCodeRemover(model: ProjectModel, debug: Boolean) extends AbstractRule(
       override def handleImport(importStatement: Import, scope: List[Scope]): (Patch, Boolean) = continue
 
     }
-    tv.visitDocument(doc.tree)
+    tv.visitDocument(semanticDocument.tree)
 
     lb.toList.sortBy(_._1)
   }
@@ -258,7 +262,7 @@ class DeadCodeRemover(model: ProjectModel, debug: Boolean) extends AbstractRule(
   }
 
   object Usage {
-    val unused: Usage = Usage(0)
+    val unused: Usage = new Usage(0)
   }
 
 }

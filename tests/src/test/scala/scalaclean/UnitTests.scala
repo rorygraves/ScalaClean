@@ -16,7 +16,7 @@ import scalafix.internal.reflect.ClasspathOps
 import scalafix.lint.RuleDiagnostic
 import scalafix.scalaclean.cli.DocHelper
 import scalafix.testkit.DiffAssertions
-import scalafix.v1.SemanticDocument
+import scalafix.v1.{SemanticDocument, SyntacticDocument}
 
 import scala.meta._
 import scala.meta.internal.io.FileIO
@@ -45,11 +45,12 @@ trait AbstractUnitTests extends FunSuite with AssertionsForJUnit with DiffAssert
 
     def semanticPatch(
                        rule: TestCommon,
-                       sdoc: SemanticDocument,
+                       syntacticDocument: SyntacticDocument,
+                       semanticDocument: SemanticDocument,
                        suppress: Boolean
                      ): (String, List[RuleDiagnostic]) = {
-      val fixes = Some(rule.name -> rule.fix(sdoc)).map(Map.empty + _).getOrElse(Map.empty)
-      PatchInternals.semantic(fixes, sdoc, suppress)
+      val fixes = Some(rule.name -> rule.fix(semanticDocument)).map(Map.empty + _).getOrElse(Map.empty)
+      PatchInternals.semantic(fixes, semanticDocument, suppress)
     }
 
     def run(): Unit = {
@@ -75,8 +76,8 @@ trait AbstractUnitTests extends FunSuite with AssertionsForJUnit with DiffAssert
       rule.beforeStart()
       targetFiles.foreach { targetFile =>
         val absFile = inputSourceDirectories.head.resolve(targetFile)
-        val sdoc = DocHelper.readSemanticDoc(classLoader, symtab, absFile, sourceRoot, targetFile)
-        val (fixed, messages) = semanticPatch(rule, sdoc, suppress = false)
+        val (syntacticDocument, semanticDocument) = DocHelper.readSemanticDoc(classLoader, symtab, absFile, sourceRoot, targetFile)
+        val (fixed, messages) = semanticPatch(rule, syntacticDocument, semanticDocument, suppress = false)
 
         // compare results
         val tokens = fixed.tokenize.get

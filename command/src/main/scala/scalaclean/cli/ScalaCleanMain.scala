@@ -12,7 +12,7 @@ import scalaclean.rules.privatiser.{Privatiser, SimplePrivatiser}
 import scalafix.internal.reflect.ClasspathOps
 import scalafix.scalaclean.cli.DocHelper
 import scalafix.testkit.DiffAssertions
-import scalafix.v1.SemanticDocument
+import scalafix.v1.{SemanticDocument, SyntacticDocument}
 
 import scala.meta._
 import scala.meta.internal.io.FileIO
@@ -86,15 +86,16 @@ class ScalaCleanMain(options: SCOptions, ruleCreateFn: ProjectModel => AbstractR
 
   }
 
-  def semanticPatch(
-                     rule: AbstractRule,
-                     sdoc: SemanticDocument,
-                     suppress: Boolean,
-                     source: String,
+  def applyRule(
+                 rule: AbstractRule,
+                 syntacticDocument: SyntacticDocument,
+                 semanticDocument: SemanticDocument,
+                 suppress: Boolean,
+                 source: String,
                    ): String = {
 
     // actually run the rule
-    val fixes: Seq[(Int, Int, String)] = rule.fix(sdoc)
+    val fixes: Seq[(Int, Int, String)] = rule.fix(syntacticDocument)(semanticDocument)
     val fixedSource = applyFixes(source, fixes)
 
     generateHTML(fixedSource, source)
@@ -221,9 +222,10 @@ class ScalaCleanMain(options: SCOptions, ruleCreateFn: ProjectModel => AbstractR
       val existingFilePath = relBase.resolve(targetFile)
       val existingFile = FileIO.slurp(existingFilePath, StandardCharsets.UTF_8)
 
-      val sdoc = DocHelper.readSemanticDoc(classLoader, symtab, absTargetFile, base, targetFile)
+      val (syntacticDocument, semanticDocument) = DocHelper.readSemanticDoc(classLoader, symtab, absTargetFile, base, targetFile)
 
-      val obtained = semanticPatch(rule, sdoc, suppress = false, existingFile)
+
+      val obtained = applyRule(rule, syntacticDocument, semanticDocument, suppress = false, existingFile)
 
       if (validateMode) {
         val expectedFile = expectedPathForTarget(relBase, targetFile)

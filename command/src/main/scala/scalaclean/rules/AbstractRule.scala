@@ -3,7 +3,7 @@ package scalaclean.rules
 import scalaclean.model._
 import scalaclean.model.impl.ElementId
 import scalafix.patch.Patch
-import scalafix.v1.{SemanticDocument, Symbol}
+import scalafix.v1.{SemanticDocument, Symbol, SyntacticDocument}
 
 abstract class AbstractRule(val name: String, val model: ProjectModel, debug: Boolean) {
   def printSummary(projectname: String): Unit
@@ -31,7 +31,7 @@ abstract class AbstractRule(val name: String, val model: ProjectModel, debug: Bo
 
   def runRule(): Unit
 
-  def fix(implicit doc: SemanticDocument): List[(Int, Int, String)]
+  def fix(syntacticDocument: SyntacticDocument)(implicit semanticDocument: SemanticDocument): List[(Int, Int, String)]
 
   def markAll[T <: ModelElement : Manifest](colour: => Colour): Unit = {
     model.allOf[T].foreach {
