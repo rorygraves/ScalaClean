@@ -1,3 +1,5 @@
+package scalaclean.test.deadcode7
+
 object Entry extends App {
   new Entry
 }

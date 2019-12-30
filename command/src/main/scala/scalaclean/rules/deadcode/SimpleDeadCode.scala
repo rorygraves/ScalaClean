@@ -20,7 +20,7 @@ class SimpleDeadCode(model: ProjectModel, debug: Boolean) extends DeadCodeRemove
 
       //overrides
       element.internalTransitiveOverrides foreach {
-        overiddenByElement => markUsed(overiddenByElement, purpose, element :: path, s"$comment - overrides")
+        overriddenByElement => markUsed(overriddenByElement, purpose, element :: path, s"$comment - overrides")
       }
 
       //If i am used mark everything overriding me as used

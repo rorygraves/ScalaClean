@@ -40,7 +40,7 @@ class ScalaCleanCompilerPlugin(override val global: Global) extends Plugin {
         runtimeMirror.reflectModule(module).instance match {
           case valid: ExtensionPluginFactory => component.extensions += valid.create(component, option.substring(end))
           case null => throw new IllegalArgumentException("not a valid Extension FQN - expected the name of an object")
-          case invalid => throw new IllegalArgumentException(s"not a valid Extension FQN - ${invalid.getClass.getName()} is not a ${classOf[ExtensionDescriptor[_]].getName}")
+          case invalid => throw new IllegalArgumentException(s"not a valid Extension FQN - ${invalid.getClass.getName} is not a ${classOf[ExtensionDescriptor[_]].getName}")
         }
       } else if (option.startsWith("srcdirs:")) {
         // Filter out source dirs passed in which don't actually exist

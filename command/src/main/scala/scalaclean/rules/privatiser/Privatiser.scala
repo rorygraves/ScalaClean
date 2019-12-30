@@ -51,7 +51,7 @@ class Privatiser(model: ProjectModel, debug: Boolean) extends AbstractRule("Priv
         case o: ObjectModel if o.xtends(ElementIds.AppObject) =>
           NoChange("its an App and needs to be public")
         //      case any: ModelElement if any.hasAnnotation[ExternalAccess] => Some(NoChange(any.getAnnotation[ExternalAccess]))
-        //      case method:MethodModel if (method.overidesExternal)=>  res.combine(Level of parent method)
+        //      case method:MethodModel if (method.overridesExternal)=>  res.combine(Level of parent method)
         //probably other cases
         case _ => Undefined
       }
@@ -72,12 +72,12 @@ class Privatiser(model: ProjectModel, debug: Boolean) extends AbstractRule("Priv
 
       //We must be at least as visible as anything that we override
       element.allDirectOverrides foreach {
-        case (Some(overridenModel), _) =>
-          val overridenVisibility = localLevel(overridenModel) match {
+        case (Some(overriddenModel), _) =>
+          val overriddenVisibility = localLevel(overriddenModel) match {
             case s: Scoped if s.isProtected => s.copy(forceProtected = true)
             case other => other
           }
-          res = res.widen(overridenVisibility)
+          res = res.widen(overriddenVisibility)
         case (None, _) =>
           //if it is not in the model, then we will leave this as is
           NoChange("inherits from external")
@@ -103,7 +103,7 @@ class Privatiser(model: ProjectModel, debug: Boolean) extends AbstractRule("Priv
   var elementsObserved = 0
   var elementsChanged = 0
 
-  override def printSummary(projectname: String): Unit =
+  override def printSummary(projectName: String): Unit =
     println (
       s"""Elements Observed = $elementsObserved
          |Elements Changed  = $elementsChanged

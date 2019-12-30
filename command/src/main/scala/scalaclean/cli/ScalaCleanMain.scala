@@ -43,9 +43,9 @@ object ScalaCleanMain {
 }
 
 
-class ScalaCleanMain(dcOptions: SCOptions, ruleCreateFn: ProjectModel => AbstractRule) extends DiffAssertions {
+class ScalaCleanMain(options: SCOptions, ruleCreateFn: ProjectModel => AbstractRule) extends DiffAssertions {
 
-  def generateHTML(generated: String, altSource: String) = {
+  def generateHTML(generated: String, original: String): Unit = {
     import scala.io.Source
     val cssText : String = Source.fromResource("default-style.css").mkString
 
@@ -67,7 +67,7 @@ class ScalaCleanMain(dcOptions: SCOptions, ruleCreateFn: ProjectModel => Abstrac
     pw.println(generated)
     pw.println("--------------------")
     pw.println("--------------------")
-    pw.println(altSource)
+    pw.println(original)
     pw.println("--------------------")
 
     pw.println(
@@ -91,10 +91,18 @@ class ScalaCleanMain(dcOptions: SCOptions, ruleCreateFn: ProjectModel => Abstrac
                      sdoc: SemanticDocument,
                      suppress: Boolean,
                      source: String,
-                      altPathCode: String
                    ): String = {
-    val fixes = rule.fix(sdoc)
 
+    // actually run the rule
+    val fixes: Seq[(Int, Int, String)] = rule.fix(sdoc)
+    val fixedSource = applyFixes(source, fixes)
+
+    generateHTML(fixedSource, source)
+
+    fixedSource
+  }
+
+  def applyFixes(source: String, fixes: Seq[(Int, Int, String)]): String = {
     val sb = new StringBuilder
     var currentPos = 0
     var remaining = source
@@ -124,18 +132,17 @@ class ScalaCleanMain(dcOptions: SCOptions, ruleCreateFn: ProjectModel => Abstrac
     println("adding remaining " + remaining)
     sb.append(remaining)
 
+    val result = sb.toString
     println("-------------------------")
-    println(sb.toString())
+    println(result)
     println("-------------------------")
 
-    generateHTML(sb.toString(),  altPathCode)
-
-    sb.toString()
+    result
   }
 
   def run(): Boolean = {
 
-    val projectProps = dcOptions.files.map(f => Paths.get(f.toString))
+    val projectProps = options.files.map(f => Paths.get(f.toString))
 
     val projectSet = new ProjectSet(projectProps: _*)
 
@@ -146,9 +153,9 @@ class ScalaCleanMain(dcOptions: SCOptions, ruleCreateFn: ProjectModel => Abstrac
 
     var changed = false
     projectSet.projects foreach { project =>
-      changed |= runRuleOnProject(rule, project, dcOptions.validate, dcOptions.replace, dcOptions.debug)
+      changed |= runRuleOnProject(rule, project, options.validate, options.replace, options.debug)
     }
-    if (dcOptions.debug)
+    if (options.debug)
       println(s"DEBUG: Changed = $changed")
     changed
   }
@@ -216,9 +223,7 @@ class ScalaCleanMain(dcOptions: SCOptions, ruleCreateFn: ProjectModel => Abstrac
 
       val sdoc = DocHelper.readSemanticDoc(classLoader, symtab, absTargetFile, base, targetFile)
 
-      val fixed = semanticPatch(rule, sdoc, suppress = false, existingFile, "fixed")
-
-      val obtained = fixed // we don't need to retokenise this I think
+      val obtained = semanticPatch(rule, sdoc, suppress = false, existingFile)
 
       if (validateMode) {
         val expectedFile = expectedPathForTarget(relBase, targetFile)

@@ -4,5 +4,5 @@ import scalaclean.model._
 
 class SimplePrivatiser(model: ProjectModel, debug: Boolean) extends Privatiser(model, debug) {
 
-  // TODO Implmeent
+  // TODO Implement
 }

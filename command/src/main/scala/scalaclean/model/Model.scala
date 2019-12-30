@@ -361,13 +361,13 @@ package impl {
     }
 
     override def internalDirectOverriddenBy: List[ModelElement] = {
-      overriden collect {
+      overridden collect {
         case o if o.isDirect => o.fromElement
       }
     }
 
     override def internalTransitiveOverriddenBy: List[ModelElement] = {
-      overriden map {
+      overridden map {
         _.fromElement
       }
     }
@@ -417,7 +417,7 @@ package impl {
       refersTo = relsFrom.refers.getOrElse(modelElementId, Nil)
       refersFrom = relsTo.refers.getOrElse(modelElementId, Nil)
       _overrides = relsFrom.overrides.getOrElse(modelElementId, Nil)
-      overriden = relsTo.overrides.getOrElse(modelElementId, Nil)
+      overridden = relsTo.overrides.getOrElse(modelElementId, Nil)
     }
 
     override def extensions: Iterable[ExtensionData] = info.extensions
@@ -447,7 +447,7 @@ package impl {
 
     override def overrides = _overrides
 
-    var overriden: List[Overrides] = _
+    var overridden: List[Overrides] = _
     //end set by `complete`
 
     override def enclosing: List[ElementModelImpl] = within

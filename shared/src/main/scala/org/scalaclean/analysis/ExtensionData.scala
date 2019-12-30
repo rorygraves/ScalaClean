@@ -8,7 +8,7 @@ import java.util.concurrent.ConcurrentHashMap
   * @tparam T the companion
   */
 abstract class ExtensionDescriptor[T <: ExtensionData] {
-  def clearData = interner.clear
+  def clearData(): Unit = interner.clear()
 
   private val interner = new ConcurrentHashMap[String, T]()
 

@@ -231,6 +231,6 @@ object ModelReader {
             throw t
         }
     }
-    builder.result().toVector
+    builder.result()
   }
 }
