@@ -78,10 +78,6 @@ abstract class TestBase(name: String, model: ProjectModel) extends SemanticRule(
         toPatch(patches.filter(!_.isEmpty).mkString("*//*"), valDef)
       }
 
-      override def handlePackage(packageName: Term.Name, pkg: Pkg, scope: List[Scope]): (Patch, Boolean) = {
-        continue
-      }
-
       override def handleMethod(symbol: ElementId, fullSig: String, method: Defn.Def, scope: List[Scope]): (Patch, Boolean) = {
         toPatch(visitMethod(model.legacySymbol[MethodModel](symbol)), method)
       }
@@ -102,10 +98,6 @@ abstract class TestBase(name: String, model: ProjectModel) extends SemanticRule(
         toPatch(visitTrait(model.legacySymbol[TraitModel](symbol)), cls)
       }
 
-
-      override def handleImport(importStatement: Import, scope: List[Scope]): (Patch, Boolean) = continue
-
-      override def handleOther(tree: Tree, scope: List[Scope]): (Patch, Boolean) = continue
     }
     visitor.visitDocument(doc.tree)
   }

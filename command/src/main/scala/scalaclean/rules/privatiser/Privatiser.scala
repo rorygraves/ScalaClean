@@ -114,6 +114,9 @@ class Privatiser(model: ProjectModel, debug: Boolean) extends AbstractRule("Priv
   override def fix(targetFile: AbsolutePath, syntacticDocument: SyntacticDocument)(implicit semanticDocument: SemanticDocument): List[(Int, Int, String)] = {
     val lb = new ListBuffer[(Int, Int, String)]
 
+
+
+
     import scalafix.v1.{Patch => _, _}
 
     val tv: SymbolTreeVisitor = new SymbolTreeVisitor {
@@ -208,8 +211,6 @@ class Privatiser(model: ProjectModel, debug: Boolean) extends AbstractRule("Priv
         //we never need to recurse into RHS of decls as they are not externally visible
         (patch, false)
       }
-
-      override def handleImport(importStatement: Import, scope: List[Scope]): (Patch, Boolean) = continue
 
       def existingAccess(mods: Seq[Mod]): (Option[Mod], PrivatiserLevel) = {
         val res: Option[(Option[Mod], PrivatiserLevel)] = mods.collectFirst {

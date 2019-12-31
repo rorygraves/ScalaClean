@@ -94,7 +94,6 @@ abstract class TreeVisitor()(implicit doc: SemanticDocument) {
       case importStat: Import =>
         processHandler(importStat, handleImport(importStat, scope), scope)
       case _ =>
-        //        println(s"Visiting ${tree.getClass} ${tree.symbol}")
         processHandler(tree, handleOther(tree, scope), scope)
     }
   }
@@ -119,9 +118,9 @@ abstract class TreeVisitor()(implicit doc: SemanticDocument) {
   def handleTrait(symbol: ElementId, cls: Defn.Trait, scope: List[Scope]): (Patch, Boolean)
 
   //non model entries
-  def handleImport(importStatement: Import, scope: List[Scope]): (Patch, Boolean)
+  def handleImport(importStatement: Import, scope: List[Scope]): (Patch, Boolean) = continue
 
-  def handlePackage(packageName: Term.Name, pkg: Pkg, scope: List[Scope]): (Patch, Boolean)
+  def handlePackage(packageName: Term.Name, pkg: Pkg, scope: List[Scope]): (Patch, Boolean) = continue
 
-  def handleOther(tree: Tree, scope: List[Scope]): (Patch, Boolean)
+  def handleOther(tree: Tree, scope: List[Scope]): (Patch, Boolean) = continue
 }

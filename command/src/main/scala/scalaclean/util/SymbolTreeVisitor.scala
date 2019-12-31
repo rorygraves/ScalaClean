@@ -29,10 +29,6 @@ abstract class SymbolTreeVisitor()(implicit doc: SemanticDocument) extends TreeV
     handlerPats(Utils.readVars(valDef.pats), valDef.mods, valDef, scope)
   }
 
-  override def handlePackage(packageName: Term.Name, pkg: Pkg, scope: List[Scope]): (Patch, Boolean) = {
-    continue
-  }
-
   override def handleMethod(symbol: ElementId, fullSig: String, method: Decl.Def, scope: List[Scope]): (Patch, Boolean) = {
     handlerSymbol(symbol, method.mods, method, scope)
   }
@@ -52,6 +48,4 @@ abstract class SymbolTreeVisitor()(implicit doc: SemanticDocument) extends TreeV
   override def handleTrait(trtSymbol: ElementId, cls: Defn.Trait, scope: List[Scope]): (Patch, Boolean) = {
     handlerSymbol(trtSymbol, cls.mods, cls, scope)
   }
-
-  override def handleOther(tree: Tree, scope: List[Scope]): (Patch, Boolean) = (Patch.empty, true)
 }

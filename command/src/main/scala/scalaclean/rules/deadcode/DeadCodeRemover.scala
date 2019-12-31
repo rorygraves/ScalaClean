@@ -268,8 +268,6 @@ class DeadCodeRemover(model: ProjectModel, debug: Boolean) extends AbstractRule(
         }
       }
 
-      override def handleImport(importStatement: Import, scope: List[Scope]): (Patch, Boolean) = continue
-
     }
     tv.visitDocument(semanticDocument.tree)
 
