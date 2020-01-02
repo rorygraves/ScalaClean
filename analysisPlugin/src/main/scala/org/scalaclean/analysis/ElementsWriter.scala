@@ -8,7 +8,7 @@ class ElementsWriter(file: File) {
   val writer = new SortedStringWriter(file.toPath)
 
   def commonPrefix(model: ModelSymbol): String =
-    s"${model.ioToken},${model.csvString},${model.newCsvString},${model.tree.symbol.flags.toHexString},${model.sourceFile},${model.posStart},${model.posEnd},${model.traversal}"
+    s"${model.ioToken},${model.csvString},${model.newCsvString},${model.tree.symbol.flags.toHexString},${model.sourceFile},${model.posStart},${model.posEnd},${model.posFocus},${model.traversal}"
 
 
   def write(modelSymbol: ModelSymbol): Unit = {

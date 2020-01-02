@@ -99,7 +99,7 @@ class ScalaCleanMain(options: SCOptions, ruleCreateFn: ProjectModel => AbstractR
     val fixes: Seq[(Int, Int, String)] = rule.fix(targetFile, syntacticDocument)(semanticDocument)
     val fixedSource = applyFixes(source, fixes)
 
-    generateHTML(fixedSource, source)
+//    generateHTML(fixedSource, source)
 
     fixedSource
   }

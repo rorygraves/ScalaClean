@@ -1,14 +1,13 @@
 package scalaclean.rules.deadcode
 
 import scalaclean.model._
-import scalaclean.model.impl.ElementId
+import scalaclean.model.impl.ElementModelImpl
 import scalaclean.rules.AbstractRule
-import scalaclean.util.{Scope, SymbolElementTreeVisitor, SymbolTreeVisitor, TokenHelper}
+import scalaclean.util.{SymbolElementTreeVisitor, TokenHelper}
 import scalafix.v1._
 
 import scala.collection.mutable.ListBuffer
 import scala.meta.io.AbsolutePath
-import scala.meta.{Mod, Pat, Stat}
 
 /**
  * A rule that removes unreferenced classes,
@@ -134,7 +133,7 @@ class DeadCodeRemover(model: ProjectModel, debug: Boolean) extends AbstractRule(
   var elementsVisited = 0
 
   override def fix(targetFile: AbsolutePath, syntacticDocument: SyntacticDocument)(implicit semanticDocument: SemanticDocument): List[(Int, Int, String)] = {
-    newFix(targetFile, syntacticDocument)(semanticDocument)
+    mikeFix(targetFile, syntacticDocument)(semanticDocument)
   }
 
   def newFix(targetFile: AbsolutePath, syntacticDocument: SyntacticDocument)(implicit semanticDocument: SemanticDocument): List[(Int, Int, String)] = {
@@ -166,12 +165,6 @@ class DeadCodeRemover(model: ProjectModel, debug: Boolean) extends AbstractRule(
         }
         else true
       }
-
-      override protected def handlerPats(pats: Seq[ModelElement]): Boolean = {
-        // TODO This I think is the handler for pattern  val (a,b,c) = ...
-        // right now recurse and handle hte symbols directly
-        true
-      }
     }
 
     visitor.visit(sModel)
@@ -184,100 +177,93 @@ class DeadCodeRemover(model: ProjectModel, debug: Boolean) extends AbstractRule(
     return result
   }
 
-  def oldFix(targetFile: AbsolutePath, syntacticDocument: SyntacticDocument)(implicit semanticDocument: SemanticDocument): List[(Int, Int, String)] = {
+  def mikeFix(targetFile: AbsolutePath, syntacticDocument: SyntacticDocument)(implicit semanticDocument: SemanticDocument): List[(Int, Int, String)] = {
+
+    val targetFileName = targetFile.toString
+    // find source model
+    val sModel = model.allOf[SourceModel].filter(_.toString.contains(targetFileName)).toList.headOption.getOrElse(throw new IllegalStateException(s"Unable to find source model for $targetFileName"))
 
 
-      //    return lb2.toList.sortBy(_._1)
-    val lb = new ListBuffer[(Int, Int, String)]()
-    val tv = new SymbolTreeVisitor {
+    val tokens = syntacticDocument.tokens.tokens
 
-      override protected def handlerSymbol(
-                                            symbol: ElementId, mods: Seq[Mod], stat: Stat, scope: List[Scope]): (Patch, Boolean) = {
-        if (symbol.symbol.isLocal || symbol.symbol.isNone) continue
-        else {
-          val modelElementOpt = model.getLegacySymbol[ModelElement](symbol)
-          modelElementOpt match {
-            case None =>
-              continue
-            case Some(modelElement) =>
 
-              if (modelElement.existsInSource) {
-                val usage = modelElement.colour
-                elementsVisited += 1
-                if (usage.isUnused) {
-                  val tokens = stat.tokens
-                  val firstToken = tokens.head
-
-                  val removedTokens = TokenHelper.whitespaceOrCommentsBefore(firstToken, semanticDocument.tokens) ++ tokens
-                  elementsRemoved += 1
-                  val first = removedTokens.minBy {
-                    _.start
-                  }
-                  linesRemoved += (stat.pos.endLine - first.pos.startLine + 1)
-
-                  val startPos = first.pos.start
-                  val endPos = stat.pos.end
-                  println("StartPos = " + startPos + "  ->  " + endPos + "=> \"\"")
-                  lb.append((startPos, endPos, ""))
-                  (Patch.removeTokens(removedTokens), false)
-                } else
-                  continue
-              } else
-                continue
-          }
-        }
-      }
-
-      override protected def handlerPats(
-                                          pats: Seq[Pat.Var], mods: Seq[Mod], stat: Stat, scope: List[Scope]): (Patch, Boolean) = {
-        elementsVisited += 1
-        val declarationsByUsage: Map[Usage, Seq[(Pat.Var, ModelElement)]] =
-          pats.filterNot(v => v.symbol.isLocal || v.symbol.isNone) map { p =>
-            val mElement: ModelElement = model.legacySymbol[ModelElement](ElementId(p.symbol))
-            (p, mElement)
-          } groupBy (m => m._2.colour)
-
-        declarationsByUsage.get(Usage.unused) match {
-          case Some(_) if declarationsByUsage.size == 1 =>
-            //we can remove the whole declaration
-            val tokens = stat.tokens
-            val firstToken = tokens.head
-            val removedTokens = TokenHelper.whitespaceOrCommentsBefore(firstToken, semanticDocument.tokens) ++ tokens
-            elementsRemoved += 1
-            val first = removedTokens.minBy {
-              _.start
-            }
-            linesRemoved += (stat.pos.endLine - first.pos.startLine + 1)
-
-            val startPos = first.pos.start
-            val endPos = stat.pos.end
-            println("StartPos = " + startPos + "  ->  " + endPos + "=> \"\"")
-            lb.append((startPos, endPos, ""))
-            (Patch.removeTokens(removedTokens), false)
-          case Some(unused) =>
-            val combinedPatch = unused.foldLeft(Patch.empty) {
-              case (patch, (pat, _)) =>
-                val token = pat.tokens.head
-                val endPos = token.end
-                val startPos = token.start
-                println("StartPos = " + startPos + "  ->  " + endPos + "=> \"_\"")
-                lb.append((startPos, endPos, "_"))
-                patch + Patch.replaceToken(pat.tokens.head, "_")
-            }
-            val marker = Utils.addMarker(stat, s"consider rewriting pattern as ${unused.size} values are not used")
-            Utils.addMarker2(stat, s"consider rewriting pattern as ${unused.size} values are not used").foreach(lb.append(_))
-            linesChanged += 1
-            (combinedPatch + marker, true)
-          case _ =>
-            continue
-
-        }
-      }
-
+    val lb2 = new ListBuffer[(Int, Int, String)]()
+    def remove(element: ModelElement) = {
+      replace(element, "")
     }
-    tv.visitDocument(semanticDocument.tree)
+    def replace(element: ModelElement, text: String) = {
+      println("\nreplace(" + element.name + ",'" + text  + "') isUnused = " + element.colour.isUnused)
+      println("------- ")
+      println("  cm.rawStart = " + element.rawStart)
+      val start = element.annotations.map(a => element.rawStart + a.posOffsetStart - 1).headOption.getOrElse(element.rawStart)
+      println("  annotStart = " + start)
+      val candidateBeginToken = tokens.find(t => t.start >= start && t.start <= t.end).head
+      println("  annotStart = " + candidateBeginToken)
+      val newBeingToken = TokenHelper.whitespaceOrCommentsBefore(candidateBeginToken, syntacticDocument.tokens)
+      println("  newBeginToken = " + newBeingToken)
+      val newStartPos = newBeingToken.headOption.map(_.start).getOrElse(start)
+      println("  newStartPos = " + newStartPos + " -> " + element.rawEnd)
 
-    lb.toList.sortBy(_._1)
+      lb2.append((newStartPos, element.rawEnd, text))
+      List((newStartPos, element.rawEnd, text))
+    }
+    def replaceFromFocus(element: ModelElement, text: String) = {
+      println("\nreplaceFromFocus(" + element.name + ",'" + text  + "')")
+      lb2.append((element.rawFocusStart, element.rawEnd, text))
+      List((element.rawFocusStart, element.rawEnd, text))
+    }
+    def addComment(element: ModelElement, msg: String) = {
+      println("\naddComment(" + element.name + ",'" + msg  + "')")
+      val text = s"/* SCALA CLEAN $msg */"
+      lb2.append((element.rawStart, element.rawStart, text))
+      List((element.rawStart, element.rawStart, text))
+    }
+
+    def recurse(element: ElementModelImpl): List[(Int, Int, String)] = element match {
+      case _ if !element.existsInSource =>
+        element.allChildren.flatMap(recurse)
+      case field: FieldModel if field.inCompoundFieldDeclaration =>
+        Nil
+      case fields: FieldsModel =>
+        println("FieldsModel - " + fields.name)
+        // fields are a bit special. They will be marked as used (by the implementation of the var/val that uses it)
+        // but we take a deeper look here - there are 3 cases
+        // 1. all of the child fields are used - leave as is
+        // 2. None of the fields are used - remove the whole declaration
+        // 3. some of the fields are used - replace the unused fields with `-` and leave a comment
+        val decls = fields.fieldsInDeclaration
+        assert(decls.nonEmpty)
+        val unused = decls.filter {
+          _.colour.isUnused
+        }
+        if (unused.isEmpty) {
+          //case 1 no change
+          element.allChildren.flatMap(recurse)
+        } else if (unused.size == decls.size) {
+          //case 2
+          remove(fields) //no need to recurse
+        } else {
+          //case 3
+          addComment(fields, s"consider rewriting pattern as ${unused.size} values are not used") :::
+            (unused flatMap {
+              f =>
+                replaceFromFocus(f, "_")
+            }) ::: element.allChildren.flatMap(recurse)
+        }
+
+      case element =>
+        println("Element " + element.name + "  " + element.rawStart)
+        if (element.colour.isUnused) remove(element)
+        else element.allChildren.flatMap(recurse)
+    }
+    val toDelete = sModel.allChildren.flatMap { element => recurse(element) }
+
+    val result = lb2.toList.sortBy(_._1)
+    println("--------NEW----------")
+    result.foreach(println)
+    println("------------------")
+
+    result
   }
 
 

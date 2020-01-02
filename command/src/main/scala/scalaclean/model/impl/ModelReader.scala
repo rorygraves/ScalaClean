@@ -175,11 +175,12 @@ object ModelReader {
           val src = project.source(tokens(4).replace(sourceDirSep, java.io.File.separator))
           val start = tokens(5).toInt
           val end = tokens(6).toInt
-          val traversal = tokens(7).toInt
+          val focus = tokens(7).toInt
+          val traversal = tokens(8).toInt
 
-          val basicInfo = BasicElementInfo(symbol, modelSymbol, src, start, end, flags, byNewId.getOrElse(tokens(2), Nil), traversal)
+          val basicInfo = BasicElementInfo(symbol, modelSymbol, src, start, end, focus, flags, byNewId.getOrElse(tokens(2), Nil), traversal)
 
-          val idx = 8
+          val idx = 9
           val ele: ElementModelImpl = typeId match {
             case IoTokens.typeObject =>
               new ObjectModelImpl(basicInfo, relationships)

@@ -217,12 +217,6 @@ class Privatiser(model: ProjectModel, debug: Boolean) extends AbstractRule("Priv
         } else
           true
       }
-
-      override protected def handlerPats(pats: Seq[ModelElement]): Boolean = {
-        // TODO This I think is the handler for pattern  val (a,b,c) = ...
-        // right now recurse and handle hte symbols directly
-        true
-      }
     }
 
     visitor.visit(sModel)

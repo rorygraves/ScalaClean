@@ -238,7 +238,7 @@ class ScalaCompilerPluginComponent(
 
     def traverseSource(unit: CompilationUnit): Unit = {
       val sourceFile = unit.source.file.canonicalPath
-      val sourceSymbol = ModelSource(unit.body, ModelCommon(true, s"source:$sourceFile", s"S:$sourceFile", sourceFile, -1, -1, "<NA>"))
+      val sourceSymbol = ModelSource(unit.body, ModelCommon(true, s"source:$sourceFile", s"S:$sourceFile", sourceFile, -1, -1, -1, "<NA>"))
       enterScope(sourceSymbol) {
         _ =>
           traverse(unit.body)

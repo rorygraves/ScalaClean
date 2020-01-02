@@ -1,9 +1,6 @@
-package scalaclean.scratch
+object X extends App {
 
-object Scratch4 extends App {
+  /* SCALA CLEAN consider rewriting pattern as 3 values are not used */val (_:Int, e:Int, _, _:Int) = (1,2,3, 4)
 
-  val (a1, _) = (1,2)
-
-  println("a1 = " + a1)
-
+  println(e)
 }

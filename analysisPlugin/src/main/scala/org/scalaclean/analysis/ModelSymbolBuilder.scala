@@ -80,7 +80,7 @@ trait ModelSymbolBuilder extends SemanticdbOps {
       val isGlobal = gSym.isSemanticdbGlobal && !gSym.isLocalToBlock
       val newIsGlobal = gSym.ownersIterator.forall(o => o.isType && !o.isSynthetic)
       val sString = gSym.toSemantic
-      val (startPos, endPos) = if (gSym.pos == NoPosition) (-1, -1) else (gSym.pos.start, gSym.pos.end)
+      val (startPos, endPos, focusPos) = if (gSym.pos == NoPosition) (-1, -1, -1) else (gSym.pos.start, gSym.pos.end, gSym.pos.focus.start)
       val sourceFile = if (gSym.sourceFile != null)
         mungeUnitPath(gSym.sourceFile.toString)
       else
@@ -90,7 +90,7 @@ trait ModelSymbolBuilder extends SemanticdbOps {
 
       val newName = getNewName(gSym) + specialSuffix
 
-      ModelCommon(isGlobal, sString, newName, sourceFile, startPos, endPos, name)
+      ModelCommon(isGlobal, sString, newName, sourceFile, startPos, endPos, focusPos, name)
 
     }
     )

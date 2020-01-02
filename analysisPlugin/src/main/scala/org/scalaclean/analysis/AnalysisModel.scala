@@ -30,6 +30,8 @@ sealed trait ModelSymbol extends HasModelCommon {
 
   def posEnd: Int = common.posEnd
 
+  def posFocus: Int = common.posFocus
+
   def isParameter: Boolean = false
 
   def sourceName: String = common.sourceName
@@ -218,7 +220,7 @@ sealed abstract class ModelField extends ModelSymbol {
 }
 
 case class ModelCommon(
-                        isGlobal: Boolean, id: String, newId: String, sourceFile: String, posStart: Int, posEnd: Int,
+                        isGlobal: Boolean, id: String, newId: String, sourceFile: String, posStart: Int, posEnd: Int,posFocus: Int,
                         sourceName: String) extends HasModelCommon {
   override def common: ModelCommon = this
 

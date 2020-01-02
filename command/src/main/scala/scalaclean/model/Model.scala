@@ -104,6 +104,8 @@ sealed trait ModelElement extends Ordered[ModelElement] {
 
   final def infoPosSorted: (String, Int, Int) = (sourceFileName, rawStart, rawEnd)
 
+  def rawFocusStart: Int
+
   def rawStart: Int
 
   def rawEnd: Int
@@ -185,6 +187,9 @@ sealed trait FieldModel extends FieldOrAccessorModel {
 
   def getter: Option[GetterMethodModel]
 
+  def inCompoundFieldDeclaration = declaredIn.isDefined
+  def declaredIn: Option[FieldsModel]
+
   def fieldsInSameDeclaration: Seq[fieldType]
 }
 
@@ -193,7 +198,7 @@ sealed trait FieldsModel extends ModelElement {
 
   override protected def infoTypeName: String = "FieldsModel"
 
-  def fieldsInDeclaration: Seq[FieldModel]
+  def fieldsInDeclaration: List[FieldModel]
 }
 
 sealed trait ValModel extends FieldModel {
@@ -247,7 +252,7 @@ package impl {
 
   case class BasicElementInfo(
     symbol: ElementId, newElementId: NewElementId, source: SourceData,
-    startPos: Int, endPos: Int,
+    startPos: Int, endPos: Int, focusStart: Int,
     flags: Long, extensions: Seq[ExtensionData],
     traversal: Int)
 
@@ -473,6 +478,7 @@ package impl {
 
     private val offsetStart = info.startPos
     private val offsetEnd = info.endPos
+    private val offsetFocusStart= info.focusStart
 
     override protected def infoPosString: String = {
       s"${offsetStart}-${offsetEnd}"
@@ -486,6 +492,8 @@ package impl {
     override def rawStart: Int = offsetStart
 
     override def rawEnd: Int = offsetEnd
+
+    override def rawFocusStart: Int = offsetFocusStart
 
     override def sourceFileName: String = source.path.toString
 
@@ -566,7 +574,7 @@ package impl {
 
     private var fields_ : AnyRef = _fields
 
-    def declaredIn = fields_.asInstanceOf[Option[FieldsModel]]
+    override def declaredIn = fields_.asInstanceOf[Option[FieldsModel]]
 
     private var getter_ : Option[GetterMethodModel] = _
 
@@ -583,6 +591,7 @@ package impl {
     extends ClassLikeModelImpl(info, relationships) with ObjectModel {
     override protected def typeName: String = "object"
 
+    override def declaredIn = None
     override def fieldsInSameDeclaration: Seq[ObjectModel] = Nil
   }
 
@@ -656,7 +665,7 @@ package impl {
       _fields ::= impl
     }
 
-    override def fieldsInDeclaration: Seq[FieldModel] = _fields
+    override def fieldsInDeclaration: List[FieldModel] = _fields
   }
 
   class ValModelImpl(

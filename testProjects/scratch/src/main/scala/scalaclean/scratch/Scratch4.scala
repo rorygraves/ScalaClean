@@ -1,9 +1,7 @@
-package scalaclean.scratch
+object X extends App {
+  val (a,b,c) = (1,2,3)
 
-object Scratch4 extends App {
+  val (d:Int, e:Int, f, g:Int) = (1,2,3, 4)
 
-  val (a1, a2) = (1,2)
-
-  println("a1 = " + a1)
-
+  println(e)
 }
