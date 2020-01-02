@@ -3,12 +3,12 @@ package scalaclean.rules.deadcode
 import scalaclean.model._
 import scalaclean.model.impl.{ElementId, ElementModelImpl}
 import scalaclean.rules.AbstractRule
-import scalaclean.util.{ElementTreeVisitor, Scope, SymbolTreeVisitor, TokenHelper}
+import scalaclean.util.{Scope, SymbolElementTreeVisitor, SymbolTreeVisitor, TokenHelper}
 import scalafix.v1._
 
 import scala.collection.mutable.ListBuffer
 import scala.meta.io.AbsolutePath
-import scala.meta.{Import, Mod, Pat, Stat}
+import scala.meta.{Mod, Pat, Stat}
 
 /**
  * A rule that removes unreferenced classes,
@@ -140,63 +140,47 @@ class DeadCodeRemover(model: ProjectModel, debug: Boolean) extends AbstractRule(
     // find source model
     val sModel = model.allOf[SourceModel].filter(_.toString.contains(targetFileName)).toList.headOption.getOrElse(throw new IllegalStateException(s"Unable to find source model for $targetFileName"))
 
-
     val tokens = syntacticDocument.tokens.tokens
 
-    val topLevelElements = sModel.innerClassLike.flatMap { cm =>
-      if(cm.existsInSource) {
-        Some(cm)
-      }else
-        None
-    }.sortBy(_.rawStart)
+    val visitor = new SymbolElementTreeVisitor[(Int, Int, String)] {
+      override protected def handleSymbol(element: ModelElement): Boolean = {
+        val usage = element.colour
+        if (element.existsInSource && usage.isUnused) {
+          println(element.name + "  " + usage.isUnused)
+          println("-- ")
+          println("  cm.rawStart = " + element.rawStart)
+          val start = element.annotations.map(a => element.rawStart + a.posOffsetStart - 1).headOption.getOrElse(element.rawStart)
+          println("  annotStart = " + start)
+          val candidateBeginToken = tokens.find(t => t.start >= start && t.start <= t.end).head
+          println("  annotStart = " + candidateBeginToken)
+          val newBeingToken = TokenHelper.whitespaceOrCommentsBefore(candidateBeginToken, syntacticDocument.tokens)
+          println("  newBeginToken = " + newBeingToken)
+          val newStartPos = newBeingToken.headOption.map(_.start).getOrElse(start)
+          println("  newStartPos = " + newStartPos)
 
-
-
-    val lb2 = new ListBuffer[(Int, Int, String)]()
-    def recurse(element: ElementModelImpl): List[(Int, Int, String)] = {
-      val usage = element.colour
-      if(element.existsInSource && usage.isUnused) {
-        println(element.name + "  " + usage.isUnused)
-        println("-- ")
-        println("  cm.rawStart = " + element.rawStart)
-        val start = element.annotations.map(a => element.rawStart + a.posOffsetStart -1).headOption.getOrElse(element.rawStart)
-        println("  annotStart = " + start)
-        val candidateBeginToken = tokens.find(t => t.start >= start && t.start <= t.end).head
-        println("  annotStart = " + candidateBeginToken)
-        val newBeingToken = TokenHelper.whitespaceOrCommentsBefore(candidateBeginToken, syntacticDocument.tokens)
-        println("  newBeginToken = " + newBeingToken)
-        val newStartPos = newBeingToken.headOption.map(_.start).getOrElse(start)
-        println("  newStartPos = " + newStartPos)
-
-        lb2.append((newStartPos, element.rawEnd, ""))
-        List((newStartPos, element.rawEnd, ""))
-
-      } else {
-        element.allChildren.flatMap(recurse)
-      }
-    }
-    val toDelete = sModel.allChildren.flatMap { element => recurse(element) }
-
-    println("--------NEW----------")
-    lb2.toList.sortBy(_._1).foreach(println)
-    println("------------------")
-
-
-    println("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX")
-    val visitor = new ElementTreeVisitor[(Int,Int,String)] {
-      override def visitClass(cm: ClassModel): Boolean = {
-        if(cm.existsInSource && cm.colour.isUnused) {
-          log(" **Removing** ")
+          this.collect(newStartPos, element.rawEnd, "")
           false
-        } else
-          true
+        }
+        else true
+      }
 
+      override protected def handlerPats(pats: Seq[ModelElement]): Boolean = {
+        // TODO This I think is the handler for pattern  val (a,b,c) = ...
+        // right now recurse and handle hte symbols directly
+        true
       }
     }
+
     visitor.visit(sModel)
 
+    val result = visitor.result.toList.sortBy(_._1)
+    println("--------NEW----------")
+    result.foreach(println)
+    println("------------------")
 
-    return lb2.toList.sortBy(_._1)
+    return result
+
+//    return lb2.toList.sortBy(_._1)
     val lb = new ListBuffer[(Int, Int, String)]()
     val tv = new SymbolTreeVisitor {
 

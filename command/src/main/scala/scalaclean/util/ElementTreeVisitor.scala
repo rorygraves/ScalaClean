@@ -1,6 +1,6 @@
 package scalaclean.util
 
-import scalaclean.model.{ClassModel, GetterMethodModel, ModelElement, ObjectModel, PlainMethodModel, SetterMethodModel, SourceModel, TraitModel, ValModel, VarModel}
+import scalaclean.model.{ClassModel, FieldModel, FieldsModel, GetterMethodModel, ModelElement, ObjectModel, PlainMethodModel, SetterMethodModel, SourceModel, TraitModel, ValModel, VarModel}
 
 import scala.collection.mutable.ListBuffer
 
@@ -37,6 +37,10 @@ class ElementTreeVisitor[T] {
 
   def visitVar(vm: VarModel): Boolean = true
 
+  def visitField(fm: FieldModel): Boolean = true
+
+  def visitFields(fm: FieldsModel): Boolean = true
+
   final def visit(element: ModelElement): Unit = {
 
     log("Reached " + element)
@@ -59,6 +63,11 @@ class ElementTreeVisitor[T] {
         visitSetterMethod(smm)
       case pmm: PlainMethodModel =>
         visitPlainMethod(pmm)
+      case fm: FieldModel =>
+        visitField(fm)
+      case fsm: FieldsModel =>
+        visitFields(fsm)
+
       case other =>
         log(s"unhandledElement ${other.getClass}")
         throw new IllegalStateException(s"unhandledElement ${other.getClass}")
