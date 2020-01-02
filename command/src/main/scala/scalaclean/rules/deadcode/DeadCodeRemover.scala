@@ -1,7 +1,7 @@
 package scalaclean.rules.deadcode
 
 import scalaclean.model._
-import scalaclean.model.impl.{ElementId, ElementModelImpl}
+import scalaclean.model.impl.ElementId
 import scalaclean.rules.AbstractRule
 import scalaclean.util.{Scope, SymbolElementTreeVisitor, SymbolTreeVisitor, TokenHelper}
 import scalafix.v1._
@@ -133,8 +133,11 @@ class DeadCodeRemover(model: ProjectModel, debug: Boolean) extends AbstractRule(
   var elementsRemoved = 0
   var elementsVisited = 0
 
-
   override def fix(targetFile: AbsolutePath, syntacticDocument: SyntacticDocument)(implicit semanticDocument: SemanticDocument): List[(Int, Int, String)] = {
+    newFix(targetFile, syntacticDocument)(semanticDocument)
+  }
+
+  def newFix(targetFile: AbsolutePath, syntacticDocument: SyntacticDocument)(implicit semanticDocument: SemanticDocument): List[(Int, Int, String)] = {
 
     val targetFileName = targetFile.toString
     // find source model
@@ -179,8 +182,12 @@ class DeadCodeRemover(model: ProjectModel, debug: Boolean) extends AbstractRule(
     println("------------------")
 
     return result
+  }
 
-//    return lb2.toList.sortBy(_._1)
+  def oldFix(targetFile: AbsolutePath, syntacticDocument: SyntacticDocument)(implicit semanticDocument: SemanticDocument): List[(Int, Int, String)] = {
+
+
+      //    return lb2.toList.sortBy(_._1)
     val lb = new ListBuffer[(Int, Int, String)]()
     val tv = new SymbolTreeVisitor {
 

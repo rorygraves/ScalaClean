@@ -3,7 +3,7 @@ package scalaclean.rules.privatiser
 import scalaclean.model._
 import scalaclean.model.impl.ElementId
 import scalaclean.rules.AbstractRule
-import scalaclean.util.{Scope, SymbolTreeVisitor}
+import scalaclean.util.{Scope, SymbolElementTreeVisitor, SymbolTreeVisitor}
 import scalafix.patch.Patch
 import scalafix.v1.{SemanticDocument, SyntacticDocument}
 
@@ -11,7 +11,7 @@ import scala.collection.mutable.ListBuffer
 import scala.meta.io.AbsolutePath
 import scala.meta.tokens.Token
 import scala.meta.tokens.Token.{KwDef, KwVal, KwVar}
-import scala.meta.{Import, Mod, Pat, Stat}
+import scala.meta.{Mod, Pat, Stat}
 
 class Privatiser(model: ProjectModel, debug: Boolean) extends AbstractRule("Privatiser", model, debug) {
 
@@ -112,8 +112,114 @@ class Privatiser(model: ProjectModel, debug: Boolean) extends AbstractRule("Priv
          |""".stripMargin)
 
   override def fix(targetFile: AbsolutePath, syntacticDocument: SyntacticDocument)(implicit semanticDocument: SemanticDocument): List[(Int, Int, String)] = {
+
+//    newFix(targetFile, syntacticDocument)(semanticDocument)
+    oldFix(targetFile, syntacticDocument)(semanticDocument)
+  }
+
+  def newFix(targetFile: AbsolutePath, syntacticDocument: SyntacticDocument)(implicit semanticDocument: SemanticDocument): List[(Int, Int, String)] = {
     val lb = new ListBuffer[(Int, Int, String)]
 
+    val targetFileName = targetFile.toString
+    // find source model
+    val sModel = model.allOf[SourceModel].filter(_.toString.contains(targetFileName)).toList.headOption.getOrElse(throw new IllegalStateException(s"Unable to find source model for $targetFileName"))
+
+    val tokens = syntacticDocument.tokens.tokens
+
+    val visitor = new SymbolElementTreeVisitor[(Int, Int, String)] {
+
+      def existingAccess(mods: Seq[Mod]): (Option[Mod], PrivatiserLevel) = {
+        val res: Option[(Option[Mod], PrivatiserLevel)] = mods.collectFirst {
+          case s@Mod.Private(scope) => (Some(s), Scoped.Private(ElementId.fromTree(scope), "existing"))
+          case s@Mod.Protected(scope) => (Some(s), Scoped.Protected(ElementId.fromTree(scope), "existing", forceProtected = false))
+        }
+        res.getOrElse((None, Public("existing")))
+      }
+
+      private def changeAccessModifier(
+                                        level: PrivatiserLevel, mods: Seq[Mod], defn: Stat, aModel: ModelElement, forcePosition: Option[Token]): Boolean = {
+        val (mod, existing) = existingAccess(mods)
+        val proposed = level.asText(aModel)
+
+        def buildInsertion(toReplace: String): Boolean = {
+          forcePosition match {
+            case Some(token) =>
+              lb.append((token.start, token.start, s"$toReplace "))
+              true
+            case None =>
+              val tokens = defn.tokens
+              tokens.find {
+                _.start == aModel.rawStart
+              } match {
+                case Some(token) =>
+                  lb.append((token.start, token.start, s"$toReplace "))
+                  true
+                case None =>
+                  //probably quite worrying
+                  lb.append((defn.pos.start, defn.pos.start, s"$toReplace "))
+                  true
+              }
+          }
+        }
+
+        val structuredPatch: Boolean =
+          (mod, level.shouldReplace(aModel), proposed) match {
+            case (_, _, None) => false
+            case (None, _, Some(toReplace)) =>
+              buildInsertion(toReplace)
+            case (_, false, Some(toReplace)) =>
+              buildInsertion(toReplace)
+            case (Some(existing), true, Some(toReplace)) =>
+              lb.append((existing.pos.start, existing.pos.end, s"$toReplace"))
+              true
+          }
+        val updatedMarker = level.marker2(defn).map { v => lb.append(v); true }.getOrElse(false)
+
+        structuredPatch || updatedMarker
+
+      }
+
+      override protected def handleSymbol(modelElement: ModelElement): Boolean = {
+        if (modelElement.legacySymbol.isGlobal) {
+          // TODO Check for not existing  model.getElement[ModelElement] match { case Some(ms) if(me.existsInsource)=> ... case None => continue }
+          if (modelElement.existsInSource) {
+            val patched = changeAccessModifier(modelElement.colour, ??? /* mods*/, ???/*stat*/, modelElement, None)
+            //do we need to recurse into implementation?
+            val rewriteContent = modelElement match {
+              case _: ClassLike => true
+              case _: MethodModel => false
+              case _: FieldModel => throw new IllegalStateException(s"handlerPats should be called - $modelElement")
+              case _: FieldsModel => throw new IllegalStateException(s"handlerPats should be called - $modelElement")
+              case _: SourceModel => true
+            }
+            elementsObserved += 1
+            if (patched)
+              elementsChanged += 1
+            rewriteContent
+          } else true
+        } else
+          true
+      }
+
+      override protected def handlerPats(pats: Seq[ModelElement]): Boolean = {
+        // TODO This I think is the handler for pattern  val (a,b,c) = ...
+        // right now recurse and handle hte symbols directly
+        true
+      }
+    }
+
+    visitor.visit(sModel)
+
+    val result = visitor.result.toList.sortBy(_._1)
+    println("--------NEW----------")
+    result.foreach(println)
+    println("------------------")
+
+    result
+  }
+
+  def oldFix(targetFile: AbsolutePath, syntacticDocument: SyntacticDocument)(implicit semanticDocument: SemanticDocument): List[(Int, Int, String)] = {
+    val lb = new ListBuffer[(Int, Int, String)]
 
 
 

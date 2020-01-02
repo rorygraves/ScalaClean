@@ -496,8 +496,6 @@ package impl {
     override def isAbstract: Boolean = false
 
     override val existsInSource: Boolean = offsetEnd != offsetStart
-//
-//    override def existsInSource: Boolean = rawStart < rawEnd
   }
 
   abstract sealed class ClassLikeModelImpl(
