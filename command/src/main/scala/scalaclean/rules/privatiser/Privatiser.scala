@@ -1,5 +1,6 @@
 package scalaclean.rules.privatiser
 
+import org.scalaclean.analysis.plugin.VisibilityData
 import scalaclean.model._
 import scalaclean.model.impl.ElementId
 import scalaclean.rules.AbstractRule
@@ -113,8 +114,8 @@ class Privatiser(model: ProjectModel, debug: Boolean) extends AbstractRule("Priv
 
   override def fix(targetFile: AbsolutePath, syntacticDocument: SyntacticDocument)(implicit semanticDocument: SemanticDocument): List[(Int, Int, String)] = {
 
-//    newFix(targetFile, syntacticDocument)(semanticDocument)
-    oldFix(targetFile, syntacticDocument)(semanticDocument)
+    newFix(targetFile, syntacticDocument)(semanticDocument)
+//    oldFix(targetFile, syntacticDocument)(semanticDocument)
   }
 
   def newFix(targetFile: AbsolutePath, syntacticDocument: SyntacticDocument)(implicit semanticDocument: SemanticDocument): List[(Int, Int, String)] = {
@@ -183,7 +184,23 @@ class Privatiser(model: ProjectModel, debug: Boolean) extends AbstractRule("Priv
         if (modelElement.legacySymbol.isGlobal) {
           // TODO Check for not existing  model.getElement[ModelElement] match { case Some(ms) if(me.existsInsource)=> ... case None => continue }
           if (modelElement.existsInSource) {
-            val patched = changeAccessModifier(modelElement.colour, ??? /* mods*/, ???/*stat*/, modelElement, None)
+            val currentVis = modelElement.extensions.find(_.isInstanceOf[VisibilityData]).asInstanceOf[Option[VisibilityData]]
+            val targetVis = modelElement.colour.asText(modelElement)
+            log(s" AAAA ${modelElement.legacySymbol}  $currentVis")
+            log(s" IS   ${modelElement.rawStart}")
+            log(s" Target = ${modelElement.colour.asText(modelElement)}")
+            val targetStart = modelElement.rawStart + currentVis.map(_.posOffsetStart).getOrElse((0))
+            val targetEnd = modelElement.rawStart + currentVis.map(_.posOffsetEnd).getOrElse((0))
+            log(s" TargetPos = $targetStart -> $targetEnd")
+
+            val patched = targetVis match {
+              case Some(visText) =>
+                this.collect((targetStart, targetEnd, visText + " "))
+                true
+              case None =>
+                false
+            }
+
             //do we need to recurse into implementation?
             val rewriteContent = modelElement match {
               case _: ClassLike => true

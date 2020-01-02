@@ -11,5 +11,5 @@ object DeadCode2App {
 
 object UsedObj {
   def usedMethod(): Int = { 1 }
-  def notUsedMethod(): Unit = {}
+  private def notUsedMethod(): Unit = {}
 }

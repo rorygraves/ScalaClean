@@ -156,9 +156,9 @@ class DeadCodeRemover(model: ProjectModel, debug: Boolean) extends AbstractRule(
           println("  annotStart = " + start)
           val candidateBeginToken = tokens.find(t => t.start >= start && t.start <= t.end).head
           println("  annotStart = " + candidateBeginToken)
-          val newBeingToken = TokenHelper.whitespaceOrCommentsBefore(candidateBeginToken, syntacticDocument.tokens)
-          println("  newBeginToken = " + newBeingToken)
-          val newStartPos = newBeingToken.headOption.map(_.start).getOrElse(start)
+          val newBeginToken = TokenHelper.whitespaceOrCommentsBefore(candidateBeginToken, syntacticDocument.tokens)
+          println("  newBeginToken = " + newBeginToken)
+          val newStartPos = newBeginToken.headOption.map(_.start).getOrElse(start)
           println("  newStartPos = " + newStartPos)
 
           this.collect(newStartPos, element.rawEnd, "")

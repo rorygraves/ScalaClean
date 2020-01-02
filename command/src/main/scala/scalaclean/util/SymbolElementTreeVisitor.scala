@@ -12,7 +12,7 @@ abstract class SymbolElementTreeVisitor[T] extends ElementTreeVisitor[T] {
     handleSymbol(om)
 
 
-  override def visitVal(vm: ValModel): Boolean = handleSymbol(vm)
+  override def visitVal(vm: ValModel): Boolean = handlerPats(List(vm))
 
   override def visitGetterMethod(gmm: GetterMethodModel): Boolean = handleSymbol(gmm)
 
@@ -24,9 +24,9 @@ abstract class SymbolElementTreeVisitor[T] extends ElementTreeVisitor[T] {
 
   override def visitSetterMethod(smm: SetterMethodModel): Boolean = handleSymbol(smm)
 
-  override def visitVar(vm: VarModel): Boolean = handleSymbol(vm)
+  override def visitVar(vm: VarModel): Boolean = handlerPats(List(vm))
 
-  override def visitField(fm: FieldModel): Boolean = handleSymbol(fm)
+  override def visitField(fm: FieldModel): Boolean = handlerPats(List(fm))
 
   override def visitFields(fm: FieldsModel): Boolean = {
     handlerPats(fm.allChildren)

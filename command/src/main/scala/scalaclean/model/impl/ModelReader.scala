@@ -5,7 +5,7 @@ import java.nio.file.{Files, Paths}
 import org.scalaclean.analysis.plugin.{ModData, VisibilityData}
 import org.scalaclean.analysis.{AnnotationData, ExtensionData, ExtensionDescriptor, IoTokens}
 
-import scala.collection.{immutable, mutable}
+import scala.collection.mutable
 
 
 object ModelReader {
