@@ -3,7 +3,7 @@ package scalaclean.rules.deadcode
 import scalaclean.model._
 import scalaclean.model.impl.{ElementId, ElementModelImpl}
 import scalaclean.rules.AbstractRule
-import scalaclean.util.{Scope, SymbolTreeVisitor, TokenHelper}
+import scalaclean.util.{ElementTreeVisitor, Scope, SymbolTreeVisitor, TokenHelper}
 import scalafix.v1._
 
 import scala.collection.mutable.ListBuffer
@@ -151,6 +151,7 @@ class DeadCodeRemover(model: ProjectModel, debug: Boolean) extends AbstractRule(
     }.sortBy(_.rawStart)
 
 
+
     val lb2 = new ListBuffer[(Int, Int, String)]()
     def recurse(element: ElementModelImpl): List[(Int, Int, String)] = {
       val usage = element.colour
@@ -179,6 +180,20 @@ class DeadCodeRemover(model: ProjectModel, debug: Boolean) extends AbstractRule(
     println("--------NEW----------")
     lb2.toList.sortBy(_._1).foreach(println)
     println("------------------")
+
+
+    println("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX")
+    val visitor = new ElementTreeVisitor[(Int,Int,String)] {
+      override def visitClass(cm: ClassModel): Boolean = {
+        if(cm.existsInSource && cm.colour.isUnused) {
+          log(" **Removing** ")
+          false
+        } else
+          true
+
+      }
+    }
+    visitor.visit(sModel)
 
 
     return lb2.toList.sortBy(_._1)
