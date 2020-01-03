@@ -3,7 +3,7 @@ package scalaclean.rules.deadcode
 import scalaclean.model._
 import scalaclean.model.impl.ElementModelImpl
 import scalaclean.rules.AbstractRule
-import scalaclean.util.{SymbolElementTreeVisitor, TokenHelper}
+import scalaclean.util.{ElementTreeVisitor, TokenHelper}
 import scalafix.v1._
 
 import scala.collection.mutable.ListBuffer
@@ -144,8 +144,8 @@ class DeadCodeRemover(model: ProjectModel, debug: Boolean) extends AbstractRule(
 
     val tokens = syntacticDocument.tokens.tokens
 
-    val visitor = new SymbolElementTreeVisitor[(Int, Int, String)] {
-      override protected def handleSymbol(element: ModelElement): Boolean = {
+    val visitor = new ElementTreeVisitor[(Int, Int, String)] {
+      override protected def visitSymbol(element: ModelElement): Boolean = {
         val usage = element.colour
         if (element.existsInSource && usage.isUnused) {
           println(element.name + "  " + usage.isUnused)

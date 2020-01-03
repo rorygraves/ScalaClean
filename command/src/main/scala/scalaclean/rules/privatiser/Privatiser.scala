@@ -4,7 +4,7 @@ import org.scalaclean.analysis.plugin.VisibilityData
 import scalaclean.model._
 import scalaclean.model.impl.ElementId
 import scalaclean.rules.AbstractRule
-import scalaclean.util.{Scope, SymbolElementTreeVisitor, SymbolTreeVisitor}
+import scalaclean.util.{ElementTreeVisitor, Scope, SymbolTreeVisitor}
 import scalafix.patch.Patch
 import scalafix.v1.{SemanticDocument, SyntacticDocument}
 
@@ -127,7 +127,7 @@ class Privatiser(model: ProjectModel, debug: Boolean) extends AbstractRule("Priv
 
     val tokens = syntacticDocument.tokens.tokens
 
-    val visitor = new SymbolElementTreeVisitor[(Int, Int, String)] {
+    val visitor = new ElementTreeVisitor[(Int, Int, String)] {
 
       def existingAccess(mods: Seq[Mod]): (Option[Mod], PrivatiserLevel) = {
         val res: Option[(Option[Mod], PrivatiserLevel)] = mods.collectFirst {
@@ -180,7 +180,7 @@ class Privatiser(model: ProjectModel, debug: Boolean) extends AbstractRule("Priv
 
       }
 
-      override protected def handleSymbol(modelElement: ModelElement): Boolean = {
+      override protected def visitSymbol(modelElement: ModelElement): Boolean = {
         if (modelElement.legacySymbol.isGlobal) {
           // TODO Check for not existing  model.getElement[ModelElement] match { case Some(ms) if(me.existsInsource)=> ... case None => continue }
           if (modelElement.existsInSource) {
