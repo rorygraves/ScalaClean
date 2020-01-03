@@ -1,7 +1,7 @@
 package scalaclean.rules.privatiser
 
 import scalaclean.model.impl.ElementId
-import scalaclean.model.{Mark, ModelElement, Utils}
+import scalaclean.model.{Mark, ModelElement, SCPatch, Utils}
 import scalaclean.util.SymbolUtils
 import scalafix.patch.Patch
 
@@ -18,7 +18,7 @@ private[privatiser] sealed trait PrivatiserLevel extends Mark {
 
   def marker(stat: Stat): Patch = Patch.empty
 
-  def marker2(stat: Stat): Option[(Int,Int,String)] = None
+  def marker2(stat: Stat): Option[SCPatch] = None
 }
 
 private[privatiser] case class Public(reason: String) extends PrivatiserLevel {
@@ -49,7 +49,7 @@ private[privatiser] case object Undefined extends PrivatiserLevel {
 
   override def marker(stat: Stat): Patch = Utils.addMarker(stat, "can't detect usage")
 
-  override def marker2(stat: Stat): Option[(Int,Int,String)] = Utils.addMarker2(stat, "can't detect usage")
+  override def marker2(stat: Stat): Option[SCPatch] = Utils.addMarker2(stat, "can't detect usage")
 }
 
 private[privatiser] object AccessScope {

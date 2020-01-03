@@ -1,18 +1,18 @@
 package scalaclean.util
 
-import scalaclean.model.{ClassModel, FieldModel, FieldsModel, GetterMethodModel, ModelElement, ObjectModel, PlainMethodModel, SetterMethodModel, SourceModel, TraitModel, ValModel, VarModel}
+import scalaclean.model.{ModelElement, SCPatch}
 
 import scala.collection.mutable.ListBuffer
 
-abstract class ElementTreeVisitor[T] {
+abstract class ElementTreeVisitor {
 
-  private val collector = new ListBuffer[T]()
+  private val collector = new ListBuffer[SCPatch]()
 
-  final def collect(value: T): Unit = {
+  final def collect(value: SCPatch): Unit = {
     collector.+=(value)
   }
 
-  final def result: Seq[T] = collector.toList
+  final def result: List[SCPatch] = collector.toList.sortBy(_.startPos)
 
   private var currentDepth = 0
   final def log( msg: String) = {

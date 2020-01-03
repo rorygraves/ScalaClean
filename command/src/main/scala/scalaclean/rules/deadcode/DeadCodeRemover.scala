@@ -130,7 +130,7 @@ class DeadCodeRemover(model: ProjectModel, debug: Boolean) extends AbstractRule(
   var elementsRemoved = 0
   var elementsVisited = 0
 
-  override def fix(targetFile: AbsolutePath, syntacticDocument: SyntacticDocument)(implicit semanticDocument: SemanticDocument): List[(Int, Int, String)] = {
+  override def fix(targetFile: AbsolutePath, syntacticDocument: SyntacticDocument)(implicit semanticDocument: SemanticDocument): List[SCPatch] = {
 
     val targetFileName = targetFile.toString
     // find source model
@@ -138,14 +138,14 @@ class DeadCodeRemover(model: ProjectModel, debug: Boolean) extends AbstractRule(
 
     val tokens = syntacticDocument.tokens.tokens
 
-    val visitor: ElementTreeVisitor[(Int, Int, String)] = new ElementTreeVisitor[(Int, Int, String)] {
+    val visitor: ElementTreeVisitor = new ElementTreeVisitor {
 
-      def remove(element: ModelElement): Unit = {
-        replace(element, "", "remove")
+      def remove(element: ModelElement, comment: String = ""): Unit = {
+        replace(element, "", "remove", comment)
       }
 
-      def replace(element: ModelElement, text: String, actionName: String = "replace"): Unit = {
-        log(s" $actionName(${element.name},'$text') isUnused = ${element.colour.isUnused}")
+      def replace(element: ModelElement, text: String, actionName: String = "replace", comment: String = ""): Unit = {
+        log(s" $actionName(${element.name},'$text')   isUnused = ${element.colour.isUnused}")
         log(" ------- ")
         log("  cm.rawStart = " + element.rawStart)
         val start = element.annotations.map(a => element.rawStart + a.posOffsetStart - 1).headOption.getOrElse(element.rawStart)
@@ -157,18 +157,18 @@ class DeadCodeRemover(model: ProjectModel, debug: Boolean) extends AbstractRule(
         val newStartPos = newBeingToken.headOption.map(_.start).getOrElse(start)
         log("  newStartPos = " + newStartPos + " -> " + element.rawEnd)
 
-        collect((newStartPos, element.rawEnd, text))
+        collect(SCPatch(newStartPos, element.rawEnd, text, comment))
       }
 
-      def replaceFromFocus(element: ModelElement, text: String): Unit = {
-        log("replaceFromFocus(" + element.name + ",'" + text + "')")
-        collect((element.rawFocusStart, element.rawEnd, text))
+      def replaceFromFocus(element: ModelElement, text: String, comment: String): Unit = {
+        log(s" replaceFromFocus(${element.name},'$text')  ${element.rawFocusStart}->${element.rawEnd}")
+        collect(SCPatch(element.rawFocusStart, element.rawEnd, text, comment))
       }
 
-      def addComment(element: ModelElement, msg: String): Unit = {
-        log("addComment(" + element.name + ",'" + msg + "')")
-        val text = s"/* SCALA CLEAN $msg */"
-        collect((element.rawStart, element.rawStart, text))
+      def addComment(element: ModelElement, msg: String, comment: String = ""): Unit = {
+        log(" addComment(" + element.name + ",'" + msg + "')")
+        val text = s"/* *** SCALA CLEAN $msg */"
+        collect(SCPatch(element.rawStart, element.rawStart, text, comment))
       }
 
       override protected def visitSymbol(element: ModelElement): Boolean = {
@@ -177,6 +177,9 @@ class DeadCodeRemover(model: ProjectModel, debug: Boolean) extends AbstractRule(
             true
           case field: FieldModel if field.inCompoundFieldDeclaration =>
             // do nothing - do not recurse
+            false
+          case gmm: GetterMethodModel if(gmm.field.forall(_.existsInSource)) =>
+
             false
           case fields: FieldsModel =>
             log("FieldsModel - " + fields.name)
@@ -195,20 +198,23 @@ class DeadCodeRemover(model: ProjectModel, debug: Boolean) extends AbstractRule(
               true
             } else if (unused.size == decls.size) {
               //case 2
-              remove(fields) //no need to recurse
+              remove(fields, "all fields in patmat unused")
+              //no need to recurse
               false
             } else {
               //case 3
-              addComment(fields, s"consider rewriting pattern as ${unused.size} values are not used")
+              addComment(fields, s"consider rewriting pattern as ${unused.size} values are not used", "mutiple fields unused")
 
-              unused foreach (f => replaceFromFocus(f, "_"))
+              unused foreach { f =>
+                replaceFromFocus(f, "_",s"${f.name} unused in patmat")
+              }
               true
             }
 
           case element =>
             log(" basic element handling")
-            if (element.colour.isUnused) {
-              remove(element)
+            if (element.colour.isUnused && element.existsInSource) {
+              remove(element, s"Simple ${element.name} (${element.getClass} unused")
               false
             }
             else
@@ -219,12 +225,13 @@ class DeadCodeRemover(model: ProjectModel, debug: Boolean) extends AbstractRule(
 
     visitor.visit(sModel)
 
-    val result = visitor.result.toList.sortBy(_._1)
+    val result = visitor.result.toList.sortBy(_.startPos)
     println("--------NEW----------")
     result.foreach(println)
     println("------------------")
 
-    result
+
+    result.map(s => SCPatch(s.startPos, s.endPos, s.replacementText))
   }
 
   case class Usage(existingPurposes: Int = 0) extends Mark {

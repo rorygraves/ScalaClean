@@ -6,8 +6,8 @@ import scalapb.descriptors.ScalaType.Message
 import scala.meta.{Pat, Stat, Tree}
 
 object Utils {
-  def addMarker2(stat: Stat, message: String): Option[(Int, Int, String)] =
-    Some((stat.tokens.head.start, stat.tokens.head.start, s"/* *** SCALA CLEAN $message */"))
+  def addMarker2(stat: Stat, message: String): Option[SCPatch] =
+    Some(SCPatch(stat.tokens.head.start, stat.tokens.head.start, s"/* *** SCALA CLEAN $message */"))
 
   def addMarker(stat: Stat, message: String): Patch =
     Patch.addLeft(stat.tokens.head, s"/* *** SCALA CLEAN $message */")

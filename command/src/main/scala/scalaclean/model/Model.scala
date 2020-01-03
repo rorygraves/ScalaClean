@@ -172,6 +172,8 @@ sealed trait PlainMethodModel extends MethodModel {
 
 sealed trait GetterMethodModel extends AccessorModel {
   override protected final def infoTypeName: String = "GetterMethodModel"
+
+  def field: Option[FieldModel]
 }
 
 sealed trait SetterMethodModel extends AccessorModel {
@@ -629,7 +631,7 @@ package impl {
 
     private var field_ : Option[FieldModel] = _
 
-    def field = field_
+    def field: Option[FieldModel] = field_
   }
 
   class SetterMethodModelImpl(

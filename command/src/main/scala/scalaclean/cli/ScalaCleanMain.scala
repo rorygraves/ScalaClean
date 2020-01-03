@@ -4,7 +4,7 @@ import java.io.{PrintWriter, StringWriter}
 import java.nio.charset.StandardCharsets
 import java.nio.file.{Files, Paths}
 
-import scalaclean.model.ProjectModel
+import scalaclean.model.{ProjectModel, SCPatch}
 import scalaclean.model.impl.{Project, ProjectSet}
 import scalaclean.rules.AbstractRule
 import scalaclean.rules.deadcode.{DeadCodeRemover, SimpleDeadCode}
@@ -96,7 +96,7 @@ class ScalaCleanMain(options: SCOptions, ruleCreateFn: ProjectModel => AbstractR
                ): String = {
 
     // actually run the rule
-    val fixes: Seq[(Int, Int, String)] = rule.fix(targetFile, syntacticDocument)(semanticDocument)
+    val fixes: Seq[SCPatch] = rule.fix(targetFile, syntacticDocument)(semanticDocument)
     val fixedSource = applyFixes(source, fixes)
 
 //    generateHTML(fixedSource, source)
@@ -104,7 +104,7 @@ class ScalaCleanMain(options: SCOptions, ruleCreateFn: ProjectModel => AbstractR
     fixedSource
   }
 
-  def applyFixes(source: String, fixes: Seq[(Int, Int, String)]): String = {
+  def applyFixes(source: String, fixes: Seq[SCPatch]): String = {
     val sb = new StringBuilder
     var currentPos = 0
     var remaining = source
@@ -113,7 +113,7 @@ class ScalaCleanMain(options: SCOptions, ruleCreateFn: ProjectModel => AbstractR
 
     if(debug) println(s"-- ${remaining.length} remaining")
 
-    fixes foreach { case (start, end, text) =>
+    fixes foreach { case SCPatch(start, end, text, _) =>
       if(debug) println(s" start $start  end $end text '$text' curPos = $currentPos  remaining= ${remaining.length}  buffer = ${sb.length}")
       if (start > currentPos) {
         val diff = start - currentPos
