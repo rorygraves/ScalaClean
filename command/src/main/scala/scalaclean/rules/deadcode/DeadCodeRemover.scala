@@ -1,12 +1,10 @@
 package scalaclean.rules.deadcode
 
 import scalaclean.model._
-import scalaclean.model.impl.ElementModelImpl
 import scalaclean.rules.AbstractRule
 import scalaclean.util.{ElementTreeVisitor, TokenHelper}
 import scalafix.v1._
 
-import scala.collection.mutable.ListBuffer
 import scala.meta.io.AbsolutePath
 
 /**
@@ -24,19 +22,19 @@ class DeadCodeRemover(model: ProjectModel, debug: Boolean) extends AbstractRule(
   }
 
   override def debugDump(): Unit = {
-    println("-------------------------------------------------------------")
-
-    val used = model.allOf[ModelElement].filter(!_.colour.isUnused).toList.map(_.legacySymbol).sortBy(_.toString())
-    val unused = model.allOf[ModelElement].filter(_.colour.isUnused).toList.map(_.legacySymbol).sortBy(_.toString())
-
-    println("Used symbols =  " + used.size)
-    println("Unused size = " + unused.size)
-    println("Used Elements: ")
-    used foreach (e => println("  " + e))
-    println("Unused Elements: ")
-    unused foreach (e => println("  " + e))
-    println("-------------------------------------------------------------")
-
+//    println("-------------------------------------------------------------")
+//
+//    val used = model.allOf[ModelElement].filter(!_.colour.isUnused).toList.map(_.legacySymbol).sortBy(_.toString())
+//    val unused = model.allOf[ModelElement].filter(_.colour.isUnused).toList.map(_.legacySymbol).sortBy(_.toString())
+//
+//    println("Used symbols =  " + used.size)
+//    println("Unused size = " + unused.size)
+//    println("Used Elements: ")
+//    used foreach (e => println("  " + e))
+//    println("Unused Elements: ")
+//    unused foreach (e => println("  " + e))
+//    println("-------------------------------------------------------------")
+//
   }
 
 
@@ -133,10 +131,6 @@ class DeadCodeRemover(model: ProjectModel, debug: Boolean) extends AbstractRule(
   var elementsVisited = 0
 
   override def fix(targetFile: AbsolutePath, syntacticDocument: SyntacticDocument)(implicit semanticDocument: SemanticDocument): List[(Int, Int, String)] = {
-    mikeFix(targetFile, syntacticDocument)(semanticDocument)
-  }
-
-  def newFix(targetFile: AbsolutePath, syntacticDocument: SyntacticDocument)(implicit semanticDocument: SemanticDocument): List[(Int, Int, String)] = {
 
     val targetFileName = targetFile.toString
     // find source model
@@ -144,26 +138,82 @@ class DeadCodeRemover(model: ProjectModel, debug: Boolean) extends AbstractRule(
 
     val tokens = syntacticDocument.tokens.tokens
 
-    val visitor = new ElementTreeVisitor[(Int, Int, String)] {
-      override protected def visitSymbol(element: ModelElement): Boolean = {
-        val usage = element.colour
-        if (element.existsInSource && usage.isUnused) {
-          println(element.name + "  " + usage.isUnused)
-          println("-- ")
-          println("  cm.rawStart = " + element.rawStart)
-          val start = element.annotations.map(a => element.rawStart + a.posOffsetStart - 1).headOption.getOrElse(element.rawStart)
-          println("  annotStart = " + start)
-          val candidateBeginToken = tokens.find(t => t.start >= start && t.start <= t.end).head
-          println("  annotStart = " + candidateBeginToken)
-          val newBeginToken = TokenHelper.whitespaceOrCommentsBefore(candidateBeginToken, syntacticDocument.tokens)
-          println("  newBeginToken = " + newBeginToken)
-          val newStartPos = newBeginToken.headOption.map(_.start).getOrElse(start)
-          println("  newStartPos = " + newStartPos)
+    val visitor: ElementTreeVisitor[(Int, Int, String)] = new ElementTreeVisitor[(Int, Int, String)] {
 
-          this.collect(newStartPos, element.rawEnd, "")
-          false
+      def remove(element: ModelElement): Unit = {
+        replace(element, "", "remove")
+      }
+
+      def replace(element: ModelElement, text: String, actionName: String = "replace"): Unit = {
+        log(s" $actionName(${element.name},'$text') isUnused = ${element.colour.isUnused}")
+        log(" ------- ")
+        log("  cm.rawStart = " + element.rawStart)
+        val start = element.annotations.map(a => element.rawStart + a.posOffsetStart - 1).headOption.getOrElse(element.rawStart)
+        log("  annotStart = " + start)
+        val candidateBeginToken = tokens.find(t => t.start >= start && t.start <= t.end).head
+        log("  annotStart = " + candidateBeginToken)
+        val newBeingToken = TokenHelper.whitespaceOrCommentsBefore(candidateBeginToken, syntacticDocument.tokens)
+//        log("  newBeginToken = " + newBeingToken)
+        val newStartPos = newBeingToken.headOption.map(_.start).getOrElse(start)
+        log("  newStartPos = " + newStartPos + " -> " + element.rawEnd)
+
+        collect((newStartPos, element.rawEnd, text))
+      }
+
+      def replaceFromFocus(element: ModelElement, text: String): Unit = {
+        log("replaceFromFocus(" + element.name + ",'" + text + "')")
+        collect((element.rawFocusStart, element.rawEnd, text))
+      }
+
+      def addComment(element: ModelElement, msg: String): Unit = {
+        log("addComment(" + element.name + ",'" + msg + "')")
+        val text = s"/* SCALA CLEAN $msg */"
+        collect((element.rawStart, element.rawStart, text))
+      }
+
+      override protected def visitSymbol(element: ModelElement): Boolean = {
+        element match {
+          case _ if !element.existsInSource =>
+            true
+          case field: FieldModel if field.inCompoundFieldDeclaration =>
+            // do nothing - do not recurse
+            false
+          case fields: FieldsModel =>
+            log("FieldsModel - " + fields.name)
+            // fields are a bit special. They will be marked as used (by the implementation of the var/val that uses it)
+            // but we take a deeper look here - there are 3 cases
+            // 1. all of the child fields are used - leave as is
+            // 2. None of the fields are used - remove the whole declaration
+            // 3. some of the fields are used - replace the unused fields with `-` and leave a comment
+            val decls = fields.fieldsInDeclaration
+            assert(decls.nonEmpty)
+            val unused = decls.filter {
+              _.colour.isUnused
+            }
+            if (unused.isEmpty) {
+              //case 1 no change
+              true
+            } else if (unused.size == decls.size) {
+              //case 2
+              remove(fields) //no need to recurse
+              false
+            } else {
+              //case 3
+              addComment(fields, s"consider rewriting pattern as ${unused.size} values are not used")
+
+              unused foreach (f => replaceFromFocus(f, "_"))
+              true
+            }
+
+          case element =>
+            log(" basic element handling")
+            if (element.colour.isUnused) {
+              remove(element)
+              false
+            }
+            else
+              true
         }
-        else true
       }
     }
 
@@ -174,98 +224,8 @@ class DeadCodeRemover(model: ProjectModel, debug: Boolean) extends AbstractRule(
     result.foreach(println)
     println("------------------")
 
-    return result
-  }
-
-  def mikeFix(targetFile: AbsolutePath, syntacticDocument: SyntacticDocument)(implicit semanticDocument: SemanticDocument): List[(Int, Int, String)] = {
-
-    val targetFileName = targetFile.toString
-    // find source model
-    val sModel = model.allOf[SourceModel].filter(_.toString.contains(targetFileName)).toList.headOption.getOrElse(throw new IllegalStateException(s"Unable to find source model for $targetFileName"))
-
-
-    val tokens = syntacticDocument.tokens.tokens
-
-
-    val lb2 = new ListBuffer[(Int, Int, String)]()
-    def remove(element: ModelElement) = {
-      replace(element, "")
-    }
-    def replace(element: ModelElement, text: String) = {
-      println("\nreplace(" + element.name + ",'" + text  + "') isUnused = " + element.colour.isUnused)
-      println("------- ")
-      println("  cm.rawStart = " + element.rawStart)
-      val start = element.annotations.map(a => element.rawStart + a.posOffsetStart - 1).headOption.getOrElse(element.rawStart)
-      println("  annotStart = " + start)
-      val candidateBeginToken = tokens.find(t => t.start >= start && t.start <= t.end).head
-      println("  annotStart = " + candidateBeginToken)
-      val newBeingToken = TokenHelper.whitespaceOrCommentsBefore(candidateBeginToken, syntacticDocument.tokens)
-      println("  newBeginToken = " + newBeingToken)
-      val newStartPos = newBeingToken.headOption.map(_.start).getOrElse(start)
-      println("  newStartPos = " + newStartPos + " -> " + element.rawEnd)
-
-      lb2.append((newStartPos, element.rawEnd, text))
-      List((newStartPos, element.rawEnd, text))
-    }
-    def replaceFromFocus(element: ModelElement, text: String) = {
-      println("\nreplaceFromFocus(" + element.name + ",'" + text  + "')")
-      lb2.append((element.rawFocusStart, element.rawEnd, text))
-      List((element.rawFocusStart, element.rawEnd, text))
-    }
-    def addComment(element: ModelElement, msg: String) = {
-      println("\naddComment(" + element.name + ",'" + msg  + "')")
-      val text = s"/* SCALA CLEAN $msg */"
-      lb2.append((element.rawStart, element.rawStart, text))
-      List((element.rawStart, element.rawStart, text))
-    }
-
-    def recurse(element: ElementModelImpl): List[(Int, Int, String)] = element match {
-      case _ if !element.existsInSource =>
-        element.allChildren.flatMap(recurse)
-      case field: FieldModel if field.inCompoundFieldDeclaration =>
-        Nil
-      case fields: FieldsModel =>
-        println("FieldsModel - " + fields.name)
-        // fields are a bit special. They will be marked as used (by the implementation of the var/val that uses it)
-        // but we take a deeper look here - there are 3 cases
-        // 1. all of the child fields are used - leave as is
-        // 2. None of the fields are used - remove the whole declaration
-        // 3. some of the fields are used - replace the unused fields with `-` and leave a comment
-        val decls = fields.fieldsInDeclaration
-        assert(decls.nonEmpty)
-        val unused = decls.filter {
-          _.colour.isUnused
-        }
-        if (unused.isEmpty) {
-          //case 1 no change
-          element.allChildren.flatMap(recurse)
-        } else if (unused.size == decls.size) {
-          //case 2
-          remove(fields) //no need to recurse
-        } else {
-          //case 3
-          addComment(fields, s"consider rewriting pattern as ${unused.size} values are not used") :::
-            (unused flatMap {
-              f =>
-                replaceFromFocus(f, "_")
-            }) ::: element.allChildren.flatMap(recurse)
-        }
-
-      case element =>
-        println("Element " + element.name + "  " + element.rawStart)
-        if (element.colour.isUnused) remove(element)
-        else element.allChildren.flatMap(recurse)
-    }
-    val toDelete = sModel.allChildren.flatMap { element => recurse(element) }
-
-    val result = lb2.toList.sortBy(_._1)
-    println("--------NEW----------")
-    result.foreach(println)
-    println("------------------")
-
     result
   }
-
 
   case class Usage(existingPurposes: Int = 0) extends Mark {
     def withPurpose(addedPurpose: Purpose): Usage = {

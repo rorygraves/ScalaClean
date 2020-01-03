@@ -461,7 +461,8 @@ package impl {
 
     override def classOrEnclosing: ClassLike = enclosing.head.classOrEnclosing
 
-    override def allChildren: List[ElementModelImpl] = children
+    // sorting added to make debugging easier
+    override def allChildren: List[ElementModelImpl] = children.sortBy(_.rawStart)
     override def fields: List[FieldModel] = children collect {
       case f: FieldModelImpl => f
     }
