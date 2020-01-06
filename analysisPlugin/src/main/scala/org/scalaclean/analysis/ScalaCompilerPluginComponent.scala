@@ -17,7 +17,7 @@ class ScalaCompilerPluginComponent(
   val global: Global) extends PluginComponent with ModelSymbolBuilder {
   override val phaseName: String = "scalaclean-compiler-plugin-phase"
 
-  override val runsAfter: List[String] = List("semanticdb-typer")
+  override val runsAfter: List[String] = List("typer")
   // a bit ugly, but the options are read after the component is create - so it is updated by the plugin
   var debug = false
   var sourceDirs: List[String] = List.empty
@@ -177,7 +177,7 @@ class ScalaCompilerPluginComponent(
         println(s"${indentString}${mSymbol.debugName}")
       scopeStack = mSymbol :: scopeStack
       depth += 1
-      scopeLog(s"-symbol: ${mSymbol.csvString}")
+      scopeLog(s"-symbol: ${mSymbol.legacyCsvIDString}")
       val oldVisited = newVisited()
       outer.foreach { o =>
         mSymbol.addWithin(o)
@@ -238,7 +238,7 @@ class ScalaCompilerPluginComponent(
 
     def traverseSource(unit: CompilationUnit): Unit = {
       val sourceFile = unit.source.file.canonicalPath
-      val sourceSymbol = ModelSource(unit.body, ModelCommon(true, s"source:$sourceFile", s"S:$sourceFile", sourceFile, -1, -1, -1, "<NA>"))
+      val sourceSymbol = ModelSource(unit.body, ModelCommon(true, s"S:$sourceFile", sourceFile, -1, -1, -1, "<NA>"))
       enterScope(sourceSymbol) {
         _ =>
           traverse(unit.body)
@@ -387,7 +387,7 @@ class ScalaCompilerPluginComponent(
           }
         case treeSelect: Select =>
           enterTransScope("Select") {
-            scopeLog("-symbol: " + asMSymbol(treeSelect.symbol).csvString)
+            scopeLog("-symbol: " + asMSymbol(treeSelect.symbol).legacyCsvIDString)
             // avoids an issue with packages which we ScalaClean doesn't currently understand
             if (hasCurrentGlobalScope) {
               currentScope.addRefers(asMSymbol(treeSelect.symbol), false)

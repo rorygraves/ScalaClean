@@ -13,33 +13,33 @@ class RelationshipsWriter(file: File) {
 
   def overrides(overrider: ModelMethod, overridden: HasModelCommon, isDirect: Boolean): Unit = {
     writeLine(overrider, overridden, s"${commonOutput(overrider, IoTokens.relOverrides, overridden)},$isDirect",
-      s"${IoTokens.relOverrides} ${overridden.csvString}) Direct:$isDirect")
+      s"${IoTokens.relOverrides} ${overridden.legacyCsvIDString}) Direct:$isDirect")
   }
 
   def refers(container: HasModelCommon, target: HasModelCommon, isSynthetic: Boolean): Unit = {
     writeLine(container, target, s"${commonOutput(container, IoTokens.relRefers, target)},$isSynthetic",
-      s"${IoTokens.relRefers} ${target.csvString}) Synthetic:$isSynthetic")
+      s"${IoTokens.relRefers} ${target.legacyCsvIDString}) Synthetic:$isSynthetic")
   }
 
   def extendsCls(parentSym: HasModelCommon, childSym: ModelSymbol, direct: Boolean): Unit = {
     writeLine(parentSym, childSym, s"${commonOutput(childSym, IoTokens.relExtends, parentSym)},$direct",
-      s"${IoTokens.relExtends} ${parentSym.csvString} Direct:$direct")
+      s"${IoTokens.relExtends} ${parentSym.legacyCsvIDString} Direct:$direct")
   }
 
   def within(outerSym: ModelSymbol, innerSym: ModelSymbol): Unit = {
     writeLine(outerSym, innerSym, s"${commonOutput(innerSym, IoTokens.relWithin, outerSym)}",
-      s"${IoTokens.relWithin} ${outerSym.csvString}")
+      s"${IoTokens.relWithin} ${outerSym.legacyCsvIDString}")
 
   }
 
   def getterFor(method: ModelCommon, field: ModelCommon): Unit = {
     writeLine(method, field, s"${commonOutput(method, IoTokens.relGetter, field)}",
-      s"${IoTokens.relGetter} ${field.csvString}")
+      s"${IoTokens.relGetter} ${field.legacyCsvIDString}")
   }
 
   def setterFor(method: ModelCommon, field: ModelCommon): Unit = {
     writeLine(method, field, s"${commonOutput(method, IoTokens.relSetter, field)}",
-      s"${IoTokens.relSetter} ${field.csvString}")
+      s"${IoTokens.relSetter} ${field.legacyCsvIDString}")
   }
 
   def endUnit(): Unit = {

@@ -84,7 +84,6 @@ trait ModelSymbolBuilder extends SemanticdbOps {
     cache.getOrElseUpdate(gSym, {
       val isGlobal = gSym.isSemanticdbGlobal && !gSym.isLocalToBlock
       val newIsGlobal = gSym.ownersIterator.forall(o => o.isType && !o.isSynthetic)
-      val sString = gSym.toSemantic
       val (startPos, endPos, focusPos) = if (gSym.pos == NoPosition) (-1, -1, -1) else (gSym.pos.start, gSym.pos.end, gSym.pos.focus.start)
       val sourceFile = if (gSym.sourceFile != null)
         mungeUnitPath(gSym.sourceFile.toString)
@@ -95,7 +94,7 @@ trait ModelSymbolBuilder extends SemanticdbOps {
 
       val newName = getNewName(gSym) + specialSuffix
 
-      ModelCommon(isGlobal, sString, newName, sourceFile, startPos, endPos, focusPos, name)
+      ModelCommon(isGlobal, newName, sourceFile, startPos, endPos, focusPos, name)
 
     }
     )

@@ -8,7 +8,7 @@ import scala.tools.nsc.Global
 trait HasModelCommon {
   def common: ModelCommon
 
-  def csvString: String = common.csvString
+  def legacyCsvIDString: String = common.legacyCsvIDString
 
   def newCsvString: String = common.newCsvString
 }
@@ -21,8 +21,6 @@ sealed trait ModelSymbol extends HasModelCommon {
   var traversal: Int = -1
 
   def isGlobal: Boolean = common.isGlobal
-
-  def semanticRep: String = common.id
 
   def sourceFile: String = common.sourceFile
 
@@ -221,13 +219,13 @@ sealed abstract class ModelField extends ModelSymbol {
 }
 
 case class ModelCommon(
-                        isGlobal: Boolean, id: String, newId: String, sourceFile: String, posStart: Int, posEnd: Int,posFocus: Int,
+                        isGlobal: Boolean, newId: String, sourceFile: String, posStart: Int, posEnd: Int, posFocus: Int,
                         sourceName: String) extends HasModelCommon {
   override def common: ModelCommon = this
 
-  override def csvString: String = {
-    val globalStr = if (isGlobal) "G:" else s"L:$sourceName/"
-    s"$globalStr$id"
+  // TODO Remove this and wire through the reader/writer
+  override def legacyCsvIDString: String = {
+    "UNUSED"
   }
 
   override def newCsvString: String = newId

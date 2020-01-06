@@ -128,10 +128,7 @@ lazy val unitTestProject = project.in(file("testProjects/unitTestProject")).sett
 
 // template for dead code projects
 def testInputProject(id: String, projectLocation: String, showTrees: Boolean = false)(dependencies: ClasspathDep[ProjectReference]*) = sbt.Project.apply(id, file(projectLocation)).settings(
-  addCompilerPlugin("org.scalameta" % "semanticdb-scalac_2.12.9" % "4.2.3"),
   scalacOptions += "-Yrangepos",
-  libraryDependencies += "org.scalaz" %% "scalaz-core" % "7.2.27",
-  scalacOptions += "-P:semanticdb:synthetics:on",
   skip in publish := true,
 
   scalacOptions  ++= {
