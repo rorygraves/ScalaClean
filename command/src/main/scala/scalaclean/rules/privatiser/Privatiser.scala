@@ -2,7 +2,7 @@ package scalaclean.rules.privatiser
 
 import org.scalaclean.analysis.plugin.VisibilityData
 import scalaclean.model._
-import scalaclean.model.impl.ElementId
+import scalaclean.model.impl.OldElementId
 import scalaclean.rules.AbstractRule
 import scalaclean.util.{ElementTreeVisitor, TokenHelper}
 import scalafix.v1.{SemanticDocument, SyntacticDocument}
@@ -146,8 +146,8 @@ class Privatiser(model: ProjectModel, debug: Boolean) extends AbstractRule("Priv
 
       def existingAccess(mods: Seq[Mod]): (Option[Mod], PrivatiserLevel) = {
         val res: Option[(Option[Mod], PrivatiserLevel)] = mods.collectFirst {
-          case s@Mod.Private(scope) => (Some(s), Scoped.Private(ElementId.fromTree(scope), "existing"))
-          case s@Mod.Protected(scope) => (Some(s), Scoped.Protected(ElementId.fromTree(scope), "existing", forceProtected = false))
+          case s@Mod.Private(scope) => (Some(s), Scoped.Private(OldElementId.fromTree(scope), "existing"))
+          case s@Mod.Protected(scope) => (Some(s), Scoped.Protected(OldElementId.fromTree(scope), "existing", forceProtected = false))
         }
         res.getOrElse((None, Public("existing")))
       }

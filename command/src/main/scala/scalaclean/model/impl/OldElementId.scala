@@ -6,7 +6,7 @@ import scalafix.v1.{SemanticDocument, Symbol}
 
 import scala.meta.Tree
 
-case class ElementId private(isGlobal: Boolean, symbol: Symbol) {
+case class OldElementId private(isGlobal: Boolean, symbol: Symbol) {
 
 
   def value: String = symbol.value
@@ -17,33 +17,33 @@ case class ElementId private(isGlobal: Boolean, symbol: Symbol) {
 
   def displayName = symbol.displayName
 
-  def asNonEmpty: Option[ElementId] = symbol.asNonEmpty.map(s => ElementId(s))
+  def asNonEmpty: Option[OldElementId] = symbol.asNonEmpty.map(s => OldElementId(s))
 
   @deprecated
-  def owner: ElementId = ElementId(symbol.owner)
+  def owner: OldElementId = OldElementId(symbol.owner)
 
   def isNone: Boolean = symbol.isNone
 
 }
 
-object ElementId {
+object OldElementId {
 
-  private val cache = new ConcurrentHashMap[String, ElementId]()
+  private val cache = new ConcurrentHashMap[String, OldElementId]()
 
-  def apply(s: Symbol): ElementId = {
+  def apply(s: Symbol): OldElementId = {
     val strRep = s.value
     if (strRep.startsWith("G:"))
       throw new IllegalArgumentException("Boom")
     apply(strRep)
   }
 
-  def apply(s: String): ElementId = {
+  def apply(s: String): OldElementId = {
 
     if (s.startsWith("G:") || s.startsWith("L:")) {
       cache.computeIfAbsent(s, s => {
         val isGlobal = s.startsWith("G:")
         val symbol = Symbol(s.drop(2))
-        ElementId(isGlobal, symbol)
+        OldElementId(isGlobal, symbol)
       })
     } else {
       val symbol = Symbol(s)
@@ -55,12 +55,12 @@ object ElementId {
   }
 
 
-  def fromTree(tree: Tree)(implicit doc: SemanticDocument): ElementId = {
+  def fromTree(tree: Tree)(implicit doc: SemanticDocument): OldElementId = {
     import scalafix.v1.{Patch => _, _}
-    ElementId(tree.symbol)
+    OldElementId(tree.symbol)
   }
 
-  val None: ElementId = ElementId(Symbol.None)
+  val None: OldElementId = OldElementId(Symbol.None)
 
-  val RootPackage: ElementId = ElementId(Symbol.RootPackage)
+  val RootPackage: OldElementId = OldElementId(Symbol.RootPackage)
 }

@@ -1,7 +1,7 @@
 package scalaclean.model
 
 import org.scalaclean.analysis.{AnnotationData, ExtensionData}
-import scalaclean.model.impl.{ElementId, ElementModelImpl}
+import scalaclean.model.impl.{OldElementId, ElementModelImpl}
 
 import scala.reflect.ClassTag
 
@@ -9,7 +9,7 @@ sealed trait ModelElement extends Ordered[ModelElement] {
 
   override def compare(that: ModelElement): Int = modelElementId.id.compare(that.modelElementId.id)
 
-  def legacySymbol: ElementId
+  def legacySymbol: OldElementId
 
   def modelElementId: NewElementId
 
@@ -259,10 +259,10 @@ package impl {
   import org.scalaclean.analysis.FlagHelper
 
   case class BasicElementInfo(
-    symbol: ElementId, newElementId: NewElementId, source: SourceData,
-    startPos: Int, endPos: Int, focusStart: Int,
-    flags: Long, extensions: Seq[ExtensionData],
-    traversal: Int) {
+                               symbol: OldElementId, newElementId: NewElementId, source: SourceData,
+                               startPos: Int, endPos: Int, focusStart: Int,
+                               flags: Long, extensions: Seq[ExtensionData],
+                               traversal: Int) {
     override def toString: String = {
       s"Info[symbol:$symbol, newElementId:$newElementId, source:$source, pos:$startPos->$endPos, flags:${FlagHelper.hexAndString(flags)}"
     }
@@ -447,7 +447,7 @@ package impl {
 
     def projects = project.projects
 
-    override val legacySymbol: ElementId = info.symbol
+    override val legacySymbol: OldElementId = info.symbol
 
     override val modelElementId = info.newElementId
 

@@ -169,7 +169,7 @@ object ModelReader {
           } else line.split(",")
 
           val typeId = tokens(0)
-          val symbol = ElementId(tokens(1))
+          val symbol = OldElementId(tokens(1))
           val modelSymbol = NewElementIdImpl(tokens(2))
           val flags = java.lang.Long.parseLong(tokens(3), 16)
           val src = project.source(tokens(4).replace(sourceDirSep, java.io.File.separator))
