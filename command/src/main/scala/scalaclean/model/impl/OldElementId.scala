@@ -17,8 +17,6 @@ case class OldElementId private(isGlobal: Boolean, symbol: Symbol) {
 
   def displayName = symbol.displayName
 
-  def asNonEmpty: Option[OldElementId] = symbol.asNonEmpty.map(s => OldElementId(s))
-
   @deprecated
   def owner: OldElementId = OldElementId(symbol.owner)
 
@@ -54,11 +52,6 @@ object OldElementId {
     }
   }
 
-
-  def fromTree(tree: Tree)(implicit doc: SemanticDocument): OldElementId = {
-    import scalafix.v1.{Patch => _, _}
-    OldElementId(tree.symbol)
-  }
 
   val None: OldElementId = OldElementId(Symbol.None)
 

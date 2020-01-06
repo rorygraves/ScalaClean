@@ -169,7 +169,6 @@ object ModelReader {
           } else line.split(",")
 
           val typeId = tokens(0)
-          val symbol = OldElementId(tokens(1))
           val modelSymbol = NewElementIdImpl(tokens(2))
           val flags = java.lang.Long.parseLong(tokens(3), 16)
           val src = project.source(tokens(4).replace(sourceDirSep, java.io.File.separator))
@@ -178,7 +177,7 @@ object ModelReader {
           val focus = tokens(7).toInt
           val traversal = tokens(8).toInt
 
-          val basicInfo = BasicElementInfo(symbol, modelSymbol, src, start, end, focus, flags, byNewId.getOrElse(tokens(2), Nil), traversal)
+          val basicInfo = BasicElementInfo(modelSymbol, src, start, end, focus, flags, byNewId.getOrElse(tokens(2), Nil), traversal)
 
           val idx = 9
           val ele: ElementModelImpl = typeId match {
