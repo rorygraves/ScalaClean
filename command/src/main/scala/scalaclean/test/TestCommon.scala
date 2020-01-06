@@ -5,7 +5,7 @@ import scalaclean.model._
 abstract class TestCommon(name: String, model: ProjectModel) extends TestBase(name, model) {
   /** Visit the model element.
    * Defaults to calling down to visitInSource if the element is visible in the source code */
-  def visitElement(modelElement: ModelElement): String = {
+  def elementInfo(modelElement: ModelElement): String = {
     if(modelElement.existsInSource)
       visitInSource(modelElement)
     else

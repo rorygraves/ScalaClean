@@ -13,7 +13,7 @@ class Test_annotations(
       case Nil => "XX"
       case ann =>
         val asDebug = (ann.map(_.toString)).toList.sorted
-        asDebug.mkString(s"annotations(${modelElement.legacySymbol.debugValue}) - ", " :: ", "")
+        asDebug.mkString(s"annotations(${modelElement.modelElementId.debugValue}) - ", " :: ", "")
     }
   }
 }

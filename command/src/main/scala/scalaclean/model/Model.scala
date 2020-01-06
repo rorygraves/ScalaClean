@@ -35,6 +35,17 @@ sealed trait ModelElement extends Ordered[ModelElement] {
 
   def extensions: Iterable[ExtensionData]
 
+  def extensionsOfType[T <: ExtensionData: ClassTag]: Iterable[T] = {
+    extensions collect {
+      case a: T => a
+    }
+  }
+  def extensionOfType[T <: ExtensionData: ClassTag]: Option[T] = {
+    extensions collectFirst {
+      case a: T => a
+    }
+  }
+
   //start target APIs
   // def outgoingReferences: Iterable[Refers] = allOutgoingReferences map (_._2)
 
@@ -150,10 +161,11 @@ sealed trait ObjectModel extends ClassLike with FieldModel {
   override protected final def infoTypeName: String = "ObjectModel"
 
   override final def getter: Option[GetterMethodModel] = None
+  override final def accessors = Nil
+  override final def declaredIn = None
+  override final def fieldsInSameDeclaration = Nil
 
-  final def otherFieldsInSameDeclaration = Nil
-
-  type fieldType = ObjectModel
+  final type fieldType = ObjectModel
 }
 
 sealed trait TraitModel extends ClassLike {
@@ -188,11 +200,12 @@ sealed trait FieldModel extends FieldOrAccessorModel {
   type fieldType <: FieldModel
 
   def getter: Option[GetterMethodModel]
+  def accessors: Iterable[AccessorModel]
 
   def inCompoundFieldDeclaration = declaredIn.isDefined
   def declaredIn: Option[FieldsModel]
 
-  def fieldsInSameDeclaration: Seq[fieldType]
+  def fieldsInSameDeclaration: List[fieldType]
 }
 
 sealed trait FieldsModel extends ModelElement {
@@ -240,19 +253,20 @@ trait ProjectModel {
   }
 }
 
-abstract sealed class NewElementId(val id: String) {
-  def debugValue: String = id
-
-}
-
 
 package impl {
+
+  import org.scalaclean.analysis.FlagHelper
 
   case class BasicElementInfo(
     symbol: ElementId, newElementId: NewElementId, source: SourceData,
     startPos: Int, endPos: Int, focusStart: Int,
     flags: Long, extensions: Seq[ExtensionData],
-    traversal: Int)
+    traversal: Int) {
+    override def toString: String = {
+      s"Info[symbol:$symbol, newElementId:$newElementId, source:$source, pos:$startPos->$endPos, flags:${FlagHelper.hexAndString(flags)}"
+    }
+  }
 
   case class BasicRelationshipInfo(
     refers: Map[NewElementId, List[RefersImpl]],
@@ -502,7 +516,7 @@ package impl {
 
     override def isAbstract: Boolean = false
 
-    override val existsInSource: Boolean = offsetEnd != offsetStart
+    override def existsInSource: Boolean = offsetEnd != offsetStart
   }
 
   abstract sealed class ClassLikeModelImpl(
@@ -540,7 +554,7 @@ package impl {
     info: BasicElementInfo, relationships: BasicRelationshipInfo,
     val fieldName: String, override val isAbstract: Boolean, _fields: String)
     extends ElementModelImpl(info, relationships) with FieldModel {
-    override def fieldsInSameDeclaration: Seq[fieldType] = (declaredIn.map(_.fieldsInDeclaration)).getOrElse(Nil).asInstanceOf[Seq[fieldType]]
+    override def fieldsInSameDeclaration = (declaredIn.map(_.fieldsInDeclaration)).getOrElse(Nil).asInstanceOf[List[fieldType]]
 
     override def complete(
       modelElements: Map[NewElementId, ElementModelImpl],
@@ -578,6 +592,7 @@ package impl {
     private var getter_ : Option[GetterMethodModel] = _
 
     def getter = getter_
+    def accessors: Iterable[AccessorModel] = getter
 
   }
 
@@ -589,9 +604,6 @@ package impl {
   class ObjectModelImpl(info: BasicElementInfo, relationships: BasicRelationshipInfo)
     extends ClassLikeModelImpl(info, relationships) with ObjectModel {
     override protected def typeName: String = "object"
-
-    override def declaredIn = None
-    override def fieldsInSameDeclaration: Seq[ObjectModel] = Nil
   }
 
   class TraitModelImpl(info: BasicElementInfo, relationships: BasicRelationshipInfo)
@@ -697,7 +709,8 @@ package impl {
 
     private var setter_ : Option[SetterMethodModel] = _
 
-    def setter = setter_
+    override def setter = setter_
+    override def accessors = getter ++ setter
 
   }
 
@@ -710,21 +723,4 @@ package impl {
     override protected def typeName: String = "source"
 
   }
-
-  object NewElementIdImpl {
-
-    import java.util.concurrent.ConcurrentHashMap
-
-    val interned = new ConcurrentHashMap[String, NewElementIdImpl]
-
-    def apply(id: String) = interned.computeIfAbsent(id, id => new NewElementIdImpl(id.intern()))
-  }
-
-  final class NewElementIdImpl private(id: String) extends NewElementId(id) {
-    override def hashCode(): Int = id.hashCode()
-
-    override def toString: String = s"ModelSymbol[$id]"
-  }
-
-
 }

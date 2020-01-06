@@ -1,6 +1,6 @@
 import sbt.Keys.libraryDependencies
 
-lazy val scala212 = "2.12.8"
+lazy val scala212 = "2.12.9"
 lazy val scalaFixVersion = "0.9.6"
 
 inThisBuild(
@@ -52,6 +52,7 @@ lazy val mergeSettings = Def.settings(
 lazy val shared = project
   .settings(
     moduleName := "shared",
+    libraryDependencies += "org.scala-lang" % "scala-reflect" % scala212,
     scalaVersion := scala212)
 
 lazy val analysisPlugin = project.dependsOn(shared).settings(
@@ -113,7 +114,7 @@ lazy val unitTestProject = project.in(file("testProjects/unitTestProject")).sett
       val jar = (assembly in Compile in analysisPlugin).value
       val srcLocations = (sourceDirectories in Compile).value.mkString(java.io.File.pathSeparator)
       Seq(
-        "-Xprint:typer",
+        //  "-Xprint:typer",
         //      "-Ycompact-trees",
         "-Yrangepos",
         s"-Xplugin:${jar.getAbsolutePath}",
@@ -141,7 +142,7 @@ def testInputProject(id: String, projectLocation: String, showTrees: Boolean = f
     assert(srcLocations.nonEmpty)
     val extras = if (showTrees)
       List(
-        "-P:scalaclean-analysis-plugin:debug:true",
+//        "-P:scalaclean-analysis-plugin:debug:true",
 //        "-Ybrowse:typer",
         "-Xprint:typer")
     else List[String]()

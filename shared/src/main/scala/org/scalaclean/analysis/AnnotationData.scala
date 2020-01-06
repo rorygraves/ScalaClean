@@ -29,7 +29,7 @@ case class AnnotationData(posOffsetStart: Int, posOffsetEnd: Int, fqName: String
     s",${fqName}${csv}"
   }
 
-  override def toString: String = s"AnnotationData[${maskToString(posOffsetStart)},${maskToString(posOffsetEnd)},$fqName,${SortedMap.empty[String, String] ++ values}"
+  override protected def restToString: String = s"$fqName,${SortedMap.empty[String, String] ++ values}"
 
   require(!fqName.contains(","), fqName)
   values.foreach {

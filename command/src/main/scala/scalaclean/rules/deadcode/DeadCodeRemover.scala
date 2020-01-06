@@ -136,40 +136,7 @@ class DeadCodeRemover(model: ProjectModel, debug: Boolean) extends AbstractRule(
     // find source model
     val sModel = model.allOf[SourceModel].filter(_.toString.contains(targetFileName)).toList.headOption.getOrElse(throw new IllegalStateException(s"Unable to find source model for $targetFileName"))
 
-    val tokens = syntacticDocument.tokens.tokens
-
-    val visitor: ElementTreeVisitor = new ElementTreeVisitor {
-
-      def remove(element: ModelElement, comment: String = ""): Unit = {
-        replace(element, "", "remove", comment)
-      }
-
-      def replace(element: ModelElement, text: String, actionName: String = "replace", comment: String = ""): Unit = {
-        log(s" $actionName(${element.name},'$text')   isUnused = ${element.colour.isUnused}")
-        log(" ------- ")
-        log("  cm.rawStart = " + element.rawStart)
-        val start = element.annotations.map(a => element.rawStart + a.posOffsetStart - 1).headOption.getOrElse(element.rawStart)
-        log("  annotStart = " + start)
-        val candidateBeginToken = tokens.find(t => t.start >= start && t.start <= t.end).head
-        log("  annotStart = " + candidateBeginToken)
-        val newBeingToken = TokenHelper.whitespaceOrCommentsBefore(candidateBeginToken, syntacticDocument.tokens)
-//        log("  newBeginToken = " + newBeingToken)
-        val newStartPos = newBeingToken.headOption.map(_.start).getOrElse(start)
-        log("  newStartPos = " + newStartPos + " -> " + element.rawEnd)
-
-        collect(SCPatch(newStartPos, element.rawEnd, text, comment))
-      }
-
-      def replaceFromFocus(element: ModelElement, text: String, comment: String): Unit = {
-        log(s" replaceFromFocus(${element.name},'$text')  ${element.rawFocusStart}->${element.rawEnd}")
-        collect(SCPatch(element.rawFocusStart, element.rawEnd, text, comment))
-      }
-
-      def addComment(element: ModelElement, msg: String, comment: String = ""): Unit = {
-        log(" addComment(" + element.name + ",'" + msg + "')")
-        val text = s"/* *** SCALA CLEAN $msg */"
-        collect(SCPatch(element.rawStart, element.rawStart, text, comment))
-      }
+    object visitor extends ElementTreeVisitor(syntacticDocument) {
 
       override protected def visitElement(element: ModelElement): Boolean = {
         element match {

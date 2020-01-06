@@ -58,6 +58,6 @@ class ScalaCleanCompilerPlugin(override val global: Global) extends Plugin {
        |-P:$name:extension:<fqn>   Add an extension dataset. FQN is the fully qualified name of the appropriate ExtensionDescriptor object
        |""".stripMargin)
 
-  override val components: List[PluginComponent] = List(component)
+  override val components: List[PluginComponent] = List(component) //, new ScalaCompilerBeforeTyperPluginComponent(global))
 }
 

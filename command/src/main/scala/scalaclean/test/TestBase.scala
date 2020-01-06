@@ -15,12 +15,12 @@ abstract class TestBase(val name: String, model: ProjectModel) {
     println(s"Cleaner Rule $name beforeStart END")
   }
 
-  def visitElement(modelElement: ModelElement): String
+  def elementInfo(modelElement: ModelElement): String
 
   def run(targetFile: String): List[SCPatch] = {
-    val visitor: ElementTreeVisitor = new ElementTreeVisitor {
+    val visitor: ElementTreeVisitor = new ElementTreeVisitor(null) {
       override protected def visitElement(modelElement: ModelElement): Boolean = {
-        toPatch(visitElement(modelElement), modelElement)
+        toPatch(elementInfo(modelElement), modelElement)
         true
       }
 

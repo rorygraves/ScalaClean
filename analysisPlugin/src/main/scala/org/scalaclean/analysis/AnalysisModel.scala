@@ -217,6 +217,7 @@ sealed trait ClassLike extends ModelSymbol {
 
 sealed abstract class ModelField extends ModelSymbol {
   val fields: Option[ModelFields]
+  val tree: Global#ValDef
 }
 
 case class ModelCommon(
@@ -270,9 +271,10 @@ sealed trait ModelMethod extends ModelSymbol {
   val isTyped: Boolean
   val isAbstract: Boolean
 }
+sealed trait ModelAccessorMethod extends ModelMethod
 
 case class ModelGetterMethod(
-                              tree: Global#DefDef, common: ModelCommon, isTyped: Boolean, isAbstract: Boolean) extends ModelMethod {
+                              tree: Global#DefDef, common: ModelCommon, isTyped: Boolean, isAbstract: Boolean) extends ModelAccessorMethod {
 
   override def debugName: String = "getter"
 
@@ -280,7 +282,7 @@ case class ModelGetterMethod(
 }
 
 case class ModelSetterMethod(
-                              tree: Global#DefDef, common: ModelCommon, isTyped: Boolean, isAbstract: Boolean) extends ModelMethod {
+                              tree: Global#DefDef, common: ModelCommon, isTyped: Boolean, isAbstract: Boolean) extends ModelAccessorMethod {
   override def debugName: String = "setter"
 
   override def ioToken: String = IoTokens.typeSetterMethod

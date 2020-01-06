@@ -1,6 +1,7 @@
 package org.scalaclean.analysis.plugin
 
-import org.scalaclean.analysis.{ExtensionData, ModelSymbol, ScalaCompilerPluginComponent}
+import org.scalaclean.analysis._
+import scalaclean.model.impl.NewElementIdImpl
 
 import scala.reflect.internal.Flags
 
@@ -10,27 +11,44 @@ object ModsPlugin extends ExtensionPluginFactory {
 
 class ModsPlugin(val sc: ScalaCompilerPluginComponent) extends ExtensionPlugin {
   override def extendedData(mSymbol: ModelSymbol, tree: g.Tree): List[ExtensionData] = {
-    tree match {
+    // Visibility encoding seems to be like this
+    // for vals and vars the encoding is on the getter (and setter for vars) not on the val & var
+    // as the actual field is private[this]
+    // Mods dont have the info that we need after typer, so we take it from the symbol
+    // private[this]   === Flags.PRIVATE | Flags.LOCAL
+    // private         === Flags.PRIVATE
+    // private[foo]    === no flags but 'privateWithin=="foo"'
+    // protected[this] === Flags.PROTECTED | Flags.LOCAL
+    // protected       === Flags.PROTECTED
+    // protected[foo]  === Flags.PROTECTED &  'privateWithin=="foo"'
+    val vis: List[VisibilityData] = {
+      val symbol: g.Symbol = mSymbol match {
+        case field:ModelField => tree.symbol.getterIn(tree.symbol.owner)
+        case accessor:ModelAccessorMethod => g.NoSymbol
+        case fields:ModelFields => g.NoSymbol
+        case _ => tree.symbol
+      }
+      if (symbol.hasFlag(Flags.PROTECTED | Flags.PRIVATE) || symbol.hasAccessBoundary) {
+        val within =
+          if (symbol.hasAccessBoundary) Some(NewElementIdImpl(sc.externalSymbol(symbol.privateWithin).newId))
+          else if (symbol.hasFlag(Flags.LOCAL)) NewElementIdImpl.SOME_THIS
+          else None
+        val group = if (symbol.hasFlag(Flags.PROTECTED)) "protected" else "private"
+        symbol.sourceFile
+        List(VisibilityData(Int.MinValue, Int.MinValue, group, within))
+      } else Nil
+    }
+
+    val others: List[ExtensionData] = tree match {
       case d: g.MemberDefApi =>
-        val vis: List[VisibilityData] = if (d.mods.hasFlag(Flags.PROTECTED | Flags.PRIVATE)) {
-          val within = if (d.mods.hasAccessBoundary) d.mods.accessString else if (d.mods.hasFlag(Flags.LOCAL)) "this" else ""
-          val (flag, vis) = if (d.mods.hasFlag(Flags.PROTECTED)) (Flags.PROTECTED, "protected") else (Flags.PRIVATE, "private")
-          d.mods.positions.get(flag) match {
-            case Some(pos) =>
-              val basePos = tree.pos.start
-              List(VisibilityData(pos.start - basePos, pos.end - basePos, vis, within))
-            case None =>
-              List(VisibilityData(Int.MinValue, Int.MinValue, vis, within))
-          }
-        } else Nil
-        val others: List[ExtensionData] = d.mods.positions.flatMap {
-          case (Flags.PROTECTED | Flags.PRIVATE, _) => Nil
+        d.mods.positions.collect {
           case (f, pos) =>
             val basePos = tree.pos.start
-            List(ModData(pos.start - basePos, pos.end - basePos, f, Flags.flagToString(f)))
-        }(collection.breakOut)
-        vis ::: others
+            ModData(pos.start - basePos, pos.end - basePos, f)
+        }(scala.collection.breakOut)
       case _ => Nil
     }
+    vis ::: others
+
   }
 }

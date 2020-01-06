@@ -5,6 +5,7 @@ import java.util.concurrent.atomic.AtomicInteger
 import scala.collection.mutable
 import scala.meta.internal.semanticdb.scalac.SemanticdbOps
 import scala.reflect.internal.util.NoPosition
+import scala.tools.nsc.Global
 
 trait ModelSymbolBuilder extends SemanticdbOps {
   val global: scala.tools.nsc.Global
@@ -72,6 +73,10 @@ trait ModelSymbolBuilder extends SemanticdbOps {
 
   private val mSymbolCache2 = mutable.Map[global.Symbol, ModelCommon]()
   private val mSymbolCache = mutable.Map[global.Symbol, ModelCommon]()
+
+  def externalSymbol(gSym: Global#Symbol, special:Boolean = false): ModelCommon = {
+    asMSymbol(gSym.asInstanceOf[global.Symbol], special)
+  }
 
   def asMSymbol(gSym: global.Symbol, special:Boolean = false): ModelCommon = {
     val cache = if (special) mSymbolCache2 else mSymbolCache

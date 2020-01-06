@@ -8,7 +8,7 @@ import scalaclean.model._
  */
 class Test_internalIncomingReferences(model: ProjectModel) extends TestCommon("Test_internalIncomingReferences", model) {
   override def visitInSource(modelElement: ModelElement): String = {
-    modelElement.internalIncomingReferences.map(_._1.legacySymbol.debugValue).distinct.sorted match {
+    modelElement.internalIncomingReferences.map(_._1.modelElementId.debugValue).distinct.sorted match {
       case Nil => ""
       case refs => refs.mkString(s"internalIncomingReferences(${modelElement.modelElementId.debugValue}) - ", " :: ", "")
     }
