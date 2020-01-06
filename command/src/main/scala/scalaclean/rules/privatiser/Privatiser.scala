@@ -2,15 +2,13 @@ package scalaclean.rules.privatiser
 
 import org.scalaclean.analysis.plugin.VisibilityData
 import scalaclean.model._
-import scalaclean.model.impl.OldElementId
 import scalaclean.rules.AbstractRule
-import scalaclean.util.{ElementTreeVisitor, TokenHelper}
+import scalaclean.util.ElementTreeVisitor
 import scalafix.v1.{SemanticDocument, SyntacticDocument}
 
 import scala.collection.mutable.ListBuffer
 import scala.meta.io.AbsolutePath
 import scala.meta.tokens.Token
-import scala.meta.{Mod, Stat}
 
 class Privatiser(model: ProjectModel, debug: Boolean) extends AbstractRule("Privatiser", model, debug) {
 
@@ -81,19 +79,20 @@ class Privatiser(model: ProjectModel, debug: Boolean) extends AbstractRule("Priv
       case _ => Undefined
     }
 
-    incoming foreach { ref: ModelElement =>
-      val isFromChild = ref.classOrEnclosing.xtends(enclosing.modelElementId)
-      val access = if (isFromChild)
-        Scoped.Protected(ref.legacySymbol, s"accessed from $ref", forceProtected = false)
-      else
-        Scoped.Private(ref.legacySymbol, s"accessed from $ref").widen(Scoped.Private(element.legacySymbol, s"accessed from $ref"))
-      res = res.widen(access)
-    }
-    //we must be visible to anything that overrides us
-    element.internalDirectOverriddenBy foreach {
-      overriddenBy =>
-        res = res.widen(Scoped.Protected(overriddenBy.legacySymbol, s"overridden in from $overriddenBy", forceProtected = false))
-    }
+    // TODO Fixme LegacySymbol
+//    incoming foreach { ref: ModelElement =>
+//      val isFromChild = ref.classOrEnclosing.xtends(enclosing.modelElementId)
+//      val access = if (isFromChild)
+//        Scoped.Protected(ref.legacySymbol, s"accessed from $ref", forceProtected = false)
+//      else
+//        Scoped.Private(ref.legacySymbol, s"accessed from $ref").widen(Scoped.Private(element.legacySymbol, s"accessed from $ref"))
+//      res = res.widen(access)
+//    }
+//    //we must be visible to anything that overrides us
+//    element.internalDirectOverriddenBy foreach {
+//      overriddenBy =>
+//        res = res.widen(Scoped.Protected(overriddenBy.legacySymbol, s"overridden in from $overriddenBy", forceProtected = false))
+//    }
 
     //We must be at least as visible as anything that we override
     element.allDirectOverrides foreach {
@@ -144,64 +143,66 @@ class Privatiser(model: ProjectModel, debug: Boolean) extends AbstractRule("Priv
 
     object visitor extends ElementTreeVisitor(syntacticDocument) {
 
-      def existingAccess(mods: Seq[Mod]): (Option[Mod], PrivatiserLevel) = {
-        val res: Option[(Option[Mod], PrivatiserLevel)] = mods.collectFirst {
-          case s@Mod.Private(scope) => (Some(s), Scoped.Private(OldElementId.fromTree(scope), "existing"))
-          case s@Mod.Protected(scope) => (Some(s), Scoped.Protected(OldElementId.fromTree(scope), "existing", forceProtected = false))
-        }
-        res.getOrElse((None, Public("existing")))
-      }
-
-      private def changeAccessModifier(
-                                        level: PrivatiserLevel, mods: Seq[Mod], defn: Stat, aModel: ModelElement, forcePosition: Option[Token]): Boolean = {
-        val (mod, existing) = existingAccess(mods)
-        val proposed = level.asText(aModel)
-
-        def buildInsertion(toReplace: String): Boolean = {
-          forcePosition match {
-            case Some(token) =>
-              lb.append(SCPatch(token.start, token.start, s"$toReplace "))
-              true
-            case None =>
-              val tokens = defn.tokens
-              tokens.find {
-                _.start == aModel.rawStart
-              } match {
-                case Some(token) =>
-                  lb.append(SCPatch(token.start, token.start, s"$toReplace "))
-                  true
-                case None =>
-                  //probably quite worrying
-                  lb.append(SCPatch(defn.pos.start, defn.pos.start, s"$toReplace "))
-                  true
-              }
-          }
-        }
-
-        val structuredPatch: Boolean =
-          (mod, level.shouldReplace(aModel), proposed) match {
-            case (_, _, None) => false
-            case (None, _, Some(toReplace)) =>
-              buildInsertion(toReplace)
-            case (_, false, Some(toReplace)) =>
-              buildInsertion(toReplace)
-            case (Some(existing), true, Some(toReplace)) =>
-              lb.append(SCPatch(existing.pos.start, existing.pos.end, s"$toReplace"))
-              true
-          }
-        val updatedMarker = level.marker2(defn).map { v => lb.append(v); true }.getOrElse(false)
-
-        structuredPatch || updatedMarker
-
-      }
-
+      // TODO CURRENT UNUSED
+//      def existingAccess(mods: Seq[Mod]): (Option[Mod], PrivatiserLevel) = {
+//        val res: Option[(Option[Mod], PrivatiserLevel)] = mods.collectFirst {
+//          case s@Mod.Private(scope) => (Some(s), Scoped.Private(OldElementId.fromTree(scope), "existing"))
+//          case s@Mod.Protected(scope) => (Some(s), Scoped.Protected(OldElementId.fromTree(scope), "existing", forceProtected = false))
+//        }
+//        res.getOrElse((None, Public("existing")))
+//      }
+//
+//      private def changeAccessModifier(
+//                                        level: PrivatiserLevel, mods: Seq[Mod], defn: Stat, aModel: ModelElement, forcePosition: Option[Token]): Boolean = {
+//        val (mod, existing) = existingAccess(mods)
+//        val proposed = level.asText(aModel)
+//
+//        def buildInsertion(toReplace: String): Boolean = {
+//          forcePosition match {
+//            case Some(token) =>
+//              lb.append(SCPatch(token.start, token.start, s"$toReplace "))
+//              true
+//            case None =>
+//              val tokens = defn.tokens
+//              tokens.find {
+//                _.start == aModel.rawStart
+//              } match {
+//                case Some(token) =>
+//                  lb.append(SCPatch(token.start, token.start, s"$toReplace "))
+//                  true
+//                case None =>
+//                  //probably quite worrying
+//                  lb.append(SCPatch(defn.pos.start, defn.pos.start, s"$toReplace "))
+//                  true
+//              }
+//          }
+//        }
+//
+//        val structuredPatch: Boolean =
+//          (mod, level.shouldReplace(aModel), proposed) match {
+//            case (_, _, None) => false
+//            case (None, _, Some(toReplace)) =>
+//              buildInsertion(toReplace)
+//            case (_, false, Some(toReplace)) =>
+//              buildInsertion(toReplace)
+//            case (Some(existing), true, Some(toReplace)) =>
+//              lb.append(SCPatch(existing.pos.start, existing.pos.end, s"$toReplace"))
+//              true
+//          }
+//        val updatedMarker = level.marker2(defn).map { v => lb.append(v); true }.getOrElse(false)
+//
+//        structuredPatch || updatedMarker
+//
+//      }
+//
       override protected def visitElement(modelElement: ModelElement): Boolean = {
-        if (modelElement.legacySymbol.isGlobal) {
+      // TODO LegacyElement
+          if(true) {
+//        if (modelElement.legacySymbol.isGlobal) {
 
           def changeVisibility(visText: String) = {
             val currentVis = modelElement.extensionOfType[VisibilityData].getOrElse(VisibilityData.PUBLIC)
             val expectedTokens: Seq[String] = {
-              import scala.meta.tokens.{Token => SMToken}
               currentVis match {
                 case VisibilityData(start, end, "", None) => List()
                 case VisibilityData(start, end, vis, None) => List(vis)

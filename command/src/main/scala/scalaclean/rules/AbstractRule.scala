@@ -1,8 +1,6 @@
 package scalaclean.rules
 
 import scalaclean.model._
-import scalaclean.model.impl.OldElementId
-import scalafix.patch.Patch
 import scalafix.v1.{SemanticDocument, Symbol, SyntacticDocument}
 
 import scala.meta.io.AbsolutePath
@@ -53,14 +51,10 @@ abstract class AbstractRule(val name: String, val model: ProjectModel, debug: Bo
     allMainMethodEntries ++ allApp
   }
 
-  def allMainMethodEntries = {
-    val stringArray = List(List(Symbol))
-
-    (for (obj <- model.allOf[ObjectModel] if (obj.isTopLevel);
-          method <- obj.methods if method.name == "main") //&& method.paramsType = stringArray
-      yield {
-        List(method, obj)
-      }).flatten
+  def allMainMethodEntries: Iterator[ModelElement] = {
+    model.allOf[ObjectModel].filter(_.isTopLevel).flatMap { om =>
+      om.methods.collect { case mm: PlainMethodModel if(mm.methodName == "main") => mm }
+    }
   }
 
   def allApp: Iterator[ObjectModel] = {

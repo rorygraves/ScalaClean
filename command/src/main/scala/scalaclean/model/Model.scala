@@ -172,7 +172,9 @@ sealed trait TraitModel extends ClassLike {
   override protected final def infoTypeName: String = "TraitModel"
 }
 
-sealed trait MethodModel extends ModelElement
+sealed trait MethodModel extends ModelElement {
+  def methodName: String
+}
 
 sealed trait AccessorModel extends MethodModel with FieldOrAccessorModel {
   def field: Option[FieldModel]
@@ -264,7 +266,7 @@ package impl {
                                flags: Long, extensions: Seq[ExtensionData],
                                traversal: Int) {
     override def toString: String = {
-      s"Info[symbol:$symbol, newElementId:$newElementId, source:$source, pos:$startPos->$endPos, flags:${FlagHelper.hexAndString(flags)}"
+      s"Info[newElementId:$newElementId, source:$source, pos:$startPos->$endPos, flags:${FlagHelper.hexAndString(flags)}"
     }
   }
 

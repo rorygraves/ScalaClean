@@ -29,7 +29,7 @@ class SimpleDeadCode(model: ProjectModel, debug: Boolean) extends DeadCodeRemove
       }
 
       if(element.isInstanceOf[ObjectModel]) {
-        element.methods.foreach {m => if(m.legacySymbol.symbol.value.contains("apply(")) markUsed(m, purpose, element :: path,s"$comment - apply method of used object")}
+        element.methods.foreach {m => if(m.modelElementId.id.contains("apply(")) markUsed(m, purpose, element :: path,s"$comment - apply method of used object")}
       }
 
       // all the elements that this refers to
@@ -50,7 +50,7 @@ class SimpleDeadCode(model: ProjectModel, debug: Boolean) extends DeadCodeRemove
     val usedAnnotations = Set[String](
       "org.junit.Test"
     )
-    e.incomingReferences.nonEmpty || e.legacySymbol.symbol.value.contains("_:=") || e.allTransitiveOverrides.nonEmpty || e.annotations.exists(ad => usedAnnotations.contains(ad.fqName))
+    e.incomingReferences.nonEmpty || e.modelElementId.id.contains("_:=") || e.allTransitiveOverrides.nonEmpty || e.annotations.exists(ad => usedAnnotations.contains(ad.fqName))
   }
 
   override def runRule(): Unit = {

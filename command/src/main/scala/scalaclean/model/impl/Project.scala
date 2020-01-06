@@ -50,14 +50,6 @@ class Project private(
 
   lazy val classloader: ClassLoader = new URLClassLoader(Array(new URL("file:" + outputPath + "/")), null)
 
-  private val infos = new ConcurrentHashMap[OldElementId, SymbolInformation]()
-
-  def symbolInfo(viewedFrom: ElementModelImpl, symbol: OldElementId): SymbolInformation = {
-    infos.computeIfAbsent(symbol,
-      s => //any doc in the project would do though
-        viewedFrom.source.doc.info(s.symbol).orNull)
-  }
-
   def read: (Vector[ElementModelImpl], BasicRelationshipInfo) = ModelReader.read(this, elementsFilePath, relationshipsFilePath, extensionsFilePath, sourceDirSep)
 
   private val sourcesMap = new ConcurrentHashMap[String, SourceData]()
