@@ -2,9 +2,7 @@ package scalaclean.model.impl
 
 import java.util.concurrent.ConcurrentHashMap
 
-import scalafix.v1.{SemanticDocument, Symbol}
-
-import scala.meta.Tree
+import scalafix.v1.Symbol
 
 case class OldElementId private(isGlobal: Boolean, symbol: Symbol) {
 

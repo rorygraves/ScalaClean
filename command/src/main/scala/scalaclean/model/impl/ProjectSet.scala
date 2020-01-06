@@ -10,21 +10,17 @@ import scala.reflect.ClassTag
 class ProjectSet(projectPropertyPaths: Path*) extends ProjectModel {
   val projects: List[Project] = projectPropertyPaths.toList map { p => Project(p, this) }
 
-  val newElements: Map[NewElementId, ElementModelImpl] = {
+  val elements: Map[NewElementId, ElementModelImpl] = {
     val (elements, rels: immutable.Seq[BasicRelationshipInfo]) = projects.map(_.read).unzip
 
     val modelElements = elements.flatten.toIterator.map(e => e.modelElementId -> e).toMap
 
-    def duplicates = {
-      elements.flatten.groupBy(_.modelElementId).filter { case (k, v) => v.size != 1 }
-    }
-
     if (elements.flatten.size != modelElements.size) {
 
-      val newTokens = duplicates
+      val duplicates = elements.flatten.groupBy(_.modelElementId).filter { case (k, v) => v.size != 1 }
 
       println("Duplicate SYMBOLS ")
-      newTokens.foreach { case (s, values) =>
+      duplicates.foreach { case (s, values) =>
         println(s"  $s")
         values.foreach { v =>
           println(s"    $v")
@@ -46,7 +42,7 @@ class ProjectSet(projectPropertyPaths: Path*) extends ProjectModel {
 
   override def element[T <: ModelElement](id: NewElementId)(implicit tpe: ClassTag[T]): T = {
 
-    newElements.get(id) match {
+    elements.get(id) match {
       case None => throw new IllegalArgumentException(s"Unknown element $id")
       case Some(x: T) => x
       case Some(x) => throw new IllegalArgumentException(s"Unexpected element $id - found a $x when expecting a ${tpe.runtimeClass}")
@@ -54,17 +50,17 @@ class ProjectSet(projectPropertyPaths: Path*) extends ProjectModel {
   }
 
   override def getElement[T <: ModelElement](id: NewElementId)(implicit tpe: ClassTag[T]): Option[T] = {
-    newElements.get(id) match {
+    elements.get(id) match {
       case None => None
       case Some(x: T) => Some(x)
       case Some(x) => throw new IllegalArgumentException(s"Unexpected element $id - found a $x when expecting a ${tpe.runtimeClass}")
     }
   }
 
-  override def size: Int = newElements.size
+  override def size: Int = elements.size
 
   override def allOf[T <: ModelElement : ClassTag]: Iterator[T] = {
-    newElements.values.iterator collect {
+    elements.values.iterator collect {
       case x: T => x
     }
   }

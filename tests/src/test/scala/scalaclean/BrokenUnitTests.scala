@@ -1,27 +1,7 @@
 package scalaclean
 
-import java.io.{File, FileOutputStream}
-import java.nio.charset.StandardCharsets
-import java.nio.file.Paths
-
-import org.scalatest.FunSuite
-import org.scalatest.junit.AssertionsForJUnit
-import scalaclean.cli.FileHelper
-import scalaclean.cli.FileHelper.toPlatform
-import scalaclean.model.ProjectModel
-import scalaclean.model.impl.ProjectSet
 import scalaclean.test._
-import scalafix.internal.patch.PatchInternals
-import scalafix.internal.reflect.ClasspathOps
-import scalafix.lint.RuleDiagnostic
-import scalafix.scalaclean.cli.DocHelper
-import scalafix.testkit.DiffAssertions
-import scalafix.v1.SemanticDocument
 
-import scala.meta._
-import scala.meta.internal.io.FileIO
-
-// These unit tests are asp
 class BrokenUnitTests extends AbstractUnitTests {
 
   test("nodesTest") {
@@ -61,6 +41,6 @@ class BrokenUnitTests extends AbstractUnitTests {
   }
 
   test("annotations") {
-    runTest("scalaclean/test/annotation/Annotated.scala",new Test_annotations(_))
+    runTest("scalaclean/test/annotation/Annotated.scala",new TestExtensions(_))
   }
 }

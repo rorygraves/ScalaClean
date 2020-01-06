@@ -4,7 +4,7 @@ import org.scalaclean.analysis.plugin.VisibilityData
 import scalaclean.model._
 import scalaclean.rules.AbstractRule
 import scalaclean.util.ElementTreeVisitor
-import scalafix.v1.{SemanticDocument, SyntacticDocument}
+import scalafix.v1.SyntacticDocument
 
 import scala.collection.mutable.ListBuffer
 import scala.meta.io.AbsolutePath

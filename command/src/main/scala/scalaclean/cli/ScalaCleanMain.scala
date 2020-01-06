@@ -4,19 +4,17 @@ import java.io.{PrintWriter, StringWriter}
 import java.nio.charset.StandardCharsets
 import java.nio.file.{Files, Paths}
 
-import scalaclean.model.{ProjectModel, SCPatch}
 import scalaclean.model.impl.{Project, ProjectSet}
+import scalaclean.model.{ProjectModel, SCPatch}
 import scalaclean.rules.AbstractRule
 import scalaclean.rules.deadcode.{DeadCodeRemover, SimpleDeadCode}
 import scalaclean.rules.privatiser.{Privatiser, SimplePrivatiser}
-import scalafix.internal.reflect.ClasspathOps
 import scalafix.scalaclean.cli.DocHelper
 import scalafix.testkit.DiffAssertions
-import scalafix.v1.{SemanticDocument, SyntacticDocument}
+import scalafix.v1.SyntacticDocument
 
 import scala.meta._
 import scala.meta.internal.io.FileIO
-import scala.meta.internal.symtab.SymbolTable
 
 
 object ScalaCleanMain {

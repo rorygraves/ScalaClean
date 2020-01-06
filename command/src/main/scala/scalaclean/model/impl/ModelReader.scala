@@ -50,7 +50,7 @@ object ModelReader {
 
     Files.lines(path) forEach {
       line: String =>
-        println(line)
+//        println(line)
         val Array(id, newId, fqn, rest) = line.split(",", 4)
 //        val extBuilder = lookup.getOrElseUpdate(fqn, {
 ////          println(s"looking up extension $fqn")

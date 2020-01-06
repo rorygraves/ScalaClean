@@ -6,8 +6,6 @@ import java.nio.file.{Files, Path, Paths}
 import java.util.Properties
 import java.util.concurrent.ConcurrentHashMap
 
-import scalafix.v1.SymbolInformation
-
 import scala.meta.internal.symtab.{GlobalSymbolTable, SymbolTable}
 import scala.meta.io.{AbsolutePath, Classpath}
 

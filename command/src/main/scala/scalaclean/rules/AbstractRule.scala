@@ -1,7 +1,7 @@
 package scalaclean.rules
 
 import scalaclean.model._
-import scalafix.v1.{SemanticDocument, Symbol, SyntacticDocument}
+import scalafix.v1.SyntacticDocument
 
 import scala.meta.io.AbsolutePath
 

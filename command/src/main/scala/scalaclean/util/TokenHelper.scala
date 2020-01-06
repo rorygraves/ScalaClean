@@ -4,16 +4,6 @@ import scala.meta.tokens.{Token, Tokens}
 
 object TokenHelper {
 
-  /** Walking back from a given Token, capture all whitespace tokens immediately before.
-    *
-    * @param targetToken The target token
-    * @param tokens      The entire document of tokens
-    * @return A sequence of tokens representing the whitespace immediately preceding the target token.
-    */
-  def whitespaceTokensBefore(targetToken: Token, tokens: Tokens): List[Token] = {
-    whitespaceOrCommentsBefore(targetToken, tokens, false, false, false)
-  }
-
   /** Walking back from a given Token, capture all whitespace tokens, or comments of the specified type immediately before.
     *
     * @param targetToken The target token

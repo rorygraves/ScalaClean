@@ -1,11 +1,8 @@
 package scalaclean.rules.privatiser
 
 import scalaclean.model.impl.OldElementId
-import scalaclean.model.{Mark, ModelElement, SCPatch, Utils}
+import scalaclean.model.{Mark, ModelElement}
 import scalaclean.util.SymbolUtils
-import scalafix.patch.Patch
-
-import scala.meta.Stat
 
 private[privatiser] sealed trait PrivatiserLevel extends Mark {
   def shouldReplace(aModel: ModelElement): Boolean
@@ -15,16 +12,12 @@ private[privatiser] sealed trait PrivatiserLevel extends Mark {
   def asText(context: ModelElement): Option[String]
 
   def widen(level: PrivatiserLevel): PrivatiserLevel
-
-  def marker(stat: Stat): Patch = Patch.empty
-
-  def marker2(stat: Stat): Option[SCPatch] = None
 }
 
 private[privatiser] case class Public(reason: String) extends PrivatiserLevel {
   override def shouldReplace(aModel: ModelElement) = true
 
-  def widen(level: PrivatiserLevel) = this
+  override def widen(level: PrivatiserLevel): PrivatiserLevel = this
 
   override def asText(context: ModelElement): Option[String] = None
 }
@@ -32,7 +25,7 @@ private[privatiser] case class Public(reason: String) extends PrivatiserLevel {
 private[privatiser] case class NoChange(reason: String) extends PrivatiserLevel {
   override def shouldReplace(aModel: ModelElement) = false
 
-  def widen(level: PrivatiserLevel) = this
+  override def widen(level: PrivatiserLevel): PrivatiserLevel = this
 
   override def asText(context: ModelElement): Option[String] = None
 }
@@ -43,23 +36,19 @@ private[privatiser] case object Undefined extends PrivatiserLevel {
 
   override def shouldReplace(aModel: ModelElement) = false
 
-  def widen(level: PrivatiserLevel) = level
+  override def widen(level: PrivatiserLevel): PrivatiserLevel = level
 
   override def asText(context: ModelElement): Option[String] = None
-
-  override def marker(stat: Stat): Patch = Utils.addMarker(stat, "can't detect usage")
-
-  override def marker2(stat: Stat): Option[SCPatch] = Utils.addMarker2(stat, "can't detect usage")
 }
 
 private[privatiser] object AccessScope {
-  val None = AccessScope(OldElementId.None, "")
+  val None: AccessScope = AccessScope(OldElementId.None, "")
 }
 
 private[privatiser] final case class AccessScope(symbol: OldElementId, reason: String) {
-  def print(name: String) = if (symbol.isNone) s"$name <not found>" else s"$name $symbol $reason"
+  def print(name: String): String = if (symbol.isNone) s"$name <not found>" else s"$name $symbol $reason"
 
-  def widen(other: AccessScope) =
+  def widen(other: AccessScope): AccessScope =
     if (symbol.isNone) other
     else if (other.symbol.isNone) this
     else AccessScope(SymbolUtils.findCommonParent(symbol, other.symbol), s"$reason AND ${other.reason}")
@@ -73,7 +62,7 @@ private[privatiser] object Scoped {
 
 private[privatiser] final case class Scoped(privateScope: AccessScope, protectedScope: AccessScope, forceProtected: Boolean) extends PrivatiserLevel {
   def isProtected = {
-    def commonParentScope =
+    def commonParentScope: OldElementId =
       if (protectedScope.symbol.isNone) privateScope.symbol
       else SymbolUtils.findCommonParent(protectedScope.symbol, privateScope.symbol)
 

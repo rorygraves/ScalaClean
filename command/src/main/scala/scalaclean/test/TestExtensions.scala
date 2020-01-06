@@ -6,8 +6,8 @@ import scalaclean.model._
   * A rule use to test that annotations are st correctly,
   * needs to be run after TestAnalysis
   */
-class Test_annotations(
-                        model: ProjectModel) extends TestCommon("Test_annotations", model) {
+class TestExtensions(
+                        model: ProjectModel) extends TestCommon("TestExtensions", model) {
   override def visitInSource(modelElement: ModelElement): String = {
     modelElement.annotations match {
       case Nil => "XX"
