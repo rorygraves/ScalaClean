@@ -6,17 +6,14 @@ import java.nio.file.Paths
 
 import org.scalatest.FunSuite
 import org.scalatest.junit.AssertionsForJUnit
-import scalaclean.cli.FileHelper
 import scalaclean.cli.FileHelper.toPlatform
-import scalaclean.model.impl.ProjectSet
+import scalaclean.cli.{FileHelper, SCPatchUtil}
 import scalaclean.model.ProjectModel
+import scalaclean.model.impl.ProjectSet
 import scalaclean.test._
-import scalafix.internal.patch.PatchInternals
-import scalafix.internal.reflect.ClasspathOps
-import scalafix.lint.RuleDiagnostic
 import scalafix.scalaclean.cli.DocHelper
 import scalafix.testkit.DiffAssertions
-import scalafix.v1.{SemanticDocument, SyntacticDocument}
+import scalafix.v1.SyntacticDocument
 
 import scala.meta._
 import scala.meta.internal.io.FileIO
@@ -39,18 +36,18 @@ trait AbstractUnitTests extends FunSuite with AssertionsForJUnit with DiffAssert
     )
 
     val outputClassDir: String = s"${scalaCleanWorkspace}/testProjects/$projectName/target/scala-2.12/classes/"
-    val inputClasspath = Classpath(toPlatform(s"$outputClassDir|$ivyDir/org.scala-lang/scala-library/jars/scala-library-2.12.8.jar|$ivyDir/org.scalaz/scalaz-core_2.12/bundles/scalaz-core_2.12-7.2.27.jar"))
-    val sourceRoot = AbsolutePath(scalaCleanWorkspace)
     val inputSourceDirectories: List[AbsolutePath] = Classpath(toPlatform(s"$scalaCleanWorkspace/testProjects/$projectName/src/main/scala")).entries
 
-    def semanticPatch(
-                       rule: TestCommon,
-                       syntacticDocument: SyntacticDocument,
-                       semanticDocument: SemanticDocument,
-                       suppress: Boolean
-                     ): (String, List[RuleDiagnostic]) = {
-      val fixes = Some(rule.name -> rule.fix(semanticDocument)).map(Map.empty + _).getOrElse(Map.empty)
-      PatchInternals.semantic(fixes, semanticDocument, suppress)
+    def applyRule(
+                   rule: TestCommon,
+                   filename: String,
+                   origDocContents: String,
+                   syntacticDocument: SyntacticDocument
+                 ): String = {
+
+      rule.beforeStart()
+      val patches = rule.run(filename)
+      SCPatchUtil.applyFixes(origDocContents, patches)
     }
 
     def run(): Unit = {
@@ -66,9 +63,6 @@ trait AbstractUnitTests extends FunSuite with AssertionsForJUnit with DiffAssert
 
     def runRule(projectModel: ProjectModel): Unit = {
 
-      val symtab = ClasspathOps.newSymbolTable(inputClasspath)
-      val classLoader = ClasspathOps.toClassLoader(inputClasspath)
-
       println("---------------------------------------------------------------------------------------------------")
       // run rule
 
@@ -76,12 +70,14 @@ trait AbstractUnitTests extends FunSuite with AssertionsForJUnit with DiffAssert
       rule.beforeStart()
       targetFiles.foreach { targetFile =>
         val absFile = inputSourceDirectories.head.resolve(targetFile)
-        val (syntacticDocument, semanticDocument) = DocHelper.readSemanticDoc(classLoader, symtab, absFile, sourceRoot, targetFile)
-        val (obtained, _) = semanticPatch(rule, syntacticDocument, semanticDocument, suppress = false)
-
+        val origFile = FileIO.slurp(absFile, StandardCharsets.UTF_8)
+        val syntacticDocument = DocHelper.readSyntacticDoc(absFile, targetFile)
+        val obtained = applyRule(rule, targetFile.toString(), origFile, syntacticDocument)
 
         val targetOutput = RelativePath(targetFile.toString() + ".expected")
         val outputFile = inputSourceDirectories.head.resolve(targetOutput)
+        val expected = FileIO.slurp(outputFile, StandardCharsets.UTF_8)
+
 
         if (overwrite) {
           println("Overwriting target file: " + outputFile)
@@ -89,8 +85,6 @@ trait AbstractUnitTests extends FunSuite with AssertionsForJUnit with DiffAssert
           w.write(obtained.getBytes(StandardCharsets.UTF_8))
           w.close()
         }
-
-        val expected = FileIO.slurp(outputFile, StandardCharsets.UTF_8)
 
         val diff = DiffAssertions.compareContents(obtained, expected)
         if (diff.nonEmpty) {
@@ -117,6 +111,6 @@ class UnitTests extends AbstractUnitTests {
   }
 
   test("internalOutgoingReferences") {
-    runTest("scalaclean/test/references/internalOutgoingReferences/internalOutgoingReferences.scala",new Test_internalOutgoingReferences(_))
+    runTest("scalaclean/test/references/internalOutgoingReferences/internalOutgoingReferences.scala", new Test_internalOutgoingReferences(_))
   }
 }

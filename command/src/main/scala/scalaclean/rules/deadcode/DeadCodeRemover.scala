@@ -171,7 +171,7 @@ class DeadCodeRemover(model: ProjectModel, debug: Boolean) extends AbstractRule(
         collect(SCPatch(element.rawStart, element.rawStart, text, comment))
       }
 
-      override protected def visitSymbol(element: ModelElement): Boolean = {
+      override protected def visitElement(element: ModelElement): Boolean = {
         element match {
           case _ if !element.existsInSource =>
             true

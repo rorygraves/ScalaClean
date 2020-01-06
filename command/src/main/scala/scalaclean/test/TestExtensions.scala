@@ -8,7 +8,7 @@ import scalaclean.model._
   */
 class Test_annotations(
                         model: ProjectModel) extends TestCommon("Test_annotations", model) {
-  def visit(modelElement: ModelElement): String = {
+  override def visitInSource(modelElement: ModelElement): String = {
     modelElement.annotations match {
       case Nil => "XX"
       case ann =>

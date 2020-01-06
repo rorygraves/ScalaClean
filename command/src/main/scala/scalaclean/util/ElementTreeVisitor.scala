@@ -20,12 +20,12 @@ abstract class ElementTreeVisitor {
   }
 
 
-  protected def visitSymbol(modelElement: ModelElement): Boolean
+  protected def visitElement(modelElement: ModelElement): Boolean
 
   final def visit(element: ModelElement): Unit = {
 
     log("Reached " + element)
-    val recurse = visitSymbol(element)
+    val recurse = visitElement(element)
     if(recurse) {
       currentDepth += 1
       element.allChildren.foreach(c => visit(c))

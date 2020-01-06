@@ -117,9 +117,7 @@ class Privatiser(model: ProjectModel, debug: Boolean) extends AbstractRule("Priv
     // find source model
     val sModel = model.allOf[SourceModel].filter(_.toString.contains(targetFileName)).toList.headOption.getOrElse(throw new IllegalStateException(s"Unable to find source model for $targetFileName"))
 
-    val tokens = syntacticDocument.tokens.tokens
-
-    val visitor = new ElementTreeVisitor {
+    val visitor: ElementTreeVisitor = new ElementTreeVisitor {
 
       def existingAccess(mods: Seq[Mod]): (Option[Mod], PrivatiserLevel) = {
         val res: Option[(Option[Mod], PrivatiserLevel)] = mods.collectFirst {
@@ -129,50 +127,7 @@ class Privatiser(model: ProjectModel, debug: Boolean) extends AbstractRule("Priv
         res.getOrElse((None, Public("existing")))
       }
 
-      private def changeAccessModifier(
-                                        level: PrivatiserLevel, mods: Seq[Mod], defn: Stat, aModel: ModelElement, forcePosition: Option[Token]): Boolean = {
-        val (mod, existing) = existingAccess(mods)
-        val proposed = level.asText(aModel)
-
-        def buildInsertion(toReplace: String): Boolean = {
-          forcePosition match {
-            case Some(token) =>
-              lb.append(SCPatch(token.start, token.start, s"$toReplace "))
-              true
-            case None =>
-              val tokens = defn.tokens
-              tokens.find {
-                _.start == aModel.rawStart
-              } match {
-                case Some(token) =>
-                  lb.append(SCPatch(token.start, token.start, s"$toReplace "))
-                  true
-                case None =>
-                  //probably quite worrying
-                  lb.append(SCPatch(defn.pos.start, defn.pos.start, s"$toReplace "))
-                  true
-              }
-          }
-        }
-
-        val structuredPatch: Boolean =
-          (mod, level.shouldReplace(aModel), proposed) match {
-            case (_, _, None) => false
-            case (None, _, Some(toReplace)) =>
-              buildInsertion(toReplace)
-            case (_, false, Some(toReplace)) =>
-              buildInsertion(toReplace)
-            case (Some(existing), true, Some(toReplace)) =>
-              lb.append(SCPatch(existing.pos.start, existing.pos.end, s"$toReplace"))
-              true
-          }
-        val updatedMarker = level.marker2(defn).map { v => lb.append(v); true }.getOrElse(false)
-
-        structuredPatch || updatedMarker
-
-      }
-
-      override protected def visitSymbol(modelElement: ModelElement): Boolean = {
+      override protected def visitElement(modelElement: ModelElement): Boolean = {
         if (modelElement.legacySymbol.isGlobal) {
           // TODO Check for not existing  model.getElement[ModelElement] match { case Some(ms) if(me.existsInsource)=> ... case None => continue }
           if (modelElement.existsInSource) {

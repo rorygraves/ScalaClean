@@ -33,4 +33,16 @@ object DocHelper {
 
     (syntacticDocument, semanticDocument)
   }
+
+  def readSyntacticDoc(
+                        absSourcePath: AbsolutePath,
+                        targetFile: RelativePath
+                      ): v1.SyntacticDocument = {
+
+    val input = Input.VirtualFile(targetFile.toString, FileIO.slurp(absSourcePath, StandardCharsets.UTF_8))
+    val syntacticDocument = SyntacticDocument.fromInput(input)
+
+    syntacticDocument
+  }
+
 }

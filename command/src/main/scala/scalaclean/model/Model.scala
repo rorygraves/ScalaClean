@@ -227,10 +227,6 @@ sealed trait SourceModel extends ModelElement {
 
 trait ProjectModel {
 
-  def legacySymbol[T <: ModelElement](symbol: ElementId)(implicit tpe: ClassTag[T]): T
-
-  def getLegacySymbol[T <: ModelElement](symbol: ElementId)(implicit tpe: ClassTag[T]): Option[T]
-
   def element[T <: ModelElement](id: NewElementId)(implicit tpe: ClassTag[T]): T
 
   def getElement[T <: ModelElement](id: NewElementId)(implicit tpe: ClassTag[T]): Option[T]

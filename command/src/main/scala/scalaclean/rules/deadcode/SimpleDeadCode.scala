@@ -10,7 +10,7 @@ class SimpleDeadCode(model: ProjectModel, debug: Boolean) extends DeadCodeRemove
   def markUsed(element: ModelElement, purpose: Purpose, path: List[ModelElement], comment: String): Unit = {
     val current = element.colour
     if(!current.hasPurpose(purpose)) {
-      println(s"mark $element as used for $purpose due to ${path.mkString("->")} $comment - elementID: ${element.legacySymbol}")
+      println(s"mark $element as used for $purpose due to ${path.mkString("->")} $comment - elementID: ${element.modelElementId}")
       element.colour = current.withPurpose(purpose)
 
       //enclosing

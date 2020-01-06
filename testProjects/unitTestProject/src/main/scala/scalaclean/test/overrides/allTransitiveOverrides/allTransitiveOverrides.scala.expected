@@ -12,79 +12,79 @@ trait GrandParentTrait {
 
 }
 trait ParentTrait extends GrandParentTrait {
-  def d1: Int/* allTransitiveOverrides(G:scalaclean/test/overrides/allTransitiveOverrides/ParentTrait#d1().) - G:scalaclean/test/overrides/allTransitiveOverrides/GrandParentTrait#d1(). */
-  def d2(a: Int): Int = ???/* allTransitiveOverrides(G:scalaclean/test/overrides/allTransitiveOverrides/ParentTrait#d2().) - G:scalaclean/test/overrides/allTransitiveOverrides/GrandParentTrait#d2(). */
+  def d1: Int/* allTransitiveOverrides(G:scalaclean/test/overrides/allTransitiveOverrides/ParentTrait#d1().) - <root>/scalaclean@/test@/overrides@/allTransitiveOverrides@/GrandParentTrait./{M}d1() */
+  def d2(a: Int): Int = ???/* allTransitiveOverrides(G:scalaclean/test/overrides/allTransitiveOverrides/ParentTrait#d2().) - <root>/scalaclean@/test@/overrides@/allTransitiveOverrides@/GrandParentTrait./{M}d2(scala.Int) */
   def d3(): () => Int = ???
 }
 trait ChildTrait extends ParentTrait {
-  def d1: Int = 1/* allTransitiveOverrides(G:scalaclean/test/overrides/allTransitiveOverrides/ChildTrait#d1().) - G:scalaclean/test/overrides/allTransitiveOverrides/GrandParentTrait#d1(). :: G:scalaclean/test/overrides/allTransitiveOverrides/ParentTrait#d1(). */
-  override def d2(a: Int): Int = ???/* allTransitiveOverrides(G:scalaclean/test/overrides/allTransitiveOverrides/ChildTrait#d2().) - G:scalaclean/test/overrides/allTransitiveOverrides/GrandParentTrait#d2(). :: G:scalaclean/test/overrides/allTransitiveOverrides/ParentTrait#d2(). */
-  override def d3(): () => Int = ???/* allTransitiveOverrides(G:scalaclean/test/overrides/allTransitiveOverrides/ChildTrait#d3().) - G:scalaclean/test/overrides/allTransitiveOverrides/ParentTrait#d3(). */
+  def d1: Int = 1/* allTransitiveOverrides(G:scalaclean/test/overrides/allTransitiveOverrides/ChildTrait#d1().) - <root>/scalaclean@/test@/overrides@/allTransitiveOverrides@/GrandParentTrait./{M}d1() :: <root>/scalaclean@/test@/overrides@/allTransitiveOverrides@/ParentTrait./{M}d1() */
+  override def d2(a: Int): Int = ???/* allTransitiveOverrides(G:scalaclean/test/overrides/allTransitiveOverrides/ChildTrait#d2().) - <root>/scalaclean@/test@/overrides@/allTransitiveOverrides@/GrandParentTrait./{M}d2(scala.Int) :: <root>/scalaclean@/test@/overrides@/allTransitiveOverrides@/ParentTrait./{M}d2(scala.Int) */
+  override def d3(): () => Int = ???/* allTransitiveOverrides(G:scalaclean/test/overrides/allTransitiveOverrides/ChildTrait#d3().) - <root>/scalaclean@/test@/overrides@/allTransitiveOverrides@/ParentTrait./{M}d3() */
   def d2a(a:Int) = d2 _
 
 }
 trait GChildTrait extends ChildTrait {
-  override def d1: Int = 1/* allTransitiveOverrides(G:scalaclean/test/overrides/allTransitiveOverrides/GChildTrait#d1().) - G:scalaclean/test/overrides/allTransitiveOverrides/ChildTrait#d1(). :: G:scalaclean/test/overrides/allTransitiveOverrides/GrandParentTrait#d1(). :: G:scalaclean/test/overrides/allTransitiveOverrides/ParentTrait#d1(). */
-  override def d2(a: Int): Int = ???/* allTransitiveOverrides(G:scalaclean/test/overrides/allTransitiveOverrides/GChildTrait#d2().) - G:scalaclean/test/overrides/allTransitiveOverrides/ChildTrait#d2(). :: G:scalaclean/test/overrides/allTransitiveOverrides/GrandParentTrait#d2(). :: G:scalaclean/test/overrides/allTransitiveOverrides/ParentTrait#d2(). */
-  override def d3(): () => Int = () => 1/* allTransitiveOverrides(G:scalaclean/test/overrides/allTransitiveOverrides/GChildTrait#d3().) - G:scalaclean/test/overrides/allTransitiveOverrides/ChildTrait#d3(). :: G:scalaclean/test/overrides/allTransitiveOverrides/ParentTrait#d3(). */
+  override def d1: Int = 1/* allTransitiveOverrides(G:scalaclean/test/overrides/allTransitiveOverrides/GChildTrait#d1().) - <root>/scalaclean@/test@/overrides@/allTransitiveOverrides@/ChildTrait./{M}d1() :: <root>/scalaclean@/test@/overrides@/allTransitiveOverrides@/GrandParentTrait./{M}d1() :: <root>/scalaclean@/test@/overrides@/allTransitiveOverrides@/ParentTrait./{M}d1() */
+  override def d2(a: Int): Int = ???/* allTransitiveOverrides(G:scalaclean/test/overrides/allTransitiveOverrides/GChildTrait#d2().) - <root>/scalaclean@/test@/overrides@/allTransitiveOverrides@/ChildTrait./{M}d2(scala.Int) :: <root>/scalaclean@/test@/overrides@/allTransitiveOverrides@/GrandParentTrait./{M}d2(scala.Int) :: <root>/scalaclean@/test@/overrides@/allTransitiveOverrides@/ParentTrait./{M}d2(scala.Int) */
+  override def d3(): () => Int = () => 1/* allTransitiveOverrides(G:scalaclean/test/overrides/allTransitiveOverrides/GChildTrait#d3().) - <root>/scalaclean@/test@/overrides@/allTransitiveOverrides@/ChildTrait./{M}d3() :: <root>/scalaclean@/test@/overrides@/allTransitiveOverrides@/ParentTrait./{M}d3() */
 
 }
 trait Trait_ChildTrait extends ParentTrait {
-  override def equals(obj: Any): Boolean = super.equals(obj)/* allTransitiveOverrides(G:scalaclean/test/overrides/allTransitiveOverrides/Trait_ChildTrait#equals().) - G:java/lang/Object#equals(). :: G:scala/Any#equals(). */
+  override def equals(obj: Any): Boolean = super.equals(obj)/* allTransitiveOverrides(G:scalaclean/test/overrides/allTransitiveOverrides/Trait_ChildTrait#equals().) - <root>/java@/lang@/Object./{M}equals(scala.Any) :: <root>/scala@/Any./{M}equals(scala.Any) */
 
-  override def clone(): AnyRef = super.clone()/* allTransitiveOverrides(G:scalaclean/test/overrides/allTransitiveOverrides/Trait_ChildTrait#clone().) - G:java/lang/Object#clone(). */
+  override def clone(): AnyRef = super.clone()/* allTransitiveOverrides(G:scalaclean/test/overrides/allTransitiveOverrides/Trait_ChildTrait#clone().) - <root>/java@/lang@/Object./{M}clone() */
 
-  override def toString: String = super.toString/* allTransitiveOverrides(G:scalaclean/test/overrides/allTransitiveOverrides/Trait_ChildTrait#toString().) - G:java/lang/Object#toString(). :: G:scala/Any#toString(). */
+  override def toString: String = super.toString/* allTransitiveOverrides(G:scalaclean/test/overrides/allTransitiveOverrides/Trait_ChildTrait#toString().) - <root>/java@/lang@/Object./{M}toString() :: <root>/scala@/Any./{M}toString() */
 
-  override def finalize(): Unit = super.finalize()/* allTransitiveOverrides(G:scalaclean/test/overrides/allTransitiveOverrides/Trait_ChildTrait#finalize().) - G:java/lang/Object#finalize(). */
+  override def finalize(): Unit = super.finalize()/* allTransitiveOverrides(G:scalaclean/test/overrides/allTransitiveOverrides/Trait_ChildTrait#finalize().) - <root>/java@/lang@/Object./{M}finalize() */
 
-  override def hashCode(): Int = super.hashCode()/* allTransitiveOverrides(G:scalaclean/test/overrides/allTransitiveOverrides/Trait_ChildTrait#hashCode().) - G:java/lang/Object#hashCode(). :: G:scala/Any#hashCode(). */
+  override def hashCode(): Int = super.hashCode()/* allTransitiveOverrides(G:scalaclean/test/overrides/allTransitiveOverrides/Trait_ChildTrait#hashCode().) - <root>/java@/lang@/Object./{M}hashCode() :: <root>/scala@/Any./{M}hashCode() */
 
-  override def d1: Int = ???/* allTransitiveOverrides(G:scalaclean/test/overrides/allTransitiveOverrides/Trait_ChildTrait#d1().) - G:scalaclean/test/overrides/allTransitiveOverrides/GrandParentTrait#d1(). :: G:scalaclean/test/overrides/allTransitiveOverrides/ParentTrait#d1(). */
+  override def d1: Int = ???/* allTransitiveOverrides(G:scalaclean/test/overrides/allTransitiveOverrides/Trait_ChildTrait#d1().) - <root>/scalaclean@/test@/overrides@/allTransitiveOverrides@/GrandParentTrait./{M}d1() :: <root>/scalaclean@/test@/overrides@/allTransitiveOverrides@/ParentTrait./{M}d1() */
 
-  override def d2(a: Int): Int = ???/* allTransitiveOverrides(G:scalaclean/test/overrides/allTransitiveOverrides/Trait_ChildTrait#d2().) - G:scalaclean/test/overrides/allTransitiveOverrides/GrandParentTrait#d2(). :: G:scalaclean/test/overrides/allTransitiveOverrides/ParentTrait#d2(). */
+  override def d2(a: Int): Int = ???/* allTransitiveOverrides(G:scalaclean/test/overrides/allTransitiveOverrides/Trait_ChildTrait#d2().) - <root>/scalaclean@/test@/overrides@/allTransitiveOverrides@/GrandParentTrait./{M}d2(scala.Int) :: <root>/scalaclean@/test@/overrides@/allTransitiveOverrides@/ParentTrait./{M}d2(scala.Int) */
 
-  override def d2a(a: Int)(b: Int): Int = ???/* allTransitiveOverrides(G:scalaclean/test/overrides/allTransitiveOverrides/Trait_ChildTrait#d2a().) - G:scalaclean/test/overrides/allTransitiveOverrides/GrandParentTrait#d2a(). */
+  override def d2a(a: Int)(b: Int): Int = ???/* allTransitiveOverrides(G:scalaclean/test/overrides/allTransitiveOverrides/Trait_ChildTrait#d2a().) - <root>/scalaclean@/test@/overrides@/allTransitiveOverrides@/GrandParentTrait./{M}d2a(scala.Intscala.Int) */
 
-  override def d3()(): Int = ???/* allTransitiveOverrides(G:scalaclean/test/overrides/allTransitiveOverrides/Trait_ChildTrait#d3().) - G:scalaclean/test/overrides/allTransitiveOverrides/GrandParentTrait#d3(). */
+  override def d3()(): Int = ???/* allTransitiveOverrides(G:scalaclean/test/overrides/allTransitiveOverrides/Trait_ChildTrait#d3().) - <root>/scalaclean@/test@/overrides@/allTransitiveOverrides@/GrandParentTrait./{M}d3() */
 }
 class Class_ChildTrait extends ParentTrait {
-  override def equals(obj: Any): Boolean = super.equals(obj)/* allTransitiveOverrides(G:scalaclean/test/overrides/allTransitiveOverrides/Class_ChildTrait#equals().) - G:java/lang/Object#equals(). :: G:scala/Any#equals(). */
+  override def equals(obj: Any): Boolean = super.equals(obj)/* allTransitiveOverrides(G:scalaclean/test/overrides/allTransitiveOverrides/Class_ChildTrait#equals().) - <root>/java@/lang@/Object./{M}equals(scala.Any) :: <root>/scala@/Any./{M}equals(scala.Any) */
 
-  override def clone(): AnyRef = super.clone()/* allTransitiveOverrides(G:scalaclean/test/overrides/allTransitiveOverrides/Class_ChildTrait#clone().) - G:java/lang/Object#clone(). */
+  override def clone(): AnyRef = super.clone()/* allTransitiveOverrides(G:scalaclean/test/overrides/allTransitiveOverrides/Class_ChildTrait#clone().) - <root>/java@/lang@/Object./{M}clone() */
 
-  override def toString: String = super.toString/* allTransitiveOverrides(G:scalaclean/test/overrides/allTransitiveOverrides/Class_ChildTrait#toString().) - G:java/lang/Object#toString(). :: G:scala/Any#toString(). */
+  override def toString: String = super.toString/* allTransitiveOverrides(G:scalaclean/test/overrides/allTransitiveOverrides/Class_ChildTrait#toString().) - <root>/java@/lang@/Object./{M}toString() :: <root>/scala@/Any./{M}toString() */
 
-  override def finalize(): Unit = super.finalize()/* allTransitiveOverrides(G:scalaclean/test/overrides/allTransitiveOverrides/Class_ChildTrait#finalize().) - G:java/lang/Object#finalize(). */
+  override def finalize(): Unit = super.finalize()/* allTransitiveOverrides(G:scalaclean/test/overrides/allTransitiveOverrides/Class_ChildTrait#finalize().) - <root>/java@/lang@/Object./{M}finalize() */
 
-  override def hashCode(): Int = super.hashCode()/* allTransitiveOverrides(G:scalaclean/test/overrides/allTransitiveOverrides/Class_ChildTrait#hashCode().) - G:java/lang/Object#hashCode(). :: G:scala/Any#hashCode(). */
+  override def hashCode(): Int = super.hashCode()/* allTransitiveOverrides(G:scalaclean/test/overrides/allTransitiveOverrides/Class_ChildTrait#hashCode().) - <root>/java@/lang@/Object./{M}hashCode() :: <root>/scala@/Any./{M}hashCode() */
 
-  override def d1: Int = ???/* allTransitiveOverrides(G:scalaclean/test/overrides/allTransitiveOverrides/Class_ChildTrait#d1().) - G:scalaclean/test/overrides/allTransitiveOverrides/GrandParentTrait#d1(). :: G:scalaclean/test/overrides/allTransitiveOverrides/ParentTrait#d1(). */
+  override def d1: Int = ???/* allTransitiveOverrides(G:scalaclean/test/overrides/allTransitiveOverrides/Class_ChildTrait#d1().) - <root>/scalaclean@/test@/overrides@/allTransitiveOverrides@/GrandParentTrait./{M}d1() :: <root>/scalaclean@/test@/overrides@/allTransitiveOverrides@/ParentTrait./{M}d1() */
 
-  override def d2(a: Int): Int = ???/* allTransitiveOverrides(G:scalaclean/test/overrides/allTransitiveOverrides/Class_ChildTrait#d2().) - G:scalaclean/test/overrides/allTransitiveOverrides/GrandParentTrait#d2(). :: G:scalaclean/test/overrides/allTransitiveOverrides/ParentTrait#d2(). */
+  override def d2(a: Int): Int = ???/* allTransitiveOverrides(G:scalaclean/test/overrides/allTransitiveOverrides/Class_ChildTrait#d2().) - <root>/scalaclean@/test@/overrides@/allTransitiveOverrides@/GrandParentTrait./{M}d2(scala.Int) :: <root>/scalaclean@/test@/overrides@/allTransitiveOverrides@/ParentTrait./{M}d2(scala.Int) */
 
-  override def d2a(a: Int)(b: Int): Int = ???/* allTransitiveOverrides(G:scalaclean/test/overrides/allTransitiveOverrides/Class_ChildTrait#d2a().) - G:scalaclean/test/overrides/allTransitiveOverrides/GrandParentTrait#d2a(). */
+  override def d2a(a: Int)(b: Int): Int = ???/* allTransitiveOverrides(G:scalaclean/test/overrides/allTransitiveOverrides/Class_ChildTrait#d2a().) - <root>/scalaclean@/test@/overrides@/allTransitiveOverrides@/GrandParentTrait./{M}d2a(scala.Intscala.Int) */
 
-  override def d3()(): Int = ???/* allTransitiveOverrides(G:scalaclean/test/overrides/allTransitiveOverrides/Class_ChildTrait#d3().) - G:scalaclean/test/overrides/allTransitiveOverrides/GrandParentTrait#d3(). */
+  override def d3()(): Int = ???/* allTransitiveOverrides(G:scalaclean/test/overrides/allTransitiveOverrides/Class_ChildTrait#d3().) - <root>/scalaclean@/test@/overrides@/allTransitiveOverrides@/GrandParentTrait./{M}d3() */
 }
 object Object_ChildTrait extends ParentTrait {
-  override def equals(obj: Any): Boolean = super.equals(obj)/* allTransitiveOverrides(G:scalaclean/test/overrides/allTransitiveOverrides/Object_ChildTrait.equals().) - G:java/lang/Object#equals(). :: G:scala/Any#equals(). */
+  override def equals(obj: Any): Boolean = super.equals(obj)/* allTransitiveOverrides(G:scalaclean/test/overrides/allTransitiveOverrides/Object_ChildTrait.equals().) - <root>/java@/lang@/Object./{M}equals(scala.Any) :: <root>/scala@/Any./{M}equals(scala.Any) */
 
-  override def clone(): AnyRef = super.clone()/* allTransitiveOverrides(G:scalaclean/test/overrides/allTransitiveOverrides/Object_ChildTrait.clone().) - G:java/lang/Object#clone(). */
+  override def clone(): AnyRef = super.clone()/* allTransitiveOverrides(G:scalaclean/test/overrides/allTransitiveOverrides/Object_ChildTrait.clone().) - <root>/java@/lang@/Object./{M}clone() */
 
-  override def toString: String = super.toString/* allTransitiveOverrides(G:scalaclean/test/overrides/allTransitiveOverrides/Object_ChildTrait.toString().) - G:java/lang/Object#toString(). :: G:scala/Any#toString(). */
+  override def toString: String = super.toString/* allTransitiveOverrides(G:scalaclean/test/overrides/allTransitiveOverrides/Object_ChildTrait.toString().) - <root>/java@/lang@/Object./{M}toString() :: <root>/scala@/Any./{M}toString() */
 
-  override def finalize(): Unit = super.finalize()/* allTransitiveOverrides(G:scalaclean/test/overrides/allTransitiveOverrides/Object_ChildTrait.finalize().) - G:java/lang/Object#finalize(). */
+  override def finalize(): Unit = super.finalize()/* allTransitiveOverrides(G:scalaclean/test/overrides/allTransitiveOverrides/Object_ChildTrait.finalize().) - <root>/java@/lang@/Object./{M}finalize() */
 
-  override def hashCode(): Int = super.hashCode()/* allTransitiveOverrides(G:scalaclean/test/overrides/allTransitiveOverrides/Object_ChildTrait.hashCode().) - G:java/lang/Object#hashCode(). :: G:scala/Any#hashCode(). */
+  override def hashCode(): Int = super.hashCode()/* allTransitiveOverrides(G:scalaclean/test/overrides/allTransitiveOverrides/Object_ChildTrait.hashCode().) - <root>/java@/lang@/Object./{M}hashCode() :: <root>/scala@/Any./{M}hashCode() */
 
-  override def d1: Int = ???/* allTransitiveOverrides(G:scalaclean/test/overrides/allTransitiveOverrides/Object_ChildTrait.d1().) - G:scalaclean/test/overrides/allTransitiveOverrides/GrandParentTrait#d1(). :: G:scalaclean/test/overrides/allTransitiveOverrides/ParentTrait#d1(). */
+  override def d1: Int = ???/* allTransitiveOverrides(G:scalaclean/test/overrides/allTransitiveOverrides/Object_ChildTrait.d1().) - <root>/scalaclean@/test@/overrides@/allTransitiveOverrides@/GrandParentTrait./{M}d1() :: <root>/scalaclean@/test@/overrides@/allTransitiveOverrides@/ParentTrait./{M}d1() */
 
-  override def d2(a: Int): Int = ???/* allTransitiveOverrides(G:scalaclean/test/overrides/allTransitiveOverrides/Object_ChildTrait.d2().) - G:scalaclean/test/overrides/allTransitiveOverrides/GrandParentTrait#d2(). :: G:scalaclean/test/overrides/allTransitiveOverrides/ParentTrait#d2(). */
+  override def d2(a: Int): Int = ???/* allTransitiveOverrides(G:scalaclean/test/overrides/allTransitiveOverrides/Object_ChildTrait.d2().) - <root>/scalaclean@/test@/overrides@/allTransitiveOverrides@/GrandParentTrait./{M}d2(scala.Int) :: <root>/scalaclean@/test@/overrides@/allTransitiveOverrides@/ParentTrait./{M}d2(scala.Int) */
 
-  override def d2a(a: Int)(b: Int): Int = ???/* allTransitiveOverrides(G:scalaclean/test/overrides/allTransitiveOverrides/Object_ChildTrait.d2a().) - G:scalaclean/test/overrides/allTransitiveOverrides/GrandParentTrait#d2a(). */
+  override def d2a(a: Int)(b: Int): Int = ???/* allTransitiveOverrides(G:scalaclean/test/overrides/allTransitiveOverrides/Object_ChildTrait.d2a().) - <root>/scalaclean@/test@/overrides@/allTransitiveOverrides@/GrandParentTrait./{M}d2a(scala.Intscala.Int) */
 
-  override def d3()(): Int = ???/* allTransitiveOverrides(G:scalaclean/test/overrides/allTransitiveOverrides/Object_ChildTrait.d3().) - G:scalaclean/test/overrides/allTransitiveOverrides/GrandParentTrait#d3(). */
+  override def d3()(): Int = ???/* allTransitiveOverrides(G:scalaclean/test/overrides/allTransitiveOverrides/Object_ChildTrait.d3().) - <root>/scalaclean@/test@/overrides@/allTransitiveOverrides@/GrandParentTrait./{M}d3() */
 }
 
 
