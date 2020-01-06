@@ -90,13 +90,12 @@ class ScalaCleanMain(options: SCOptions, ruleCreateFn: ProjectModel => AbstractR
                  targetFile: AbsolutePath,
                  rule: AbstractRule,
                  syntacticDocument: SyntacticDocument,
-                 semanticDocument: SemanticDocument,
                  suppress: Boolean,
                  source: String,
                ): String = {
 
     // actually run the rule
-    val fixes: Seq[SCPatch] = rule.fix(targetFile, syntacticDocument)(semanticDocument)
+    val fixes: Seq[SCPatch] = rule.fix(targetFile, syntacticDocument)
     val fixedSource = SCPatchUtil.applyFixes(source, fixes)
 
 //    generateHTML(fixedSource, source)
@@ -159,15 +158,9 @@ class ScalaCleanMain(options: SCOptions, ruleCreateFn: ProjectModel => AbstractR
   def runRuleOnProject(
                         rule: AbstractRule, project: Project, validateMode: Boolean, replace: Boolean, debug: Boolean): Boolean = {
 
-    val symtab: SymbolTable = ClasspathOps.newSymbolTable(project.classPath)
-    val classLoader = project.classloader
-
     var changed = false
 
     println("---------------------------------------------------------------------------------------------------")
-
-    val srcBase = AbsolutePath(project.src)
-    val base = AbsolutePath(project.srcBuildBase)
 
     val files: Seq[AbsolutePath] = project.srcFiles.toList.map(AbsolutePath(_))
 
@@ -185,10 +178,10 @@ class ScalaCleanMain(options: SCOptions, ruleCreateFn: ProjectModel => AbstractR
       val existingFilePath = relBase.resolve(targetFile)
       val existingFile = FileIO.slurp(existingFilePath, StandardCharsets.UTF_8)
 
-      val (syntacticDocument, semanticDocument) = DocHelper.readSemanticDoc(classLoader, symtab, absTargetFile, base, targetFile)
+      val syntacticDocument = DocHelper.readSyntacticDoc(absTargetFile, targetFile)
 
 
-      val obtained = applyRule(absTargetFile, rule, syntacticDocument, semanticDocument, suppress = false, existingFile)
+      val obtained = applyRule(absTargetFile, rule, syntacticDocument, suppress = false, existingFile)
 
       if (validateMode) {
         val expectedFile = expectedPathForTarget(relBase, targetFile)

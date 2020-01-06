@@ -22,8 +22,6 @@ trait AbstractUnitTests extends FunSuite with AssertionsForJUnit with DiffAssert
 
   def runTest(file: String, ruleFn: ProjectModel => TestCommon, overwrite: Boolean = false): Unit = {
     val projectName = "unitTestProject"
-    //    val scalaCleanWorkspace = ".."
-    val ivyDir = toPlatform("$HOME$/.ivy2/cache")
 
     val scalaCleanWorkspace = if (new File(toPlatform("../testProjects")).exists()) {
       ".."

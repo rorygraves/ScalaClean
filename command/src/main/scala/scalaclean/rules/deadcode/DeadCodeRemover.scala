@@ -130,7 +130,7 @@ class DeadCodeRemover(model: ProjectModel, debug: Boolean) extends AbstractRule(
   var elementsRemoved = 0
   var elementsVisited = 0
 
-  override def fix(targetFile: AbsolutePath, syntacticDocument: SyntacticDocument)(implicit semanticDocument: SemanticDocument): List[SCPatch] = {
+  override def fix(targetFile: AbsolutePath, syntacticDocument: SyntacticDocument): List[SCPatch] = {
 
     val targetFileName = targetFile.toString
     // find source model

@@ -134,7 +134,7 @@ class Privatiser(model: ProjectModel, debug: Boolean) extends AbstractRule("Priv
          |Effect rate       = ${(elementsChanged.toDouble / elementsObserved.toDouble * 10000).toInt / 100} %"
          |""".stripMargin)
 
-  override def fix(targetFile: AbsolutePath, syntacticDocument: SyntacticDocument)(implicit semanticDocument: SemanticDocument): List[SCPatch] = {
+  override def fix(targetFile: AbsolutePath, syntacticDocument: SyntacticDocument): List[SCPatch] = {
     val lb = new ListBuffer[SCPatch]
 
     val targetFileName = targetFile.toString
