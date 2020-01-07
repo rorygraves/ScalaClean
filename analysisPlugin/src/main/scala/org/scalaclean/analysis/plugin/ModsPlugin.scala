@@ -1,7 +1,7 @@
 package org.scalaclean.analysis.plugin
 
 import org.scalaclean.analysis._
-import scalaclean.model.impl.NewElementIdImpl
+import scalaclean.model.impl.{NewElementIdImpl, PathNodes}
 
 import scala.reflect.internal.Flags
 
@@ -10,7 +10,7 @@ object ModsPlugin extends ExtensionPluginFactory {
 }
 
 class ModsPlugin(val sc: ScalaCompilerPluginComponent) extends ExtensionPlugin {
-  override def extendedData(mSymbol: ModelSymbol, tree: g.Tree): List[ExtensionData] = {
+  override def extendedData(mSymbol: ModelSymbol, tree: g.Tree, enclosingModel: List[ModelSymbol]): List[ExtensionData] = {
     // Visibility encoding seems to be like this
     // for vals and vars the encoding is on the getter (and setter for vars) not on the val & var
     // as the actual field is private[this]
@@ -30,8 +30,8 @@ class ModsPlugin(val sc: ScalaCompilerPluginComponent) extends ExtensionPlugin {
       }
       if (symbol.hasFlag(Flags.PROTECTED | Flags.PRIVATE) || symbol.hasAccessBoundary) {
         val within =
-          if (symbol.hasAccessBoundary) Some(NewElementIdImpl(sc.externalSymbol(symbol.privateWithin).newId))
-          else if (symbol.hasFlag(Flags.LOCAL)) NewElementIdImpl.SOME_THIS
+          if (symbol.hasAccessBoundary) Some(sc.externalSymbol(symbol.privateWithin).newId)
+          else if (symbol.hasFlag(Flags.LOCAL)) Some(PathNodes.childThis(enclosingModel.head.common.newId))
           else None
         val group = if (symbol.hasFlag(Flags.PROTECTED)) "protected" else "private"
         symbol.sourceFile

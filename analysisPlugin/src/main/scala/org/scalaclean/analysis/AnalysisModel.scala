@@ -1,5 +1,7 @@
 package org.scalaclean.analysis
 
+import scalaclean.model.impl.ElementPath
+
 import scala.collection.immutable.ListSet
 import scala.collection.mutable
 import scala.tools.nsc.Global
@@ -219,16 +221,17 @@ sealed abstract class ModelField extends ModelSymbol {
 }
 
 case class ModelCommon(
-                        isGlobal: Boolean, newId: String, sourceFile: String, posStart: Int, posEnd: Int, posFocus: Int,
+                        isGlobal: Boolean, newId: ElementPath, sourceFile: String, posStart: Int, posEnd: Int, posFocus: Int,
                         sourceName: String) extends HasModelCommon {
   override def common: ModelCommon = this
 
+  //TODO remove isGlobal and sourceName as they should come from newId
   // TODO Remove this and wire through the reader/writer
   override def legacyCsvIDString: String = {
     "UNUSED"
   }
 
-  override def newCsvString: String = newId
+  override def newCsvString: String = newId.id
 }
 
 case class ModelFields(

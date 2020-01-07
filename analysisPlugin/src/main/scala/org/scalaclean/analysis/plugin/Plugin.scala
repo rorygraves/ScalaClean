@@ -14,5 +14,5 @@ trait ExtensionPlugin {
 
   def debug = sc.debug
 
-  def extendedData(mSymbol: ModelSymbol, tree: g.Tree): List[ExtensionData]
+  def extendedData(mSymbol: ModelSymbol, tree: g.Tree, enclosingModel: List[ModelSymbol]): List[ExtensionData]
 }

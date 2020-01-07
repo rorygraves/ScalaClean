@@ -61,13 +61,13 @@ class Privatiser(model: ProjectModel, debug: Boolean) extends AbstractRule("Priv
     val incoming = {
       element.internalIncomingReferences map (_._1)
       }.toSet - element -- (element match {
-      case v: ValModel => v.getter
-      case v: VarModel => v.getter ++ v.setter
+      case f: FieldModel => f.accessors
       case a: AccessorModel => a.field
       case _ => Nil
     })
 
     val enclosing = element.classOrEnclosing
+//    val companion = enclosing.companionOrSelf
 
     //is it defined by the signature
     var res: PrivatiserLevel = element match {
@@ -210,9 +210,6 @@ class Privatiser(model: ProjectModel, debug: Boolean) extends AbstractRule("Priv
               }
             }
             val targetVis = modelElement.colour.asText(modelElement)
-            //          log(s" AAAA ${modelElement.legacySymbol}  $currentVis")
-            //          log(s" IS   ${modelElement.rawStart}")
-            //          log(s" Target = ${modelElement.colour.asText(modelElement)}")
             val beginIndex = tokens.indexWhere(t => t.start == modelElement.rawStart)
             assert(beginIndex != -1)
 
@@ -243,8 +240,6 @@ class Privatiser(model: ProjectModel, debug: Boolean) extends AbstractRule("Priv
               }
             log(s" TargetPos = $targetStart -> $targetEnd")
 
-            //            println(s"**** $modelElement")
-            //            println(s"**** $targetStart $targetEnd $visText")
             elementsChanged += 1
             val replacementText = if (targetStart == targetEnd) visText + " " else visText
             this.collect(SCPatch(targetStart, targetEnd, replacementText))

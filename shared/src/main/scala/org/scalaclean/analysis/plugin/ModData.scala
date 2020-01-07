@@ -2,7 +2,7 @@ package org.scalaclean.analysis.plugin
 
 import org.scalaclean.analysis.{FlagHelper, StandardExtensionData, StandardExtensionDescriptor}
 import scalaclean.model.NewElementId
-import scalaclean.model.impl.NewElementIdImpl
+import scalaclean.model.impl.{NewElementIdImpl, PathNodes}
 
 object ModData extends StandardExtensionDescriptor[ModData] {
 
@@ -29,7 +29,7 @@ case class ModData(posOffsetStart: Int, posOffsetEnd: Int, flagBit: Long) extend
 object VisibilityData extends StandardExtensionDescriptor[VisibilityData] {
   override protected def buildImpl(posOffsetStart: Int, posOffsetEnd: Int, otherParams: String*): VisibilityData = {
     assert(otherParams.length == 2)
-    val id = if (otherParams(1).isEmpty) None else NewElementIdImpl(otherParams(1)).option
+    val id = PathNodes.option(otherParams(1))
     new VisibilityData(posOffsetStart, posOffsetEnd, otherParams(0), id)
   }
   val PUBLIC = VisibilityData(0,0,"", None)

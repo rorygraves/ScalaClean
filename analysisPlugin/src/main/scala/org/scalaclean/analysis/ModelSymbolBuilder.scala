@@ -2,6 +2,8 @@ package org.scalaclean.analysis
 
 import java.util.concurrent.atomic.AtomicInteger
 
+import scalaclean.model.impl.{FieldPath, PathNodes}
+
 import scala.collection.mutable
 import scala.meta.internal.semanticdb.scalac.SemanticdbOps
 import scala.reflect.internal.util.NoPosition
@@ -74,12 +76,20 @@ trait ModelSymbolBuilder extends SemanticdbOps {
   private val mSymbolCache2 = mutable.Map[global.Symbol, ModelCommon]()
   private val mSymbolCache = mutable.Map[global.Symbol, ModelCommon]()
 
-  def externalSymbol(gSym: Global#Symbol, special:Boolean = false): ModelCommon = {
-    asMSymbol(gSym.asInstanceOf[global.Symbol], special)
+  def externalSymbol(gSym: Global#Symbol): ModelCommon = {
+    asMSymbol(gSym.asInstanceOf[global.Symbol])
   }
 
-  def asMSymbol(gSym: global.Symbol, special:Boolean = false): ModelCommon = {
-    val cache = if (special) mSymbolCache2 else mSymbolCache
+  def asMSymbol(gSym: global.Symbol): ModelCommon = {
+    asMSymbolX(gSym, false)
+  }
+  def asMSymbolForceField(gSym: global.Symbol): ModelCommon = {
+    val unforced = asMSymbolX(gSym, false)
+    if (unforced.newId.isInstanceOf[FieldPath]) unforced
+    else asMSymbolX(gSym, true)
+  }
+  private def asMSymbolX(gSym: global.Symbol, forceField:Boolean): ModelCommon = {
+    val cache = if (forceField) mSymbolCache2 else mSymbolCache
 
     cache.getOrElseUpdate(gSym, {
       val isGlobal = gSym.isSemanticdbGlobal && !gSym.isLocalToBlock
@@ -89,12 +99,10 @@ trait ModelSymbolBuilder extends SemanticdbOps {
         mungeUnitPath(gSym.sourceFile.toString)
       else
         "-"
-      val specialSuffix = if (special) "~" else ""
-      val name = gSym.nameString + specialSuffix
 
-      val newName = getNewName(gSym) + specialSuffix
+      val newName = if (forceField) PathNodes.applyAndForceField(gSym) else PathNodes(gSym) //getNewName(gSym) + specialSuffix
 
-      ModelCommon(isGlobal, newName, sourceFile, startPos, endPos, focusPos, name)
+      ModelCommon(isGlobal, newName, sourceFile, startPos, endPos, focusPos, gSym.nameString)
 
     }
     )

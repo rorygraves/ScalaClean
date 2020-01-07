@@ -5,6 +5,7 @@ import java.nio.file.{Files, Paths}
 import java.util.Properties
 
 import org.scalaclean.analysis.plugin.ExtensionPlugin
+import scalaclean.model.impl.PathNodes
 
 import scala.collection.immutable.HashSet
 import scala.collection.mutable
@@ -184,7 +185,7 @@ class ScalaCompilerPluginComponent(
       }
       extensions foreach {
         e =>
-          val data = e.extendedData(mSymbol, mSymbol.tree.asInstanceOf[e.g.Tree])
+          val data = e.extendedData(mSymbol, mSymbol.tree.asInstanceOf[e.g.Tree], scopeStack.tail)
           mSymbol.addExtensionData(data)
       }
       traverseType(mSymbol.tree.tpe.asInstanceOf[global.Type])
@@ -238,7 +239,7 @@ class ScalaCompilerPluginComponent(
 
     def traverseSource(unit: CompilationUnit): Unit = {
       val sourceFile = unit.source.file.canonicalPath
-      val sourceSymbol = ModelSource(unit.body, ModelCommon(true, s"S:$sourceFile", sourceFile, -1, -1, -1, "<NA>"))
+      val sourceSymbol = ModelSource(unit.body, ModelCommon(true, PathNodes(sourceFile), sourceFile, -1, -1, -1, "<NA>"))
       enterScope(sourceSymbol) {
         _ =>
           traverse(unit.body)
@@ -502,8 +503,7 @@ class ScalaCompilerPluginComponent(
             case cls: ClassLike =>
               val getter = symbol.getterIn(symbol.owner)
               val setter = symbol.setterIn(symbol.owner)
-              val collides = symbol == getter
-              val mSymbol = asMSymbol(symbol, collides)
+              val mSymbol = asMSymbolForceField(symbol)
               val field = if (isVar) {
                 //                assert(setter != NoSymbol, s"no setter $mSymbol at ${valDef.pos.line}:${valDef.pos.column}")
                 //                assert(getter != NoSymbol, s"no getter $mSymbol at ${valDef.pos.line}:${valDef.pos.column}")

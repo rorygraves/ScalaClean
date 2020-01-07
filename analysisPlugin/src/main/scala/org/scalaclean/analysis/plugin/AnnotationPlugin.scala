@@ -14,7 +14,8 @@ object AnnotationPlugin extends ExtensionPluginFactory {
 class AnnotationPlugin(val sc: ScalaCompilerPluginComponent) extends ExtensionPlugin {
   override def extendedData(
     mSymbol: ModelSymbol,
-    tree: g.Tree): List[ExtensionData] = {
+    tree: g.Tree,
+    enclosingModel: List[ModelSymbol]): List[ExtensionData] = {
     val extensionData = mutable.ListBuffer[ExtensionData]()
 
     tree.symbol.annotations.foreach(annotation =>
