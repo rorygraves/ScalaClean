@@ -235,7 +235,7 @@ class Privatiser(model: ProjectModel, debug: Boolean) extends AbstractRule("Priv
                 val end = expectedTokens.tail.foldLeft(start) {
                   case (index, text) => find(index._1, text, maxPos = Some(modelElement.rawFocusStart))
                 }
-                (start._1, end._1)
+                (start._2.start, end._2.end)
               }
             log(s" TargetPos = $targetStart -> $targetEnd")
 
