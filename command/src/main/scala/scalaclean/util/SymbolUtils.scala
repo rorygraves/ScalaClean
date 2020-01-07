@@ -7,7 +7,7 @@ object SymbolUtils {
   @scala.annotation.tailrec
   def findCommonParent(scope1: ElementId, scope2: ElementId): ElementId = {
     def depth(scope: ElementId): Int = {
-      if (scope.isNone) 0 else depth(scope.parent) + 1
+      if (scope.isNone || scope.isRoot) 0 else depth(scope.parent) + 1
     }
 
     @scala.annotation.tailrec

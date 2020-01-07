@@ -362,7 +362,7 @@ package impl {
   private[impl] final class ThisPathImpl private(parent: ElementId) extends ElementPathNode(parent) {
     override private[model] def isContentGlobal: Boolean = parent.isContentGlobal
 
-    override def appendSelf(sb: lang.StringBuilder): Unit = sb.append("this")
+    override def appendSelf(sb: lang.StringBuilder): Unit = sb.append("/this")
     override def innerScopeString: String = "this"
     override private[model] def canBeParent = false
   }
