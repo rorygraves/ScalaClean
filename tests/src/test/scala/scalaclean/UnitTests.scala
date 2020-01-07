@@ -5,14 +5,13 @@ import java.nio.charset.StandardCharsets
 import java.nio.file.Paths
 
 import org.scalatest.FunSuite
-import org.scalatest.junit.AssertionsForJUnit
+import org.scalatestplus.junit.AssertionsForJUnit
 import scalaclean.cli.FileHelper.toPlatform
-import scalaclean.cli.{FileHelper, SCPatchUtil}
+import scalaclean.cli.{DiffAssertions, FileHelper, SCPatchUtil}
 import scalaclean.model.ProjectModel
 import scalaclean.model.impl.ProjectSet
 import scalaclean.test._
 import scalafix.scalaclean.cli.DocHelper
-import scalafix.testkit.DiffAssertions
 import scalafix.v1.SyntacticDocument
 
 import scala.meta._
@@ -33,7 +32,7 @@ trait AbstractUnitTests extends FunSuite with AssertionsForJUnit with DiffAssert
       RelativePath(file)
     )
 
-    val outputClassDir: String = s"${scalaCleanWorkspace}/testProjects/$projectName/target/scala-2.12/classes/"
+    val outputClassDir: String = s"$scalaCleanWorkspace/testProjects/$projectName/target/scala-2.12/classes/"
     val inputSourceDirectories: List[AbsolutePath] = Classpath(toPlatform(s"$scalaCleanWorkspace/testProjects/$projectName/src/main/scala")).entries
 
     def applyRule(

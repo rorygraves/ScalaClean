@@ -10,7 +10,6 @@ import scalaclean.rules.AbstractRule
 import scalaclean.rules.deadcode.{DeadCodeRemover, SimpleDeadCode}
 import scalaclean.rules.privatiser.{Privatiser, SimplePrivatiser}
 import scalafix.scalaclean.cli.DocHelper
-import scalafix.testkit.DiffAssertions
 import scalafix.v1.SyntacticDocument
 
 import scala.meta._

@@ -61,22 +61,8 @@ lazy val analysisPlugin = project.dependsOn(shared).settings(
     libraryDependencies += "org.scala-lang" % "scala-compiler" % scala212,
     libraryDependencies += "org.scala-lang" % "scala-reflect" % scala212,
     mergeSettings,
-
     libraryDependencies += "org.scalameta" % "semanticdb-scalac-core_2.12.9" % "4.2.3",
-
-    scalacOptions in Test ++= {
-      // we depend on the assembly jar
-      val jar = (assembly in Compile).value
-      println("JAR = " + jar.getAbsolutePath)
-      Seq(
-        "-Yrangepos",
-        s"-Xplugin:${jar.getAbsolutePath}",
-        s"-Jdummy=${jar.lastModified}", // ensures recompile
-      )
-
-    },
-    fork in Test := true
-  )
+ )
 
 fork in Test := true
 
@@ -87,30 +73,18 @@ lazy val command = project.dependsOn(shared)
     libraryDependencies += "args4j" % "args4j" % "2.33",
     libraryDependencies += "com.github.scopt" %% "scopt" % "4.0.0-RC2",
     libraryDependencies += "ch.epfl.scala" %% "scalafix-core" % scalaFixVersion,
-    libraryDependencies += "ch.epfl.scala" % "scalafix-testkit_2.12.8" % scalaFixVersion,
     libraryDependencies += "junit" % "junit" % "4.12" % Test,
     libraryDependencies += "org.scalatest" %% "scalatest" % "3.0.8" % Test,
 
     mainClass in assembly := Some("scalaclean.cli.ScalaCleanMain"),
-    // exclude some of the semanticdb classes which are imported twice
-    assemblyExcludedJars in assembly := {
-      val cp = (fullClasspath in assembly).value
-      cp.filter { f=>
-        f.data.getName.contains("semanticdb-scalac_2.12.8-4.2.1.jar")
-      }
-    }
   )
 
 
 lazy val unitTestProject = project.in(file("testProjects/unitTestProject")).settings(
-  addCompilerPlugin("org.scalameta" % "semanticdb-scalac_2.12.9" % "4.2.3"),
-  libraryDependencies += "org.scalaz" %% "scalaz-core" % "7.2.28",
-  scalacOptions += "-P:semanticdb:synthetics:on",
   skip in publish := true,
 
     scalacOptions  ++= {
       // we depend on the assembly jar
-      //    val baseDirectory.value /"custom_lib"
       val jar = (assembly in Compile in analysisPlugin).value
       val srcLocations = (sourceDirectories in Compile).value.mkString(java.io.File.pathSeparator)
       Seq(
@@ -192,9 +166,8 @@ lazy val testDep = List(command, unitTestProject) ::: privatiserTests ::: deadCo
 lazy val tests = project.dependsOn(testDep map (classpathDependency(_)) : _*)
   .settings(
     moduleName := "tests",
-    libraryDependencies += "args4j" % "args4j" % "2.0.23",
+    libraryDependencies += "args4j" % "args4j" % "2.33",
     libraryDependencies += "ch.epfl.scala" %% "scalafix-core" % scalaFixVersion,
-    libraryDependencies += "ch.epfl.scala" % "scalafix-testkit_2.12.8" % scalaFixVersion,
     libraryDependencies += "junit" % "junit" % "4.12" % Test,
     libraryDependencies += "org.scalatest" %% "scalatest" % "3.0.8" % Test,
     scalaVersion := scala212,
