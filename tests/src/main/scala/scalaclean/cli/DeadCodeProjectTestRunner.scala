@@ -10,9 +10,9 @@ class DeadCodeProjectTestRunner(
   projectNames: List[String],
   overwriteTargetFiles: Boolean) extends AbstractProjectTestRunner(projectNames, overwriteTargetFiles) {
 
-  def taskName = SCOptions.deadCodeCmd
+  override def taskName: String = SCOptions.deadCodeCmd
 
-  def createModelTaskFn(propsFiles: Seq[File], debug: Boolean): ProjectModel => AbstractRule = {
+  override def createModelTaskFn(propsFiles: Seq[File], debug: Boolean): ProjectModel => AbstractRule = {
 
     def fn(model: ProjectModel): AbstractRule = {
       new DeadCodeRemover(model, debug)

@@ -62,16 +62,16 @@ trait StandardExtensionData extends ExtensionData {
 
   def hasPosition: Boolean = posOffsetStart == Int.MinValue && posOffsetEnd == Int.MinValue
 
-  def start = if (posOffsetStart == Integer.MIN_VALUE) None else Some(posOffsetStart)
-  def end = if (posOffsetEnd == Integer.MIN_VALUE) None else Some(posOffsetEnd)
-  def startOr(v: Int) = if (posOffsetStart == Integer.MIN_VALUE) v else posOffsetStart
-  def endOr(v: Int) = if (posOffsetEnd == Integer.MIN_VALUE) v else posOffsetEnd
+  def start: Option[Int] = if (posOffsetStart == Integer.MIN_VALUE) None else Some(posOffsetStart)
+  def end: Option[Int] = if (posOffsetEnd == Integer.MIN_VALUE) None else Some(posOffsetEnd)
+  def startOr(v: Int): Int = if (posOffsetStart == Integer.MIN_VALUE) v else posOffsetStart
+  def endOr(v: Int): Int = if (posOffsetEnd == Integer.MIN_VALUE) v else posOffsetEnd
 
   protected def maskToString(offset: Int) = {
     if (offset == Int.MinValue) "<NoPos>" else offset.toString
   }
 
-  protected def maskToCSV(offset: Int) = {
+  protected def maskToCSV(offset: Int): String = {
     if (offset == Int.MinValue) "" else offset.toString
   }
 
@@ -81,7 +81,7 @@ trait StandardExtensionData extends ExtensionData {
 
   override final def toString: String = s"$productPrefix[${maskToString(posOffsetStart)},${maskToString(posOffsetEnd)},$restToString]"
 
-  protected def restToString = productIterator.drop(2).mkString(",")
+  protected def restToString: String = productIterator.drop(2).mkString(",")
 }
 
 

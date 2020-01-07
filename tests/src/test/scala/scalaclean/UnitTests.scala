@@ -6,12 +6,12 @@ import java.nio.file.Paths
 
 import org.scalatest.FunSuite
 import org.scalatestplus.junit.AssertionsForJUnit
-import scalaclean.cli.FileHelper.toPlatform
-import scalaclean.cli.{DiffAssertions, FileHelper, SCPatchUtil}
+import scalaclean.util.FileHelper.toPlatform
+import scalaclean.cli.SCPatchUtil
 import scalaclean.model.ProjectModel
 import scalaclean.model.impl.ProjectSet
 import scalaclean.test._
-import scalafix.scalaclean.cli.DocHelper
+import scalaclean.util.{DiffAssertions, DocHelper, FileHelper}
 import scalafix.v1.SyntacticDocument
 
 import scala.meta._

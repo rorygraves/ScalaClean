@@ -9,7 +9,7 @@ import scalaclean.model.{ProjectModel, SCPatch}
 import scalaclean.rules.AbstractRule
 import scalaclean.rules.deadcode.{DeadCodeRemover, SimpleDeadCode}
 import scalaclean.rules.privatiser.{Privatiser, SimplePrivatiser}
-import scalafix.scalaclean.cli.DocHelper
+import scalaclean.util.{DiffAssertions, DocHelper}
 import scalafix.v1.SyntacticDocument
 
 import scala.meta._

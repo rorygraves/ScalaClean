@@ -6,7 +6,7 @@ import scalafix.v1.SyntacticDocument
 import scala.meta.io.AbsolutePath
 
 abstract class AbstractRule(val name: String, val model: ProjectModel, debug: Boolean) {
-  def printSummary(projectname: String): Unit
+  def printSummary(projectName: String): Unit
 
   type Colour <: Mark
 
@@ -47,13 +47,13 @@ abstract class AbstractRule(val name: String, val model: ProjectModel, debug: Bo
 
   //utility methods
 
-  def allMainEntryPoints = {
+  def allMainEntryPoints: Iterator[ModelElement] = {
     allMainMethodEntries ++ allApp
   }
 
   def allMainMethodEntries: Iterator[ModelElement] = {
     model.allOf[ObjectModel].filter(_.isTopLevel).flatMap { om =>
-      om.methods.collect { case mm: PlainMethodModel if(mm.methodName == "main") => mm }
+      om.methods.collect { case mm: PlainMethodModel if mm.methodName == "main" => mm }
     }
   }
 
@@ -64,7 +64,7 @@ abstract class AbstractRule(val name: String, val model: ProjectModel, debug: Bo
 
   }
 
-  def allTestEntryPoints = {
+  def allTestEntryPoints: Iterator[MethodModel] = {
     allJunitTest
   }
 
@@ -76,7 +76,7 @@ abstract class AbstractRule(val name: String, val model: ProjectModel, debug: Bo
     "org.junit.AfterClass",
   )
 
-  def allJunitTest = {
+  def allJunitTest: Iterator[MethodModel] = {
     model.allOf[MethodModel].filter { method =>
       method.annotations.exists { a =>
         junitAnnotationEntryPoints.contains(a.fqName)

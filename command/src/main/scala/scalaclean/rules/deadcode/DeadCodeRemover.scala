@@ -2,8 +2,8 @@ package scalaclean.rules.deadcode
 
 import scalaclean.model._
 import scalaclean.rules.AbstractRule
-import scalaclean.util.{ElementTreeVisitor, TokenHelper}
-import scalafix.v1._
+import scalaclean.util.ElementTreeVisitor
+import scalafix.v1.SyntacticDocument
 
 import scala.meta.io.AbsolutePath
 

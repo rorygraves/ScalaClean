@@ -5,6 +5,7 @@ import java.nio.file.Paths
 
 import scalaclean.model.ProjectModel
 import scalaclean.rules.AbstractRule
+import scalaclean.util.DiffAssertions
 
 abstract class AbstractProjectTestRunner(
   val projectNames: List[String], overwriteTargetFiles: Boolean) extends DiffAssertions {

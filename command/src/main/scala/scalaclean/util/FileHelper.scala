@@ -1,4 +1,4 @@
-package scalaclean.cli
+package scalaclean.util
 
 object FileHelper {
 
