@@ -1,10 +1,10 @@
 package scalaclean.model
 
-import scalaclean.model.impl.NewElementIdImpl
+import scalaclean.model.ElementId
 
 object ElementIds {
   //FIXME
-  val AppObject: NewElementId = NewElementIdImpl("C:scala.App")
+  val AppObject: ElementId = ElementId.forClass[App]
 
-  val allAppObjects :List[NewElementId] = List(AppObject)
+  val allAppObjects :List[ElementId] = List(AppObject)
 }

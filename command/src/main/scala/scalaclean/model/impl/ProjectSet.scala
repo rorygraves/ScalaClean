@@ -10,7 +10,7 @@ import scala.reflect.ClassTag
 class ProjectSet(projectPropertyPaths: Path*) extends ProjectModel {
   val projects: List[Project] = projectPropertyPaths.toList map { p => Project(p, this) }
 
-  val elements: Map[NewElementId, ElementModelImpl] = {
+  val elements: Map[ElementId, ElementModelImpl] = {
     val (elements, rels: immutable.Seq[BasicRelationshipInfo]) = projects.map(_.read).unzip
 
     val modelElements = elements.flatten.toIterator.map(e => e.modelElementId -> e).toMap
@@ -40,7 +40,7 @@ class ProjectSet(projectPropertyPaths: Path*) extends ProjectModel {
     modelElements
   }
 
-  override def element[T <: ModelElement](id: NewElementId)(implicit tpe: ClassTag[T]): T = {
+  override def element[T <: ModelElement](id: ElementId)(implicit tpe: ClassTag[T]): T = {
 
     elements.get(id) match {
       case None => throw new IllegalArgumentException(s"Unknown element $id")
@@ -49,7 +49,7 @@ class ProjectSet(projectPropertyPaths: Path*) extends ProjectModel {
     }
   }
 
-  override def getElement[T <: ModelElement](id: NewElementId)(implicit tpe: ClassTag[T]): Option[T] = {
+  override def getElement[T <: ModelElement](id: ElementId)(implicit tpe: ClassTag[T]): Option[T] = {
     elements.get(id) match {
       case None => None
       case Some(x: T) => Some(x)

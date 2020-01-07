@@ -1,6 +1,6 @@
 package org.scalaclean.analysis
 
-import scalaclean.model.impl.ElementPath
+import scalaclean.model.ElementId
 
 import scala.collection.immutable.ListSet
 import scala.collection.mutable
@@ -188,7 +188,7 @@ sealed trait ModelSymbol extends HasModelCommon {
       }
     }
     refersRels = refersRels.filter(_._1.common.isGlobal)
-    refersRels = refersRels.filter(_._1.common.newId != this.common.newId)
+    refersRels = refersRels.filter(_._1.common.elementId != this.common.elementId)
 
   }
 
@@ -221,7 +221,7 @@ sealed abstract class ModelField extends ModelSymbol {
 }
 
 case class ModelCommon(
-                        isGlobal: Boolean, newId: ElementPath, sourceFile: String, posStart: Int, posEnd: Int, posFocus: Int,
+                        isGlobal: Boolean, elementId: ElementId, sourceFile: String, posStart: Int, posEnd: Int, posFocus: Int,
                         sourceName: String) extends HasModelCommon {
   override def common: ModelCommon = this
 
@@ -231,7 +231,7 @@ case class ModelCommon(
     "UNUSED"
   }
 
-  override def newCsvString: String = newId.id
+  override def newCsvString: String = elementId.id
 }
 
 case class ModelFields(

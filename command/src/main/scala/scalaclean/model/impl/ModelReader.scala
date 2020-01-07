@@ -4,6 +4,7 @@ import java.nio.file.{Files, Paths}
 
 import org.scalaclean.analysis.plugin.{ModData, VisibilityData}
 import org.scalaclean.analysis.{AnnotationData, ExtensionData, ExtensionDescriptor, IoTokens}
+import scalaclean.model.ElementId
 
 import scala.collection.mutable
 
@@ -14,9 +15,9 @@ object ModelReader {
 
 
     val relationships = readRels(relationshipsFilePath)
-    val (extById, extByNewId) = readExt(extensionFilePath)
+    val extById = readExt(extensionFilePath)
 
-    val elements = readElements(project, elementsFilePath, relationships, extById, extByNewId, sourceDirSep)
+    val elements = readElements(project, elementsFilePath, relationships, extById, sourceDirSep)
     (elements, relationships)
   }
 
@@ -40,10 +41,9 @@ object ModelReader {
     "org.scalaclean.analysis.AnnotationData" -> AnnotationData,
   )
 
-  private def readExt(extensionFilePath: String): (Map[String, Seq[ExtensionData]], Map[String, Seq[ExtensionData]]) = {
+  private def readExt(extensionFilePath: String): Map[String, Seq[ExtensionData]] = {
 
     var mapByElementId = Map.empty[String, mutable.Builder[ExtensionData, List[ExtensionData]]]
-    var mapByNewElementId = Map.empty[String, mutable.Builder[ExtensionData, List[ExtensionData]]]
 
     val path = Paths.get(extensionFilePath)
     println(s"reading extensions from $path")
@@ -68,28 +68,19 @@ object ModelReader {
 //        })
         val extBuilder = builder(fqn)
         val ext: ExtensionData = extBuilder.fromCsv(rest)
-        val elementValues1 = mapByElementId.get(id) match {
+
+        val elementValues2 = mapByElementId.get(newId) match {
           case None =>
             val builder = List.newBuilder[ExtensionData]
-            mapByElementId = mapByElementId.updated(id, builder)
+            mapByElementId = mapByElementId.updated(newId, builder)
             builder
           case Some(builder) => builder
         }
 
-        val elementValues2 = mapByNewElementId.get(newId) match {
-          case None =>
-            val builder = List.newBuilder[ExtensionData]
-            mapByNewElementId = mapByNewElementId.updated(newId, builder)
-            builder
-          case Some(builder) => builder
-        }
-
-        elementValues1 += ext
         elementValues2 += ext
 
     }
-    (mapByElementId.map { case (k, b) => k -> compress(b.result) },
-      mapByNewElementId.map { case (k, b) => k -> compress(b.result) })
+    mapByElementId.map { case (k, b) => k -> compress(b.result) }
 
   }
 
@@ -109,9 +100,9 @@ object ModelReader {
         try {
           val tokens = line.split(",")
 
-          val from = NewElementIdImpl(tokens(0))
+          val from = ElementId(tokens(0))
           val relType = tokens(1)
-          val to = NewElementIdImpl(tokens(2))
+          val to = ElementId(tokens(2))
 
           val offset = 3
           relType match {
@@ -137,12 +128,12 @@ object ModelReader {
             throw new IllegalStateException(s"Failed to parse line $line", t)
         }
     }
-    val refersTo = refersToB.result().groupBy(_.fromNewElementId)
-    val extends_ = extendsB.result().groupBy(_.fromNewElementId)
-    val overrides = overridesB.result().groupBy(_.fromNewElementId)
-    val within = withinB.result().groupBy(_.fromNewElementId)
-    val getter = getterB.result().groupBy(_.fromNewElementId)
-    val setter = setterB.result().groupBy(_.fromNewElementId)
+    val refersTo = refersToB.result().groupBy(_.fromElementId)
+    val extends_ = extendsB.result().groupBy(_.fromElementId)
+    val overrides = overridesB.result().groupBy(_.fromElementId)
+    val within = withinB.result().groupBy(_.fromElementId)
+    val getter = getterB.result().groupBy(_.fromElementId)
+    val setter = setterB.result().groupBy(_.fromElementId)
 
     BasicRelationshipInfo(
       refersTo,
@@ -155,7 +146,7 @@ object ModelReader {
   }
 
   private def readElements(project: Project, elementsFilePath: String, relationships: BasicRelationshipInfo,
-                           byId: Map[String, Seq[ExtensionData]], byNewId: Map[String, Seq[ExtensionData]],
+                           byId: Map[String, Seq[ExtensionData]],
                            sourceDirSep: String): Vector[ElementModelImpl] = {
     val path = Paths.get(elementsFilePath)
     println(s"reading elements from $path")
@@ -169,7 +160,7 @@ object ModelReader {
           } else line.split(",")
 
           val typeId = tokens(0)
-          val modelSymbol = NewElementIdImpl(tokens(2))
+          val elementId = ElementId(tokens(2))
           val flags = java.lang.Long.parseLong(tokens(3), 16)
           val src = project.source(tokens(4).replace(sourceDirSep, java.io.File.separator))
           val start = tokens(5).toInt
@@ -177,7 +168,7 @@ object ModelReader {
           val focus = tokens(7).toInt
           val traversal = tokens(8).toInt
 
-          val basicInfo = BasicElementInfo(modelSymbol, src, start, end, focus, flags, byNewId.getOrElse(tokens(2), Nil), traversal)
+          val basicInfo = BasicElementInfo(elementId, src, start, end, focus, flags, byId.getOrElse(tokens(2), Nil), traversal)
 
           val idx = 9
           val ele: ElementModelImpl = typeId match {

@@ -80,14 +80,14 @@ class Privatiser(model: ProjectModel, debug: Boolean) extends AbstractRule("Priv
     }
 
     // TODO Fixme LegacySymbol
-//    incoming foreach { ref: ModelElement =>
-//      val isFromChild = ref.classOrEnclosing.xtends(enclosing.modelElementId)
-//      val access = if (isFromChild)
-//        Scoped.Protected(ref.legacySymbol, s"accessed from $ref", forceProtected = false)
-//      else
-//        Scoped.Private(ref.legacySymbol, s"accessed from $ref").widen(Scoped.Private(element.legacySymbol, s"accessed from $ref"))
-//      res = res.widen(access)
-//    }
+    incoming foreach { ref: ModelElement =>
+      val isFromChild = ref.classOrEnclosing.xtends(enclosing.modelElementId)
+      val access = if (isFromChild)
+        Scoped.Protected(ref.modelElementId, s"accessed from $ref", forceProtected = false)
+      else
+        Scoped.Private(ref.modelElementId, s"accessed from $ref").widen(Scoped.Private(element.modelElementId, s"accessed from $ref"))
+      res = res.widen(access)
+    }
 //    //we must be visible to anything that overrides us
 //    element.internalDirectOverriddenBy foreach {
 //      overriddenBy =>

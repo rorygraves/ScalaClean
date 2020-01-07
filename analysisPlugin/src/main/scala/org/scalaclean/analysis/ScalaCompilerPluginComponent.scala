@@ -5,7 +5,7 @@ import java.nio.file.{Files, Paths}
 import java.util.Properties
 
 import org.scalaclean.analysis.plugin.ExtensionPlugin
-import scalaclean.model.impl.PathNodes
+import scalaclean.model.ElementId
 
 import scala.collection.immutable.HashSet
 import scala.collection.mutable
@@ -240,7 +240,7 @@ class ScalaCompilerPluginComponent(
     def traverseSource(unit: CompilationUnit): Unit = {
       val sourceFile = unit.source.file.file.toPath
       val sourceFileStr = sourceFile.toString
-      val sourceSymbol = ModelSource(unit.body, ModelCommon(true, PathNodes(sourceFile), sourceFileStr, -1, -1, -1, "<NA>"))
+      val sourceSymbol = ModelSource(unit.body, ModelCommon(true, ElementId(sourceFile), sourceFileStr, -1, -1, -1, "<NA>"))
       enterScope(sourceSymbol) {
         _ =>
           traverse(unit.body)

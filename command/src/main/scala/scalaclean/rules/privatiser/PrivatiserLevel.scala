@@ -1,7 +1,6 @@
 package scalaclean.rules.privatiser
 
-import scalaclean.model.impl.OldElementId
-import scalaclean.model.{Mark, ModelElement}
+import scalaclean.model.{Mark, ElementId, ModelElement}
 import scalaclean.util.SymbolUtils
 
 private[privatiser] sealed trait PrivatiserLevel extends Mark {
@@ -42,50 +41,47 @@ private[privatiser] case object Undefined extends PrivatiserLevel {
 }
 
 private[privatiser] object AccessScope {
-  val None: AccessScope = AccessScope(OldElementId.None, "")
+  val None: AccessScope = AccessScope(ElementId.None, "")
 }
 
-private[privatiser] final case class AccessScope(symbol: OldElementId, reason: String) {
-  def print(name: String): String = if (symbol.isNone) s"$name <not found>" else s"$name $symbol $reason"
+private[privatiser] final case class AccessScope(elementId: ElementId, reason: String) {
+  def print(name: String): String = s"$name $elementId $reason"
 
   def widen(other: AccessScope): AccessScope =
-    if (symbol.isNone) other
-    else if (other.symbol.isNone) this
-    else AccessScope(SymbolUtils.findCommonParent(symbol, other.symbol), s"$reason AND ${other.reason}")
+    if (elementId.isNone) other
+    else if (other.elementId.isNone) this
+    else AccessScope(SymbolUtils.findCommonParent(elementId, other.elementId), s"$reason AND ${other.reason}")
 }
 
 private[privatiser] object Scoped {
-  def Private(scope: OldElementId, reason: String) = Scoped(AccessScope(scope, reason), AccessScope.None, false)
+  def Private(scope: ElementId, reason: String) = Scoped(AccessScope(scope, reason), AccessScope.None, false)
 
-  def Protected(scope: OldElementId, reason: String, forceProtected: Boolean) = Scoped(AccessScope.None, AccessScope(scope, reason), forceProtected)
+  def Protected(scope: ElementId, reason: String, forceProtected: Boolean) = Scoped(AccessScope.None, AccessScope(scope, reason), forceProtected)
 }
 
 private[privatiser] final case class Scoped(privateScope: AccessScope, protectedScope: AccessScope, forceProtected: Boolean) extends PrivatiserLevel {
   def isProtected = {
-    def commonParentScope: OldElementId =
-      if (protectedScope.symbol.isNone) privateScope.symbol
-      else SymbolUtils.findCommonParent(protectedScope.symbol, privateScope.symbol)
+    def commonParentScope: ElementId =
+      if (protectedScope.elementId.isNone) privateScope.elementId
+      else SymbolUtils.findCommonParent(protectedScope.elementId, privateScope.elementId)
 
-    forceProtected || privateScope.symbol.isNone || commonParentScope != privateScope.symbol
+    forceProtected || privateScope.elementId.isNone || commonParentScope != privateScope.elementId
   }
 
-  def scope: OldElementId = privateScope.symbol
+  def scope: ElementId = privateScope.elementId
 
-  // TODO LegacySymbol
-//  def scopeOrDefault(default: OldElementId): OldElementId = privateScope.symbol.asNonEmpty.getOrElse(default)
+  def scopeOrDefault(default: ElementId): ElementId = if (privateScope.elementId.isNone) default else privateScope.elementId
 
   override def asText(context: ModelElement): Option[String] = {
     val name = if (isProtected) "protected" else "private"
     context.enclosing.headOption match {
-        // TODO LegacySymbol
-//      case Some(enclosing) if scopeOrDefault(enclosing.legacySymbol) == enclosing.legacySymbol => Some(name)
+      case Some(enclosing) if scopeOrDefault(enclosing.modelElementId) == enclosing.modelElementId => Some(name)
 
       case _ =>
-        val scope = privateScope.symbol.displayName
-        if (scope.isEmpty)
+        if (privateScope.elementId.isRoot)
           Some(name)
         else
-          Some(s"$name[${privateScope.symbol.displayName}]")
+          Some(s"$name[${privateScope.elementId.innerScopeString}]")
     }
   }
 
@@ -94,8 +90,8 @@ private[privatiser] final case class Scoped(privateScope: AccessScope, protected
   override def toString = s"Scoped[${privateScope.print("private")} -- ${protectedScope.print("protected")}}"
 
   override def reason: String = {
-    if (privateScope.symbol.isNone) protectedScope.reason
-    else if (protectedScope.symbol.isNone) privateScope.reason
+    if (privateScope.elementId.isNone) protectedScope.reason
+    else if (protectedScope.elementId.isNone) privateScope.reason
     else s"private due to (${privateScope.reason}), protected access from (${protectedScope.reason})"
   }
 
@@ -105,7 +101,7 @@ private[privatiser] final case class Scoped(privateScope: AccessScope, protected
     case Undefined => this
     case other: Scoped =>
       val privateWidened = this.privateScope.widen(other.privateScope)
-      if (privateWidened.symbol.isRootPackage) Public(privateWidened.reason)
+      if (privateWidened.elementId.isRoot) Public(privateWidened.reason)
       else Scoped(privateWidened, protectedScope.widen(other.protectedScope), forceProtected || other.forceProtected)
   }
 }

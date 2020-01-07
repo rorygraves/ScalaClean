@@ -1,14 +1,72 @@
 package scalaclean.model
 
-import scalaclean.model.impl.ElementPath
+import java.nio.file.Path
+
+import scalaclean.model.impl.PathNodes
+
+import scala.reflect.ClassTag
 
 
-abstract sealed class NewElementId {
+object ElementId {
+  val None:ElementId = impl.NodeNone
+  val Root:ElementId = impl.NodeRoot
+
+  type Sym = scala.reflect.internal.Symbols#Symbol
+  type API = scala.reflect.api.Symbols#Symbol
+
+  def apply(pathType: PathType, name: String): ElementId = PathNodes.apply(pathType, name)
+
+  def apply(sym: API): ElementId = PathNodes(sym)
+  def apply(sym: Sym): ElementId = PathNodes(sym)
+  def apply(path: Path): ElementId = PathNodes(path)
+
+  def applyAndForceField(sym: Sym): ElementId = PathNodes.applyAndForceField(sym)
+
+  def apply(id: String): ElementId = PathNodes(id)
+
+  def option(id: String): Option[ElementId] = PathNodes.option(id)
+  def forClass[T](implicit cls:ClassTag[T]): ElementId = apply(ClassPath, cls.runtimeClass.getName)
+  def childThis(elementId: ElementId): ElementId = PathNodes.childThis(elementId)
+
+}
+abstract sealed class ElementId {
   def innerScopeString: String
   def id: String
   def debugValue: String = id
+  def isNone: Boolean = false
+  def isRoot: Boolean = false
 
+  def parent: ElementId
+
+  def companionOrSelf: ElementId = this
+  
+  //implementation detail
+  private[model] def canBeParent: Boolean
+  private[model] final def isGlobal = parent.isContentGlobal
+
+  private[model] def isContentGlobal: Boolean
+  private[model] def appendPath(sb: java.lang.StringBuilder): Unit
+  override def toString = id
 }
+sealed trait PathType {
+  val nodeType: Char
+}
+object ObjectPath extends PathType {
+  val nodeType= 'O'
+}
+object ClassPath extends PathType {
+  val nodeType= 'C'
+}
+object PackagePath extends PathType {
+  val nodeType= 'P'
+}
+object FieldPath extends PathType {
+  val nodeType= 'V'
+}
+object MethodPath extends PathType {
+  val nodeType= 'M'
+}
+
 package impl {
   import java.lang
   import java.nio.file.Path
@@ -17,39 +75,19 @@ package impl {
   import scala.annotation.tailrec
   import scala.collection.mutable
 
-  object NewElementIdImpl {
-
-//    import java.util.concurrent.ConcurrentHashMap
-//
-//    private val interned = new ConcurrentHashMap[String, NewElementIdImpl]
-
-    def apply(id: String) = PathNodes.apply(id)// = interned.computeIfAbsent(id, id => new NewElementIdImpl(id.intern()))
-  }
-
-  final class NewElementIdImpl private(val id: String) extends NewElementId {
-    override def hashCode(): Int = id.hashCode()
-
-    override def toString: String = s"ModelSymbol[$id]"
-
-    override def innerScopeString: String = {
-      val start = id.lastIndexOf('/')
-      id.substring(start+1, id.indexOf('@', start))
-    }
-    val option = Some(this)
-  }
-  object PathNodes {
-    def childThis(owner: ElementPath) = apply(s"${owner.id}/this")
+  private[model] object PathNodes {
+    def childThis(owner: ElementId) = apply(s"${owner.id}/this")
 
     type Sym = scala.reflect.internal.Symbols#Symbol
     type API = scala.reflect.api.Symbols#Symbol
 
-    private val option_ = new mutable.HashMap[String, Option[ElementPath]]
+    private val option_ = new mutable.HashMap[String, Option[ElementId]]
     //all other values are for Some
     option_(null) = None
     option_("") = None
 
-    private val fromString = new mutable.HashMap[String, ElementPath]
-    private val fromSymbol = new mutable.HashMap[Sym, ElementPath]
+    private val fromString = new mutable.HashMap[String, ElementId]
+    private val fromSymbol = new mutable.HashMap[Sym, ElementId]
 
     private val localSymbolNames = mutable.Map[Sym, String]()
     private val idGen = new AtomicInteger()
@@ -58,7 +96,7 @@ package impl {
       localSymbolNames.getOrElseUpdate(sym, s"##${idGen.incrementAndGet()}")
     }
 
-    private def buildFromSymbol(sym: Sym): ElementPath = {
+    private def buildFromSymbol(sym: Sym): ElementId = {
       @tailrec def interestingOwner(s: Sym):Sym = {
         if (!s.exists || s.isTrait || s.isClass || s.isModuleOrModuleClass || s.isMethod || s.hasPackageFlag || s.isVal || s.isVar) s
         else {
@@ -83,11 +121,11 @@ package impl {
           if (encodedName == "<root>" || encodedName == "")
             NodeRoot
           else
-            PackagePath(parent, encodedName)
+            PackagePathImpl(parent, encodedName)
         case _ if sym.isModule =>
-          ObjectPath(parent, name)
+          ObjectPathImpl(parent, name)
         case _ if sym.isClass || sym.isTrait =>
-          ClassPath(parent, name)
+          ClassPathImpl(parent, name)
         case _ if sym.isMethod =>
           def paramName(param: Sym) = {
             val fullName = param.info.typeSymbol.fullName
@@ -100,29 +138,29 @@ package impl {
           val paramsString = sym.paramss.map { params => params.map(param => paramName(param)).mkString(";") }.mkString("(", "", ")")
 
           val methodDescriptor = s"${encodedName}$tparamsString$paramsString$suffix"
-          MethodPath(parent, methodDescriptor)
+          MethodPathImpl(parent, methodDescriptor)
         case _ if sym.isVal || sym.isVar =>
-          FieldPath(parent, name)
+          FieldPathImpl(parent, name)
         case _ if !sym.exists =>
           NodeNone
         case _ if sym.isType =>
-          TypePath(parent, name)
+          TypePathImpl(parent, name)
         case o =>
            throw new IllegalStateException(s"$o  ${o.getClass}")
       }
     }
-    private def buildFromString(id: String): ElementPath = {
+    private def buildFromString(id: String): ElementId = {
       if (id.startsWith("S:")) {
         val rest = id.substring(2)
-        SourcePath(rest)
+        SourcePathImpl(rest)
       } else {
         val parentIndex = id.lastIndexOf('/')
-        val parent: ElementPath = {
+        val parent: ElementId = {
           if (parentIndex == -1) NodeRoot else apply(id.substring(0, parentIndex))
         }
         require (parent.canBeParent, s"parent $parent ${parent.getClass} $id")
         if (id.charAt(parentIndex + 2) == ':') {
-          def refine(declaredParent: ElementPath, declaredRest: String): (ElementPath, String) = {
+          def refine(declaredParent: ElementId, declaredRest: String): (ElementId, String) = {
             val lastDot = declaredRest.lastIndexOf('.')
             if (lastDot == -1) (declaredParent, declaredRest)
             else {
@@ -137,19 +175,19 @@ package impl {
           id.charAt(parentIndex + 1) match {
             case c if c == ObjectPath.nodeType =>
               val (realParent, realRest) = refine(parent, rest)
-              ObjectPath(realParent, realRest)
+              ObjectPathImpl(realParent, realRest)
             case c if c == ClassPath.nodeType =>
               val (realParent, realRest) = refine(parent, rest)
-              ClassPath(realParent, realRest)
+              ClassPathImpl(realParent, realRest)
             case c if c == PackagePath.nodeType =>
               val (realParent, realRest) = refine(parent, rest)
-              PackagePath(realParent, realRest)
+              PackagePathImpl(realParent, realRest)
             case c if c == MethodPath.nodeType =>
-              MethodPath(parent, rest)
+              MethodPathImpl(parent, rest)
             case c if c == FieldPath.nodeType =>
-              FieldPath(parent, rest)
-            case c if c == TypePath.nodeType =>
-              TypePath(parent, rest)
+              FieldPathImpl(parent, rest)
+            case c if c == TypePathImpl.nodeType =>
+              TypePathImpl(parent, rest)
             case _ => ???
           }
         } else {
@@ -157,55 +195,49 @@ package impl {
           rest match {
             case "<root>" => NodeRoot
             case "this" =>
-              ThisPath(apply(id.substring(0, parentIndex)))
+              ThisPathImpl(apply(id.substring(0, parentIndex)))
             case _ =>
               throw new IllegalStateException(s"$id $parentIndex $rest")
           }
         }
       }
     }
-    def apply(sym: API): ElementPath = apply(sym.asInstanceOf[Sym])
-    def apply(sym: Sym): ElementPath = fromSymbol.getOrElseUpdate(sym, buildFromSymbol(sym))
-    def applyAndForceField(sym: Sym): ElementPath = {
+    def apply(sym: API): ElementId = apply(sym.asInstanceOf[Sym])
+    def apply(sym: Sym): ElementId = fromSymbol.getOrElseUpdate(sym, buildFromSymbol(sym))
+    def applyAndForceField(sym: Sym): ElementId = {
       apply(sym) match {
-        case f: FieldPath => f
-        case getter: MethodPath =>
+        case f: FieldPathImpl => f
+        case getter: MethodPathImpl =>
             apply(s"${getter.parent.id}/${FieldPath.nodeType}:${sym.encodedName}")
         case _ => ???
       }
     }
-    def apply(id: String): ElementPath = fromString.getOrElseUpdate(id, buildFromString(id))
-    def option(id: String): Option[ElementPath] = option_.getOrElseUpdate(id, Some(buildFromString(id)))
-    def apply(path: Path): ElementPath = apply(s"${SourcePath.nodeType}:$path")
+    def apply(pathType: PathType, name: String): ElementId = {
+      apply(s"${pathType.nodeType}:$name")
+    }
+    def apply(id: String): ElementId = fromString.getOrElseUpdate(id, buildFromString(id))
+    def option(id: String): Option[ElementId] = option_.getOrElseUpdate(id, Some(buildFromString(id)))
+    def apply(path: Path): ElementId = apply(s"${SourcePathImpl.nodeType}:$path")
   }
-  sealed trait ElementPath extends NewElementId {
-    def canBeParent: Boolean
-
-    def parent: ElementPath
-    def isGlobal = parent.isContentGlobal
-    def companionOrSelf: ElementPath = this
-
-    def isContentGlobal: Boolean
-    def appendPath(sb: java.lang.StringBuilder): Unit
-    override def toString = id
-  }
-  object NodeRoot extends ElementPath {
+  private[model] object NodeRoot extends ElementId {
+    override def isRoot: Boolean = true
     override def innerScopeString: String = ???
     override val id: String = "<root>"
     override def parent: ElementPathNode = ???
-    override def canBeParent = true
-    override def isContentGlobal: Boolean = true
-    override def appendPath(sb: java.lang.StringBuilder): Unit = ()
+    override private[model] def canBeParent = true
+    override private[model] def isContentGlobal: Boolean = true
+    override private[model] def appendPath(sb: java.lang.StringBuilder): Unit = ()
   }
-  object NodeNone extends ElementPath {
+  private[model] object NodeNone extends ElementId {
+    override def isNone: Boolean = true
     override def innerScopeString: String = ???
     override val id: String = "<none>"
     override def parent: ElementPathNode = ???
-    override def canBeParent = false
-    override def isContentGlobal: Boolean = true
-    override def appendPath(sb: java.lang.StringBuilder): Unit = ()
+    override private[model] def canBeParent = false
+    override private[model] def isContentGlobal: Boolean = true
+    override private[model] def appendPath(sb: java.lang.StringBuilder): Unit = ()
   }
-  sealed abstract class ElementPathNode(val parent: ElementPath) extends ElementPath {
+  private[model] sealed abstract class ElementPathNode(val parent: ElementId) extends ElementId {
 
     override def id: String = {
       val sb = new java.lang.StringBuilder
@@ -213,14 +245,14 @@ package impl {
       sb.toString
     }
 
-    def appendPath(sb: java.lang.StringBuilder): Unit = {
+    override private[model] def appendPath(sb: java.lang.StringBuilder): Unit = {
       parent.appendPath(sb)
       appendSelf(sb)
     }
 
     def appendSelf(sb: lang.StringBuilder)
   }
-  sealed abstract class BaseElementPathNode(parent: ElementPath) extends ElementPathNode(parent) {
+  private[model] sealed abstract class BaseElementPathNode(parent: ElementId) extends ElementPathNode(parent) {
     override def innerScopeString: String = nodeSourceName
 
     def appendSelf(sb: lang.StringBuilder) = {
@@ -236,10 +268,10 @@ package impl {
     def nodeId: String
     def nodeSourceName: String
   }
-  sealed abstract class FQPathNode(parent: ElementPath, nodeSourceName: String) extends SimpleElementPathNode(parent, nodeSourceName) {
-    override def appendPath(sb: java.lang.StringBuilder): Unit = {
+  private[model] sealed abstract class FQPathNode(parent: ElementId, nodeSourceName: String) extends SimpleElementPathNode(parent, nodeSourceName) {
+    override private[model] def appendPath(sb: java.lang.StringBuilder): Unit = {
       parent match {
-        case p: PackagePath =>
+        case p: PackagePathImpl =>
         case NodeRoot =>
         case _ =>
           parent.appendPath(sb)
@@ -253,7 +285,7 @@ package impl {
       sb.append(nodeType)
       sb.append(':')
       parent match {
-        case p: PackagePath =>
+        case p: PackagePathImpl =>
           p.appendFQ(sb)
           sb.append(nodeId)
         case NodeRoot =>
@@ -262,93 +294,89 @@ package impl {
       }
     }
   }
-  abstract class SimpleElementPathNode(parent: ElementPath, final val nodeSourceName: String)extends BaseElementPathNode(parent) {
+  private[model] abstract class SimpleElementPathNode(parent: ElementId, final val nodeSourceName: String)extends BaseElementPathNode(parent) {
     override final def nodeId: String = nodeSourceName
-    override def canBeParent = true
+    override private[model] def canBeParent = true
   }
-  object ObjectPath{
-    def apply(parent: ElementPath, objectName: String) = new ObjectPath(parent, objectName.intern)
-   val nodeType= 'O'
+  private[model] object ObjectPathImpl {
+    def apply(parent: ElementId, objectName: String) = new ObjectPathImpl(parent, objectName.intern)
   }
-  object ClassPath{
-    def apply(parent: ElementPath, className: String) = new ClassPath(parent, className.intern)
-   val nodeType= 'C'
+  private[model] object ClassPathImpl {
+    def apply(parent: ElementId, className: String) = new ClassPathImpl(parent, className.intern)
   }
-  object PackagePath{
-    def apply(parent: ElementPath, packageName: String) = new PackagePath(parent, packageName.intern)
-   val nodeType= 'P'
+  private[model] object PackagePathImpl {
+    def apply(parent: ElementId, packageName: String) = new PackagePathImpl(parent, packageName.intern)
   }
-  object FieldPath{
-    def apply(parent: ElementPath, fieldName: String) = new FieldPath(parent, fieldName.intern)
-    val nodeType= 'V'
+  private[model] object FieldPathImpl {
+    def apply(parent: ElementId, fieldName: String) = new FieldPathImpl(parent, fieldName.intern)
   }
-  object MethodPath{
-    def apply(parent: ElementPath, methodDescriptor: String) = new MethodPath(parent, methodDescriptor.intern)
-    val nodeType= 'M'
+  private[model] object MethodPathImpl {
+    def apply(parent: ElementId, methodDescriptor: String) = new MethodPathImpl(parent, methodDescriptor.intern)
   }
-  object ThisPath{
-    def apply(parent: ElementPath) = new ThisPath(parent)
+  private[model] object ThisPathImpl{
+    def apply(parent: ElementId) = new ThisPathImpl(parent)
   }
-  object SourcePath{
-    def apply(fileName: String) = new SourcePath(fileName)
+  private[model] object SourcePathImpl{
+    def apply(fileName: String) = new SourcePathImpl(fileName)
     val nodeType= 'S'
   }
-  object TypePath{
-    def apply(parent: ElementPath, typeName: String) = new TypePath(parent, typeName.intern)
+  private[model] object TypePathImpl{
+    def apply(parent: ElementId, typeName: String) = new TypePathImpl(parent, typeName.intern)
     val nodeType= 'T'
   }
-  final class ObjectPath private(parent: ElementPath, objectName: String) extends FQPathNode(parent, objectName) {
+  final class ObjectPathImpl private(parent: ElementId, objectName: String) extends FQPathNode(parent, objectName) {
     override def nodeType = ObjectPath.nodeType
-    override def isContentGlobal: Boolean = parent.isContentGlobal
+    override private[model] def isContentGlobal: Boolean = parent.isContentGlobal
   }
-  final class ClassPath private(parent: ElementPath, className: String) extends FQPathNode(parent, className) {
+  final class ClassPathImpl private(parent: ElementId, className: String) extends FQPathNode(parent, className) {
     override def nodeType = ClassPath.nodeType
-    override def isContentGlobal: Boolean = parent.isContentGlobal
+    override private[model] def isContentGlobal: Boolean = parent.isContentGlobal
   }
-  final class PackagePath private(parent: ElementPath, packageName: String) extends FQPathNode(parent, packageName) {
+  final class PackagePathImpl private(parent: ElementId, packageName: String) extends FQPathNode(parent, packageName) {
     def appendFQ(sb: lang.StringBuilder) :Unit = {
       parent match {
         case NodeRoot =>
-        case p: PackagePath =>
+        case p: PackagePathImpl =>
           p.appendFQ(sb)
+        case _ => ???
       }
       sb.append(packageName)
       sb.append('.')
     }
 
-    assert((parent eq NodeRoot) || parent.isInstanceOf[PackagePath])
+    assert(parent.isRoot || parent.isInstanceOf[PackagePathImpl])
     override def nodeType = PackagePath.nodeType
-    override def isContentGlobal: Boolean = true
+    override private[model] def isContentGlobal: Boolean = true
   }
-  final class FieldPath private(parent: ElementPath, fieldName: String) extends SimpleElementPathNode(parent, fieldName) {
+  final class FieldPathImpl private(parent: ElementId, fieldName: String) extends SimpleElementPathNode(parent, fieldName) {
     override def nodeType = FieldPath.nodeType
-    override def isContentGlobal: Boolean = false
+    override private[model] def isContentGlobal: Boolean = false
   }
-  final class MethodPath private(parent: ElementPath, methodDescriptor: String) extends BaseElementPathNode(parent) {
+  private[impl] final class MethodPathImpl private(parent: ElementId, methodDescriptor: String) extends BaseElementPathNode(parent) {
     override def nodeType = MethodPath.nodeType
-    override def isContentGlobal: Boolean = false
+    override private[model] def isContentGlobal: Boolean = false
     override def nodeId: String = methodDescriptor
     override def nodeSourceName: String = nodeId.substring(0, nodeId.indexOf('('))
-    override def canBeParent = true
+    override private[model] def canBeParent = true
   }
-  final class ThisPath private(parent: ElementPath) extends ElementPathNode(parent) {
-    override def isContentGlobal: Boolean = parent.isContentGlobal
+  private[impl] final class ThisPathImpl private(parent: ElementId) extends ElementPathNode(parent) {
+    override private[model] def isContentGlobal: Boolean = parent.isContentGlobal
 
     override def appendSelf(sb: lang.StringBuilder): Unit = sb.append("this")
     override def innerScopeString: String = "this"
-    override def canBeParent = false
+    override private[model] def canBeParent = false
   }
-  final class SourcePath private(fileName: String) extends ElementPathNode(NodeRoot) {
-    override def isContentGlobal: Boolean = true
+  private[impl] final class SourcePathImpl private(fileName: String) extends ElementPathNode(NodeRoot) {
+    override private[model] def isContentGlobal: Boolean = true
 
-    override def appendSelf(sb: lang.StringBuilder): Unit = sb.append(s"${SourcePath.nodeType}:$fileName")
+    override def appendSelf(sb: lang.StringBuilder): Unit = sb.append(s"${SourcePathImpl.nodeType}:$fileName")
     override def innerScopeString: String = ???
-    override def canBeParent = false
+    override private[model] def canBeParent = false
   }
-  final class TypePath private(parent: ElementPath, typeName: String) extends ElementPathNode(parent) {
-    override def isContentGlobal: Boolean = false
-    override def appendSelf(sb: lang.StringBuilder): Unit = sb.append(s"${TypePath.nodeType}:$typeName")
-    override def canBeParent: Boolean = false
+  private[impl] final class TypePathImpl private(parent: ElementId, typeName: String) extends ElementPathNode(parent) {
+    override private[model] def isContentGlobal: Boolean = false
+    override def appendSelf(sb: lang.StringBuilder): Unit = sb.append(s"${TypePathImpl.nodeType}:$typeName")
+    override private[model] def canBeParent: Boolean = false
     override def innerScopeString: String = ???
   }
 
@@ -360,7 +388,7 @@ object XX extends App {
   def getType[T: ru.TypeTag](obj: T): ru.Symbol = ru.typeOf[T].typeSymbol
   def getMethod[T: ru.TypeTag](obj: T, name:String): ru.Symbol = ru.typeOf[T].decls.head
 
-  var res: ElementPath = impl.PathNodes(getType(classOf[App]))
+  var res: ElementId = impl.PathNodes(getType(classOf[App]))
   println(res.toString)
   res = impl.PathNodes(getMethod(classOf[XX], "foo"))
   println(res.toString)

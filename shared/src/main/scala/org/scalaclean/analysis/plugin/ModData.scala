@@ -1,8 +1,7 @@
 package org.scalaclean.analysis.plugin
 
 import org.scalaclean.analysis.{FlagHelper, StandardExtensionData, StandardExtensionDescriptor}
-import scalaclean.model.NewElementId
-import scalaclean.model.impl.{NewElementIdImpl, PathNodes}
+import scalaclean.model.ElementId
 
 object ModData extends StandardExtensionDescriptor[ModData] {
 
@@ -29,7 +28,7 @@ case class ModData(posOffsetStart: Int, posOffsetEnd: Int, flagBit: Long) extend
 object VisibilityData extends StandardExtensionDescriptor[VisibilityData] {
   override protected def buildImpl(posOffsetStart: Int, posOffsetEnd: Int, otherParams: String*): VisibilityData = {
     assert(otherParams.length == 2)
-    val id = PathNodes.option(otherParams(1))
+    val id = ElementId.option(otherParams(1))
     new VisibilityData(posOffsetStart, posOffsetEnd, otherParams(0), id)
   }
   val PUBLIC = VisibilityData(0,0,"", None)
@@ -42,7 +41,7 @@ object VisibilityData extends StandardExtensionDescriptor[VisibilityData] {
   * @param posOffsetStart the start offset from the element with this visibility
   * @param posOffsetEnd   the end offset from the element with this visibility
   */
-case class VisibilityData(posOffsetStart: Int, posOffsetEnd: Int, group: String, scope: Option[NewElementId]) extends StandardExtensionData {
+case class VisibilityData(posOffsetStart: Int, posOffsetEnd: Int, group: String, scope: Option[ElementId]) extends StandardExtensionData {
   require(group == "private" || group == "protected" || group == "", group)
   require(!scope.contains(","))
 

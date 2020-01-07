@@ -2,7 +2,8 @@ package org.scalaclean.analysis
 
 import java.util.concurrent.atomic.AtomicInteger
 
-import scalaclean.model.impl.{FieldPath, PathNodes}
+import scalaclean.model.ElementId
+import scalaclean.model.impl.{FieldPathImpl}
 
 import scala.collection.mutable
 import scala.meta.internal.semanticdb.scalac.SemanticdbOps
@@ -85,7 +86,7 @@ trait ModelSymbolBuilder extends SemanticdbOps {
   }
   def asMSymbolForceField(gSym: global.Symbol): ModelCommon = {
     val unforced = asMSymbolX(gSym, false)
-    if (unforced.newId.isInstanceOf[FieldPath]) unforced
+    if (unforced.elementId.isInstanceOf[FieldPathImpl]) unforced
     else asMSymbolX(gSym, true)
   }
   private def asMSymbolX(gSym: global.Symbol, forceField:Boolean): ModelCommon = {
@@ -100,7 +101,7 @@ trait ModelSymbolBuilder extends SemanticdbOps {
       else
         "-"
 
-      val newName = if (forceField) PathNodes.applyAndForceField(gSym) else PathNodes(gSym) //getNewName(gSym) + specialSuffix
+      val newName = if (forceField) ElementId.applyAndForceField(gSym) else ElementId(gSym) //getNewName(gSym) + specialSuffix
 
       ModelCommon(isGlobal, newName, sourceFile, startPos, endPos, focusPos, gSym.nameString)
 
