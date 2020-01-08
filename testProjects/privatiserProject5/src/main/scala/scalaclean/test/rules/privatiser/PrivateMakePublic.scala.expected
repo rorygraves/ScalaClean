@@ -32,11 +32,11 @@ package x2.scalaclean.test.rules.privatiser.MakePublic {
   object Other3 {
     //inner refs are marked private[MakePublic] as narrower than enclosing
     val myVal = 1
-    /* *** SCALA CLEAN can't detect usage */var myVar = 1
-    /* *** SCALA CLEAN can't detect usage */def myDef = 1
-    /* *** SCALA CLEAN can't detect usage */object myObj
-    /* *** SCALA CLEAN can't detect usage */trait myTrait
-    /* *** SCALA CLEAN can't detect usage */class myClass
+    private[MakePublic] var myVar = 1
+    private[MakePublic] def myDef = 1
+    private[MakePublic] object myObj
+    private[MakePublic] trait myTrait
+    private[MakePublic] class myClass
   }
 
   object Access{
@@ -45,7 +45,7 @@ package x2.scalaclean.test.rules.privatiser.MakePublic {
       println(myVal + myVar + myDef + myObj.toString + (new myClass + (new myTrait {}).toString))
     }
     def access3() = {
-      import x2.scalaclean.test.rules.privatiser.MakePublic.Other2._
+      import x2.scalaclean.test.rules.privatiser.MakePublic.Other3._
       println(myVal + myVar + myDef + myObj.toString + (new myClass + (new myTrait {}).toString))
     }
   }

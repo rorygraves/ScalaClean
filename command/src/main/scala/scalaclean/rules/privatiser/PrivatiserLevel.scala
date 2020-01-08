@@ -1,11 +1,10 @@
 package scalaclean.rules.privatiser
 
-import scalaclean.model.{Mark, ElementId, ModelElement}
+import org.scalaclean.analysis.plugin.VisibilityData
+import scalaclean.model.{ElementId, Mark, ModelElement}
 import scalaclean.util.SymbolUtils
 
 private[privatiser] sealed trait PrivatiserLevel extends Mark {
-  def shouldReplace(aModel: ModelElement): Boolean
-
   def reason: String
 
   def asText(context: ModelElement): Option[String]
@@ -14,16 +13,12 @@ private[privatiser] sealed trait PrivatiserLevel extends Mark {
 }
 
 private[privatiser] case class Public(reason: String) extends PrivatiserLevel {
-  override def shouldReplace(aModel: ModelElement) = true
-
   override def widen(level: PrivatiserLevel): PrivatiserLevel = this
 
   override def asText(context: ModelElement): Option[String] = None
 }
 
 private[privatiser] case class NoChange(reason: String) extends PrivatiserLevel {
-  override def shouldReplace(aModel: ModelElement) = false
-
   override def widen(level: PrivatiserLevel): PrivatiserLevel = this
 
   override def asText(context: ModelElement): Option[String] = None
@@ -31,9 +26,7 @@ private[privatiser] case class NoChange(reason: String) extends PrivatiserLevel 
 
 private[privatiser] case object Undefined extends PrivatiserLevel {
 
-  override def reason: String = "Initial"
-
-  override def shouldReplace(aModel: ModelElement) = false
+  override def reason = "Initial"
 
   override def widen(level: PrivatiserLevel): PrivatiserLevel = level
 
@@ -41,22 +34,23 @@ private[privatiser] case object Undefined extends PrivatiserLevel {
 }
 
 private[privatiser] object AccessScope {
-  val None: AccessScope = AccessScope(ElementId.None, "")
+  val None: AccessScope = AccessScope(ElementId.None, Set.empty)
 }
 
-private[privatiser] final case class AccessScope(elementId: ElementId, reason: String) {
-  def print(name: String): String = s"$name $elementId $reason"
+private[privatiser] final case class AccessScope(elementId: ElementId, reasons: Set[String]) {
+  def print(name: String): String = s"$name $elementId $sortedReasons"
+  def sortedReasons = reasons.toList.sorted
 
   def widen(other: AccessScope): AccessScope =
     if (elementId.isNone) other
     else if (other.elementId.isNone) this
-    else AccessScope(SymbolUtils.findCommonParent(elementId, other.elementId), s"$reason AND ${other.reason}")
+    else AccessScope(SymbolUtils.findCommonParent(elementId, other.elementId), reasons ++ other.reasons)
 }
 
 private[privatiser] object Scoped {
-  def Private(scope: ElementId, reason: String) = Scoped(AccessScope(scope, reason), AccessScope.None, false)
+  def Private(scope: ElementId, reason: String) = Scoped(AccessScope(scope, Set(reason)), AccessScope.None, false)
 
-  def Protected(scope: ElementId, reason: String, forceProtected: Boolean) = Scoped(AccessScope.None, AccessScope(scope, reason), forceProtected)
+  def Protected(scope: ElementId, reason: String, forceProtected: Boolean) = Scoped(AccessScope.None, AccessScope(scope, Set(reason)), forceProtected)
 }
 
 private[privatiser] final case class Scoped(privateScope: AccessScope, protectedScope: AccessScope, forceProtected: Boolean) extends PrivatiserLevel {
@@ -72,27 +66,46 @@ private[privatiser] final case class Scoped(privateScope: AccessScope, protected
 
   def scopeOrDefault(default: ElementId): ElementId = if (privateScope.elementId.isNone) default else privateScope.elementId
 
-  override def asText(context: ModelElement): Option[String] = {
-    val name = if (isProtected) "protected" else "private"
-    context.enclosing.headOption match {
-      case Some(enclosing) if scopeOrDefault(enclosing.modelElementId) == enclosing.modelElementId => Some(name)
+  def shouldChange(modelElement: ModelElement): Boolean = {
+    val currentVis = modelElement.extensionOfType[VisibilityData]
+    val (existingScope, explicitScope, existingProtected) =
+      currentVis match {
+        case None => (ElementId.Root, false, false)
+        case Some(VisibilityData(_, _, dec, aScope)) => (aScope.getOrElse(modelElement.modelElementId.parent), aScope.isDefined, dec == "protected")
+      }
+    val tighterScope = scope.hasTransitiveParent(existingScope) || scope.companionOrSelf.hasTransitiveParent(existingScope)
+    val sameScope = scope == existingScope || scope.companionOrSelf == existingScope
+    val isExplicitAndDoesntNeedToBe = explicitScope &&
+      (existingScope ==  modelElement.modelElementId.parent || existingScope.companionOrSelf ==  modelElement.modelElementId.parent)
+    val moveToPrivate = existingProtected && !isProtected
 
-      case _ =>
-        if (privateScope.elementId.isRoot)
-          Some(name)
-        else
-          Some(s"$name[${privateScope.elementId.innerScopeString}]")
-    }
+    tighterScope || (sameScope && moveToPrivate) || (isExplicitAndDoesntNeedToBe && isProtected == existingProtected)
   }
 
-  override def shouldReplace(aModel: ModelElement) = true
+  override def asText(context: ModelElement): Option[String] = {
+    if (!shouldChange(context))
+      None
+    else {
+      val name = if (isProtected) "protected" else "private"
+      context.enclosing.headOption match {
+        case Some(enclosing) if scopeOrDefault(enclosing.modelElementId) == enclosing.modelElementId =>
+          Some(name)
+
+        case _ =>
+          if (privateScope.elementId.isRoot)
+            Some(name)
+          else
+            Some(s"$name[${privateScope.elementId.innerScopeString}]")
+      }
+    }
+  }
 
   override def toString = s"Scoped[${privateScope.print("private")} -- ${protectedScope.print("protected")}}"
 
   override def reason: String = {
-    if (privateScope.elementId.isNone) protectedScope.reason
-    else if (protectedScope.elementId.isNone) privateScope.reason
-    else s"private due to (${privateScope.reason}), protected access from (${protectedScope.reason})"
+    if (privateScope.elementId.isNone) protectedScope.sortedReasons.toString
+    else if (protectedScope.elementId.isNone) privateScope.sortedReasons.toString
+    else s"private due to (${privateScope.sortedReasons}), protected access from (${protectedScope.sortedReasons})"
   }
 
   def widen(level: PrivatiserLevel): PrivatiserLevel = level match {
@@ -101,7 +114,7 @@ private[privatiser] final case class Scoped(privateScope: AccessScope, protected
     case Undefined => this
     case other: Scoped =>
       val privateWidened = this.privateScope.widen(other.privateScope)
-      if (privateWidened.elementId.isRoot) Public(privateWidened.reason)
+      if (privateWidened.elementId.isRoot) Public(privateWidened.sortedReasons.toString)
       else Scoped(privateWidened, protectedScope.widen(other.protectedScope), forceProtected || other.forceProtected)
   }
 }

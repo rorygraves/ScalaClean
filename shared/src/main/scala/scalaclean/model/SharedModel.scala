@@ -4,6 +4,7 @@ import java.nio.file.Path
 
 import scalaclean.model.impl.PathNodes
 
+import scala.annotation.tailrec
 import scala.reflect.ClassTag
 
 
@@ -30,9 +31,18 @@ object ElementId {
 
 }
 abstract sealed class ElementId {
+  @tailrec final def isOrHasParent(aParent: ElementId): Boolean = {
+    (this eq aParent) || (!isNone && !isRoot && parent.isOrHasParent(aParent))
+  }
+  def hasTransitiveParent(aParent: ElementId) = {
+    (!isNone && !isRoot && parent.isOrHasParent(aParent))
+  }
+
   def innerScopeString: String
+
   def id: String
   def debugValue: String = id
+  def isThis: Boolean = false
   def isNone: Boolean = false
   def isRoot: Boolean = false
 
@@ -203,7 +213,11 @@ package impl {
       }
     }
     def apply(sym: API): ElementId = apply(sym.asInstanceOf[Sym])
-    def apply(sym: Sym): ElementId = fromSymbol.getOrElseUpdate(sym, buildFromSymbol(sym))
+    def apply(sym: Sym): ElementId = fromSymbol.getOrElseUpdate(sym, {
+      val raw = buildFromSymbol(sym)
+      val res = fromString.getOrElseUpdate(raw.id, raw)
+      res
+    })
     def applyAndForceField(sym: Sym): ElementId = {
       apply(sym) match {
         case f: FieldPathImpl => f
@@ -215,8 +229,13 @@ package impl {
     def apply(pathType: PathType, name: String): ElementId = {
       apply(s"${pathType.nodeType}:$name")
     }
-    def apply(id: String): ElementId = fromString.getOrElseUpdate(id, buildFromString(id))
-    def option(id: String): Option[ElementId] = option_.getOrElseUpdate(id, Some(buildFromString(id)))
+
+    def apply(id: String): ElementId = fromString.getOrElseUpdate(id, {
+      val res = buildFromString(id)
+      assert (res.id == id, s"/n${res.id}/n$id")
+      res
+    })
+    def option(id: String): Option[ElementId] = option_.getOrElseUpdate(id, Some(apply(id)))
     def apply(path: Path): ElementId = apply(s"${SourcePathImpl.nodeType}:$path")
   }
   private[model] object NodeRoot extends ElementId {
@@ -287,11 +306,9 @@ package impl {
       parent match {
         case p: PackagePathImpl =>
           p.appendFQ(sb)
-          sb.append(nodeId)
-        case NodeRoot =>
         case _ =>
-          sb.append(nodeId)
       }
+      sb.append(nodeId)
     }
   }
   private[model] abstract class SimpleElementPathNode(parent: ElementId, final val nodeSourceName: String)extends BaseElementPathNode(parent) {
@@ -327,10 +344,21 @@ package impl {
   final class ObjectPathImpl private(parent: ElementId, objectName: String) extends FQPathNode(parent, objectName) {
     override def nodeType = ObjectPath.nodeType
     override private[model] def isContentGlobal: Boolean = parent.isContentGlobal
+    override lazy val companionOrSelf = {
+      val id = new StringBuilder(this.id)
+      id.setCharAt(id.lastIndexOf("/")+1,ClassPath.nodeType)
+      PathNodes(id.toString())
+    }
   }
   final class ClassPathImpl private(parent: ElementId, className: String) extends FQPathNode(parent, className) {
+    val creation = new Exception
     override def nodeType = ClassPath.nodeType
     override private[model] def isContentGlobal: Boolean = parent.isContentGlobal
+    override lazy val companionOrSelf = {
+      val id = new StringBuilder(this.id)
+      id.setCharAt(id.lastIndexOf("/")+1,ObjectPath.nodeType)
+      PathNodes(id.toString())
+    }
   }
   final class PackagePathImpl private(parent: ElementId, packageName: String) extends FQPathNode(parent, packageName) {
     def appendFQ(sb: lang.StringBuilder) :Unit = {
@@ -360,6 +388,8 @@ package impl {
     override private[model] def canBeParent = true
   }
   private[impl] final class ThisPathImpl private(parent: ElementId) extends ElementPathNode(parent) {
+    override def isThis: Boolean = true
+
     override private[model] def isContentGlobal: Boolean = parent.isContentGlobal
 
     override def appendSelf(sb: lang.StringBuilder): Unit = sb.append("/this")

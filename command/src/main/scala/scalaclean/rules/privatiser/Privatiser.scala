@@ -84,7 +84,7 @@ class Privatiser(model: ProjectModel, debug: Boolean) extends AbstractRule("Priv
       val access = if (isFromChild)
         Scoped.Protected(ref.modelElementId, s"accessed from $ref", forceProtected = false)
       else
-        Scoped.Private(ref.modelElementId, s"accessed from $ref").widen(Scoped.Private(element.modelElementId, s"accessed from $ref"))
+        Scoped.Private(ref.modelElementId, s"accessed from $ref")
       res = res.widen(access)
     }
     //we must be visible to anything that overrides us
@@ -118,8 +118,7 @@ class Privatiser(model: ProjectModel, debug: Boolean) extends AbstractRule("Priv
       //            else Public(reason)
       //          res = res.widen(parentVis)
     }
-
-    element.colour = res
+    res = res.widen(Scoped.Private(ElementId.childThis(enclosing.modelElementId), s"at least self"))
     res
   }
 
@@ -196,11 +195,12 @@ class Privatiser(model: ProjectModel, debug: Boolean) extends AbstractRule("Priv
 //
       override protected def visitElement(modelElement: ModelElement): Boolean = {
       // TODO LegacyElement
-          if(true) {
+        if(true) {
 //        if (modelElement.legacySymbol.isGlobal) {
 
           def changeVisibility(visText: String) = {
             val currentVis = modelElement.extensionOfType[VisibilityData].getOrElse(VisibilityData.PUBLIC)
+
             val expectedTokens: Seq[String] = {
               currentVis match {
                 case VisibilityData(start, end, "", None) => List()
@@ -208,7 +208,6 @@ class Privatiser(model: ProjectModel, debug: Boolean) extends AbstractRule("Priv
                 case VisibilityData(start, end, vis, Some(scope)) => List(vis, "[", scope.innerScopeString, "]")
               }
             }
-            val targetVis = modelElement.colour.asText(modelElement)
             val beginIndex = tokens.indexWhere(t => t.start == modelElement.rawStart)
             assert(beginIndex != -1)
 
@@ -249,8 +248,7 @@ class Privatiser(model: ProjectModel, debug: Boolean) extends AbstractRule("Priv
             case fieldModel: FieldModel if fieldModel.declaredIn.nonEmpty =>
             case accessorModel: AccessorModel if accessorModel.field.isDefined =>
             case _ =>
-              val targetVis = modelElement.colour.asText(modelElement)
-              targetVis foreach { v =>
+              modelElement.colour.asText(modelElement) foreach { v =>
                 changeVisibility(v)
               }
               elementsObserved += 1

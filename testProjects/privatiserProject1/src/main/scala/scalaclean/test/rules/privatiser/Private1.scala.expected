@@ -20,8 +20,7 @@ object Private1 extends App {
   private val l = 1
   private def m = 2
   private var n = 3
-  private[this] def o = 3
+  protected[this] def o = 3
   l+m+n+o
-
 }
 

@@ -42,7 +42,7 @@ package x2.scalaclean.test.rules.privatiser.MakePublic {
       println(myVal + myVar + myDef + myObj.toString + (new myClass + (new myTrait {}).toString))
     }
     def access3() = {
-      import x2.scalaclean.test.rules.privatiser.MakePublic.Other2._
+      import x2.scalaclean.test.rules.privatiser.MakePublic.Other3._
       println(myVal + myVar + myDef + myObj.toString + (new myClass + (new myTrait {}).toString))
     }
   }
