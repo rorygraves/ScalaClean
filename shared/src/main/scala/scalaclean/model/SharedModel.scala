@@ -31,12 +31,6 @@ object ElementId {
 
 }
 abstract sealed class ElementId {
-  @tailrec final def isOrHasParent(aParent: ElementId): Boolean = {
-    (this eq aParent) || (!isNone && !isRoot && parent.isOrHasParent(aParent))
-  }
-  def hasTransitiveParent(aParent: ElementId) = {
-    (!isNone && !isRoot && parent.isOrHasParent(aParent))
-  }
 
   def innerScopeString: String
 

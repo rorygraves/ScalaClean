@@ -25,7 +25,7 @@ object PrivateInnerVarValPatterns extends App {
     print(Inner.b2)
   }
 
-  private[this] object Inner {
+  private object Inner {
     // used in Inner
     private val (a1,b1,c1) = (1,2,3)
     println(this.b1)
