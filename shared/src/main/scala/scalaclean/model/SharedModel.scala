@@ -39,6 +39,7 @@ abstract sealed class ElementId {
   def isThis: Boolean = false
   def isNone: Boolean = false
   def isRoot: Boolean = false
+  def isLocal: Boolean
 
   def parent: ElementId
 
@@ -233,6 +234,7 @@ package impl {
     def apply(path: Path): ElementId = apply(s"${SourcePathImpl.nodeType}:$path")
   }
   private[model] object NodeRoot extends ElementId {
+    override def isLocal: Boolean = false
     override def isRoot: Boolean = true
     override def innerScopeString: String = ???
     override val id: String = "<root>"
@@ -242,6 +244,7 @@ package impl {
     override private[model] def appendPath(sb: java.lang.StringBuilder): Unit = ()
   }
   private[model] object NodeNone extends ElementId {
+    override def isLocal: Boolean = false
     override def isNone: Boolean = true
     override def innerScopeString: String = ???
     override val id: String = "<none>"
@@ -306,6 +309,7 @@ package impl {
     }
   }
   private[model] abstract class SimpleElementPathNode(parent: ElementId, final val nodeSourceName: String)extends BaseElementPathNode(parent) {
+    override def isLocal: Boolean = nodeSourceName.contains("##")
     override final def nodeId: String = nodeSourceName
     override private[model] def canBeParent = true
   }
@@ -375,6 +379,7 @@ package impl {
     override private[model] def isContentGlobal: Boolean = false
   }
   private[impl] final class MethodPathImpl private(parent: ElementId, methodDescriptor: String) extends BaseElementPathNode(parent) {
+    override def isLocal: Boolean = nodeSourceName.contains("##")
     override def nodeType = MethodPath.nodeType
     override private[model] def isContentGlobal: Boolean = false
     override def nodeId: String = methodDescriptor
@@ -382,6 +387,7 @@ package impl {
     override private[model] def canBeParent = true
   }
   private[impl] final class ThisPathImpl private(parent: ElementId) extends ElementPathNode(parent) {
+    override def isLocal: Boolean = false
     override def isThis: Boolean = true
 
     override private[model] def isContentGlobal: Boolean = parent.isContentGlobal
@@ -391,6 +397,7 @@ package impl {
     override private[model] def canBeParent = false
   }
   private[impl] final class SourcePathImpl private(fileName: String) extends ElementPathNode(NodeRoot) {
+    override def isLocal: Boolean = false
     override private[model] def isContentGlobal: Boolean = true
 
     override def appendSelf(sb: lang.StringBuilder): Unit = sb.append(s"${SourcePathImpl.nodeType}:$fileName")
@@ -398,6 +405,7 @@ package impl {
     override private[model] def canBeParent = false
   }
   private[impl] final class TypePathImpl private(parent: ElementId, typeName: String) extends ElementPathNode(parent) {
+    override def isLocal: Boolean = false
     override private[model] def isContentGlobal: Boolean = false
     override def appendSelf(sb: lang.StringBuilder): Unit = sb.append(s"${TypePathImpl.nodeType}:$typeName")
     override private[model] def canBeParent: Boolean = false

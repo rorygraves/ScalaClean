@@ -503,7 +503,7 @@ class ScalaCompilerPluginComponent(
           val field = currentScope match {
             case cls: ClassLike =>
               val getter = symbol.getterIn(symbol.owner)
-              val setter = symbol.setterIn(symbol.owner)
+              val setter = if (isVar) symbol.setterIn(symbol.owner) else NoSymbol
               val mSymbol = asMSymbolForceField(symbol)
               val field = if (isVar) {
                 //                assert(setter != NoSymbol, s"no setter $mSymbol at ${valDef.pos.line}:${valDef.pos.column}")
@@ -519,27 +519,46 @@ class ScalaCompilerPluginComponent(
                 ModelVal(valDef, mSymbol, symbol.isDeferred, valDef.symbol.isLazy, symbol.isParameter, fields)
               }
               cls.addPostProcess(() => {
+                val getterSym = if (getter == NoSymbol) null else asMSymbol(getter)
+                val setterSym = if (setter == NoSymbol) null else asMSymbol(setter)
                 var added = false
-                if (getter != NoSymbol && !cls.children.contains(asMSymbol(getter))) {
+                if (getter != NoSymbol && !cls.children.contains(getterSym)) {
                   scopeLog(s"add getter for field $field as is wasn't added directly $getter")
                   added = true
                   enterScope(ModelGetterMethod(DefDef(getter, new Modifiers(getter.flags, newTermName(""), Nil), global.EmptyTree),
-                    asMSymbol(getter), false, false)) { method =>
+                    getterSym, false, false)) { method =>
 
                     method.addGetterFor(field.common)
+                    method.addedAccessor = true
                     addMethodOverrides(method, getter)
                   }
                 }
-                if (isVar && setter != NoSymbol && !cls.children.contains(asMSymbol(setter))) {
+                if (isVar && setter != NoSymbol && !cls.children.contains(setterSym)) {
                   scopeLog(s"add setter for field $field as is wasn't added directly $setter")
                   added = true
                   enterScope(ModelSetterMethod(DefDef(setter, new Modifiers(setter.flags, newTermName(""), Nil), global.EmptyTree),
                     asMSymbol(setter), false, false)) { method =>
 
                     method.addSetterFor(field.common)
+                    method.addedAccessor = true
                     addMethodOverrides(method, setter)
                   }
                 }
+                //when children could not find the field - e.g. a trait var
+                cls.children foreach {
+                  case (c , getter: ModelGetterMethod)  if c == getterSym =>
+                    if (!getter.addedAccessor) {
+                      getter.addGetterFor(field.common)
+                      getter.addedAccessor = true
+                    }
+                  case (c , setter: ModelSetterMethod)  if c == setterSym =>
+                    if (!setter.addedAccessor) {
+                      setter.addSetterFor(field.common)
+                      setter.addedAccessor = true
+                    }
+                  case _ =>
+                }
+
                 if (added)
                   scopeLog(s"end accessors for field $field")
               })
@@ -606,16 +625,20 @@ class ScalaCompilerPluginComponent(
               // this simplified the model navigation
               super.traverse(tree)
             case _ if symbol.isAccessor && symbol.isGetter =>
-              val field = asMSymbol(symbol.accessedOrSelf)
               enterScope(ModelGetterMethod(defdef, mSymbol, declTypeDefined, symbol.isDeferred)) { method =>
                 traverseMethod(method)
-                method.addGetterFor(field)
+                if (symbol.accessedOrSelf != symbol) {
+                  method.addGetterFor(asMSymbol(symbol.accessedOrSelf))
+                  method.addedAccessor = true
+                }
               }
             case _ if symbol.isAccessor && symbol.isSetter =>
-              val field = asMSymbol(symbol.accessedOrSelf)
               enterScope(ModelSetterMethod(defdef, mSymbol, declTypeDefined, symbol.isDeferred)) { method =>
                 traverseMethod(method)
-                method.addSetterFor(field)
+                if (symbol.accessedOrSelf != symbol) {
+                  method.addSetterFor( asMSymbol(symbol.accessedOrSelf))
+                  method.addedAccessor = true
+                }
               }
 
             case _ if symbol.isSynthetic =>

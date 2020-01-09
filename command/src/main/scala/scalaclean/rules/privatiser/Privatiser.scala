@@ -30,15 +30,29 @@ class Privatiser(model: ProjectModel, debug: Boolean) extends AbstractRule("Priv
       println(s"$ele  colour: ${ele.colour}"))
   }
 
+  def inMethod(element: ModelElement): Boolean = {
+    def isOrInMethod(element: ModelElement): Boolean = {
+      element.isInstanceOf[MethodModel] ||
+        element.enclosing.exists(isOrInMethod)
+    }
+
+    element.enclosing.exists(isOrInMethod)
+  }
+
   def localLevel(element: ModelElement): PrivatiserLevel = {
     if (element.colour == Undefined) {
       val colour = element match {
+        case x if x.modelElementId.isLocal => NoChange("its local")
+        case x if !x.existsInSource => NoChange("no source")
+        case s: SourceModel => NoChange("source")
+        case x if inMethod(x) => NoChange("in a method and not visible")
         case fieldsModel: FieldsModel => calcFieldsLevel(fieldsModel)
         case fieldModel: FieldModel if fieldModel.inCompoundFieldDeclaration => localLevel(fieldModel.declaredIn.get)
         case getterMethodModel: GetterMethodModel => localLevel(getterMethodModel.field.get)
         case setterMethodModel: SetterMethodModel => localLevel(setterMethodModel.field.get)
         case fieldModel: FieldModel => calcFieldLevel(fieldModel)
-        case _ => calcSingleLevel(element)
+        case _ =>
+          calcSingleLevel(element)
       }
       element.colour = colour
     }
@@ -67,7 +81,6 @@ class Privatiser(model: ProjectModel, debug: Boolean) extends AbstractRule("Priv
     })
 
     val enclosing = element.classOrEnclosing
-//    val companion = enclosing.companionOrSelf
 
     //is it defined by the signature
     var res: PrivatiserLevel = element match {
@@ -142,61 +155,59 @@ class Privatiser(model: ProjectModel, debug: Boolean) extends AbstractRule("Priv
     object visitor extends ElementTreeVisitor(syntacticDocument) {
 
       // TODO CURRENT UNUSED
-//      def existingAccess(mods: Seq[Mod]): (Option[Mod], PrivatiserLevel) = {
-//        val res: Option[(Option[Mod], PrivatiserLevel)] = mods.collectFirst {
-//          case s@Mod.Private(scope) => (Some(s), Scoped.Private(OldElementId.fromTree(scope), "existing"))
-//          case s@Mod.Protected(scope) => (Some(s), Scoped.Protected(OldElementId.fromTree(scope), "existing", forceProtected = false))
-//        }
-//        res.getOrElse((None, Public("existing")))
-//      }
-//
-//      private def changeAccessModifier(
-//                                        level: PrivatiserLevel, mods: Seq[Mod], defn: Stat, aModel: ModelElement, forcePosition: Option[Token]): Boolean = {
-//        val (mod, existing) = existingAccess(mods)
-//        val proposed = level.asText(aModel)
-//
-//        def buildInsertion(toReplace: String): Boolean = {
-//          forcePosition match {
-//            case Some(token) =>
-//              lb.append(SCPatch(token.start, token.start, s"$toReplace "))
-//              true
-//            case None =>
-//              val tokens = defn.tokens
-//              tokens.find {
-//                _.start == aModel.rawStart
-//              } match {
-//                case Some(token) =>
-//                  lb.append(SCPatch(token.start, token.start, s"$toReplace "))
-//                  true
-//                case None =>
-//                  //probably quite worrying
-//                  lb.append(SCPatch(defn.pos.start, defn.pos.start, s"$toReplace "))
-//                  true
-//              }
-//          }
-//        }
-//
-//        val structuredPatch: Boolean =
-//          (mod, level.shouldReplace(aModel), proposed) match {
-//            case (_, _, None) => false
-//            case (None, _, Some(toReplace)) =>
-//              buildInsertion(toReplace)
-//            case (_, false, Some(toReplace)) =>
-//              buildInsertion(toReplace)
-//            case (Some(existing), true, Some(toReplace)) =>
-//              lb.append(SCPatch(existing.pos.start, existing.pos.end, s"$toReplace"))
-//              true
-//          }
-//        val updatedMarker = level.marker2(defn).map { v => lb.append(v); true }.getOrElse(false)
-//
-//        structuredPatch || updatedMarker
-//
-//      }
-//
+      //      def existingAccess(mods: Seq[Mod]): (Option[Mod], PrivatiserLevel) = {
+      //        val res: Option[(Option[Mod], PrivatiserLevel)] = mods.collectFirst {
+      //          case s@Mod.Private(scope) => (Some(s), Scoped.Private(OldElementId.fromTree(scope), "existing"))
+      //          case s@Mod.Protected(scope) => (Some(s), Scoped.Protected(OldElementId.fromTree(scope), "existing", forceProtected = false))
+      //        }
+      //        res.getOrElse((None, Public("existing")))
+      //      }
+      //
+      //      private def changeAccessModifier(
+      //                                        level: PrivatiserLevel, mods: Seq[Mod], defn: Stat, aModel: ModelElement, forcePosition: Option[Token]): Boolean = {
+      //        val (mod, existing) = existingAccess(mods)
+      //        val proposed = level.asText(aModel)
+      //
+      //        def buildInsertion(toReplace: String): Boolean = {
+      //          forcePosition match {
+      //            case Some(token) =>
+      //              lb.append(SCPatch(token.start, token.start, s"$toReplace "))
+      //              true
+      //            case None =>
+      //              val tokens = defn.tokens
+      //              tokens.find {
+      //                _.start == aModel.rawStart
+      //              } match {
+      //                case Some(token) =>
+      //                  lb.append(SCPatch(token.start, token.start, s"$toReplace "))
+      //                  true
+      //                case None =>
+      //                  //probably quite worrying
+      //                  lb.append(SCPatch(defn.pos.start, defn.pos.start, s"$toReplace "))
+      //                  true
+      //              }
+      //          }
+      //        }
+      //
+      //        val structuredPatch: Boolean =
+      //          (mod, level.shouldReplace(aModel), proposed) match {
+      //            case (_, _, None) => false
+      //            case (None, _, Some(toReplace)) =>
+      //              buildInsertion(toReplace)
+      //            case (_, false, Some(toReplace)) =>
+      //              buildInsertion(toReplace)
+      //            case (Some(existing), true, Some(toReplace)) =>
+      //              lb.append(SCPatch(existing.pos.start, existing.pos.end, s"$toReplace"))
+      //              true
+      //          }
+      //        val updatedMarker = level.marker2(defn).map { v => lb.append(v); true }.getOrElse(false)
+      //
+      //        structuredPatch || updatedMarker
+      //
+      //      }
+      //
       override protected def visitElement(modelElement: ModelElement): Boolean = {
-      // TODO LegacyElement
-        if(true) {
-//        if (modelElement.legacySymbol.isGlobal) {
+        if (!modelElement.modelElementId.isLocal) {
 
           def changeVisibility(visText: String) = {
             val currentVis = modelElement.extensionOfType[VisibilityData].getOrElse(VisibilityData.PUBLIC)
@@ -229,7 +240,7 @@ class Privatiser(model: ProjectModel, debug: Boolean) extends AbstractRule("Priv
 
             val (targetStart, targetEnd) =
               if (expectedTokens.isEmpty) (modelElement.rawStart, modelElement.rawStart)
-            else {
+              else {
                 val start = find(beginIndex, expectedTokens.head, maxPos = Some(modelElement.rawFocusStart))
                 val end = expectedTokens.tail.foldLeft(start) {
                   case (index, text) => find(index._1, text, maxPos = Some(modelElement.rawFocusStart))
@@ -254,7 +265,12 @@ class Privatiser(model: ProjectModel, debug: Boolean) extends AbstractRule("Priv
               elementsObserved += 1
           }
         }
-        true
+
+        // should be traverse deeper
+        !modelElement.modelElementId.isLocal && (modelElement match {
+          case _: MethodModel | _: FieldModel | _: FieldsModel => false
+          case _ => true
+        })
       }
     }
     visitor.visit(sModel)

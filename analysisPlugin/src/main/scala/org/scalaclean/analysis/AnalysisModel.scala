@@ -276,7 +276,7 @@ sealed trait ModelAccessorMethod extends ModelMethod
 
 case class ModelGetterMethod(
                               tree: Global#DefDef, common: ModelCommon, isTyped: Boolean, isAbstract: Boolean) extends ModelAccessorMethod {
-
+  var addedAccessor = false
   override def debugName: String = "getter"
 
   override def ioToken: String = IoTokens.typeGetterMethod
@@ -284,6 +284,7 @@ case class ModelGetterMethod(
 
 case class ModelSetterMethod(
                               tree: Global#DefDef, common: ModelCommon, isTyped: Boolean, isAbstract: Boolean) extends ModelAccessorMethod {
+  var addedAccessor = false
   override def debugName: String = "setter"
 
   override def ioToken: String = IoTokens.typeSetterMethod

@@ -562,9 +562,6 @@ package impl {
       relsTo.getter.get(info.elementId) match {
         case None => getter_ = None
         case Some(f :: Nil) =>
-          if (f.fromElement.isInstanceOf[GetterMethodModelImpl])
-            getter_ = Some(f.fromElement)
-          else if (f.fromElement.isInstanceOf[GetterMethodModelImpl])
             getter_ = Some(f.fromElement)
         case Some(error) => ???
       }
@@ -628,8 +625,10 @@ package impl {
                            relsTo: BasicRelationshipInfo): Unit = {
       super.complete(modelElements, relsFrom, relsTo)
       relsFrom.getter.get(info.elementId) match {
-        case None => field_ = None
-        case Some(f :: Nil) => field_ = f.toElement
+        case None => field_ =
+          None
+        case Some(f :: Nil) =>
+          field_ = f.toElement
         case Some(error) => ???
       }
     }
@@ -651,8 +650,10 @@ package impl {
                            relsTo: BasicRelationshipInfo): Unit = {
       super.complete(modelElements, relsFrom, relsTo)
       relsFrom.setter.get(info.elementId) match {
-        case None => field_ = None
-        case Some(f :: Nil) => field_ = f.toElement
+        case None => field_ =
+          None
+        case Some(f :: Nil) =>
+          field_ = f.toElement
         case Some(error) => ???
       }
     }
@@ -698,8 +699,10 @@ package impl {
                            relsTo: BasicRelationshipInfo): Unit = {
       super.complete(modelElements, relsFrom, relsTo)
       relsTo.setter.get(info.elementId) match {
-        case None => setter_ = None
-        case Some(f :: Nil) => setter_ = Some(f.fromElement)
+        case None => setter_ =
+          None
+        case Some(f :: Nil) =>
+          setter_ = Some(f.fromElement)
         case Some(error) => ???
       }
     }
