@@ -1,6 +1,6 @@
 package scalaclean.rules.deadcode
 
-import scalaclean.model._
+import scalaclean.model.{Overrides, _}
 
 class SimpleDeadCode(model: ProjectModel, debug: Boolean) extends DeadCodeRemover(model, debug) {
 
@@ -19,12 +19,12 @@ class SimpleDeadCode(model: ProjectModel, debug: Boolean) extends DeadCodeRemove
       }
 
       //overrides
-      element.internalTransitiveOverrides foreach {
+      element.overrides() flatMap (_.toElement) foreach {
         overriddenByElement => markUsed(overriddenByElement, purpose, element :: path, s"$comment - overrides")
       }
 
       //If i am used mark everything overriding me as used
-      element.internalTransitiveOverriddenBy foreach {
+      element.overriddenBy() map (_.fromElement) foreach {
         overridesElement => markUsed(overridesElement, purpose, element :: path, s"$comment - overridden by")
       }
 
@@ -66,6 +66,6 @@ class SimpleDeadCode(model: ProjectModel, debug: Boolean) extends DeadCodeRemove
       e => markUsed(e, Main, e :: Nil, "")
     }
 
-    model.allOf[ValModel].foreach { e => if(e.isLazy && e.internalTransitiveOverrides.nonEmpty) markUsed(e, Main, e :: Nil,"lazy")}
+    model.allOf[ValModel].foreach { e => if(e.isLazy && e.overrides().nonEmpty) markUsed(e, Main, e :: Nil,"lazy")}
   }
 }

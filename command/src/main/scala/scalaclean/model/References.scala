@@ -37,7 +37,6 @@ trait Extends extends Reference {
 
   override protected def refType: String = "Extends"
 }
-
 trait Overrides extends Reference {
   def isDirect: Boolean
 

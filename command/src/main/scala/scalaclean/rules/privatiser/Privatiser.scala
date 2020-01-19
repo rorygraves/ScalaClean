@@ -1,9 +1,9 @@
 package scalaclean.rules.privatiser
 
 import org.scalaclean.analysis.plugin.VisibilityData
-import scalaclean.model._
+import scalaclean.model.{Overrides, _}
 import scalaclean.rules.AbstractRule
-import scalaclean.util.ElementTreeVisitor
+import scalaclean.util.{ElementTreeVisitor, ScalaCleanTreePatcher}
 import scalafix.v1.SyntacticDocument
 
 import scala.collection.mutable.ListBuffer
@@ -107,17 +107,18 @@ class Privatiser(model: ProjectModel, debug: Boolean) extends AbstractRule("Priv
     }
 
     //We must be at least as visible as anything that we override
-    element.allDirectOverrides foreach {
-      case (Some(overriddenModel), _) =>
-        val overriddenVisibility = localLevel(overriddenModel) match {
-          case s: Scoped if s.isProtected => s.copy(forceProtected = true)
-          case other => other
-        }
-        res = res.widen(overriddenVisibility)
-      case (None, _) =>
-        //if it is not in the model, then we will leave this as is
-        res = res.widen(NoChange("inherits from external"))
-
+    element.overrides(true) foreach {
+      o: Overrides => o.toElement match {
+        case Some(overriddenModel) =>
+          val overriddenVisibility = localLevel(overriddenModel) match {
+            case s: Scoped if s.isProtected => s.copy(forceProtected = true)
+            case other => other
+          }
+          res = res.widen(overriddenVisibility)
+        case None =>
+          //if it is not in the model, then we will leave this as is
+          res = res.widen(NoChange("inherits from external"))
+      }
 
       //          val info = element.symbolInfo(parentSym)
       //          val reason = s"declared in $parentSym"
@@ -138,21 +139,12 @@ class Privatiser(model: ProjectModel, debug: Boolean) extends AbstractRule("Priv
   var elementsObserved = 0
   var elementsChanged = 0
 
-  override def printSummary(projectName: String): Unit =
-    println(
-      s"""Elements Observed = $elementsObserved
-         |Elements Changed  = $elementsChanged
-         |Effect rate       = ${(elementsChanged.toDouble / elementsObserved.toDouble * 10000).toInt / 100} %"
-         |""".stripMargin)
-
-  override def fix(targetFile: AbsolutePath, syntacticDocument: SyntacticDocument): List[SCPatch] = {
-    val lb = new ListBuffer[SCPatch]
-
+  override def fix(targetFile: AbsolutePath, syntacticDocument: () => SyntacticDocument): List[SCPatch] = {
     val targetFileName = targetFile.toString
     // find source model
     val sModel = model.allOf[SourceModel].filter(_.toString.contains(targetFileName)).toList.headOption.getOrElse(throw new IllegalStateException(s"Unable to find source model for $targetFileName"))
 
-    object visitor extends ElementTreeVisitor(syntacticDocument) {
+    object visitor extends ScalaCleanTreePatcher(patchStats, syntacticDocument) {
 
       // TODO CURRENT UNUSED
       //      def existingAccess(mods: Seq[Mod]): (Option[Mod], PrivatiserLevel) = {
@@ -206,7 +198,8 @@ class Privatiser(model: ProjectModel, debug: Boolean) extends AbstractRule("Priv
       //
       //      }
       //
-      override protected def visitElement(modelElement: ModelElement): Boolean = {
+
+      override protected def visitInSource(modelElement: ModelElement): Boolean = {
         if (!modelElement.modelElementId.isLocal) {
 
           def changeVisibility(visText: String) = {
@@ -249,20 +242,17 @@ class Privatiser(model: ProjectModel, debug: Boolean) extends AbstractRule("Priv
               }
             log(s" TargetPos = $targetStart -> $targetEnd")
 
-            elementsChanged += 1
             val replacementText = if (targetStart == targetEnd) visText + " " else visText
             this.collect(SCPatch(targetStart, targetEnd, replacementText))
           }
 
           modelElement match {
-            case _ if (!modelElement.existsInSource) =>
             case fieldModel: FieldModel if fieldModel.declaredIn.nonEmpty =>
             case accessorModel: AccessorModel if accessorModel.field.isDefined =>
             case _ =>
               modelElement.colour.asText(modelElement) foreach { v =>
                 changeVisibility(v)
               }
-              elementsObserved += 1
           }
         }
 
@@ -275,7 +265,7 @@ class Privatiser(model: ProjectModel, debug: Boolean) extends AbstractRule("Priv
     }
     visitor.visit(sModel)
 
-    val result = visitor.result.toList.sortBy(_.startPos)
+    val result = visitor.result
     println("--------NEW----------")
     result.foreach(println)
     println("------------------")

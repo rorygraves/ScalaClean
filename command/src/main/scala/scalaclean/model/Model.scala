@@ -47,22 +47,13 @@ sealed trait ModelElement extends Ordered[ModelElement] {
   //start target APIs
   // def outgoingReferences: Iterable[Refers] = allOutgoingReferences map (_._2)
 
-  def overrides: Iterable[Overrides] = {
-    val direct: Set[ElementId] = (allDirectOverrides map (_._2)).toSet
-    allTransitiveOverrides map {
-      case (_, modelSym) => new impl.OverridesImpl(modelElementId, modelSym, direct.contains(modelSym))
-    }
-  }
+  def overrides(directOnly: Boolean = false): Iterator[Overrides]
+  def overriddenBy(directOnly: Boolean = false): Iterator[Overrides]
 
   //should be in the following form
-  def outgoingReferences: Iterable[Refers]
+  def outgoingReferences(directOnly: Boolean = false): Iterator[Refers]
 
-  //  def outgoingReferencedInternal[T <: ModelElement]: Iterable[T]
-  //  def outgoingReferencedExternal: Iterable[Symbol]
-  //
-  def incomingReferences: Iterable[Refers]
-
-  //  def incomingReferencedInternal[T <: ModelElement]: Iterable[T]
+  def incomingReferences(directOnly: Boolean = false): Iterator[Refers]
 
   //end target APIs
 
@@ -355,24 +346,6 @@ package impl {
   trait LegacyOverrides {
     self: ElementModelImpl =>
 
-    override def internalDirectOverrides: List[ModelElement] = {
-      overrides collect {
-        case o if o.isDirect && o.toElement.isDefined => o.toElement.get
-      }
-    }
-
-    override def internalTransitiveOverrides: List[ModelElement] = {
-      overrides collect {
-        case o if o.toElement.isDefined => o.toElement.get
-      }
-    }
-
-    override def allDirectOverrides: List[(Option[ModelElement], ElementId)] = {
-      overrides collect {
-        case o if o.isDirect => (o.toElement, o.toElementId)
-      }
-    }
-
     override def allTransitiveOverrides: List[(Option[ModelElement], ElementId)] = {
       overrides collect {
         case o => (o.toElement, o.toElementId)
@@ -462,9 +435,13 @@ package impl {
 
     var _overrides: List[Overrides] = _
 
-    override def overrides = _overrides
+    protected def directFilter(directOnly: Boolean, rels: Iterable[Overrides]): Iterator[Overrides] =
+      if(directOnly) rels.iterator.filter(_.isDirect) else rels.iterator
 
-    var overridden: List[Overrides] = _
+    override def overrides(directOnly: Boolean) = directFilter(directOnly,_overrides)
+    override def overriddenBy(directOnly: Boolean) = directFilter(directOnly,overridden)
+
+    private var overridden: List[Overrides] = _
     //end set by `complete`
 
     override def enclosing: List[ElementModelImpl] = within

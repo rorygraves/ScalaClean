@@ -2,7 +2,7 @@ package scalaclean.rules.deadcode
 
 import scalaclean.model._
 import scalaclean.rules.AbstractRule
-import scalaclean.util.ElementTreeVisitor
+import scalaclean.util.{ElementTreeVisitor, PatchStats, ScalaCleanTreePatcher}
 import scalafix.v1.SyntacticDocument
 
 import scala.meta.io.AbsolutePath
@@ -91,12 +91,12 @@ class DeadCodeRemover(model: ProjectModel, debug: Boolean) extends AbstractRule(
       }
 
       //overridden
-      element.internalTransitiveOverrides foreach {
+      element.overrides().flatMap(_.toElement) foreach {
         enclosed => markUsed(enclosed, markEnclosing = true, purpose, element :: path, s"$comment - overrides")
       }
 
       //overrides
-      element.internalTransitiveOverriddenBy foreach {
+      element.overinternalTransitiveOverriddenBy foreach {
         enclosed => markUsed(enclosed, markEnclosing = false, purpose, element :: path, s"$comment - overrides")
       }
       element match {
@@ -113,35 +113,36 @@ class DeadCodeRemover(model: ProjectModel, debug: Boolean) extends AbstractRule(
   override def runRule(): Unit = {
     allMainEntryPoints foreach (e => markUsed(e, markEnclosing = true, Main, e :: Nil, ""))
     allJunitTest foreach (e => markUsed(e, markEnclosing = true, Test, e :: Nil, ""))
+    allSerialisationEntries foreach (e => markUsed(e, markEnclosing = false, Main, e :: Nil, "serialisationCode"))
   }
+//
+//  override def printSummary(projectName: String): Unit = {
+//    super.printSummary(projectName)
+//    println(
+//      s"""
+//         |Project name    = $projectName
+//         |linesRemoved    = $linesRemoved
+//         |linesChanged    = $linesChanged
+//         |elementsRemoved = $elementsRemoved
+//         |elementsVisited = $elementsVisited
+//         |""".stripMargin)
+//  }
+//
+//  var linesRemoved = 0
+//  var linesChanged = 0
+//  var elementsRemoved = 0
+//  var elementsVisited = 0
 
-  override def printSummary(projectName: String): Unit =
-    println(
-      s"""
-         |Project name    = $projectName
-         |linesRemoved    = $linesRemoved
-         |linesChanged    = $linesChanged
-         |elementsRemoved = $elementsRemoved
-         |elementsVisited = $elementsVisited
-         |""".stripMargin)
-
-  var linesRemoved = 0
-  var linesChanged = 0
-  var elementsRemoved = 0
-  var elementsVisited = 0
-
-  override def fix(targetFile: AbsolutePath, syntacticDocument: SyntacticDocument): List[SCPatch] = {
+  override def fix(targetFile: AbsolutePath, syntacticDocument: () => SyntacticDocument): List[SCPatch] = {
 
     val targetFileName = targetFile.toString
     // find source model
     val sModel = model.allOf[SourceModel].filter(_.toString.contains(targetFileName)).toList.headOption.getOrElse(throw new IllegalStateException(s"Unable to find source model for $targetFileName"))
 
-    object visitor extends ElementTreeVisitor(syntacticDocument) {
+    object visitor extends ScalaCleanTreePatcher(patchStats, syntacticDocument) {
 
-      override protected def visitElement(element: ModelElement): Boolean = {
+      override protected def visitInSource(element: ModelElement): Boolean = {
         element match {
-          case _ if !element.existsInSource =>
-            true
           case field: FieldModel if field.inCompoundFieldDeclaration =>
             // do nothing - do not recurse
             false
@@ -192,7 +193,7 @@ class DeadCodeRemover(model: ProjectModel, debug: Boolean) extends AbstractRule(
 
     visitor.visit(sModel)
 
-    val result = visitor.result.toList.sortBy(_.startPos)
+    val result = visitor.result
     println("--------NEW----------")
     result.foreach(println)
     println("------------------")

@@ -7,7 +7,7 @@ import scalaclean.model._
  */
 class Test_internalDirectOverrides(model: ProjectModel) extends TestCommon("Test_internalDirectOverrides", model) {
   override def visitInSource(modelElement: ModelElement): String = {
-    val overrides = modelElement.internalDirectOverrides.sorted
+    val overrides = (modelElement.overrides(true) flatMap (_.toElement)).toList sorted
     overrides match {
       case Nil => ""
       case refs => debugValues(refs).mkString(s"internalDirectOverrides(${modelElement.modelElementId.debugValue}) - ", " :: ", "")
@@ -20,7 +20,7 @@ class Test_internalDirectOverrides(model: ProjectModel) extends TestCommon("Test
  */
 class Test_internalTransitiveOverrides(model: ProjectModel) extends TestCommon("Test_internalTransitiveOverrides", model) {
   override def visitInSource(modelElement: ModelElement): String = {
-    val overrides = modelElement.internalTransitiveOverrides.sorted
+    val overrides =  (modelElement.overrides(false) flatMap (_.toElement)).toList sorted
     overrides match {
       case Nil => ""
       case refs => debugValues(refs).mkString(s"internalTransitiveOverrides(${modelElement.modelElementId.debugValue}) - ", " :: ", "")
@@ -33,7 +33,7 @@ class Test_internalTransitiveOverrides(model: ProjectModel) extends TestCommon("
  */
 class Test_allDirectOverrides(model: ProjectModel) extends TestCommon("Test_allDirectOverrides", model) {
   override def visitInSource(modelElement: ModelElement): String = {
-    val overrides = (modelElement.allDirectOverrides map (_._2.id)).sorted
+    val overrides = (modelElement.overrides(true) flatMap (_.toElement) map (_.modelElementId.id)).toList sorted
     overrides match {
       case Nil => ""
       case refs => refs.mkString(s"allDirectOverrides(${modelElement.modelElementId.debugValue}) - ", " :: ", "")
