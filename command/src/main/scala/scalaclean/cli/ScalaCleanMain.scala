@@ -86,7 +86,7 @@ class ScalaCleanMain(options: SCOptions, ruleCreateFn: ProjectModel => AbstractR
   def applyRule(
                  targetFile: AbsolutePath,
                  rule: AbstractRule,
-                 syntacticDocument: SyntacticDocument,
+                 syntacticDocument: ()=> SyntacticDocument,
                  suppress: Boolean,
                  source: String,
                ): String = {
@@ -175,8 +175,7 @@ class ScalaCleanMain(options: SCOptions, ruleCreateFn: ProjectModel => AbstractR
       val existingFilePath = relBase.resolve(targetFile)
       val existingFile = FileIO.slurp(existingFilePath, StandardCharsets.UTF_8)
 
-      val syntacticDocument = DocHelper.readSyntacticDoc(absTargetFile, targetFile)
-
+      val syntacticDocument = () => DocHelper.readSyntacticDoc(absTargetFile, targetFile)
 
       val obtained = applyRule(absTargetFile, rule, syntacticDocument, suppress = false, existingFile)
 

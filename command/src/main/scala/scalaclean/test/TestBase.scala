@@ -18,11 +18,14 @@ abstract class TestBase(val name: String, model: ProjectModel) {
   def elementInfo(modelElement: ModelElement): String
 
   def run(targetFile: String): List[SCPatch] = {
-    val visitor: ElementTreeVisitor = new ElementTreeVisitor(null) {
-      override protected def visitElement(modelElement: ModelElement): Boolean = {
+    object visitor extends ScalaCleanTreePatcher(new PatchStats, () => ???) {
+      private def visit(modelElement: ModelElement): Boolean = {
         toPatch(elementInfo(modelElement), modelElement)
         true
       }
+
+      override protected def visitNotInSource(modelElement: ModelElement): Boolean = visit(modelElement)
+      override protected def visitInSource(modelElement: ModelElement): Boolean = visit(modelElement)
 
       def toPatch(str: String, modelElement: ModelElement): Boolean = {
         if (str.nonEmpty)

@@ -1,12 +1,14 @@
 package scalaclean.rules
 
 import scalaclean.model._
+import scalaclean.util.PatchStats
 import scalafix.v1.SyntacticDocument
 
 import scala.meta.io.AbsolutePath
 
 abstract class AbstractRule(val name: String, val model: ProjectModel, debug: Boolean) {
-  def printSummary(projectName: String): Unit
+  val patchStats = new PatchStats
+  def printSummary(projectName: String): Unit = patchStats.printSummary(projectName)
 
   type Colour <: Mark
 
@@ -31,7 +33,7 @@ abstract class AbstractRule(val name: String, val model: ProjectModel, debug: Bo
 
   def runRule(): Unit
 
-  def fix(targetFile: AbsolutePath, syntacticDocument: SyntacticDocument): List[SCPatch]
+  def fix(targetFile: AbsolutePath, syntacticDocument: () => SyntacticDocument): List[SCPatch]
 
   def markAll[T <: ModelElement : Manifest](colour: => Colour): Unit = {
     model.allOf[T].foreach {
