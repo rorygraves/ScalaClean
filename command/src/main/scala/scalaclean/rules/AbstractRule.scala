@@ -86,4 +86,17 @@ abstract class AbstractRule(val name: String, val model: ProjectModel, debug: Bo
     }
   }
 
+
+  def allSerialisationEntries: Iterator[MethodModel] = {
+    model.allOf[MethodModel].filter { method =>
+      (method.name == "writeObject" /*        && method.params == objectOutputStream */) ||
+        (method.name == "readObject" /*       && method.params == objectInputStream */) ||
+        (method.name == "readObjectNoData" /* && method.params == empty */) ||
+        (method.name == "writeReplace" /*     && method.params == empty */) ||
+        (method.name == "readResolve" /*      && method.params == empty */)
+    }
+    // ++
+  }
+
+
 }

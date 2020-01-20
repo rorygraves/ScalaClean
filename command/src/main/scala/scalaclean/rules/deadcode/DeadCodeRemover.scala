@@ -113,6 +113,7 @@ class DeadCodeRemover(model: ProjectModel, debug: Boolean) extends AbstractRule(
   override def runRule(): Unit = {
     allMainEntryPoints foreach (e => markUsed(e, markEnclosing = true, Main, e :: Nil, ""))
     allJunitTest foreach (e => markUsed(e, markEnclosing = true, Test, e :: Nil, ""))
+    allSerialisationEntries foreach (e => markUsed(e, markEnclosing = false, Main, e :: Nil, "serialisationCode"))
   }
 
 
