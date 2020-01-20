@@ -268,8 +268,12 @@ class Privatiser(model: ProjectModel, debug: Boolean) extends AbstractRule("Priv
 
         // should be traverse deeper
         !modelElement.modelElementId.isLocal && (modelElement match {
-          case _: MethodModel | _: FieldModel | _: FieldsModel => false
-          case _ => true
+          case _: ClassLike =>
+            true
+          case _: MethodModel | _: FieldModel | _: FieldsModel =>
+            false
+          case _ =>
+            true
         })
       }
     }
