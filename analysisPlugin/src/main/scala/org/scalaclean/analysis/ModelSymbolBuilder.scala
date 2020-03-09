@@ -26,10 +26,12 @@ trait ModelSymbolBuilder extends SemanticdbOps {
       localId(sym)
     case sym if sym.isMethod =>
       "{M}"+sym.encodedName +
+        sym.disambiguator +
         (if (sym.typeParams.isEmpty) ""
         else "[" + sym.typeParams.map { param => param.info.typeSymbol.fullName }.mkString(";") + "]"
           ) +
-        sym.paramss.map { params => params.map(param => paramName(param)).mkString(";") }.mkString("(", "", ")")
+        sym.paramss.map { params => params.map(param => paramName(param)).mkString(";") }.mkString("(", "", ")") +
+        sym.asMethod.returnType.toString.replace(',', ';') // no commas in a CSV-bounded world
     case sym if sym.isModule => sym.encodedName + "#"
     case sym if sym.isModuleOrModuleClass => sym.encodedName + "@"
     case sym if sym.isClass => sym.encodedName + "."
