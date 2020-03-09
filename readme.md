@@ -42,19 +42,20 @@ You will need to find the full path for the file e.g.
 
 ### 3. Update your build to pull in semanticDB and the ScalaClean plugin.
 
-add ```addSbtPlugin("ch.epfl.scala" % "sbt-scalafix" % "0.9.6")``` to your ```project\plugins.sbt```
-(n.b. This should probably be just semanticDB plugin)
-
 Manually add the ScalaClean plugin to your project definition(s) - this will be automated later:
 
-```  .settings(
-       scalacOptions  ++= {
-         val srcLocations = (sourceDirectories in Compile).value.mkString(java.io.File.pathSeparator)
-         Seq(
-           "-Xplugin:/workspace/ScalaClean/analysisPlugin/target/scala-2.12/analysisPlugin_2.12.8-0.1.0-SNAPSHOT-assembly.jar",
-           s"-P:scalaclean-analysis-plugin:srcdirs:${srcLocations}",
-         )
-       }
+```scala
+.settings(
+  addCompilerPlugin("org.scalameta" % "semanticdb-scalac" % "4.3.0" cross CrossVersion.full),
+  scalacOptions ++= {
+    val srcLocations = (sourceDirectories in Compile).value.mkString(java.io.File.pathSeparator)
+    Seq(
+      "-Yrangepos", // from semanticdb instructions
+      "-Xplugin:/workspace/ScalaClean/analysisPlugin/target/scala-2.12/analysisPlugin_2.12.8-0.1.0-SNAPSHOT-assembly.jar",
+      s"-P:scalaclean-analysis-plugin:srcdirs:${srcLocations}",
+    )
+  },
+)
 ```
 
 ### 4. Now build your project 
