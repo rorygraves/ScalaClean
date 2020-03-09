@@ -492,7 +492,7 @@ class ScalaCompilerPluginComponent(
           val isVar = symbol.isVar
           val fields: Option[ModelFields] = valDef.rhs match {
              case Select(qualifier, name) =>
-               qualifier.symbol.attachments.get[ModelFields]
+               Option(qualifier.symbol).flatMap(_.attachments.get[ModelFields])
              case _ => None
            }
 
