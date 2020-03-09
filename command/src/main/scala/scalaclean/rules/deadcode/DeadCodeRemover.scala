@@ -203,8 +203,6 @@ class DeadCodeRemover(model: ProjectModel, debug: Boolean) extends AbstractRule(
         elementsVisited += 1
         val declarationsByUsage: Map[Usage, Seq[(Pat.Var, ModelElement)]] =
           pats.filterNot(v => v.symbol.isLocal  || v.symbol.isNone ) map { p =>
-            println(p.symbol)
-            println(ElementId(p.symbol))
             val mElement: ModelElement = model.legacySymbol[ModelElement](ElementId(p.symbol))
             (p, mElement)
           } groupBy (m => m._2.colour)
