@@ -1,13 +1,18 @@
 package scalaclean
 
-import java.nio.file.NoSuchFileException
-
+import org.scalatest.{ Canceled, Failed, OutcomeOf, Pending, Succeeded }
 import org.scalatest.exceptions.TestPendingException
 
 class ScratchTests extends AbstractProjectTests {
   test("scratch") {
-    try deadCodeProjectTest("scratch") catch {
-      case e: NoSuchFileException => throw new TestPendingException().initCause(e)
+    OutcomeOf.outcomeOf(deadCodeProjectTest("scratch")) match {
+      case Succeeded   =>
+      case Canceled(e) => throw e
+      case Pending     => throw new TestPendingException()
+      case Failed(e)   =>
+        Console.err.println(e)
+        e.getStackTrace.take(7).foreach(e => Console.err.println(s"\tat $e"))
+        throw new TestPendingException()
     }
   }
 
