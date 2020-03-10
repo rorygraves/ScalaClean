@@ -14,6 +14,11 @@ class Foo {
   }
 }
 
+object AppWithMain extends App {
+  val foo = new Foo
+  println(foo.bas())
+}
+
 object AppWithMain2 {
   def main(): Unit = {
     val foo = new Foo
