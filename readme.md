@@ -38,7 +38,7 @@ This will create a jar for the compiler plugin.
 
 You will need to find the full path for the file e.g. 
 
-```/workspace/ScalaClean/analysisPlugin/target/scala-2.12/analysisPlugin_2.12.8-0.1.0-SNAPSHOT-assembly.jar```
+```/workspace/ScalaClean/analysisPlugin/target/scala-2.12/analysisPlugin_2.12.10-0.1.0-SNAPSHOT-assembly.jar```
 
 ### 3. Update your build to pull in semanticDB and the ScalaClean plugin.
 
@@ -51,7 +51,7 @@ Manually add the ScalaClean plugin to your project definition(s) - this will be 
     val srcLocations = (sourceDirectories in Compile).value.mkString(java.io.File.pathSeparator)
     Seq(
       "-Yrangepos", // from semanticdb instructions
-      "-Xplugin:/workspace/ScalaClean/analysisPlugin/target/scala-2.12/analysisPlugin_2.12.8-0.1.0-SNAPSHOT-assembly.jar",
+      "-Xplugin:/workspace/ScalaClean/analysisPlugin/target/scala-2.12/analysisPlugin_2.12.10-0.1.0-SNAPSHOT-assembly.jar",
       s"-P:scalaclean-analysis-plugin:srcdirs:${srcLocations}",
     )
   },
