@@ -134,7 +134,7 @@ class UnitTests extends FunSuite with AssertionsForJUnit with DiffAssertions wit
 
         // compare results
         val tokens = fixed.tokenize.get
-        val obtained = tokens.mkString
+        val obtained = stripLocalIds(tokens.mkString)
 
         val targetOutput = RelativePath(targetFile.toString() + ".expected")
         val outputFile = inputSourceDirectories.head.resolve(targetOutput)
@@ -146,7 +146,7 @@ class UnitTests extends FunSuite with AssertionsForJUnit with DiffAssertions wit
           w.close()
         }
 
-        val expected = FileIO.slurp(outputFile, StandardCharsets.UTF_8)
+        val expected = stripLocalIds(FileIO.slurp(outputFile, StandardCharsets.UTF_8))
 
         val diff = DiffAssertions.compareContents(obtained, expected)
         if (diff.nonEmpty) {
@@ -165,4 +165,6 @@ class UnitTests extends FunSuite with AssertionsForJUnit with DiffAssertions wit
     run()
   }
 
+  private val LocalIds = "/local([0-9]+)".r
+  private def stripLocalIds(s: String) = LocalIds.replaceAllIn(s, "/localXXXXXXXX")
 }
