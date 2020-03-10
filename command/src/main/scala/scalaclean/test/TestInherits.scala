@@ -33,7 +33,6 @@ class Test_internalTransitiveOverrides(model: ProjectModel) extends TestCommon("
   */
 class Test_allDirectOverrides(model: ProjectModel) extends TestCommon("Test_allDirectOverrides", model) {
   def visit(modelElement: ModelElement): String = {
-    println("HERE " + modelElement.legacySymbol)
     val overrides = (modelElement.allDirectOverrides map (_._2.id)).sorted
     overrides match {
       case Nil => ""
