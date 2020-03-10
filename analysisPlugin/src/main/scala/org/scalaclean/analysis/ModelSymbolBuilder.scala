@@ -25,22 +25,20 @@ trait ModelSymbolBuilder extends SemanticdbOps {
       //but we need to preserve across the same compile!
       localId(sym)
     case sym if sym.isMethod =>
-      "{M}"+sym.encodedName +
-        (if (sym.typeParams.isEmpty) ""
-        else "[" + sym.typeParams.map { param => param.info.typeSymbol.fullName }.mkString(";") + "]"
-          ) +
+      "{M}" + sym.encodedName +
+        typeParams(sym) +
         sym.paramss.map { params => params.map(param => paramName(param)).mkString(";") }.mkString("(", "", ")")
     case sym if sym.isModule => sym.encodedName + "#"
     case sym if sym.isModuleOrModuleClass => sym.encodedName + "@"
     case sym if sym.isClass => sym.encodedName + "."
     case sym => sym.encodedName
   }
-  private def paramName(param: global.Symbol) = {
-    param.info.typeSymbol.fullName +
-      (if (param.typeParams.isEmpty) ""
-      else "[" + param.typeParams.map { param => param.info.typeSymbol.fullName }.mkString(";") + "]"
-        )
-  }
+
+  private def paramName(param: global.Symbol) = param.info.typeSymbol.fullName + typeParams(param)
+
+  private def typeParams(sym: global.Symbol) =
+    if (sym.typeParams.isEmpty) ""
+    else sym.typeParams.map(_.info.typeSymbol.fullName).mkString("[", ";", "]")
 
   private def fullNameString(sym: global.Symbol): String = {
     def recur(sym: global.Symbol): String = {
