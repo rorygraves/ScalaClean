@@ -12,60 +12,60 @@ trait GrandParentTrait {
 
 }
 trait ParentTrait extends GrandParentTrait {
-  def d1: Int/* allDirectOverrides(G:scalaclean/test/overrides/allDirectOverrides/ParentTrait#d1().) - <root>/scalaclean@/test@/overrides@/allDirectOverrides@/GrandParentTrait./{M}d1() */
-  def d2(a: Int): Int = ???/* allDirectOverrides(G:scalaclean/test/overrides/allDirectOverrides/ParentTrait#d2().) - <root>/scalaclean@/test@/overrides@/allDirectOverrides@/GrandParentTrait./{M}d2(scala.Int) */
+  def d1: Int/* allDirectOverrides(G:scalaclean/test/overrides/allDirectOverrides/ParentTrait#d1().) - <root>/scalaclean@/test@/overrides@/allDirectOverrides@/GrandParentTrait#/{M}d1(). */
+  def d2(a: Int): Int = ???/* allDirectOverrides(G:scalaclean/test/overrides/allDirectOverrides/ParentTrait#d2().) - <root>/scalaclean@/test@/overrides@/allDirectOverrides@/GrandParentTrait#/{M}d2(scala.Int). */
   def d3(): () => Int = ???
 }
 trait ChildTrait extends ParentTrait {
-  def d1: Int = 1/* allDirectOverrides(G:scalaclean/test/overrides/allDirectOverrides/ChildTrait#d1().) - <root>/scalaclean@/test@/overrides@/allDirectOverrides@/GrandParentTrait./{M}d1() :: <root>/scalaclean@/test@/overrides@/allDirectOverrides@/ParentTrait./{M}d1() */
-  override def d2(a: Int): Int = ???/* allDirectOverrides(G:scalaclean/test/overrides/allDirectOverrides/ChildTrait#d2().) - <root>/scalaclean@/test@/overrides@/allDirectOverrides@/GrandParentTrait./{M}d2(scala.Int) :: <root>/scalaclean@/test@/overrides@/allDirectOverrides@/ParentTrait./{M}d2(scala.Int) */
-  override def d3(): () => Int = ???/* allDirectOverrides(G:scalaclean/test/overrides/allDirectOverrides/ChildTrait#d3().) - <root>/scalaclean@/test@/overrides@/allDirectOverrides@/ParentTrait./{M}d3() */
+  def d1: Int = 1/* allDirectOverrides(G:scalaclean/test/overrides/allDirectOverrides/ChildTrait#d1().) - <root>/scalaclean@/test@/overrides@/allDirectOverrides@/GrandParentTrait#/{M}d1(). :: <root>/scalaclean@/test@/overrides@/allDirectOverrides@/ParentTrait#/{M}d1(). */
+  override def d2(a: Int): Int = ???/* allDirectOverrides(G:scalaclean/test/overrides/allDirectOverrides/ChildTrait#d2().) - <root>/scalaclean@/test@/overrides@/allDirectOverrides@/GrandParentTrait#/{M}d2(scala.Int). :: <root>/scalaclean@/test@/overrides@/allDirectOverrides@/ParentTrait#/{M}d2(scala.Int). */
+  override def d3(): () => Int = ???/* allDirectOverrides(G:scalaclean/test/overrides/allDirectOverrides/ChildTrait#d3().) - <root>/scalaclean@/test@/overrides@/allDirectOverrides@/ParentTrait#/{M}d3(). */
   def d2a(a:Int) = d2 _
 
 }
 trait GChildTrait extends ChildTrait {
-  override def d1: Int = 1/* allDirectOverrides(G:scalaclean/test/overrides/allDirectOverrides/GChildTrait#d1().) - <root>/scalaclean@/test@/overrides@/allDirectOverrides@/ChildTrait./{M}d1() :: <root>/scalaclean@/test@/overrides@/allDirectOverrides@/GrandParentTrait./{M}d1() :: <root>/scalaclean@/test@/overrides@/allDirectOverrides@/ParentTrait./{M}d1() */
-  override def d2(a: Int): Int = ???/* allDirectOverrides(G:scalaclean/test/overrides/allDirectOverrides/GChildTrait#d2().) - <root>/scalaclean@/test@/overrides@/allDirectOverrides@/ChildTrait./{M}d2(scala.Int) :: <root>/scalaclean@/test@/overrides@/allDirectOverrides@/GrandParentTrait./{M}d2(scala.Int) :: <root>/scalaclean@/test@/overrides@/allDirectOverrides@/ParentTrait./{M}d2(scala.Int) */
-  override def d3(): () => Int = () => 1/* allDirectOverrides(G:scalaclean/test/overrides/allDirectOverrides/GChildTrait#d3().) - <root>/scalaclean@/test@/overrides@/allDirectOverrides@/ChildTrait./{M}d3() :: <root>/scalaclean@/test@/overrides@/allDirectOverrides@/ParentTrait./{M}d3() */
+  override def d1: Int = 1/* allDirectOverrides(G:scalaclean/test/overrides/allDirectOverrides/GChildTrait#d1().) - <root>/scalaclean@/test@/overrides@/allDirectOverrides@/ChildTrait#/{M}d1(). :: <root>/scalaclean@/test@/overrides@/allDirectOverrides@/GrandParentTrait#/{M}d1(). :: <root>/scalaclean@/test@/overrides@/allDirectOverrides@/ParentTrait#/{M}d1(). */
+  override def d2(a: Int): Int = ???/* allDirectOverrides(G:scalaclean/test/overrides/allDirectOverrides/GChildTrait#d2().) - <root>/scalaclean@/test@/overrides@/allDirectOverrides@/ChildTrait#/{M}d2(scala.Int). :: <root>/scalaclean@/test@/overrides@/allDirectOverrides@/GrandParentTrait#/{M}d2(scala.Int). :: <root>/scalaclean@/test@/overrides@/allDirectOverrides@/ParentTrait#/{M}d2(scala.Int). */
+  override def d3(): () => Int = () => 1/* allDirectOverrides(G:scalaclean/test/overrides/allDirectOverrides/GChildTrait#d3().) - <root>/scalaclean@/test@/overrides@/allDirectOverrides@/ChildTrait#/{M}d3(). :: <root>/scalaclean@/test@/overrides@/allDirectOverrides@/ParentTrait#/{M}d3(). */
 
 }
 trait Trait_ChildTrait extends ParentTrait {
-  override def equals(obj: Any): Boolean = super.equals(obj)/* allDirectOverrides(G:scalaclean/test/overrides/allDirectOverrides/Trait_ChildTrait#equals().) - <root>/java@/lang@/Object./{M}equals(scala.Any) :: <root>/scala@/Any./{M}equals(scala.Any) */
+  override def equals(obj: Any): Boolean = super.equals(obj)/* allDirectOverrides(G:scalaclean/test/overrides/allDirectOverrides/Trait_ChildTrait#equals().) - <root>/java@/lang@/Object#/{M}equals(scala.Any). :: <root>/scala@/Any#/{M}equals(scala.Any). */
 
-  override def clone(): AnyRef = super.clone()/* allDirectOverrides(G:scalaclean/test/overrides/allDirectOverrides/Trait_ChildTrait#clone().) - <root>/java@/lang@/Object./{M}clone() */
+  override def clone(): AnyRef = super.clone()/* allDirectOverrides(G:scalaclean/test/overrides/allDirectOverrides/Trait_ChildTrait#clone().) - <root>/java@/lang@/Object#/{M}clone(). */
 
-  override def toString: String = super.toString/* allDirectOverrides(G:scalaclean/test/overrides/allDirectOverrides/Trait_ChildTrait#toString().) - <root>/java@/lang@/Object./{M}toString() :: <root>/scala@/Any./{M}toString() */
+  override def toString: String = super.toString/* allDirectOverrides(G:scalaclean/test/overrides/allDirectOverrides/Trait_ChildTrait#toString().) - <root>/java@/lang@/Object#/{M}toString(). :: <root>/scala@/Any#/{M}toString(). */
 
-  override def finalize(): Unit = super.finalize()/* allDirectOverrides(G:scalaclean/test/overrides/allDirectOverrides/Trait_ChildTrait#finalize().) - <root>/java@/lang@/Object./{M}finalize() */
+  override def finalize(): Unit = super.finalize()/* allDirectOverrides(G:scalaclean/test/overrides/allDirectOverrides/Trait_ChildTrait#finalize().) - <root>/java@/lang@/Object#/{M}finalize(). */
 
-  override def hashCode(): Int = super.hashCode()/* allDirectOverrides(G:scalaclean/test/overrides/allDirectOverrides/Trait_ChildTrait#hashCode().) - <root>/java@/lang@/Object./{M}hashCode() :: <root>/scala@/Any./{M}hashCode() */
+  override def hashCode(): Int = super.hashCode()/* allDirectOverrides(G:scalaclean/test/overrides/allDirectOverrides/Trait_ChildTrait#hashCode().) - <root>/java@/lang@/Object#/{M}hashCode(). :: <root>/scala@/Any#/{M}hashCode(). */
 
-  override def d1: Int = ???/* allDirectOverrides(G:scalaclean/test/overrides/allDirectOverrides/Trait_ChildTrait#d1().) - <root>/scalaclean@/test@/overrides@/allDirectOverrides@/GrandParentTrait./{M}d1() :: <root>/scalaclean@/test@/overrides@/allDirectOverrides@/ParentTrait./{M}d1() */
+  override def d1: Int = ???/* allDirectOverrides(G:scalaclean/test/overrides/allDirectOverrides/Trait_ChildTrait#d1().) - <root>/scalaclean@/test@/overrides@/allDirectOverrides@/GrandParentTrait#/{M}d1(). :: <root>/scalaclean@/test@/overrides@/allDirectOverrides@/ParentTrait#/{M}d1(). */
 
-  override def d2(a: Int): Int = ???/* allDirectOverrides(G:scalaclean/test/overrides/allDirectOverrides/Trait_ChildTrait#d2().) - <root>/scalaclean@/test@/overrides@/allDirectOverrides@/GrandParentTrait./{M}d2(scala.Int) :: <root>/scalaclean@/test@/overrides@/allDirectOverrides@/ParentTrait./{M}d2(scala.Int) */
+  override def d2(a: Int): Int = ???/* allDirectOverrides(G:scalaclean/test/overrides/allDirectOverrides/Trait_ChildTrait#d2().) - <root>/scalaclean@/test@/overrides@/allDirectOverrides@/GrandParentTrait#/{M}d2(scala.Int). :: <root>/scalaclean@/test@/overrides@/allDirectOverrides@/ParentTrait#/{M}d2(scala.Int). */
 
-  override def d2a(a: Int)(b: Int): Int = ???/* allDirectOverrides(G:scalaclean/test/overrides/allDirectOverrides/Trait_ChildTrait#d2a().) - <root>/scalaclean@/test@/overrides@/allDirectOverrides@/GrandParentTrait./{M}d2a(scala.Intscala.Int) */
+  override def d2a(a: Int)(b: Int): Int = ???/* allDirectOverrides(G:scalaclean/test/overrides/allDirectOverrides/Trait_ChildTrait#d2a().) - <root>/scalaclean@/test@/overrides@/allDirectOverrides@/GrandParentTrait#/{M}d2a(scala.Intscala.Int). */
 
-  override def d3()(): Int = ???/* allDirectOverrides(G:scalaclean/test/overrides/allDirectOverrides/Trait_ChildTrait#d3().) - <root>/scalaclean@/test@/overrides@/allDirectOverrides@/GrandParentTrait./{M}d3() */
+  override def d3()(): Int = ???/* allDirectOverrides(G:scalaclean/test/overrides/allDirectOverrides/Trait_ChildTrait#d3().) - <root>/scalaclean@/test@/overrides@/allDirectOverrides@/GrandParentTrait#/{M}d3(). */
 }
 class Class_ChildTrait extends ParentTrait {
-  override def equals(obj: Any): Boolean = super.equals(obj)/* allDirectOverrides(G:scalaclean/test/overrides/allDirectOverrides/Class_ChildTrait#equals().) - <root>/java@/lang@/Object./{M}equals(scala.Any) :: <root>/scala@/Any./{M}equals(scala.Any) */
+  override def equals(obj: Any): Boolean = super.equals(obj)/* allDirectOverrides(G:scalaclean/test/overrides/allDirectOverrides/Class_ChildTrait#equals().) - <root>/java@/lang@/Object#/{M}equals(scala.Any). :: <root>/scala@/Any#/{M}equals(scala.Any). */
 
-  override def clone(): AnyRef = super.clone()/* allDirectOverrides(G:scalaclean/test/overrides/allDirectOverrides/Class_ChildTrait#clone().) - <root>/java@/lang@/Object./{M}clone() */
+  override def clone(): AnyRef = super.clone()/* allDirectOverrides(G:scalaclean/test/overrides/allDirectOverrides/Class_ChildTrait#clone().) - <root>/java@/lang@/Object#/{M}clone(). */
 
-  override def toString: String = super.toString/* allDirectOverrides(G:scalaclean/test/overrides/allDirectOverrides/Class_ChildTrait#toString().) - <root>/java@/lang@/Object./{M}toString() :: <root>/scala@/Any./{M}toString() */
+  override def toString: String = super.toString/* allDirectOverrides(G:scalaclean/test/overrides/allDirectOverrides/Class_ChildTrait#toString().) - <root>/java@/lang@/Object#/{M}toString(). :: <root>/scala@/Any#/{M}toString(). */
 
-  override def finalize(): Unit = super.finalize()/* allDirectOverrides(G:scalaclean/test/overrides/allDirectOverrides/Class_ChildTrait#finalize().) - <root>/java@/lang@/Object./{M}finalize() */
+  override def finalize(): Unit = super.finalize()/* allDirectOverrides(G:scalaclean/test/overrides/allDirectOverrides/Class_ChildTrait#finalize().) - <root>/java@/lang@/Object#/{M}finalize(). */
 
-  override def hashCode(): Int = super.hashCode()/* allDirectOverrides(G:scalaclean/test/overrides/allDirectOverrides/Class_ChildTrait#hashCode().) - <root>/java@/lang@/Object./{M}hashCode() :: <root>/scala@/Any./{M}hashCode() */
+  override def hashCode(): Int = super.hashCode()/* allDirectOverrides(G:scalaclean/test/overrides/allDirectOverrides/Class_ChildTrait#hashCode().) - <root>/java@/lang@/Object#/{M}hashCode(). :: <root>/scala@/Any#/{M}hashCode(). */
 
-  override def d1: Int = ???/* allDirectOverrides(G:scalaclean/test/overrides/allDirectOverrides/Class_ChildTrait#d1().) - <root>/scalaclean@/test@/overrides@/allDirectOverrides@/GrandParentTrait./{M}d1() :: <root>/scalaclean@/test@/overrides@/allDirectOverrides@/ParentTrait./{M}d1() */
+  override def d1: Int = ???/* allDirectOverrides(G:scalaclean/test/overrides/allDirectOverrides/Class_ChildTrait#d1().) - <root>/scalaclean@/test@/overrides@/allDirectOverrides@/GrandParentTrait#/{M}d1(). :: <root>/scalaclean@/test@/overrides@/allDirectOverrides@/ParentTrait#/{M}d1(). */
 
-  override def d2(a: Int): Int = ???/* allDirectOverrides(G:scalaclean/test/overrides/allDirectOverrides/Class_ChildTrait#d2().) - <root>/scalaclean@/test@/overrides@/allDirectOverrides@/GrandParentTrait./{M}d2(scala.Int) :: <root>/scalaclean@/test@/overrides@/allDirectOverrides@/ParentTrait./{M}d2(scala.Int) */
+  override def d2(a: Int): Int = ???/* allDirectOverrides(G:scalaclean/test/overrides/allDirectOverrides/Class_ChildTrait#d2().) - <root>/scalaclean@/test@/overrides@/allDirectOverrides@/GrandParentTrait#/{M}d2(scala.Int). :: <root>/scalaclean@/test@/overrides@/allDirectOverrides@/ParentTrait#/{M}d2(scala.Int). */
 
-  override def d2a(a: Int)(b: Int): Int = ???/* allDirectOverrides(G:scalaclean/test/overrides/allDirectOverrides/Class_ChildTrait#d2a().) - <root>/scalaclean@/test@/overrides@/allDirectOverrides@/GrandParentTrait./{M}d2a(scala.Intscala.Int) */
+  override def d2a(a: Int)(b: Int): Int = ???/* allDirectOverrides(G:scalaclean/test/overrides/allDirectOverrides/Class_ChildTrait#d2a().) - <root>/scalaclean@/test@/overrides@/allDirectOverrides@/GrandParentTrait#/{M}d2a(scala.Intscala.Int). */
 
-  override def d3()(): Int = ???/* allDirectOverrides(G:scalaclean/test/overrides/allDirectOverrides/Class_ChildTrait#d3().) - <root>/scalaclean@/test@/overrides@/allDirectOverrides@/GrandParentTrait./{M}d3() */
+  override def d3()(): Int = ???/* allDirectOverrides(G:scalaclean/test/overrides/allDirectOverrides/Class_ChildTrait#d3().) - <root>/scalaclean@/test@/overrides@/allDirectOverrides@/GrandParentTrait#/{M}d3(). */
 }
 object Object_ChildTrait extends ParentTrait {
   override def equals(obj: Any): Boolean = super.equals(obj)
