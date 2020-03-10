@@ -63,6 +63,7 @@ lazy val analysisPlugin = project.dependsOn(shared).settings(
     mergeSettings,
 
     libraryDependencies += "org.scalameta" % "semanticdb-scalac-core" % scalametaVersion cross CrossVersion.full,
+    addCompilerPlugin("org.scalameta" % "semanticdb-scalac" % scalametaVersion cross CrossVersion.full),
 
     scalacOptions in Test ++= {
       // we depend on the assembly jar
@@ -71,6 +72,9 @@ lazy val analysisPlugin = project.dependsOn(shared).settings(
         "-Yrangepos",
         s"-Xplugin:${jar.getAbsolutePath}",
         s"-Jdummy=${jar.lastModified}", // ensures recompile
+        "-P:semanticdb:synthetics:on",
+        "-P:scalaclean-analysis-plugin:debug:true",
+        "-Xprint:typer",
       )
 
     },
