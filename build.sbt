@@ -1,7 +1,8 @@
 import sbt.Keys.libraryDependencies
 
 lazy val scala212 = "2.12.10"
-lazy val scalaFixVersion = "0.9.6"
+lazy val scalametaVersion = "4.3.0"
+lazy val scalaFixVersion = "0.9.11"
 
 inThisBuild(
   List(
@@ -61,7 +62,7 @@ lazy val analysisPlugin = project.dependsOn(shared).settings(
     libraryDependencies += "org.scala-lang" % "scala-reflect" % scala212,
     mergeSettings,
 
-    libraryDependencies += "org.scalameta" % "semanticdb-scalac-core" % "4.2.3" cross CrossVersion.full,
+    libraryDependencies += "org.scalameta" % "semanticdb-scalac-core" % scalametaVersion cross CrossVersion.full,
 
     scalacOptions in Test ++= {
       // we depend on the assembly jar
@@ -102,7 +103,7 @@ lazy val command = project.dependsOn(shared)
 
 
 lazy val unitTestProject = project.in(file("testProjects/unitTestProject")).settings(
-  addCompilerPlugin("org.scalameta" % "semanticdb-scalac" % "4.2.3" cross CrossVersion.full),
+  addCompilerPlugin("org.scalameta" % "semanticdb-scalac" % scalametaVersion cross CrossVersion.full),
   libraryDependencies += "org.scalaz" %% "scalaz-core" % "7.2.28",
   scalacOptions += "-P:semanticdb:synthetics:on",
   skip in publish := true,
@@ -127,7 +128,7 @@ lazy val unitTestProject = project.in(file("testProjects/unitTestProject")).sett
 
 // template for dead code projects
 def testInputProject(id: String, projectLocation: String, showTrees: Boolean = false)(dependencies: ClasspathDep[ProjectReference]*) = sbt.Project.apply(id, file(projectLocation)).settings(
-  addCompilerPlugin("org.scalameta" % "semanticdb-scalac" % "4.2.3" cross CrossVersion.full),
+  addCompilerPlugin("org.scalameta" % "semanticdb-scalac" % scalametaVersion cross CrossVersion.full),
   scalacOptions += "-Yrangepos",
   libraryDependencies += "org.scalaz" %% "scalaz-core" % "7.2.27",
   scalacOptions += "-P:semanticdb:synthetics:on",
