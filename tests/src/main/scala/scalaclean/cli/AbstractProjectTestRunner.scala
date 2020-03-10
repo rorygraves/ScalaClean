@@ -3,12 +3,19 @@ package scalaclean.cli
 import java.io.File
 import java.nio.file.Paths
 
+import org.scalatest.{ BeforeAndAfterAllConfigMap, ConfigMap }
 import scalaclean.model.ProjectModel
 import scalaclean.rules.AbstractRule
 import scalafix.testkit.DiffAssertions
 
 abstract class AbstractProjectTestRunner(
-  val projectNames: List[String], overwriteTargetFiles: Boolean) extends DiffAssertions {
+  val projectNames: List[String], overwriteTargetFiles: Boolean) extends DiffAssertions with BeforeAndAfterAllConfigMap {
+
+  private var overwrite = false
+
+  override protected def beforeAll(configMap: ConfigMap) = {
+    overwrite = configMap.getWithDefault("overwrite", "false").equalsIgnoreCase("true")
+  }
 
   def taskName: String
 
@@ -31,7 +38,8 @@ abstract class AbstractProjectTestRunner(
 
     }
 
-    val options = SCOptions(taskName, debug = true, validate = true, replace = overwriteTargetFiles, propsFiles)
+    val replace = overwrite || overwriteTargetFiles
+    val options = SCOptions(taskName, debug = true, validate = true, replace, propsFiles)
     val main = new ScalaCleanMain(options, createModelTaskFn(propsFiles, options.debug))
     !main.run()
   }

@@ -15,4 +15,3 @@ object Private1 extends App {
   private var f = 3
   d+e+f
 }
-
