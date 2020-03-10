@@ -4,7 +4,7 @@ import java.io.{File, FileOutputStream}
 import java.nio.charset.StandardCharsets
 import java.nio.file.Paths
 
-import org.scalatest.FunSuite
+import org.scalatest.{ BeforeAndAfterAllConfigMap, ConfigMap, FunSuite }
 import org.scalatest.junit.AssertionsForJUnit
 import scalaclean.cli.FileHelper
 import scalaclean.cli.FileHelper.toPlatform
@@ -21,7 +21,12 @@ import scalafix.v1.SemanticDocument
 import scala.meta._
 import scala.meta.internal.io.FileIO
 
-class UnitTests extends FunSuite with AssertionsForJUnit with DiffAssertions {
+class UnitTests extends FunSuite with AssertionsForJUnit with DiffAssertions with BeforeAndAfterAllConfigMap {
+  private var overwrite = false
+
+  override protected def beforeAll(configMap: ConfigMap) = {
+    overwrite = configMap.getWithDefault("overwrite", "false").equalsIgnoreCase("true")
+  }
 
   test("akkaTimeoutTest") {
     runTest("scalaclean/test/akka/Timeout.scala", new Test_allTransitiveOverrides(_))
@@ -134,7 +139,7 @@ class UnitTests extends FunSuite with AssertionsForJUnit with DiffAssertions {
         val targetOutput = RelativePath(targetFile.toString() + ".expected")
         val outputFile = inputSourceDirectories.head.resolve(targetOutput)
 
-        if (overwrite) {
+        if (UnitTests.this.overwrite || overwrite) {
           println("Overwriting target file: " + outputFile)
           val w = new FileOutputStream(outputFile.toString())
           w.write(obtained.getBytes(StandardCharsets.UTF_8))
