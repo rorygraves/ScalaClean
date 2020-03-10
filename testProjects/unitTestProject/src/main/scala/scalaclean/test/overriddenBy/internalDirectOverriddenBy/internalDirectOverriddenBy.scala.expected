@@ -5,10 +5,10 @@ rules = [ Analysis , Test_internalDirectOverriddenBy ]
 package scalaclean.test.overriddenBy.internalDirectOverriddenBy
 
 trait GrandParentTrait {
-  def d1: Int/* internalTransitiveOverriddenBy(G:scalaclean/test/overriddenBy/internalDirectOverriddenBy/GrandParentTrait#d1().) - G:scalaclean/test/overriddenBy/internalDirectOverriddenBy/Class_ChildTrait#d1(). :: L:d1/local9 :: G:scalaclean/test/overriddenBy/internalDirectOverriddenBy/Object_ChildTrait.d1(). :: G:scalaclean/test/overriddenBy/internalDirectOverriddenBy/Trait_ChildTrait#d1(). */
-  def d2(a:Int): Int/* internalTransitiveOverriddenBy(G:scalaclean/test/overriddenBy/internalDirectOverriddenBy/GrandParentTrait#d2().) - G:scalaclean/test/overriddenBy/internalDirectOverriddenBy/Class_ChildTrait#d2(). :: L:d2/local6 :: G:scalaclean/test/overriddenBy/internalDirectOverriddenBy/Object_ChildTrait.d2(). :: G:scalaclean/test/overriddenBy/internalDirectOverriddenBy/Trait_ChildTrait#d2(). */
-  def d2a(a:Int)(b:Int): Int/* internalTransitiveOverriddenBy(G:scalaclean/test/overriddenBy/internalDirectOverriddenBy/GrandParentTrait#d2a().) - G:scalaclean/test/overriddenBy/internalDirectOverriddenBy/Class_ChildTrait#d2a(). :: L:d2a/local8 :: G:scalaclean/test/overriddenBy/internalDirectOverriddenBy/Object_ChildTrait.d2a(). :: G:scalaclean/test/overriddenBy/internalDirectOverriddenBy/Trait_ChildTrait#d2a(). */
-  def d3()(): Int/* internalTransitiveOverriddenBy(G:scalaclean/test/overriddenBy/internalDirectOverriddenBy/GrandParentTrait#d3().) - G:scalaclean/test/overriddenBy/internalDirectOverriddenBy/Class_ChildTrait#d3(). :: L:d3/local10 :: G:scalaclean/test/overriddenBy/internalDirectOverriddenBy/Object_ChildTrait.d3(). :: G:scalaclean/test/overriddenBy/internalDirectOverriddenBy/Trait_ChildTrait#d3(). */
+  def d1: Int/* internalTransitiveOverriddenBy(G:scalaclean/test/overriddenBy/internalDirectOverriddenBy/GrandParentTrait#d1().) - G:scalaclean/test/overriddenBy/internalDirectOverriddenBy/Class_ChildTrait#d1(). :: L:d1/localXXXXXXXX :: G:scalaclean/test/overriddenBy/internalDirectOverriddenBy/Object_ChildTrait.d1(). :: G:scalaclean/test/overriddenBy/internalDirectOverriddenBy/Trait_ChildTrait#d1(). */
+  def d2(a:Int): Int/* internalTransitiveOverriddenBy(G:scalaclean/test/overriddenBy/internalDirectOverriddenBy/GrandParentTrait#d2().) - G:scalaclean/test/overriddenBy/internalDirectOverriddenBy/Class_ChildTrait#d2(). :: L:d2/localXXXXXXXX :: G:scalaclean/test/overriddenBy/internalDirectOverriddenBy/Object_ChildTrait.d2(). :: G:scalaclean/test/overriddenBy/internalDirectOverriddenBy/Trait_ChildTrait#d2(). */
+  def d2a(a:Int)(b:Int): Int/* internalTransitiveOverriddenBy(G:scalaclean/test/overriddenBy/internalDirectOverriddenBy/GrandParentTrait#d2a().) - G:scalaclean/test/overriddenBy/internalDirectOverriddenBy/Class_ChildTrait#d2a(). :: L:d2a/localXXXXXXXX :: G:scalaclean/test/overriddenBy/internalDirectOverriddenBy/Object_ChildTrait.d2a(). :: G:scalaclean/test/overriddenBy/internalDirectOverriddenBy/Trait_ChildTrait#d2a(). */
+  def d3()(): Int/* internalTransitiveOverriddenBy(G:scalaclean/test/overriddenBy/internalDirectOverriddenBy/GrandParentTrait#d3().) - G:scalaclean/test/overriddenBy/internalDirectOverriddenBy/Class_ChildTrait#d3(). :: L:d3/localXXXXXXXX :: G:scalaclean/test/overriddenBy/internalDirectOverriddenBy/Object_ChildTrait.d3(). :: G:scalaclean/test/overriddenBy/internalDirectOverriddenBy/Trait_ChildTrait#d3(). */
 
 }
 trait ParentTrait extends GrandParentTrait {
@@ -58,23 +58,23 @@ class Class_ChildTrait extends ParentTrait {
   override def d3()(): Int = ???
 }
 object Object_ChildTrait extends ParentTrait {
-  override def equals(obj: Any): Boolean = super.equals(obj)/* internalTransitiveOverriddenBy(G:scalaclean/test/overriddenBy/internalDirectOverriddenBy/Object_ChildTrait.equals().) - L:equals/local7 :: L:equals/local12 */
+  override def equals(obj: Any): Boolean = super.equals(obj)/* internalTransitiveOverriddenBy(G:scalaclean/test/overriddenBy/internalDirectOverriddenBy/Object_ChildTrait.equals().) - L:equals/localXXXXXXXX :: L:equals/localXXXXXXXX */
 
-  override def clone(): AnyRef = super.clone()/* internalTransitiveOverriddenBy(G:scalaclean/test/overriddenBy/internalDirectOverriddenBy/Object_ChildTrait.clone().) - L:clone/local3 */
+  override def clone(): AnyRef = super.clone()/* internalTransitiveOverriddenBy(G:scalaclean/test/overriddenBy/internalDirectOverriddenBy/Object_ChildTrait.clone().) - L:clone/localXXXXXXXX */
 
-  override def toString: String = super.toString/* internalTransitiveOverriddenBy(G:scalaclean/test/overriddenBy/internalDirectOverriddenBy/Object_ChildTrait.toString().) - L:toString/local2 :: L:toString/local5 */
+  override def toString: String = super.toString/* internalTransitiveOverriddenBy(G:scalaclean/test/overriddenBy/internalDirectOverriddenBy/Object_ChildTrait.toString().) - L:toString/localXXXXXXXX :: L:toString/localXXXXXXXX */
 
-  override def finalize(): Unit = super.finalize()/* internalTransitiveOverriddenBy(G:scalaclean/test/overriddenBy/internalDirectOverriddenBy/Object_ChildTrait.finalize().) - L:finalize/local11 */
+  override def finalize(): Unit = super.finalize()/* internalTransitiveOverriddenBy(G:scalaclean/test/overriddenBy/internalDirectOverriddenBy/Object_ChildTrait.finalize().) - L:finalize/localXXXXXXXX */
 
-  override def hashCode(): Int = super.hashCode()/* internalTransitiveOverriddenBy(G:scalaclean/test/overriddenBy/internalDirectOverriddenBy/Object_ChildTrait.hashCode().) - L:hashCode/local1 :: L:hashCode/local4 */
+  override def hashCode(): Int = super.hashCode()/* internalTransitiveOverriddenBy(G:scalaclean/test/overriddenBy/internalDirectOverriddenBy/Object_ChildTrait.hashCode().) - L:hashCode/localXXXXXXXX :: L:hashCode/localXXXXXXXX */
 
-  override def d1: Int = ???/* internalTransitiveOverriddenBy(G:scalaclean/test/overriddenBy/internalDirectOverriddenBy/Object_ChildTrait.d1().) - L:d1/local9 */
+  override def d1: Int = ???/* internalTransitiveOverriddenBy(G:scalaclean/test/overriddenBy/internalDirectOverriddenBy/Object_ChildTrait.d1().) - L:d1/localXXXXXXXX */
 
-  override def d2(a: Int): Int = ???/* internalTransitiveOverriddenBy(G:scalaclean/test/overriddenBy/internalDirectOverriddenBy/Object_ChildTrait.d2().) - L:d2/local6 */
+  override def d2(a: Int): Int = ???/* internalTransitiveOverriddenBy(G:scalaclean/test/overriddenBy/internalDirectOverriddenBy/Object_ChildTrait.d2().) - L:d2/localXXXXXXXX */
 
-  override def d2a(a: Int)(b: Int): Int = ???/* internalTransitiveOverriddenBy(G:scalaclean/test/overriddenBy/internalDirectOverriddenBy/Object_ChildTrait.d2a().) - L:d2a/local8 */
+  override def d2a(a: Int)(b: Int): Int = ???/* internalTransitiveOverriddenBy(G:scalaclean/test/overriddenBy/internalDirectOverriddenBy/Object_ChildTrait.d2a().) - L:d2a/localXXXXXXXX */
 
-  override def d3()(): Int = ???/* internalTransitiveOverriddenBy(G:scalaclean/test/overriddenBy/internalDirectOverriddenBy/Object_ChildTrait.d3().) - L:d3/local10 */
+  override def d3()(): Int = ???/* internalTransitiveOverriddenBy(G:scalaclean/test/overriddenBy/internalDirectOverriddenBy/Object_ChildTrait.d3().) - L:d3/localXXXXXXXX */
 }
 
 
