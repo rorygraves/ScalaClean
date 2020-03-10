@@ -419,7 +419,10 @@ class ScalaCompilerPluginComponent(
           scopeLog("This")
         // do nothing
         case literalTree: Literal =>
-          scopeLog("Literal " + literalTree)
+          enterTransScope("Literal") {
+            literalTree.attachments.get[analyzer.OriginalTreeAttachment].foreach(x => traverse(x.original))
+            super.traverse(literalTree)
+          }
         case identTree: Ident =>
           //          identTree.name
           enterTransScope("Ident " + identTree.symbol) {

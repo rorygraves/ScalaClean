@@ -171,6 +171,7 @@ lazy val deadCodeProject7 = testInputProject("deadCodeProject7", "testProjects/d
 lazy val deadCodeProject8 = testInputProject("deadCodeProject8", "testProjects/deadCodeProject8")()
 lazy val deadCodeProject9 = testInputProject("deadCodeProject9", "testProjects/deadCodeProject9")()
 lazy val deadCodeProject10_vals = testInputProject("deadCodeProject10_vals", "testProjects/deadCodeProject10-vals")()
+lazy val deadCodeProject11_constants = testInputProject("deadCodeProject11_constants", "testProjects/deadCodeProject11_constants")()
 
 lazy val privatiserProject1 = testInputProject("privatiserProject1", "testProjects/privatiserProject1")()
 lazy val privatiserProject2 = testInputProject("privatiserProject2", "testProjects/privatiserProject2")()
@@ -186,7 +187,7 @@ lazy val privatiserTests = List(privatiserProject1, privatiserProject2, privatis
   privatiserProject4, privatiserProject5, privatiserProject6, privatiserProject7)
 lazy val deadCodeTests = List(deadCodeProject1, deadCodeProject2, deadCodeProject3, deadCodeProject4,
   deadCodeProject5, deadCodeProject6a, deadCodeProject6b, deadCodeProject7, deadCodeProject8, deadCodeProject9,
-  deadCodeProject10_vals
+  deadCodeProject10_vals, deadCodeProject11_constants
 )
 lazy val scratchProjects = List(scratch)
 lazy val testDep = List(command, unitTestProject) ::: privatiserTests ::: deadCodeTests ::: scratchProjects

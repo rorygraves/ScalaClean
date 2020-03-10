@@ -41,4 +41,8 @@ class DeadCodeTests extends  AbstractProjectTests {
     deadCodeProjectTest("deadCodeProject10-vals")
   }
 
+  test("deadCode11_constants") {
+    deadCodeProjectTest("deadCodeProject11_constants")
+  }
+
 }
