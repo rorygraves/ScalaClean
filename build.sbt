@@ -67,7 +67,6 @@ lazy val analysisPlugin = project.dependsOn(shared).settings(
     scalacOptions in Test ++= {
       // we depend on the assembly jar
       val jar = (assembly in Compile).value
-      println("JAR = " + jar.getAbsolutePath)
       Seq(
         "-Yrangepos",
         s"-Xplugin:${jar.getAbsolutePath}",
@@ -114,7 +113,7 @@ lazy val unitTestProject = project.in(file("testProjects/unitTestProject")).sett
       val jar = (assembly in Compile in analysisPlugin).value
       val srcLocations = (sourceDirectories in Compile).value.mkString(java.io.File.pathSeparator)
       Seq(
-        "-Xprint:typer",
+        //      "-Xprint:typer",
         //      "-Ycompact-trees",
         "-Yrangepos",
         s"-Xplugin:${jar.getAbsolutePath}",
