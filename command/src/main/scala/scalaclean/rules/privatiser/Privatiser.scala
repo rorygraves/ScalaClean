@@ -1,7 +1,7 @@
 package scalaclean.rules.privatiser
 
 import scalaclean.model._
-import scalaclean.model.impl.ElementId
+import scalaclean.model.impl.LegacyElementId
 import scalaclean.rules.AbstractRule
 import scalaclean.util.{Scope, SymbolTreeVisitor, SymbolUtils}
 import scalafix.patch.Patch
@@ -56,7 +56,7 @@ class Privatiser(model: ProjectModel, debug: Boolean) extends AbstractRule("Priv
       }
 
       incoming foreach { ref: ModelElement =>
-        val isFromChild = ref.classOrEnclosing.xtends(enclosing.modelElementId)
+        val isFromChild = ref.classOrEnclosing.xtends(enclosing.elementId)
         val access = if (isFromChild)
           Scoped.Protected(ref.legacySymbol, s"accessed from $ref", forceProtected = false)
         else
@@ -116,7 +116,7 @@ class Privatiser(model: ProjectModel, debug: Boolean) extends AbstractRule("Priv
     val tv: SymbolTreeVisitor = new SymbolTreeVisitor {
 
       override protected def handlerSymbol(
-                                            symbol: ElementId, mods: Seq[Mod], stat: Stat, scope: List[Scope]): (Patch, Boolean) = {
+                                            symbol: LegacyElementId, mods: Seq[Mod], stat: Stat, scope: List[Scope]): (Patch, Boolean) = {
         if(symbol.symbol.isLocal) continue else {
 
 
@@ -147,7 +147,7 @@ class Privatiser(model: ProjectModel, debug: Boolean) extends AbstractRule("Priv
         //for vals and vars we set the access to the broadest of any access of the fields
 
         val modelElements: Seq[FieldOrAccessorModel] = pats map { p =>
-          val ele = model.legacySymbol[FieldOrAccessorModel](ElementId(p.symbol))
+          val ele = model.legacySymbol[FieldOrAccessorModel](LegacyElementId(p.symbol))
           ele match {
             case v: ValModel => v
             case v: VarModel => v
@@ -210,10 +210,10 @@ class Privatiser(model: ProjectModel, debug: Boolean) extends AbstractRule("Priv
               case None => false
               case Some(Mod.Private(scope)) =>
                 !scope.symbol.isNone &&
-                  SymbolUtils.findCommonParent(ElementId.fromTree(scope), privateScope.symbol) != ElementId.fromTree(scope)
+                  SymbolUtils.findCommonParent(LegacyElementId.fromTree(scope), privateScope.symbol) != LegacyElementId.fromTree(scope)
               case Some(Mod.Protected(scope)) =>
                 !scope.symbol.isNone &&
-                  SymbolUtils.findCommonParent(ElementId.fromTree(scope), privateScope.symbol) != ElementId.fromTree(scope)
+                  SymbolUtils.findCommonParent(LegacyElementId.fromTree(scope), privateScope.symbol) != LegacyElementId.fromTree(scope)
             }
           case Undefined => false
           case Public(_) => existing.isDefined
@@ -223,8 +223,8 @@ class Privatiser(model: ProjectModel, debug: Boolean) extends AbstractRule("Priv
 
       def existingAccess(mods: Seq[Mod]): (Option[Mod], PrivatiserLevel) = {
         val res: Option[(Option[Mod], PrivatiserLevel)] = mods.collectFirst {
-          case s@Mod.Private(scope) => (Some(s), Scoped.Private(ElementId.fromTree(scope), "existing"))
-          case s@Mod.Protected(scope) => (Some(s), Scoped.Protected(ElementId.fromTree(scope), "existing", forceProtected = false))
+          case s@Mod.Private(scope) => (Some(s), Scoped.Private(LegacyElementId.fromTree(scope), "existing"))
+          case s@Mod.Protected(scope) => (Some(s), Scoped.Protected(LegacyElementId.fromTree(scope), "existing", forceProtected = false))
         }
         res.getOrElse((None, Public("existing")))
       }

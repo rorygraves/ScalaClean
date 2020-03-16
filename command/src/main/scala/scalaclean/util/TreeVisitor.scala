@@ -1,6 +1,6 @@
 package scalaclean.util
 
-import scalaclean.model.impl.ElementId
+import scalaclean.model.impl.LegacyElementId
 import scalafix.patch.Patch
 import scalafix.v1._
 
@@ -62,23 +62,23 @@ abstract class TreeVisitor()(implicit doc: SemanticDocument) {
         processHandler(pkg, handlePackage(pkg.name, pkg, scope), newScope)
       case obj: Defn.Object =>
         val newScope = Scope.ObjScope(obj.symbol.toString()) :: scope
-        processHandler(obj, handleObject(ElementId(obj.symbol), obj, scope), newScope)
+        processHandler(obj, handleObject(LegacyElementId(obj.symbol), obj, scope), newScope)
       case cls: Defn.Class =>
         val newScope = Scope.ClassScope(cls.symbol.displayName) :: scope
-        processHandler(cls, handleClass(ElementId(cls.symbol), cls, scope), newScope)
+        processHandler(cls, handleClass(LegacyElementId(cls.symbol), cls, scope), newScope)
       case cls: Defn.Trait =>
         val newScope = Scope.TraitScope(cls.symbol.displayName) :: scope
-        processHandler(cls, handleTrait(ElementId(cls.symbol), cls, scope), newScope)
+        processHandler(cls, handleTrait(LegacyElementId(cls.symbol), cls, scope), newScope)
       case method: Defn.Def =>
         val typeSigs = method.paramss.map(_.map(v => v.decltpe.get)).toString
         val fullSig = s"${method.symbol}:$typeSigs"
         val newScope = Scope.MethodScope(fullSig) :: scope
-        processHandler(method, handleMethod(ElementId(method.symbol), fullSig, method, scope), newScope)
+        processHandler(method, handleMethod(LegacyElementId(method.symbol), fullSig, method, scope), newScope)
       case method: Decl.Def =>
         val typeSigs = method.paramss.map(_.map(v => v.decltpe.get)).toString
         val fullSig = s"${method.symbol}:$typeSigs"
         val newScope = Scope.MethodScope(fullSig) :: scope
-        processHandler(method, handleMethod(ElementId(method.symbol), fullSig, method, scope), newScope)
+        processHandler(method, handleMethod(LegacyElementId(method.symbol), fullSig, method, scope), newScope)
       case valDef: Defn.Val =>
         val newScope = Scope.ValScope(valDef.symbol.displayName) :: scope
         processHandler(valDef, handleVal(valDef, scope), newScope)
@@ -108,15 +108,15 @@ abstract class TreeVisitor()(implicit doc: SemanticDocument) {
 
   def handleVal(valDef: Decl.Val, scope: List[Scope]): (Patch, Boolean)
 
-  def handleMethod(symbol: ElementId, fullSig: String, method: Defn.Def, scope: List[Scope]): (Patch, Boolean)
+  def handleMethod(symbol: LegacyElementId, fullSig: String, method: Defn.Def, scope: List[Scope]): (Patch, Boolean)
 
-  def handleMethod(symbol: ElementId, fullSig: String, method: Decl.Def, scope: List[Scope]): (Patch, Boolean)
+  def handleMethod(symbol: LegacyElementId, fullSig: String, method: Decl.Def, scope: List[Scope]): (Patch, Boolean)
 
-  def handleObject(symbol: ElementId, obj: Defn.Object, scope: List[Scope]): (Patch, Boolean)
+  def handleObject(symbol: LegacyElementId, obj: Defn.Object, scope: List[Scope]): (Patch, Boolean)
 
-  def handleClass(symbol: ElementId, cls: Defn.Class, scope: List[Scope]): (Patch, Boolean)
+  def handleClass(symbol: LegacyElementId, cls: Defn.Class, scope: List[Scope]): (Patch, Boolean)
 
-  def handleTrait(symbol: ElementId, cls: Defn.Trait, scope: List[Scope]): (Patch, Boolean)
+  def handleTrait(symbol: LegacyElementId, cls: Defn.Trait, scope: List[Scope]): (Patch, Boolean)
 
   //non model entries
   def handleImport(importStatement: Import, scope: List[Scope]): (Patch, Boolean)
