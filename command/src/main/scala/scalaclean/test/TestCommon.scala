@@ -18,6 +18,6 @@ abstract class TestCommon(name: String, model: ProjectModel) extends TestBase(na
   override def visitTrait(element: TraitModel): String = visit(element)
 
   def debugValues(elements: Seq[ModelElement]): Seq[String] = {
-    elements map (_.legacySymbol.debugValue)
+    elements map (_.elementId.stableTestId)
   }
 }

@@ -10,7 +10,7 @@ class Test_internalDirectOverrides(model: ProjectModel) extends TestCommon("Test
     val overrides = modelElement.internalDirectOverrides.sorted
     overrides match {
       case Nil => ""
-      case refs => debugValues(refs).mkString(s"internalDirectOverrides(${modelElement.elementId.debugValue}) - ", " :: ", "")
+      case refs => debugValues(refs).mkString(s"internalDirectOverrides(${modelElement.elementId.stableTestId}) - ", " :: ", "")
     }
   }
 }
@@ -23,7 +23,7 @@ class Test_internalTransitiveOverrides(model: ProjectModel) extends TestCommon("
     val overrides = modelElement.internalTransitiveOverrides.sorted
     overrides match {
       case Nil => ""
-      case refs => debugValues(refs).mkString(s"internalTransitiveOverrides(${modelElement.elementId.debugValue}) - ", " :: ", "")
+      case refs => debugValues(refs).mkString(s"internalTransitiveOverrides(${modelElement.elementId.stableTestId}) - ", " :: ", "")
     }
   }
 }
@@ -36,7 +36,7 @@ class Test_allDirectOverrides(model: ProjectModel) extends TestCommon("Test_allD
     val overrides = (modelElement.allDirectOverrides map (_._2.id)).sorted
     overrides match {
       case Nil => ""
-      case refs => refs.mkString(s"allDirectOverrides(${modelElement.elementId.debugValue}) - ", " :: ", "")
+      case refs => refs.mkString(s"allDirectOverrides(${modelElement.elementId.stableTestId}) - ", " :: ", "")
     }
   }
 }
@@ -46,10 +46,10 @@ class Test_allDirectOverrides(model: ProjectModel) extends TestCommon("Test_allD
   */
 class Test_allTransitiveOverrides(model: ProjectModel) extends TestCommon("Test_allTransitiveOverrides", model) {
   def visit(modelElement: ModelElement): String = {
-    val overrides = (modelElement.allTransitiveOverrides map (_._2.debugValue)).sorted
+    val overrides = (modelElement.allTransitiveOverrides map (_._2.stableTestId)).sorted
     overrides match {
       case Nil => ""
-      case refs => refs.mkString(s"allTransitiveOverrides(${modelElement.elementId.debugValue}) - ", " :: ", "")
+      case refs => refs.mkString(s"allTransitiveOverrides(${modelElement.elementId.stableTestId}) - ", " :: ", "")
     }
   }
 }
@@ -62,7 +62,7 @@ class Test_internalDirectOverriddenBy(model: ProjectModel) extends TestCommon("T
     val overrides = modelElement.internalDirectOverriddenBy.sorted
     overrides match {
       case Nil => ""
-      case refs => debugValues(refs).mkString(s"internalDirectOverriddenBy(${modelElement.elementId.debugValue}) - ", " :: ", "")
+      case refs => debugValues(refs).mkString(s"internalDirectOverriddenBy(${modelElement.elementId.stableTestId}) - ", " :: ", "")
     }
   }
 }
@@ -75,7 +75,7 @@ class Test_internalTransitiveOverriddenBy(model: ProjectModel) extends TestCommo
     val overrides = modelElement.internalTransitiveOverriddenBy.sorted
     overrides match {
       case Nil => ""
-      case refs => debugValues(refs).mkString(s"internalTransitiveOverriddenBy(${modelElement.elementId.debugValue}) - ", " :: ", "")
+      case refs => debugValues(refs).mkString(s"internalTransitiveOverriddenBy(${modelElement.elementId.stableTestId}) - ", " :: ", "")
     }
   }
 }

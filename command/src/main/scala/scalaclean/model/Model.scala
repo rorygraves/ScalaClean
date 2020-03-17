@@ -229,7 +229,7 @@ trait ProjectModel {
 }
 
 abstract sealed class ElementId(val id: String) {
-  def debugValue: String = id
+  def stableTestId: String = id.replaceAll("(\\{\\{Local.*?#)[0-9]+\\}\\}", "$1####}}")
 }
 
 
