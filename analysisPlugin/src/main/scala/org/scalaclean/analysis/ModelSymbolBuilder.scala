@@ -27,13 +27,13 @@ trait ModelSymbolBuilder extends SemanticdbOps {
     case sym if sym.isMethod =>
       "{M}" + sym.encodedName +
         typeParams(sym) +
-        sym.paramss.map { params => params.map(param => paramName(param)).mkString(";") }.mkString("(", "", ")") +
+        sym.paramss.map { params => params.map(param => paramName(param)).mkString(";") }.mkString("(", ")(", ")") +
         suffix(sym)
     case sym => sym.encodedName + suffix(sym)
   }
 
   private def suffix(sym: global.Symbol) = sym match {
-    case _: global.ModuleClassSymbol => "@"
+    case _: global.ModuleClassSymbol => ""
     case _: global.TermSymbol        => "."
     case _: global.TypeSymbol        => "#"
     case _: global.NoSymbol          => ""
