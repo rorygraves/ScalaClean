@@ -1,7 +1,7 @@
 package scalaclean.rules
 
 import scalaclean.model._
-import scalaclean.model.impl.ElementId
+import scalaclean.model.impl.LegacyElementId
 import scalafix.patch.Patch
 import scalafix.v1.{SemanticDocument, Symbol}
 

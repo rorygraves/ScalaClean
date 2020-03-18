@@ -38,8 +38,8 @@ object ModelReader {
     import scala.reflect.runtime.universe
     val runtimeMirror = universe.runtimeMirror(getClass.getClassLoader)
 
+    var mapByLegacyElementId = Map.empty[String, mutable.Builder[ExtensionData, List[ExtensionData]]]
     var mapByElementId = Map.empty[String, mutable.Builder[ExtensionData, List[ExtensionData]]]
-    var mapByNewElementId = Map.empty[String, mutable.Builder[ExtensionData, List[ExtensionData]]]
 
     val path = Paths.get(extensionFilePath)
     println(s"reading extensions from $path")
@@ -63,18 +63,18 @@ object ModelReader {
           }
         })
         val ext: ExtensionData = extBuilder.fromCsv(rest)
-        val elementValues1 = mapByElementId.get(id) match {
+        val elementValues1 = mapByLegacyElementId.get(id) match {
           case None =>
             val builder = List.newBuilder[ExtensionData]
-            mapByElementId = mapByElementId.updated(id, builder)
+            mapByLegacyElementId = mapByLegacyElementId.updated(id, builder)
             builder
           case Some(builder) => builder
         }
 
-        val elementValues2 = mapByNewElementId.get(newId) match {
+        val elementValues2 = mapByElementId.get(newId) match {
           case None =>
             val builder = List.newBuilder[ExtensionData]
-            mapByNewElementId = mapByNewElementId.updated(newId, builder)
+            mapByElementId = mapByElementId.updated(newId, builder)
             builder
           case Some(builder) => builder
         }
@@ -83,8 +83,8 @@ object ModelReader {
         elementValues2 += ext
 
     }
-    (mapByElementId.map { case (k, b) => k -> compress(b.result) },
-      mapByNewElementId.map { case (k, b) => k -> compress(b.result) })
+    (mapByLegacyElementId.map { case (k, b) => k -> compress(b.result) },
+      mapByElementId.map { case (k, b) => k -> compress(b.result) })
 
   }
 
@@ -104,9 +104,9 @@ object ModelReader {
         try {
           val tokens = line.split(",")
 
-          val from = NewElementIdImpl(tokens(0))
+          val from = ElementIdImpl(tokens(0))
           val relType = tokens(1)
-          val to = NewElementIdImpl(tokens(2))
+          val to = ElementIdImpl(tokens(2))
 
           val offset = 3
           relType match {
@@ -132,12 +132,12 @@ object ModelReader {
             throw new IllegalStateException(s"Failed to parse line $line", t)
         }
     }
-    val refersTo = refersToB.result().groupBy(_.fromNewElementId)
-    val extends_ = extendsB.result().groupBy(_.fromNewElementId)
-    val overrides = overridesB.result().groupBy(_.fromNewElementId)
-    val within = withinB.result().groupBy(_.fromNewElementId)
-    val getter = getterB.result().groupBy(_.fromNewElementId)
-    val setter = setterB.result().groupBy(_.fromNewElementId)
+    val refersTo = refersToB.result().groupBy(_.fromElementId)
+    val extends_ = extendsB.result().groupBy(_.fromElementId)
+    val overrides = overridesB.result().groupBy(_.fromElementId)
+    val within = withinB.result().groupBy(_.fromElementId)
+    val getter = getterB.result().groupBy(_.fromElementId)
+    val setter = setterB.result().groupBy(_.fromElementId)
 
     BasicRelationshipInfo(
       refersTo,
@@ -163,8 +163,8 @@ object ModelReader {
           } else line.split(",")
 
           val typeId = tokens(0)
-          val symbol = ElementId(tokens(1))
-          val modelSymbol = NewElementIdImpl(tokens(2))
+          val symbol = LegacyElementId(tokens(1))
+          val modelSymbol = ElementIdImpl(tokens(2))
           val flags = java.lang.Long.parseLong(tokens(3), 16)
           val src = project.source(tokens(4))
           val start = tokens(5).toInt

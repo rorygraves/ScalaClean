@@ -1,17 +1,17 @@
 package scalaclean.model
 
 import org.scalaclean.analysis.{AnnotationData, ExtensionData}
-import scalaclean.model.impl.{ElementId, FieldModelImpl}
+import scalaclean.model.impl.{LegacyElementId, FieldModelImpl}
 
 import scala.reflect.ClassTag
 
 sealed trait ModelElement extends Ordered[ModelElement] {
 
-  override def compare(that: ModelElement): Int = modelElementId.id.compare(that.modelElementId.id)
+  override def compare(that: ModelElement): Int = elementId.id.compare(that.elementId.id)
 
-  def legacySymbol: ElementId
+  def legacySymbol: LegacyElementId
 
-  def modelElementId: NewElementId
+  def elementId: ElementId
 
   var mark: Mark = _
 
@@ -37,9 +37,9 @@ sealed trait ModelElement extends Ordered[ModelElement] {
   def outgoingReferences: Iterable[Refers] = allOutgoingReferences map (_._2)
 
   def overrides: Iterable[Overrides] = {
-    val direct: Set[NewElementId] = (allDirectOverrides map (_._2)).toSet
+    val direct: Set[ElementId] = (allDirectOverrides map (_._2)).toSet
     allTransitiveOverrides map {
-      case (_, modelSym) => new impl.OverridesImpl(modelElementId, modelSym, direct.contains(modelSym))
+      case (_, modelSym) => new impl.OverridesImpl(elementId, modelSym, direct.contains(modelSym))
     }
   }
 
@@ -64,9 +64,9 @@ sealed trait ModelElement extends Ordered[ModelElement] {
 
   def internalTransitiveOverrides: List[ModelElement]
 
-  def allDirectOverrides: List[(Option[ModelElement], NewElementId)]
+  def allDirectOverrides: List[(Option[ModelElement], ElementId)]
 
-  def allTransitiveOverrides: List[(Option[ModelElement], NewElementId)]
+  def allTransitiveOverrides: List[(Option[ModelElement], ElementId)]
 
   def internalDirectOverriddenBy: List[ModelElement]
 
@@ -106,9 +106,9 @@ sealed trait ModelElement extends Ordered[ModelElement] {
 
   protected def infoDetail = ""
 
-  protected def infoName = modelElementId.id
+  protected def infoName = elementId.id
 
-  override def toString: String = s"$infoTypeName $infoName [$infoPosString] $infoDetail [[${modelElementId}]]"
+  override def toString: String = s"$infoTypeName $infoName [$infoPosString] $infoDetail [[${elementId}]]"
 }
 
 sealed trait ClassLike extends ModelElement {
@@ -116,11 +116,11 @@ sealed trait ClassLike extends ModelElement {
 
   def xtends[T](implicit cls: ClassTag[T]): Boolean
 
-  def xtends(symbol: NewElementId): Boolean
+  def xtends(symbol: ElementId): Boolean
 
-  def directExtends: Set[NewElementId]
+  def directExtends: Set[ElementId]
 
-  def transitiveExtends: Set[NewElementId]
+  def transitiveExtends: Set[ElementId]
 
   def directExtendedBy: Set[ClassLike]
 
@@ -211,13 +211,13 @@ sealed trait SourceModel extends ModelElement {
 
 trait ProjectModel {
 
-  def legacySymbol[T <: ModelElement](symbol: ElementId)(implicit tpe: ClassTag[T]): T
+  def legacySymbol[T <: ModelElement](symbol: LegacyElementId)(implicit tpe: ClassTag[T]): T
 
-  def getLegacySymbol[T <: ModelElement](symbol: ElementId)(implicit tpe: ClassTag[T]): Option[T]
+  def getLegacySymbol[T <: ModelElement](symbol: LegacyElementId)(implicit tpe: ClassTag[T]): Option[T]
 
-  def element[T <: ModelElement](id: NewElementId)(implicit tpe: ClassTag[T]): T
+  def element[T <: ModelElement](id: ElementId)(implicit tpe: ClassTag[T]): T
 
-  def getElement[T <: ModelElement](id: NewElementId)(implicit tpe: ClassTag[T]): Option[T]
+  def getElement[T <: ModelElement](id: ElementId)(implicit tpe: ClassTag[T]): Option[T]
 
   def size: Int
 
@@ -228,27 +228,26 @@ trait ProjectModel {
   }
 }
 
-abstract sealed class NewElementId(val id: String) {
+abstract sealed class ElementId(val id: String) {
   def debugValue: String = id
-
 }
 
 
 package impl {
 
-  case class BasicElementInfo(symbol: ElementId, newElementId: NewElementId, source: SourceData,
+  case class BasicElementInfo(legacyElementId: LegacyElementId, elementId: ElementId, source: SourceData,
                               startPos: Int, endPos: Int,
                               flags: Long, extensions: Seq[ExtensionData],
                               traversal: Int)
 
   case class BasicRelationshipInfo(
-                                    refers: Map[NewElementId, List[RefersImpl]],
-                                    extnds: Map[NewElementId, List[ExtendsImpl]],
-                                    overrides: Map[NewElementId, List[OverridesImpl]],
-                                    within: Map[NewElementId, List[WithinImpl]],
-                                    getter: Map[NewElementId, List[GetterImpl]],
-                                    setter: Map[NewElementId, List[SetterImpl]]) {
-    def complete(modelElements: Map[NewElementId, ElementModelImpl]): Unit = {
+                                    refers: Map[ElementId, List[RefersImpl]],
+                                    extnds: Map[ElementId, List[ExtendsImpl]],
+                                    overrides: Map[ElementId, List[OverridesImpl]],
+                                    within: Map[ElementId, List[WithinImpl]],
+                                    getter: Map[ElementId, List[GetterImpl]],
+                                    setter: Map[ElementId, List[SetterImpl]]) {
+    def complete(modelElements: Map[ElementId, ElementModelImpl]): Unit = {
       refers.values.foreach(_.foreach(_.complete(modelElements)))
       extnds.values.foreach(_.foreach(_.complete(modelElements)))
       overrides.values.foreach(_.foreach(_.complete(modelElements)))
@@ -258,8 +257,8 @@ package impl {
     }
 
     def byTo: BasicRelationshipInfo = {
-      def byToSymbol[T <: Reference](from: Map[NewElementId, List[T]]): Map[NewElementId, List[T]] = {
-        from.values.flatten.groupBy(_.toNewElementId).map {
+      def byToSymbol[T <: Reference](from: Map[ElementId, List[T]]): Map[ElementId, List[T]] = {
+        from.values.flatten.groupBy(_.toElementId).map {
           case (k, v) => k -> (v.toList)
         }
       }
@@ -333,15 +332,15 @@ package impl {
       }
     }
 
-    override def allDirectOverrides: List[(Option[ModelElement], NewElementId)] = {
+    override def allDirectOverrides: List[(Option[ModelElement], ElementId)] = {
       overrides collect {
-        case o if o.isDirect => (o.toElement, o.toNewElementId)
+        case o if o.isDirect => (o.toElement, o.toElementId)
       }
     }
 
-    override def allTransitiveOverrides: List[(Option[ModelElement], NewElementId)] = {
+    override def allTransitiveOverrides: List[(Option[ModelElement], ElementId)] = {
       overrides collect {
-        case o => (o.toElement, o.toNewElementId)
+        case o => (o.toElement, o.toElementId)
       }
     }
 
@@ -361,14 +360,14 @@ package impl {
   trait LegacyExtends {
     self: ClassLikeModelImpl =>
 
-    override def directExtends: Set[NewElementId] = {
+    override def directExtends: Set[ElementId] = {
       extnds.collect {
-        case s if s.isDirect => s.toNewElementId
+        case s if s.isDirect => s.toElementId
       }.toSet
     }
 
-    override def transitiveExtends: Set[NewElementId] = {
-      extnds.map(_.toNewElementId).toSet
+    override def transitiveExtends: Set[ElementId] = {
+      extnds.map(_.toElementId).toSet
     }
 
     override def directExtendedBy: Set[ClassLike] = {
@@ -389,19 +388,19 @@ package impl {
                                           info: BasicElementInfo, relationships: BasicRelationshipInfo) extends ModelElement
     with LegacyReferences with LegacyOverrides {
     def complete(
-                  modelElements: Map[NewElementId, ElementModelImpl],
+                  modelElements: Map[ElementId, ElementModelImpl],
                   relsFrom: BasicRelationshipInfo,
                   relsTo: BasicRelationshipInfo): Unit = {
-      within = relsFrom.within.getOrElse(modelElementId, Nil) map {
+      within = relsFrom.within.getOrElse(elementId, Nil) map {
         _.toElement.get.asInstanceOf[ElementModelImpl]
       }
-      children = relsTo.within.getOrElse(modelElementId, Nil) map {
+      children = relsTo.within.getOrElse(elementId, Nil) map {
         _.fromElement.asInstanceOf[ElementModelImpl]
       }
-      refersTo = relsFrom.refers.getOrElse(modelElementId, Nil)
-      refersFrom = relsTo.refers.getOrElse(modelElementId, Nil)
-      _overrides = relsFrom.overrides.getOrElse(modelElementId, Nil)
-      overriden = relsTo.overrides.getOrElse(modelElementId, Nil)
+      refersTo = relsFrom.refers.getOrElse(elementId, Nil)
+      refersFrom = relsTo.refers.getOrElse(elementId, Nil)
+      _overrides = relsFrom.overrides.getOrElse(elementId, Nil)
+      overriden = relsTo.overrides.getOrElse(elementId, Nil)
     }
 
     override def extensions: Iterable[ExtensionData] = info.extensions
@@ -412,9 +411,9 @@ package impl {
 
     def projects = project.projects
 
-    override val legacySymbol: ElementId = info.symbol
+    override val legacySymbol: LegacyElementId = info.legacyElementId
 
-    override val modelElementId = info.newElementId
+    override val elementId = info.elementId
 
     override def name = legacySymbol.displayName
 
@@ -479,12 +478,12 @@ package impl {
     var extendedBy: List[Extends] = _
 
     override def complete(
-                           modelElements: Map[NewElementId, ElementModelImpl],
+                           modelElements: Map[ElementId, ElementModelImpl],
                            relsFrom: BasicRelationshipInfo,
                            relsTo: BasicRelationshipInfo): Unit = {
       super.complete(modelElements, relsFrom, relsTo)
-      extnds = relsFrom.extnds.getOrElse(modelElementId, Nil)
-      extendedBy = relsTo.extnds.getOrElse(modelElementId, Nil)
+      extnds = relsFrom.extnds.getOrElse(elementId, Nil)
+      extendedBy = relsTo.extnds.getOrElse(elementId, Nil)
 
     }
 
@@ -494,11 +493,11 @@ package impl {
 
     override def xtends[T](implicit cls: ClassTag[T]): Boolean = {
       //FIXME
-      xtends(NewElementIdImpl(cls.runtimeClass.getName.replace('.', '/') + "#"))
+      xtends(ElementIdImpl(cls.runtimeClass.getName.replace('.', '/') + "#"))
     }
 
-    override def xtends(symbol: NewElementId): Boolean = {
-      extnds.exists(_.toNewElementId == symbol)
+    override def xtends(symbol: ElementId): Boolean = {
+      extnds.exists(_.toElementId == symbol)
     }
   }
 
@@ -508,12 +507,12 @@ package impl {
     extends ElementModelImpl(info, relationships) with FieldModel {
     override def fieldsInSameDeclaration: Seq[fieldType] = (declaredIn.map (_.fieldsInDeclaration)).getOrElse(Nil).asInstanceOf[Seq[fieldType]]
 
-    override def complete(modelElements: Map[NewElementId, ElementModelImpl],
+    override def complete(modelElements: Map[ElementId, ElementModelImpl],
                           relsFrom: BasicRelationshipInfo,
                           relsTo: BasicRelationshipInfo): Unit = {
       super.complete(modelElements, relsFrom, relsTo)
 
-      relsTo.getter.get(info.newElementId) match {
+      relsTo.getter.get(info.elementId) match {
         case None => getter_ = None
         case Some(f :: Nil) =>
           if (f.fromElement.isInstanceOf[GetterMethodModelImpl])
@@ -525,7 +524,7 @@ package impl {
       val fieldImpl = fields_ match {
         case "" => None
         case f: String =>
-          Some(modelElements(NewElementIdImpl(f)).asInstanceOf[FieldsModelImpl])
+          Some(modelElements(ElementIdImpl(f)).asInstanceOf[FieldsModelImpl])
         case _ => ???
       }
       fieldImpl foreach (_.addField(this))
@@ -577,11 +576,11 @@ package impl {
     extends ElementModelImpl(info, relationships) with GetterMethodModel {
     override protected def typeName: String = "def[getter]"
 
-    override def complete(modelElements: Map[NewElementId, ElementModelImpl],
+    override def complete(modelElements: Map[ElementId, ElementModelImpl],
                           relsFrom: BasicRelationshipInfo,
                           relsTo: BasicRelationshipInfo): Unit = {
       super.complete(modelElements, relsFrom, relsTo)
-      relsFrom.getter.get(info.newElementId) match {
+      relsFrom.getter.get(info.elementId) match {
         case None => field_ = None
         case Some(f :: Nil) => field_ = f.toElement
         case Some(error) => ???
@@ -599,11 +598,11 @@ package impl {
     extends ElementModelImpl(info, relationships) with SetterMethodModel {
     override protected def typeName: String = "def[setter]"
 
-    override def complete(modelElements: Map[NewElementId, ElementModelImpl],
+    override def complete(modelElements: Map[ElementId, ElementModelImpl],
                           relsFrom: BasicRelationshipInfo,
                           relsTo: BasicRelationshipInfo): Unit = {
       super.complete(modelElements, relsFrom, relsTo)
-      relsFrom.setter.get(info.newElementId) match {
+      relsFrom.setter.get(info.elementId) match {
         case None => field_ = None
         case Some(f :: Nil) => field_ = f.toElement
         case Some(error) => ???
@@ -644,11 +643,11 @@ package impl {
     extends FieldModelImpl(info, relationships, fieldName, isAbstract, fields) with VarModel {
     override protected def typeName: String = "var"
 
-    override def complete(modelElements: Map[NewElementId, ElementModelImpl],
+    override def complete(modelElements: Map[ElementId, ElementModelImpl],
                           relsFrom: BasicRelationshipInfo,
                           relsTo: BasicRelationshipInfo): Unit = {
       super.complete(modelElements, relsFrom, relsTo)
-      relsTo.setter.get(info.newElementId) match {
+      relsTo.setter.get(info.elementId) match {
         case None => setter_ = None
         case Some(f :: Nil) => setter_ = Some(f.fromElement)
         case Some(error) => ???
@@ -670,16 +669,16 @@ package impl {
 
   }
 
-  object NewElementIdImpl {
+  object ElementIdImpl {
 
     import java.util.concurrent.ConcurrentHashMap
 
-    val interned = new ConcurrentHashMap[String, NewElementIdImpl]
+    val interned = new ConcurrentHashMap[String, ElementIdImpl]
 
-    def apply(id: String) = interned.computeIfAbsent(id, id => new NewElementIdImpl(id.intern()))
+    def apply(id: String) = interned.computeIfAbsent(id, id => new ElementIdImpl(id.intern()))
   }
 
-  final class NewElementIdImpl private(id: String) extends NewElementId(id) {
+  final class ElementIdImpl private(id: String) extends ElementId(id) {
     override def hashCode(): Int = id.hashCode()
 
     override def toString: String = s"ModelSymbol[$id]"

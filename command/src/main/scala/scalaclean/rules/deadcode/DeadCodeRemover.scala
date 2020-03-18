@@ -1,7 +1,7 @@
 package scalaclean.rules.deadcode
 
 import scalaclean.model._
-import scalaclean.model.impl.ElementId
+import scalaclean.model.impl.LegacyElementId
 import scalaclean.rules.AbstractRule
 import scalaclean.util.{Scope, SymbolTreeVisitor, TokenHelper}
 import scalafix.v1._
@@ -166,7 +166,7 @@ class DeadCodeRemover(model: ProjectModel, debug: Boolean) extends AbstractRule(
     val tv = new SymbolTreeVisitor {
 
       override protected def handlerSymbol(
-                                            symbol: ElementId, mods: Seq[Mod], stat: Stat, scope: List[Scope]): (Patch, Boolean) = {
+                                            symbol: LegacyElementId, mods: Seq[Mod], stat: Stat, scope: List[Scope]): (Patch, Boolean) = {
         if(symbol.symbol.isLocal || symbol.symbol.isNone) continue
         else {
           val modelElementOpt = model.getLegacySymbol[ModelElement](symbol)
@@ -203,7 +203,7 @@ class DeadCodeRemover(model: ProjectModel, debug: Boolean) extends AbstractRule(
         elementsVisited += 1
         val declarationsByUsage: Map[Usage, Seq[(Pat.Var, ModelElement)]] =
           pats.filterNot(v => v.symbol.isLocal  || v.symbol.isNone ) map { p =>
-            val mElement: ModelElement = model.legacySymbol[ModelElement](ElementId(p.symbol))
+            val mElement: ModelElement = model.legacySymbol[ModelElement](LegacyElementId(p.symbol))
             (p, mElement)
           } groupBy (m => m._2.colour)
 

@@ -1,9 +1,9 @@
 package scalaclean.model
 
-import scalaclean.model.impl.NewElementIdImpl
+import scalaclean.model.impl.ElementIdImpl
 
 object ElementIds {
   //FIXME
-  val AppObject: NewElementId = NewElementIdImpl("<root>/scala/App#")
+  val AppObject: ElementId = ElementIdImpl("<root>/scala/App#")
 
 }

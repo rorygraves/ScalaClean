@@ -1,6 +1,6 @@
 package scalaclean.rules.privatiser
 
-import scalaclean.model.impl.ElementId
+import scalaclean.model.impl.LegacyElementId
 import scalaclean.model.{Mark, ModelElement, Utils}
 import scalaclean.util.SymbolUtils
 import scalafix.patch.Patch
@@ -49,10 +49,10 @@ private[privatiser] case object Undefined extends PrivatiserLevel {
 }
 
 private[privatiser] object AccessScope {
-  val None = AccessScope(ElementId.None, "")
+  val None = AccessScope(LegacyElementId.None, "")
 }
 
-private[privatiser] final case class AccessScope(symbol: ElementId, reason: String) {
+private[privatiser] final case class AccessScope(symbol: LegacyElementId, reason: String) {
   def print(name: String) = if (symbol.isNone) s"$name <not found>" else s"$name $symbol $reason"
 
   def widen(other: AccessScope) =
@@ -62,9 +62,9 @@ private[privatiser] final case class AccessScope(symbol: ElementId, reason: Stri
 }
 
 private[privatiser] object Scoped {
-  def Private(scope: ElementId, reason: String) = Scoped(AccessScope(scope, reason), AccessScope.None, false)
+  def Private(scope: LegacyElementId, reason: String) = Scoped(AccessScope(scope, reason), AccessScope.None, false)
 
-  def Protected(scope: ElementId, reason: String, forceProtected: Boolean) = Scoped(AccessScope.None, AccessScope(scope, reason), forceProtected)
+  def Protected(scope: LegacyElementId, reason: String, forceProtected: Boolean) = Scoped(AccessScope.None, AccessScope(scope, reason), forceProtected)
 }
 
 private[privatiser] final case class Scoped(privateScope: AccessScope, protectedScope: AccessScope, forceProtected: Boolean) extends PrivatiserLevel {
@@ -76,9 +76,9 @@ private[privatiser] final case class Scoped(privateScope: AccessScope, protected
     forceProtected || privateScope.symbol.isNone || commonParentScope != privateScope.symbol
   }
 
-  def scope: ElementId = privateScope.symbol
+  def scope: LegacyElementId = privateScope.symbol
 
-  def scopeOrDefault(default: ElementId): ElementId = privateScope.symbol.asNonEmpty.getOrElse(default)
+  def scopeOrDefault(default: LegacyElementId): LegacyElementId = privateScope.symbol.asNonEmpty.getOrElse(default)
 
   override def asText(context: ModelElement): Option[String] = {
     val name = if (isProtected) "protected" else "private"
