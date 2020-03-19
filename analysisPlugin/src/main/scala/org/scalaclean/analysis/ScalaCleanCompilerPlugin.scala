@@ -38,7 +38,7 @@ class ScalaCleanCompilerPlugin(override val global: Global) extends Plugin {
         runtimeMirror.reflectModule(module).instance match {
           case valid: ExtensionPluginFactory => component.extensions += valid.create(component, option.substring(end))
           case null => throw new IllegalArgumentException("not a valid Extension FQN - expected the name of an object")
-          case invalid => throw new IllegalArgumentException(s"not a valid Extension FQN - ${invalid.getClass.getName()} is not a ${classOf[ExtensionDescriptor[_]].getName}")
+          case invalid => throw new IllegalArgumentException(s"not a valid Extension FQN - ${invalid.getClass.getName} is not a ${classOf[ExtensionDescriptor[_]].getName}")
         }
       } else if (option.startsWith("srcdirs:")) {
         component.sourceDirs = option.substring(8).split(java.io.File.pathSeparatorChar).toList
@@ -49,7 +49,7 @@ class ScalaCleanCompilerPlugin(override val global: Global) extends Plugin {
 
   override val optionsHelp: Option[String] = Some( //
     s"""-P:$name:debug:true        Set debugging on the ScalaClean analysis plugin
-       |-P:$name:srcdirs           The path of sources, seperated by ${java.io.File.pathSeparatorChar}
+       |-P:$name:srcdirs           The path of sources, separated by ${java.io.File.pathSeparatorChar}
        |-P:$name:extension:<fqn>   Add an extension dataset. FQN is the fully qualified name of the appropriate ExtensionDescriptor object
        |""".stripMargin)
 

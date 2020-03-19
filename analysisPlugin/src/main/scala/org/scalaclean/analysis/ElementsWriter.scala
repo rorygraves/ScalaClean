@@ -11,7 +11,7 @@ class ElementsWriter(file: File) {
     s"${model.ioToken},${model.csvString},${model.newCsvString},${model.tree.symbol.flags.toHexString},${model.sourceFile},${model.posStart},${model.posEnd},${model.traversal}"
 
 
-  def write(modelSymbol: ModelSymbol) = {
+  def write(modelSymbol: ModelSymbol): Unit = {
     val msg = modelSymbol match {
       case model: ModelMethod =>
         s"${commonPrefix(model)},${model.isAbstract},${model.sourceName},${model.isTyped}"

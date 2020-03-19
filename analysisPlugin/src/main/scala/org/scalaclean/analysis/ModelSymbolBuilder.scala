@@ -14,9 +14,9 @@ trait ModelSymbolBuilder extends SemanticdbOps {
   private val symbolNames = mutable.Map[global.Symbol, String]()
   private val ownerSymbolNames = mutable.Map[global.Symbol, LocalSymbolNames]()
   class LocalSymbolNames {
-    val localSymbolNames = mutable.Map[global.Symbol, String]()
-    val idGen = mutable.Map[String, AtomicInteger]()
-    val globalIdGen = new AtomicInteger
+    val localSymbolNames: mutable.Map[global.Symbol, String] = mutable.Map[global.Symbol, String]()
+    val idGen: mutable.Map[String, AtomicInteger] = mutable.Map[String, AtomicInteger]()
+    val globalIdGen: AtomicInteger = new AtomicInteger
   }
 
   private def localId(sym: global.Symbol) = {
@@ -26,7 +26,7 @@ trait ModelSymbolBuilder extends SemanticdbOps {
       if (sym.pos.isDefined) {
         val pos = s"${sym.pos.line}/${sym.pos.column}"
         val suffix = local.idGen.getOrElseUpdate(pos, new AtomicInteger).incrementAndGet()
-        s"{{Local-Pos[${pos}]#$suffix}}"
+        s"{{Local-Pos[$pos]#$suffix}}"
       } else
         s"{{Local-NoPos#${local.globalIdGen.incrementAndGet()}}}")
   }

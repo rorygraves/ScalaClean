@@ -1,19 +1,20 @@
 package org.scalaclean.analysis
 
+import java.io.BufferedWriter
 import java.nio.file.{Files, Path, StandardOpenOption}
+
 import scala.collection.mutable
 
 // TODO This class should not be needed - use StringWriter instead
 // however ElementWriter appears to be very sensitive to write order right now
 class SortedStringWriter(targetPath: Path) {
-  val target = Files.newBufferedWriter(targetPath,
+  val target: BufferedWriter = Files.newBufferedWriter(targetPath,
     StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.WRITE, StandardOpenOption.CREATE)
 
-  var strings = mutable.SortedSet[String]()
+  private val strings: mutable.Set[String] = mutable.SortedSet[String]()
 
   def writeLine(s: String): Boolean = {
-    val added = strings.add(s)
-    added
+    strings.add(s)
   }
 
   def flush(): Unit = {

@@ -178,7 +178,7 @@ sealed trait ModelSymbol extends HasModelCommon {
     children = children.flatMap { case t@(common, child) =>
       child.flatten()
       child match {
-        case mf: ModelField if (mf.isParameter || !mf.isGlobal) =>
+        case mf: ModelField if mf.isParameter || !mf.isGlobal =>
           this.refersRels ++= mf.refersRels
           None
         case _ =>
