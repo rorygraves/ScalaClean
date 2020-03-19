@@ -1,7 +1,3 @@
-/*
-rules = [ Analysis , Test_internalDirectOverrides ]
-
-*/
 package scalaclean.test.overrides.internalDirectOverrides
 
 trait GrandParentTrait {

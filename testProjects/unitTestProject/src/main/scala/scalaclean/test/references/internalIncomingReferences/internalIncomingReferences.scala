@@ -1,7 +1,3 @@
-/*
-rules = [ Analysis , Test_internalIncomingReferences ]
-
-*/
 package scalaclean.test.references.internalIncomingReferences
 
 class Parent {

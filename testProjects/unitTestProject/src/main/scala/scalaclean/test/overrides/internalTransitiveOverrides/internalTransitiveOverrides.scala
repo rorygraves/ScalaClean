@@ -1,7 +1,3 @@
-/*
-rules = [ Analysis , Test_internalTransitiveOverrides ]
-
-*/
 package scalaclean.test.overrides.internalTransitiveOverrides
 
 trait GrandParentTrait {
