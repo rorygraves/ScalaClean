@@ -59,17 +59,18 @@ class ScalaCompilerPluginComponent(
 
       val elementsFile = new File(outputPath.toFile, "scalaclean-elements.csv")
       if (debug)
-        println(s"Writing elements file  to ${elementsFile}")
+        println(s"Writing elements file  to $elementsFile")
       elementsWriter = new ElementsWriter(elementsFile)
 
       val relationsFile = new File(outputPath.toFile, "scalaclean-relationships.csv")
       if (debug)
-        println(s"Writing relationships file to to ${relationsFile}")
+        println(s"Writing relationships file to to $relationsFile")
+
       relationsWriter = new RelationshipsWriter(relationsFile)
 
       val extensionFile = new File(outputPath.toFile, "scalaclean-extensions.csv")
       if (debug)
-        println(s"Writing extensions file to to ${extensionFile}")
+        println(s"Writing extensions file to to $extensionFile")
       extensionWriter = new ExtensionWriter(extensionFile)
 
       traverser = new SCUnitTraverser(elementsWriter, relationsWriter, extensionWriter, debug)
@@ -82,7 +83,7 @@ class ScalaCompilerPluginComponent(
       val props = new Properties
       import PropertyNames._
       props.put(prop_classpath, global.settings.classpath.value)
-      props.put(prop_outputDir, outputPathBase.toString())
+      props.put(prop_outputDir, outputPathBase.toString)
       props.put(prop_elementsFile, elementsFile.toString)
       props.put(prop_relationshipsFile, relationsFile.toString)
       props.put(prop_extensionsFile, extensionFile.toString)
@@ -98,7 +99,7 @@ class ScalaCompilerPluginComponent(
       }
 
       options.foreach {
-        p => props.put(s"${prefix_option}.${p}", "")
+        p => props.put(s"$prefix_option.$p", "")
       }
 
       //      assert(sourceDirs.nonEmpty)
@@ -138,7 +139,7 @@ class ScalaCompilerPluginComponent(
       val sourceFile = mungeUnitPath(unit.source.file.toString)
       basePaths += srcPath.substring(0, srcPath.indexOf(sourceFile))
       if (debug)
-        global.reporter.echo(s"Executing for unit: ${sourceFile}")
+        global.reporter.echo(s"Executing for unit: $sourceFile")
       traverser.traverseSource(unit)
       elementsWriter.endUnit()
       relationsWriter.endUnit()
@@ -192,7 +193,7 @@ class ScalaCompilerPluginComponent(
       depth -= 1
       resetVisited(oldVisited)
       if (debug)
-        println(s"${indentString}/${mSymbol.debugName}")
+        println(s"$indentString/${mSymbol.debugName}")
     }
 
 
@@ -207,16 +208,14 @@ class ScalaCompilerPluginComponent(
     def enterTransScope[T](name: String)(fn: => T): Unit = {
 
       if (debug && logTransScope) {
-        println(s"${indentString}$name")
+        println(s"$indentString$name")
         depth += 1
         fn
         depth -= 1
       } else
         fn
     }
-
   }
-
 
   class SCUnitTraverser(
                          val elementsWriter: ElementsWriter,
@@ -259,13 +258,13 @@ class ScalaCompilerPluginComponent(
       }
     }
 
-    val initialVisited = HashSet[global.Symbol](global.NoSymbol)
+    val initialVisited: Set[global.Symbol] = HashSet[global.Symbol](global.NoSymbol)
 
-    def resetVisited(visited: HashSet[global.Symbol]) {
+    def resetVisited(visited: Set[global.Symbol]) {
       visitedTypes = visited
     }
 
-    def newVisited() = {
+    def newVisited(): Set[global.Symbol] = {
       val existing = visitedTypes
       visitedTypes = initialVisited
       existing
@@ -273,7 +272,7 @@ class ScalaCompilerPluginComponent(
 
     newVisited()
 
-    var visitedTypes = HashSet.empty[global.Symbol]
+    var visitedTypes: Set[global.Symbol] = HashSet.empty[global.Symbol]
 
     def traverseType(tpe: global.Type): Unit = {
       if (tpe ne null)
@@ -342,29 +341,29 @@ class ScalaCompilerPluginComponent(
 
       seenJunctionsBetweenParents foreach { case (dummyMethodSym, targets) =>
         enterScope(ModelPlainMethod(DefDef(dummyMethodSym, new Modifiers(dummyMethodSym.flags, newTermName(""), Nil), global.EmptyTree),
-          asMSymbol(dummyMethodSym), false, false)) { meth =>
+          asMSymbol(dummyMethodSym), isTyped = false, isAbstract = false)) { _ =>
           //if not recorded above, then maybe this should be a synthetic override
           targets.foreach { entry =>
-            currentScope.addOverride(asMSymbol(entry), true)
+            currentScope.addOverride(asMSymbol(entry), direct = true)
           }
         }
       }
 
     }
 
-    def postProcess(model: ClassLike) = {
+    def postProcess(model: ClassLike): Unit = {
       model.postProcess()
-      if (model.remainingChildOverrides nonEmpty) {
+      if (model.remainingChildOverrides.nonEmpty) {
         scopeLog(s"add additional overrides in class but not in tree")
         model.remainingChildOverrides foreach {
           case (l, parents) =>
             val local = l.asInstanceOf[global.Symbol]
             enterScope(ModelPlainMethod(DefDef(local, new Modifiers(local.flags, newTermName(""), Nil), global.EmptyTree),
-              asMSymbol(local), false, false)) { meth =>
+              asMSymbol(local), isTyped = false, isAbstract = false)) { _ =>
               //if not recorded above, then maybe this should be a synthetic override
               parents.foreach { e =>
                 val entry = e.asInstanceOf[global.Symbol]
-                currentScope.addOverride(asMSymbol(entry), true)
+                currentScope.addOverride(asMSymbol(entry), direct = true)
               }
             }
 
@@ -388,7 +387,7 @@ class ScalaCompilerPluginComponent(
             scopeLog("-symbol: " + asMSymbol(treeSelect.symbol).csvString)
             // avoids an issue with packages which we ScalaClean doesn't currently understand
             if (hasCurrentGlobalScope) {
-              currentScope.addRefers(asMSymbol(treeSelect.symbol), false)
+              currentScope.addRefers(asMSymbol(treeSelect.symbol), isSynthetic = false)
             }
             traverseType(tree.tpe)
             super.traverse(treeSelect)
@@ -524,7 +523,7 @@ class ScalaCompilerPluginComponent(
                   scopeLog(s"add getter for field $field as is wasn't added directly $getter")
                   added = true
                   enterScope(ModelGetterMethod(DefDef(getter, new Modifiers(getter.flags, newTermName(""), Nil), global.EmptyTree),
-                    asMSymbol(getter), false, false)) { method =>
+                    asMSymbol(getter), isTyped = false, isAbstract = false)) { method =>
 
                     method.addGetterFor(field.common)
                     addMethodOverrides(method, getter)
@@ -534,7 +533,7 @@ class ScalaCompilerPluginComponent(
                   scopeLog(s"add setter for field $field as is wasn't added directly $setter")
                   added = true
                   enterScope(ModelSetterMethod(DefDef(setter, new Modifiers(setter.flags, newTermName(""), Nil), global.EmptyTree),
-                    asMSymbol(setter), false, false)) { method =>
+                    asMSymbol(setter), isTyped = false, isAbstract = false)) { method =>
 
                     method.addSetterFor(field.common)
                     addMethodOverrides(method, setter)
@@ -586,7 +585,7 @@ class ScalaCompilerPluginComponent(
                 case t if t.typeSymbol.isTrait =>
                   val init = t.decl(newTermName("$init$"))
                   if (init != g.NoSymbol) {
-                    currentScope.addRefers(asMSymbol(init), false)
+                    currentScope.addRefers(asMSymbol(init), isSynthetic = false)
                   }
                 case _ =>
               }
@@ -649,7 +648,7 @@ class ScalaCompilerPluginComponent(
         }
 
         directSymbols foreach { s =>
-          method.addOverride(asMSymbol(s), true)
+          method.addOverride(asMSymbol(s), direct = true)
         }
 
 //        val directParentSymbols: Set[ModelCommon] = symbol.info.parents.map(t => asMSymbol(t.typeSymbol)).toSet
@@ -677,7 +676,7 @@ class ScalaCompilerPluginComponent(
         symbol.overrides.foreach { overridden =>
 //          val overriddenOwnerMSym = asMSymbol(overridden.owner)
           if (!directSymbols.contains(overridden))
-            method.addOverride(asMSymbol(overridden), false)
+            method.addOverride(asMSymbol(overridden), direct = false)
         }
 
         //if it not a top level method then it cant override anything

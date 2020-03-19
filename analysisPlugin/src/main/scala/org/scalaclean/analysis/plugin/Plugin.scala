@@ -12,7 +12,7 @@ trait ExtensionPlugin {
   val sc: ScalaCompilerPluginComponent
   val g: Global = sc.global
 
-  def debug = sc.debug
+  def debug: Boolean = sc.debug
 
   def extendedData(mSymbol: ModelSymbol, tree: g.Tree): List[ExtensionData]
 }
