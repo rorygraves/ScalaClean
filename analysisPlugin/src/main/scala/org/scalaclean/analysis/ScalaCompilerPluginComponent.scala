@@ -160,7 +160,7 @@ class ScalaCompilerPluginComponent(
 
     def scopeLog(msg: => String): Unit = {
       if (debug)
-        println(s"${indentString}  $msg")
+        println(s"$indentString  $msg")
     }
 
 
@@ -173,7 +173,7 @@ class ScalaCompilerPluginComponent(
       mSymbol.traversal = traversal
       outer.foreach(_.addChild(mSymbol))
       if (debug)
-        println(s"${indentString}${mSymbol.debugName}")
+        println(s"$indentString${mSymbol.debugName}")
       scopeStack = mSymbol :: scopeStack
       depth += 1
       scopeLog(s"-symbol: ${mSymbol.csvString}")
@@ -235,7 +235,7 @@ class ScalaCompilerPluginComponent(
 
     def traverseSource(unit: CompilationUnit): Unit = {
       val sourceFile = unit.source.file.canonicalPath
-      val sourceSymbol = ModelSource(unit.body, ModelCommon(true, s"source:$sourceFile", s"S:$sourceFile", sourceFile, -1, -1, "<NA>"))
+      val sourceSymbol = ModelSource(unit.body, ModelCommon(isGlobal = true, s"source:$sourceFile", s"S:$sourceFile", sourceFile, -1, -1, "<NA>"))
       enterScope(sourceSymbol) {
         s =>
           traverse(unit.body)

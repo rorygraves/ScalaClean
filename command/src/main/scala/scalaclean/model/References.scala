@@ -59,9 +59,9 @@ package impl {
       case m: ModelElement => m.elementId
     }
 
-    def fromElement = _from.asInstanceOf[From]
+    def fromElement: From = _from.asInstanceOf[From]
 
-    def toElement = _to match {
+    def toElement: Option[To] = _to match {
       case s: ElementId => None
       case m: ModelElement => Some(m.asInstanceOf[To])
     }
@@ -94,7 +94,7 @@ package impl {
   final class OverridesImpl(from: ElementId, to: ElementId, val isDirect: Boolean)
     extends ReferenceImpl(from, to) with Overrides {
 
-    override def toString: String = s"Overrides(${from} -> ${to}, isDirect = $isDirect"
+    override def toString: String = s"Overrides($from -> $to, isDirect = $isDirect"
   }
 
   final class GetterImpl(from: ElementId, to: ElementId)

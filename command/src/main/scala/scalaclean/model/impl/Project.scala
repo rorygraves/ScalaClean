@@ -59,7 +59,7 @@ class Project private(
 
   private val sourcesMap = new ConcurrentHashMap[String, SourceData]()
 
-  def source(name: String) = {
+  def source(name: String): SourceData = {
     sourcesMap.computeIfAbsent(name, p => SourceData(this, Paths.get(p)))
   }
 

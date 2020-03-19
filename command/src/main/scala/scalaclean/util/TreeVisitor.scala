@@ -27,12 +27,12 @@ object Scope {
 trait Scope
 
 object TreeVisitor {
-  val continue = (Patch.empty, true)
+  val continue: (Patch, Boolean) = (Patch.empty, true)
 }
 
 abstract class TreeVisitor()(implicit doc: SemanticDocument) {
 
-  protected final def continue = TreeVisitor.continue
+  protected final def continue: (Patch, Boolean) = TreeVisitor.continue
 
   final def visitDocument(tree: Tree): Patch = {
 

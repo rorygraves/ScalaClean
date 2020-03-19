@@ -21,7 +21,7 @@ object ModelReader {
 
   def finished(): Unit = {
     interner.clear()
-    lookup.values.foreach(_.clearData)
+    lookup.values.foreach(_.clearData())
     lookup.clear()
   }
 
@@ -59,7 +59,7 @@ object ModelReader {
           runtimeMirror.reflectModule(module).instance match {
             case valid: ExtensionDescriptor[_] => valid
             case null => throw new IllegalArgumentException("not a valid Extension FQN - expected the name of an object")
-            case invalid => throw new IllegalArgumentException(s"not a valid Extension FQN - ${invalid.getClass.getName()} is not a ${classOf[ExtensionDescriptor[_]].getName}")
+            case invalid => throw new IllegalArgumentException(s"not a valid Extension FQN - ${invalid.getClass.getName} is not a ${classOf[ExtensionDescriptor[_]].getName}")
           }
         })
         val ext: ExtensionData = extBuilder.fromCsv(rest)

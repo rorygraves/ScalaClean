@@ -1,12 +1,11 @@
 package scalaclean.rules
 
 import scalaclean.model._
-import scalaclean.model.impl.LegacyElementId
 import scalafix.patch.Patch
-import scalafix.v1.{SemanticDocument, Symbol}
+import scalafix.v1.SemanticDocument
 
 abstract class AbstractRule(val name: String, val model: ProjectModel, debug: Boolean) {
-  def printSummary: Unit
+  def printSummary(): Unit
 
   type Colour <: Mark
 
@@ -47,27 +46,26 @@ abstract class AbstractRule(val name: String, val model: ProjectModel, debug: Bo
 
   //utility methods
 
-  def allMainEntryPoints = {
+  def allMainEntryPoints: Iterator[ModelElement] = {
     allMainMethodEntries ++ allApp
   }
 
-  def allMainMethodEntries = {
-    val stringArray = List(List(Symbol))
+  def allMainMethodEntries: Iterator[ModelElement] = {
 
-    (for (obj <- model.allOf[ObjectModel] if (obj.isTopLevel);
+    (for (obj <- model.allOf[ObjectModel] if obj.isTopLevel;
           method <- obj.methods if method.name == "main") //&& method.paramsType = stringArray
       yield {
         List(method, obj)
       }).flatten
   }
 
-  def allApp = {
+  def allApp: Iterator[ObjectModel] = {
     val app = ElementIds.AppObject
-    for (obj <- model.allOf[ObjectModel] if (obj.xtends(app)))
+    for (obj <- model.allOf[ObjectModel] if obj.xtends(app))
       yield obj
   }
 
-  def allTestEntryPoints = {
+  def allTestEntryPoints: Iterator[MethodModel] = {
     allJunitTest
   }
 
@@ -78,7 +76,7 @@ abstract class AbstractRule(val name: String, val model: ProjectModel, debug: Bo
     "org.junit.BeforeClass",
     "org.junit.AfterClass",
   )
-  def allJunitTest = {
+  def allJunitTest: Iterator[MethodModel] = {
     model.allOf[MethodModel].filter { method =>
       method.annotations.exists{ a =>
         junitAnnotationEntryPoints.contains(a.fqName)}

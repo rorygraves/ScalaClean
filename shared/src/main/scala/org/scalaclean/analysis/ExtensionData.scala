@@ -8,7 +8,7 @@ import java.util.concurrent.ConcurrentHashMap
   * @tparam T the companion
   */
 abstract class ExtensionDescriptor[T <: ExtensionData] {
-  def clearData = interner.clear
+  def clearData(): Unit = interner.clear()
 
   private val interner = new ConcurrentHashMap[String, T]()
 
@@ -62,11 +62,11 @@ trait StandardExtensionData extends ExtensionData {
 
   def hasPosition: Boolean = posOffsetStart == Int.MinValue && posOffsetEnd == Int.MinValue
 
-  protected def maskToString(offset: Int) = {
+  protected def maskToString(offset: Int): String = {
     if (offset == Int.MinValue) "<NoPos>" else offset.toString
   }
 
-  protected def maskToCSV(offset: Int) = {
+  protected def maskToCSV(offset: Int): String = {
     if (offset == Int.MinValue) "" else offset.toString
   }
 

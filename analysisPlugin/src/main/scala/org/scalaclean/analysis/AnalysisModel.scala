@@ -43,11 +43,11 @@ sealed trait ModelSymbol extends HasModelCommon {
     else _extensionData = _extensionData.reverse_:::(additionalData)
   }
 
-  def extensionData = _extensionData
+  def extensionData: List[ExtensionData] = _extensionData
 
   def ioToken: String
 
-  var children = Map[ModelCommon, ModelSymbol]()
+  var children: Map[ModelCommon, ModelSymbol] = Map.empty
 
   var extendsRels: ListSet[(HasModelCommon, Boolean)] = ListSet.empty
   var overridesRels: ListSet[(HasModelCommon, Boolean)] = ListSet.empty
@@ -195,7 +195,7 @@ sealed trait ModelSymbol extends HasModelCommon {
 sealed trait ClassLike extends ModelSymbol {
   private var postProcessing = List.empty[() => Unit]
 
-  def addPostProcess(fn: () => Unit) = postProcessing ::= fn
+  def addPostProcess(fn: () => Unit): Unit = postProcessing ::= fn
 
   def postProcess(): Unit = {
     postProcessing foreach (_.apply())
