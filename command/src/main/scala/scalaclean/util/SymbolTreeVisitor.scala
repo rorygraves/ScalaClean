@@ -13,19 +13,19 @@ abstract class SymbolTreeVisitor()(implicit doc: SemanticDocument) extends TreeV
 
   protected def handlerPats(pats: Seq[Pat.Var], mods: Seq[Mod], stat: Stat, scope: List[Scope]): (Patch, Boolean)
 
-  def handleVar(varDef: Defn.Var, scope: List[Scope]) = {
+  def handleVar(varDef: Defn.Var, scope: List[Scope]): (Patch, Boolean) = {
     handlerPats(Utils.readVars(varDef.pats), varDef.mods, varDef, scope)
   }
 
-  override def handleVar(varDef: Decl.Var, scope: List[Scope]) = {
+  override def handleVar(varDef: Decl.Var, scope: List[Scope]): (Patch, Boolean) = {
     handlerPats(Utils.readVars(varDef.pats), varDef.mods, varDef, scope)
   }
 
-  override def handleVal(valDef: Decl.Val, scope: List[Scope]) = {
+  override def handleVal(valDef: Decl.Val, scope: List[Scope]): (Patch, Boolean) = {
     handlerPats(Utils.readVars(valDef.pats), valDef.mods, valDef, scope)
   }
 
-  override def handleVal(valDef: Defn.Val, scope: List[Scope]) = {
+  override def handleVal(valDef: Defn.Val, scope: List[Scope]): (Patch, Boolean) = {
     handlerPats(Utils.readVars(valDef.pats), valDef.mods, valDef, scope)
   }
 

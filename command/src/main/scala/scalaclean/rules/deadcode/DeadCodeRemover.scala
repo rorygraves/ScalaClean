@@ -62,12 +62,12 @@ class DeadCodeRemover(model: ProjectModel, debug: Boolean) extends AbstractRule(
     def hasPurpose(purpose: Purpose): Boolean =
       0 != (purposes & purpose.id)
 
-    def isUnused = {
+    def isUnused: Boolean = {
       purposes == 0
     }
   }
 
-  override def markInitial = {
+  override def markInitial(): Unit = {
     markAll[ModelElement](Usage.unused)
   }
 
@@ -77,20 +77,20 @@ class DeadCodeRemover(model: ProjectModel, debug: Boolean) extends AbstractRule(
       element.fields foreach {
         case valDef: ValModel => if (!valDef.isLazy) {
           valDef.internalOutgoingReferences foreach {
-            case (ref, _) => markUsed(ref, true, purpose, valDef :: path, s"$comment -> valDef(outgoing)")
+            case (ref, _) => markUsed(ref, markEnclosing = true, purpose, valDef :: path, s"$comment -> valDef(outgoing)")
           }
           markRhs(valDef, valDef :: path, s"$comment -> valDef")
         }
         case varDef: VarModel =>
           varDef.internalOutgoingReferences foreach {
-            case (ref, _) => markUsed(ref, true, purpose, varDef :: path, s"$comment -> varDef(outgoing)")
+            case (ref, _) => markUsed(ref, markEnclosing = true, purpose, varDef :: path, s"$comment -> varDef(outgoing)")
           }
           markRhs(varDef, varDef :: path, s"$comment -> varDef")
         //TODO - not sure if this is correct
         // an inner object is lazy in scala, so probably should only be marked when used
         case obj: ObjectModel =>
           obj.internalOutgoingReferences foreach {
-            case (ref, _) => markUsed(ref, true, purpose, obj :: path, s"$comment -> obj(outgoing)")
+            case (ref, _) => markUsed(ref, markEnclosing = true, purpose, obj :: path, s"$comment -> obj(outgoing)")
           }
           markRhs(obj, obj :: path, s"$comment -> obj")
       }
@@ -99,12 +99,12 @@ class DeadCodeRemover(model: ProjectModel, debug: Boolean) extends AbstractRule(
     val current = element.colour
 
     if (!current.hasPurpose(purpose)) {
-      println(s"mark ${element} as used for $purpose due to ${path.mkString("->")} $comment")
+      println(s"mark $element as used for $purpose due to ${path.mkString("->")} $comment")
 
       element.colour = current.withPurpose(purpose)
       //all the elements that this refers to
       element.internalOutgoingReferences foreach {
-        case (ref, _) => markUsed(ref, true, purpose, element :: path, s"$comment -> internalOutgoingReferences")
+        case (ref, _) => markUsed(ref, markEnclosing = true, purpose, element :: path, s"$comment -> internalOutgoingReferences")
       }
 
       // for the vars, (non lazy) vals and objects - eagerly traverse the RHS, as it is called
@@ -117,26 +117,26 @@ class DeadCodeRemover(model: ProjectModel, debug: Boolean) extends AbstractRule(
 
       //enclosing
       element.enclosing foreach {
-        enclosed => markUsed(enclosed, true, purpose, element :: path, s"$comment - enclosing")
+        enclosed => markUsed(enclosed, markEnclosing = true, purpose, element :: path, s"$comment - enclosing")
       }
 
       //overridden
       element.internalTransitiveOverrides foreach {
-        enclosed => markUsed(enclosed, true, purpose, element :: path, s"$comment - overrides")
+        enclosed => markUsed(enclosed, markEnclosing = true, purpose, element :: path, s"$comment - overrides")
       }
 
       //overrides
       element.internalTransitiveOverriddenBy foreach {
-        enclosed => markUsed(enclosed, false, purpose, element :: path, s"$comment - overrides")
+        enclosed => markUsed(enclosed, markEnclosing = false, purpose, element :: path, s"$comment - overrides")
       }
       element match {
         case getter:GetterMethodModel =>
           getter.field foreach {
-            f => markUsed (f, true, purpose, element :: path, s"$comment - field ")
+            f => markUsed (f, markEnclosing = true, purpose, element :: path, s"$comment - field ")
           }
         case setter:SetterMethodModel =>
           setter.field foreach {
-            f => markUsed (f, true, purpose, element :: path, s"$comment - field ")
+            f => markUsed (f, markEnclosing = true, purpose, element :: path, s"$comment - field ")
           }
         case _ =>
       }
@@ -145,10 +145,10 @@ class DeadCodeRemover(model: ProjectModel, debug: Boolean) extends AbstractRule(
 
 
   override def runRule(): Unit = {
-    allMainEntryPoints foreach (e => markUsed(e, true, Main, e :: Nil, ""))
+    allMainEntryPoints foreach (e => markUsed(e, markEnclosing = true, Main, e :: Nil, ""))
   }
 
-  override def printSummary: Unit =
+  override def printSummary(): Unit =
     println(s"""
        |linesRemoved    = $linesRemoved
        |linesChanged    = $linesChanged

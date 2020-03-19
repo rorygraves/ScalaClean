@@ -108,7 +108,7 @@ sealed trait ModelElement extends Ordered[ModelElement] {
 
   protected def infoName = elementId.id
 
-  override def toString: String = s"$infoTypeName $infoName [$infoPosString] $infoDetail [[${elementId}]]"
+  override def toString: String = s"$infoTypeName $infoName [$infoPosString] $infoDetail [[$elementId]]"
 }
 
 sealed trait ClassLike extends ModelElement {
@@ -453,7 +453,7 @@ package impl {
     private val offsetEnd = info.endPos
 
     override protected def infoPosString: String = {
-      s"${offsetStart}-${offsetEnd}"
+      s"$offsetStart-$offsetEnd"
 
       // TODO Disabled as we don't want to laod the tree to work out line / column right now
       //    val pos = tree.pos

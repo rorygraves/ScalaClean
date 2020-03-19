@@ -11,7 +11,7 @@ object TokenHelper {
     * @return A sequence of tokens representing the whitespace immediately preceding the target token.
     */
   def whitespaceTokensBefore(targetToken: Token, tokens: Tokens): List[Token] = {
-    whitespaceOrCommentsBefore(targetToken, tokens, false, false, false)
+    whitespaceOrCommentsBefore(targetToken, tokens, includeSingleLine = false, includeMultiLine = false, includeDocComment = false)
   }
 
   /** Walking back from a given Token, capture all whitespace tokens, or comments of the specified type immediately before.

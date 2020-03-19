@@ -22,7 +22,7 @@ private[privatiser] sealed trait PrivatiserLevel extends Mark {
 private[privatiser] case class Public(reason: String) extends PrivatiserLevel {
   override def shouldReplace(aModel: ModelElement) = true
 
-  def widen(level: PrivatiserLevel) = this
+  def widen(level: PrivatiserLevel): PrivatiserLevel = this
 
   override def asText(context: ModelElement): Option[String] = None
 }
@@ -30,7 +30,7 @@ private[privatiser] case class Public(reason: String) extends PrivatiserLevel {
 private[privatiser] case class NoChange(reason: String) extends PrivatiserLevel {
   override def shouldReplace(aModel: ModelElement) = false
 
-  def widen(level: PrivatiserLevel) = this
+  def widen(level: PrivatiserLevel): PrivatiserLevel = this
 
   override def asText(context: ModelElement): Option[String] = None
 }
@@ -41,7 +41,7 @@ private[privatiser] case object Undefined extends PrivatiserLevel {
 
   override def shouldReplace(aModel: ModelElement) = false
 
-  def widen(level: PrivatiserLevel) = level
+  def widen(level: PrivatiserLevel): PrivatiserLevel = level
 
   override def asText(context: ModelElement): Option[String] = None
 
@@ -49,27 +49,27 @@ private[privatiser] case object Undefined extends PrivatiserLevel {
 }
 
 private[privatiser] object AccessScope {
-  val None = AccessScope(LegacyElementId.None, "")
+  val None: AccessScope = AccessScope(LegacyElementId.None, "")
 }
 
 private[privatiser] final case class AccessScope(symbol: LegacyElementId, reason: String) {
-  def print(name: String) = if (symbol.isNone) s"$name <not found>" else s"$name $symbol $reason"
+  def print(name: String): String = if (symbol.isNone) s"$name <not found>" else s"$name $symbol $reason"
 
-  def widen(other: AccessScope) =
+  def widen(other: AccessScope): AccessScope =
     if (symbol.isNone) other
     else if (other.symbol.isNone) this
     else AccessScope(SymbolUtils.findCommonParent(symbol, other.symbol), s"$reason AND ${other.reason}")
 }
 
 private[privatiser] object Scoped {
-  def Private(scope: LegacyElementId, reason: String) = Scoped(AccessScope(scope, reason), AccessScope.None, false)
+  def Private(scope: LegacyElementId, reason: String): Scoped = Scoped(AccessScope(scope, reason), AccessScope.None, forceProtected = false)
 
-  def Protected(scope: LegacyElementId, reason: String, forceProtected: Boolean) = Scoped(AccessScope.None, AccessScope(scope, reason), forceProtected)
+  def Protected(scope: LegacyElementId, reason: String, forceProtected: Boolean): Scoped = Scoped(AccessScope.None, AccessScope(scope, reason), forceProtected)
 }
 
 private[privatiser] final case class Scoped(privateScope: AccessScope, protectedScope: AccessScope, forceProtected: Boolean) extends PrivatiserLevel {
-  def isProtected = {
-    def commonParentScope =
+  def isProtected: Boolean = {
+    def commonParentScope: LegacyElementId =
       if (protectedScope.symbol.isNone) privateScope.symbol
       else SymbolUtils.findCommonParent(protectedScope.symbol, privateScope.symbol)
 

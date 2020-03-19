@@ -162,7 +162,7 @@ class ScalaCleanMain(dcOptions: SCOptions, ruleCreateFn: ProjectModel => Abstrac
         }
       }
     }
-    rule.printSummary
+    rule.printSummary()
     changed
   }
 

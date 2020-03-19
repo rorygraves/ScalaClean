@@ -26,7 +26,7 @@ case class AnnotationData(posOffsetStart: Int, posOffsetEnd: Int, fqName: String
 
   override def restToCSV: String = {
     val csv = if (values.isEmpty) "" else values.toList.sortBy(_._1).map { e => s"${e._1},${e._2}" }.mkString(",", ",", "")
-    s",${fqName}${csv}"
+    s",$fqName$csv"
   }
 
   override def toString: String = s"AnnotationData[${maskToString(posOffsetStart)},${maskToString(posOffsetEnd)},$fqName,${SortedMap.empty[String, String] ++ values}"
