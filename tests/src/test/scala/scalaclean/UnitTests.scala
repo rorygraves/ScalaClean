@@ -36,7 +36,7 @@ class UnitTests extends FunSuite with AssertionsForJUnit with DiffAssertions wit
     runTest("scalaclean/test/nodes/nodes.scala", new TestNodes(_))
   })
 
-  test("internalTransitiveOverriddenByTest") {
+  test("internalTransitiveOverriddenBy") {
     runTest("scalaclean/test/overriddenBy/internalTransitiveOverriddenBy/internalTransitiveOverriddenBy.scala", new Test_internalTransitiveOverriddenBy(_))
   }
 
