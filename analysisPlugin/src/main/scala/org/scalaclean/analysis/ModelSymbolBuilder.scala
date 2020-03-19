@@ -12,11 +12,23 @@ trait ModelSymbolBuilder extends SemanticdbOps {
   def debug: Boolean
 
   private val symbolNames = mutable.Map[global.Symbol, String]()
-  private val localSymbolNames = mutable.Map[global.Symbol, String]()
-  private val idGen = new AtomicInteger()
+  private val ownerSymbolNames = mutable.Map[global.Symbol, LocalSymbolNames]()
+  class LocalSymbolNames {
+    val localSymbolNames = mutable.Map[global.Symbol, String]()
+    val idGen = mutable.Map[String, AtomicInteger]()
+    val globalIdGen = new AtomicInteger
+  }
 
   private def localId(sym: global.Symbol) = {
-    localSymbolNames.getOrElseUpdate(sym, s"{{Local#${idGen.incrementAndGet()}}}")
+    val local = ownerSymbolNames.getOrElseUpdate(sym.owner, new LocalSymbolNames)
+
+    local.localSymbolNames.getOrElseUpdate(sym,
+      if (sym.pos.isDefined) {
+        val pos = s"${sym.pos.line}/${sym.pos.column}"
+        val suffix = local.idGen.getOrElseUpdate(pos, new AtomicInteger).incrementAndGet()
+        s"{{Local-Pos[${pos}]#$suffix}}"
+      } else
+        s"{{Local-NoPos#${local.globalIdGen.incrementAndGet()}}}")
   }
 
   private def localName(sym: global.Symbol): String = sym match {
