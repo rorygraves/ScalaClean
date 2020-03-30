@@ -15,7 +15,18 @@ trait HasModelCommon {
 
 sealed trait ModelSymbol extends HasModelCommon {
 
-  def debugName: String
+  final def debugName = this match {
+    case _: ModelVar          => "var"
+    case _: ModelVal          => "val"
+    case _: ModelFields       => "(compound fields)"
+    case _: ModelGetterMethod => "getter"
+    case _: ModelSetterMethod => "setter"
+    case _: ModelPlainMethod  => "def"
+    case _: ModelObject       => "object"
+    case _: ModelClass        => "class"
+    case _: ModelTrait        => "trait"
+    case _: ModelSource       => "source"
+  }
 
   val common: ModelCommon
   var traversal: Int = -1
@@ -45,7 +56,18 @@ sealed trait ModelSymbol extends HasModelCommon {
 
   def extensionData: List[ExtensionData] = _extensionData
 
-  def ioToken: String
+  final def ioToken = this match {
+    case _: ModelVar          => IoTokens.typeVar
+    case _: ModelVal          => IoTokens.typeVal
+    case _: ModelFields       => IoTokens.typeFields
+    case _: ModelGetterMethod => IoTokens.typeGetterMethod
+    case _: ModelSetterMethod => IoTokens.typeSetterMethod
+    case _: ModelPlainMethod  => IoTokens.typePlainMethod
+    case _: ModelObject       => IoTokens.typeObject
+    case _: ModelClass        => IoTokens.typeClass
+    case _: ModelTrait        => IoTokens.typeTrait
+    case _: ModelSource       => IoTokens.typeSource
+  }
 
   var children: Map[ModelCommon, ModelSymbol] = Map.empty
 
@@ -241,26 +263,15 @@ case class ModelFields(
 
   def syntheticName = tree.name
   def fieldCount = tree.tpe.typeArgs.size
-  override def debugName: String = "(compound fields)"
-
-  override def ioToken: String = IoTokens.typeFields
 }
 
 case class ModelVar(
                      tree: Global#ValDef, common: ModelCommon, isAbstract: Boolean,
-                     override val isParameter: Boolean, fields: Option[ModelFields]) extends ModelField {
-  override def debugName: String = "var"
-
-  override def ioToken: String = IoTokens.typeVar
-}
+                     override val isParameter: Boolean, fields: Option[ModelFields]) extends ModelField
 
 case class ModelVal(
                      tree: Global#ValDef, common: ModelCommon, isAbstract: Boolean, isLazy: Boolean,
-                     override val isParameter: Boolean, fields: Option[ModelFields]) extends ModelField {
-  override def debugName: String = "val"
-
-  override def ioToken: String = IoTokens.typeVal
-}
+                     override val isParameter: Boolean, fields: Option[ModelFields]) extends ModelField
 
 sealed trait ModelMethod extends ModelSymbol {
   val tree: Global#DefDef
@@ -269,50 +280,10 @@ sealed trait ModelMethod extends ModelSymbol {
   val isAbstract: Boolean
 }
 
-case class ModelGetterMethod(
-                              tree: Global#DefDef, common: ModelCommon, isTyped: Boolean, isAbstract: Boolean) extends ModelMethod {
-
-  override def debugName: String = "getter"
-
-  override def ioToken: String = IoTokens.typeGetterMethod
-}
-
-case class ModelSetterMethod(
-                              tree: Global#DefDef, common: ModelCommon, isTyped: Boolean, isAbstract: Boolean) extends ModelMethod {
-  override def debugName: String = "setter"
-
-  override def ioToken: String = IoTokens.typeSetterMethod
-}
-
-case class ModelPlainMethod(
-                             tree: Global#DefDef, common: ModelCommon, isTyped: Boolean, isAbstract: Boolean) extends ModelMethod {
-  override def debugName: String = "def"
-
-  override def ioToken: String = IoTokens.typePlainMethod
-}
-
-case class ModelObject(tree: Global#ModuleDef, common: ModelCommon) extends ModelSymbol with ClassLike {
-  override def debugName: String = "object"
-
-  override def ioToken: String = IoTokens.typeObject
-}
-
-case class ModelClass(tree: Global#ClassDef, common: ModelCommon, isAbstract: Boolean) extends ModelSymbol with ClassLike {
-  override def debugName: String = "class"
-
-  override def ioToken: String = IoTokens.typeClass
-}
-
-case class ModelTrait(tree: Global#ClassDef, common: ModelCommon) extends ModelSymbol with ClassLike {
-  override def debugName: String = "trait"
-
-  override def ioToken: String = IoTokens.typeTrait
-}
-
-case class ModelSource(tree: Global#Tree, common: ModelCommon) extends ModelSymbol {
-
-
-  override def debugName: String = "source"
-
-  override def ioToken: String = IoTokens.typeSource
-}
+case class ModelGetterMethod(tree: Global#DefDef, common: ModelCommon, isTyped: Boolean, isAbstract: Boolean) extends ModelMethod
+case class ModelSetterMethod(tree: Global#DefDef, common: ModelCommon, isTyped: Boolean, isAbstract: Boolean) extends ModelMethod
+case class ModelPlainMethod(tree: Global#DefDef, common: ModelCommon, isTyped: Boolean, isAbstract: Boolean) extends ModelMethod
+case class ModelObject(tree: Global#ModuleDef, common: ModelCommon) extends ModelSymbol with ClassLike
+case class ModelClass(tree: Global#ClassDef, common: ModelCommon, isAbstract: Boolean) extends ModelSymbol with ClassLike
+case class ModelTrait(tree: Global#ClassDef, common: ModelCommon) extends ModelSymbol with ClassLike
+case class ModelSource(tree: Global#Tree, common: ModelCommon) extends ModelSymbol

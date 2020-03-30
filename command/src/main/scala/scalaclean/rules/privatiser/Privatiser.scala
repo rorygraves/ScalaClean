@@ -236,19 +236,11 @@ class Privatiser(model: ProjectModel, debug: Boolean) extends AbstractRule("Priv
 
         def buildInsertion(toReplace: String) = {
           forcePosition match {
-            case Some(token) =>
-              Patch.addLeft(token, s"$toReplace ")
-            case None =>
-              val tokens = defn.tokens
-              tokens.find {
-                _.start == aModel.rawStart
-              } match {
-                case Some(token) =>
-                  Patch.addLeft(token, s"$toReplace ")
-                case None =>
-                  //probably quite worrying
-                  Patch.addLeft(defn, s"$toReplace ")
-              }
+            case Some(token) => Patch.addLeft(token, s"$toReplace ")
+            case None        => defn.tokens.find(_.start == aModel.rawStart) match {
+              case Some(token) => Patch.addLeft(token, s"$toReplace ")
+              case None        => Patch.addLeft(defn,  s"$toReplace ") //probably quite worrying
+            }
           }
         }
 

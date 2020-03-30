@@ -38,22 +38,13 @@ object LegacyElementId {
   }
 
   def apply(s: String): LegacyElementId = {
-
-    if (s.startsWith("G:") || s.startsWith("L:")) {
-      cache.computeIfAbsent(s, s => {
-        val isGlobal = s.startsWith("G:")
-        val symbol = Symbol(s.drop(2))
-        LegacyElementId(isGlobal, symbol)
-      })
-    } else {
-      val symbol = Symbol(s)
-      if (symbol.isGlobal)
-        apply("G:" + s)
-      else
-        apply("L:" + s)
+    s.splitAt(2) match {
+      case ("G:", n)               => cache.computeIfAbsent(s, _ => LegacyElementId(true, Symbol(n)))
+      case ("L:", n)               => cache.computeIfAbsent(s, _ => LegacyElementId(false, Symbol(n)))
+      case _ if Symbol(s).isGlobal => apply(s"G:$s")
+      case _                       => apply(s"L:$s")
     }
   }
-
 
   def fromTree(tree: Tree)(implicit doc: SemanticDocument): LegacyElementId = {
     import scalafix.v1.{Patch => _, _}

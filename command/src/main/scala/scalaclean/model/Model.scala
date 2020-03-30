@@ -1,7 +1,7 @@
 package scalaclean.model
 
 import org.scalaclean.analysis.{AnnotationData, ExtensionData}
-import scalaclean.model.impl.{LegacyElementId, FieldModelImpl}
+import scalaclean.model.impl.LegacyElementId
 
 import scala.reflect.ClassTag
 
@@ -90,7 +90,18 @@ sealed trait ModelElement extends Ordered[ModelElement] {
 
   def innerClassLike: Seq[ClassLike]
 
-  protected def infoTypeName: String
+  final protected def infoTypeName = this match {
+    case _: ClassModel        => "ClassModel"
+    case _: ObjectModel       => "ObjectModel"
+    case _: TraitModel        => "TraitModel"
+    case _: GetterMethodModel => "GetterMethodModel"
+    case _: SetterMethodModel => "SetterMethodModel"
+    case _: PlainMethodModel  => "PlainMethodModel"
+    case _: ValModel          => "ValModel"
+    case _: VarModel          => "VarModel"
+    case _: FieldsModel       => "FieldsModel"
+    case _: SourceModel       => "SourceModel"
+  }
 
   protected def infoPosString: String
 
@@ -127,16 +138,12 @@ sealed trait ClassLike extends ModelElement {
   def transitiveExtendedBy: Set[ClassLike]
 }
 
-sealed trait ClassModel extends ClassLike {
-  override protected final def infoTypeName: String = "ClassModel"
-}
+sealed trait ClassModel extends ClassLike
 
 sealed trait ObjectModel extends ClassLike with FieldModel {
   def isTopLevel: Boolean = {
     enclosing.forall(_.isInstanceOf[SourceModel])
   }
-
-  override protected final def infoTypeName: String = "ObjectModel"
 
   override final def getter: Option[GetterMethodModel] = None
 
@@ -145,9 +152,7 @@ sealed trait ObjectModel extends ClassLike with FieldModel {
   type fieldType = ObjectModel
 }
 
-sealed trait TraitModel extends ClassLike {
-  override protected final def infoTypeName: String = "TraitModel"
-}
+sealed trait TraitModel extends ClassLike
 
 sealed trait MethodModel extends ModelElement
 
@@ -155,17 +160,10 @@ sealed trait AccessorModel extends MethodModel with FieldOrAccessorModel {
   def field: Option[FieldModel]
 }
 
-sealed trait PlainMethodModel extends MethodModel {
-  override protected final def infoTypeName: String = "PlainMethodModel"
-}
-
-sealed trait GetterMethodModel extends AccessorModel {
-  override protected final def infoTypeName: String = "GetterMethodModel"
-}
+sealed trait PlainMethodModel extends MethodModel
+sealed trait GetterMethodModel extends AccessorModel
 
 sealed trait SetterMethodModel extends AccessorModel {
-  override protected final def infoTypeName: String = "SetterMethodModel"
-
   def field: Option[VarModel]
 }
 
@@ -180,10 +178,6 @@ sealed trait FieldModel extends FieldOrAccessorModel {
 }
 
 sealed trait FieldsModel extends ModelElement {
-  protected def typeName: String = "fields"
-
-  override protected def infoTypeName: String = "FieldsModel"
-
   def fieldsInDeclaration: Seq[FieldModel]
 }
 
@@ -191,22 +185,16 @@ sealed trait ValModel extends FieldModel {
   def isLazy: Boolean
 
   type fieldType = ValModel
-
-  override protected final def infoTypeName: String = "ValModel"
 }
 
 sealed trait VarModel extends FieldModel {
   type fieldType = VarModel
 
   def setter: Option[SetterMethodModel]
-
-  override protected final def infoTypeName: String = "VarModel"
 }
 
 sealed trait SourceModel extends ModelElement {
   type fieldType = SourceModel
-
-  override protected final def infoTypeName: String = "SourceModel"
 }
 
 trait ProjectModel {
@@ -447,7 +435,18 @@ package impl {
       case c: ClassLikeModelImpl => c
     }
 
-    protected def typeName: String
+    final protected def typeName = this match {
+      case _: ClassModelImpl        => "class"
+      case _: ObjectModelImpl       => "object"
+      case _: TraitModelImpl        => "trait"
+      case _: ValModelImpl          => "val"
+      case _: VarModelImpl          => "var"
+      case _: PlainMethodModelImpl  => "def"
+      case _: GetterMethodModelImpl => "def[getter]"
+      case _: SetterMethodModelImpl => "def[setter]"
+      case _: FieldsModelImpl       => "fields"
+      case _: SourceModelImpl       => "source"
+    }
 
     private val offsetStart = info.startPos
     private val offsetEnd = info.endPos
@@ -514,11 +513,10 @@ package impl {
 
       relsTo.getter.get(info.elementId) match {
         case None => getter_ = None
-        case Some(f :: Nil) =>
-          if (f.fromElement.isInstanceOf[GetterMethodModelImpl])
-            getter_ = Some(f.fromElement)
-          else if (f.fromElement.isInstanceOf[GetterMethodModelImpl])
-            getter_ = Some(f.fromElement)
+        case Some(f :: Nil) => f.fromElement match {
+          case _: GetterMethodModelImpl => getter_ = Some(f.fromElement)
+          case _                        =>
+        }
         case Some(error) => ???
       }
       val fieldImpl = fields_ match {
@@ -546,35 +544,25 @@ package impl {
   }
 
   class ClassModelImpl(info: BasicElementInfo, relationships: BasicRelationshipInfo)
-    extends ClassLikeModelImpl(info, relationships) with ClassModel {
-    override protected def typeName: String = "class"
-  }
+    extends ClassLikeModelImpl(info, relationships) with ClassModel
 
   class ObjectModelImpl(info: BasicElementInfo, relationships: BasicRelationshipInfo)
     extends ClassLikeModelImpl(info, relationships) with ObjectModel {
-    override protected def typeName: String = "object"
-
     override def fieldsInSameDeclaration: Seq[ObjectModel] = Nil
   }
 
   class TraitModelImpl(info: BasicElementInfo, relationships: BasicRelationshipInfo)
-    extends ClassLikeModelImpl(info, relationships) with TraitModel {
-    override protected def typeName: String = "trait"
-  }
+    extends ClassLikeModelImpl(info, relationships) with TraitModel
 
   class PlainMethodModelImpl(
                               info: BasicElementInfo, relationships: BasicRelationshipInfo,
                               val methodName: String, val isAbstract: Boolean, val hasDeclaredType: Boolean)
-    extends ElementModelImpl(info, relationships) with PlainMethodModel {
-    override protected def typeName: String = "def"
-
-  }
+    extends ElementModelImpl(info, relationships) with PlainMethodModel
 
   class GetterMethodModelImpl(
                                info: BasicElementInfo, relationships: BasicRelationshipInfo,
                                val methodName: String, val isAbstract: Boolean, val hasDeclaredType: Boolean)
     extends ElementModelImpl(info, relationships) with GetterMethodModel {
-    override protected def typeName: String = "def[getter]"
 
     override def complete(modelElements: Map[ElementId, ElementModelImpl],
                           relsFrom: BasicRelationshipInfo,
@@ -596,7 +584,6 @@ package impl {
                                info: BasicElementInfo, relationships: BasicRelationshipInfo,
                                val methodName: String, val isAbstract: Boolean, val hasDeclaredType: Boolean)
     extends ElementModelImpl(info, relationships) with SetterMethodModel {
-    override protected def typeName: String = "def[setter]"
 
     override def complete(modelElements: Map[ElementId, ElementModelImpl],
                           relsFrom: BasicRelationshipInfo,
@@ -631,7 +618,6 @@ package impl {
                       val info: BasicElementInfo, relationships: BasicRelationshipInfo,
                       fieldName: String, isAbstract: Boolean, fields: String, val isLazy: Boolean)
     extends FieldModelImpl(info, relationships, fieldName, isAbstract, fields) with ValModel {
-    override protected def typeName: String = "trait"
 
     protected override def infoDetail = s"${super.infoDetail} lazy=$isLazy"
 
@@ -641,7 +627,6 @@ package impl {
                       val info: BasicElementInfo, relationships: BasicRelationshipInfo,
                       fieldName: String, isAbstract: Boolean, fields: String)
     extends FieldModelImpl(info, relationships, fieldName, isAbstract, fields) with VarModel {
-    override protected def typeName: String = "var"
 
     override def complete(modelElements: Map[ElementId, ElementModelImpl],
                           relsFrom: BasicRelationshipInfo,
@@ -664,8 +649,6 @@ package impl {
                          val info: BasicElementInfo, relationships: BasicRelationshipInfo) extends ElementModelImpl(info, relationships) with SourceModel {
 
     def filename = info.source.path
-
-    override protected def typeName: String = "source"
 
   }
 

@@ -9,7 +9,12 @@ sealed trait Reference extends Ordered[Reference] {
 
   def toElement: Option[ModelElement]
 
-  protected def refType: String
+  final protected def refType = this match {
+    case _: Refers    => "Refers"
+    case _: Extends   => "Extends"
+    case _: Overrides => "Overrides"
+    case _: Within    => "Within"
+  }
 
   override def compare(that: Reference): Int = {
     var res = this.fromElementId.id compareTo that.fromElementId.id
@@ -24,8 +29,6 @@ sealed trait Reference extends Ordered[Reference] {
 
 trait Refers extends Reference {
   val isSynthetic: Boolean
-
-  override protected def refType: String = "Refers"
 }
 
 trait Extends extends Reference {
@@ -34,19 +37,13 @@ trait Extends extends Reference {
   override def toElement: Option[ClassLike]
 
   val isDirect: Boolean
-
-  override protected def refType: String = "Extends"
 }
 
 trait Overrides extends Reference {
   def isDirect: Boolean
-
-  override protected def refType: String = "Overrides"
 }
 
 trait Within extends Reference {
-  override protected def refType: String = "Within"
-
 }
 package impl {
 
