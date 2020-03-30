@@ -38,10 +38,10 @@ class ProjectSet(projectPropertyPaths: Path*) extends ProjectModel {
         println(s"  $s")
         values.foreach { v =>
           println(s"    $v")
-
         }
-        throw new IllegalStateException("Duplicate elements found")
       }
+
+      throw new IllegalStateException("Duplicate elements found")
     }
 
     val relsFrom = rels.reduce(_ + _)
