@@ -51,7 +51,7 @@ class DeadCodeRemover(model: ProjectModel, debug: Boolean) extends AbstractRule(
     private val usages = Array.tabulate(3) {
       Usage(_)
     }
-    val unused = usages(0)
+    val unused: Usage = usages(0)
   }
 
   case class Usage(purposes: Int) extends Mark {
@@ -109,7 +109,7 @@ class DeadCodeRemover(model: ProjectModel, debug: Boolean) extends AbstractRule(
 
       // for the vars, (non lazy) vals and objects - eagerly traverse the RHS, as it is called
       // and the RHS will be executed
-      // (its reallity) even if we later remove the field
+      // (its reality) even if we later remove the field
       // we could consider marking at as used differently - a different colour
       //
       // don't mark the fields as used though

@@ -16,7 +16,7 @@ object AnnotationDataBuilder {
           //TODO if we really need it
           clean(s"@$clazz(<TODO>)")
         case UnmappableAnnotArg => ???
-        case ScalaSigBytes(bytes) => ???
+        case ScalaSigBytes(_) => ???
       }
     }
 

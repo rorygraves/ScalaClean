@@ -55,7 +55,7 @@ class Project private(
         viewedFrom.source.doc.info(s.symbol).orNull)
   }
 
-  def read = ModelReader.read(this, elementsFilePath, relationshipsFilePath, extensionsFilePath)
+  def read: (Vector[ElementModelImpl], BasicRelationshipInfo) = ModelReader.read(this, elementsFilePath, relationshipsFilePath, extensionsFilePath)
 
   private val sourcesMap = new ConcurrentHashMap[String, SourceData]()
 
