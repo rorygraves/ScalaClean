@@ -34,7 +34,7 @@ abstract class TestBase(name: String, model: ProjectModel) extends SemanticRule(
   override def fix(implicit doc: SemanticDocument): Patch = {
     import scalafix.v1._
 
-    object visiter extends TreeVisitor {
+    object visitor extends TreeVisitor {
 
       def toPatch(str: String, stat: Stat): (Patch, Boolean) = {
         if ((str eq null) || str.isEmpty) {
@@ -107,7 +107,7 @@ abstract class TestBase(name: String, model: ProjectModel) extends SemanticRule(
 
       override def handleOther(tree: Tree, scope: List[Scope]): (Patch, Boolean) = continue
     }
-    visiter.visitDocument(doc.tree)
+    visitor.visitDocument(doc.tree)
   }
 
 }

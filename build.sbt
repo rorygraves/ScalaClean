@@ -1,8 +1,12 @@
 import sbt.Keys.libraryDependencies
 
 lazy val scala212 = "2.12.10"
-lazy val scalametaVersion = "4.3.0"
+lazy val scalametaVersion = "4.3.6"
 lazy val scalaFixVersion = "0.9.11"
+lazy val junitVersion = "4.13"
+//lazy val scalaTestVersion = "3.1.1"
+
+lazy val scalaTestVersion = "3.0.8"
 
 inThisBuild(
   List(
@@ -91,8 +95,8 @@ lazy val command = project.dependsOn(shared)
     libraryDependencies += "com.github.scopt" %% "scopt" % "4.0.0-RC2",
     libraryDependencies += "ch.epfl.scala" %% "scalafix-core" % scalaFixVersion,
     libraryDependencies += "ch.epfl.scala" % "scalafix-testkit" % scalaFixVersion cross CrossVersion.full,
-    libraryDependencies += "junit" % "junit" % "4.12" % Test,
-    libraryDependencies += "org.scalatest" %% "scalatest" % "3.0.8" % Test,
+    libraryDependencies += "junit" % "junit" % junitVersion % Test,
+    libraryDependencies += "org.scalatest" %% "scalatest" % scalaTestVersion % Test,
 
     mainClass in assembly := Some("scalaclean.cli.ScalaCleanMain"),
     // exclude some of the semanticdb classes which are imported twice
@@ -133,7 +137,7 @@ lazy val unitTestProject = project.in(file("testProjects/unitTestProject")).sett
 def testInputProject(id: String, projectLocation: String, showTrees: Boolean = false)(dependencies: ClasspathDep[ProjectReference]*) = sbt.Project.apply(id, file(projectLocation)).settings(
   addCompilerPlugin("org.scalameta" % "semanticdb-scalac" % scalametaVersion cross CrossVersion.full),
   scalacOptions += "-Yrangepos",
-  libraryDependencies += "org.scalaz" %% "scalaz-core" % "7.2.27",
+  libraryDependencies += "org.scalaz" %% "scalaz-core" % "7.2.30",
   scalacOptions += "-P:semanticdb:synthetics:on",
   skip in publish := true,
 
@@ -185,7 +189,7 @@ lazy val privatiserProject5 = testInputProject("privatiserProject5", "testProjec
 lazy val privatiserProject6 = testInputProject("privatiserProject6", "testProjects/privatiserProject6")()
 lazy val privatiserProject7 = testInputProject("privatiserProject7", "testProjects/privatiserProject7")()
 
-lazy val scratch = testInputProject("scratch", "testProjects/scratch", true)()
+lazy val scratch = testInputProject("scratch", "testProjects/scratch", showTrees = true)()
 
 lazy val privatiserTests = List(privatiserProject1, privatiserProject2, privatiserProject3,
   privatiserProject4, privatiserProject5, privatiserProject6, privatiserProject7)
@@ -199,11 +203,11 @@ lazy val testDep = List(command, unitTestProject) ::: privatiserTests ::: deadCo
 lazy val tests = project.dependsOn(testDep map (classpathDependency(_)) : _*)
   .settings(
     moduleName := "tests",
-    libraryDependencies += "args4j" % "args4j" % "2.0.23",
+    libraryDependencies += "args4j" % "args4j" % "2.33",
     libraryDependencies += "ch.epfl.scala" %% "scalafix-core" % scalaFixVersion,
     libraryDependencies += "ch.epfl.scala" % "scalafix-testkit" % scalaFixVersion cross CrossVersion.full,
-    libraryDependencies += "junit" % "junit" % "4.12" % Test,
-    libraryDependencies += "org.scalatest" %% "scalatest" % "3.0.8" % Test,
+    libraryDependencies += "junit" % "junit" % junitVersion % Test,
+    libraryDependencies += "org.scalatest" %% "scalatest" % scalaTestVersion % Test,
     scalaVersion := scala212,
     crossPaths := false,
     libraryDependencies += "com.novocode" % "junit-interface" % "0.11" % Test,

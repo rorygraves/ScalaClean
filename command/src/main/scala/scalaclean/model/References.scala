@@ -84,7 +84,7 @@ package impl {
     override def complete(elements: Map[ElementId, ElementModelImpl]): Unit = {
       super.complete(elements)
       assert(fromElement.isInstanceOf[ClassLike], s"$fromElement is not a ClassLike")
-      assert(toElement map (_.isInstanceOf[ClassLike]) getOrElse (true))
+      assert(toElement forall (_.isInstanceOf[ClassLike]))
     }
   }
 

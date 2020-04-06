@@ -117,7 +117,7 @@ sealed trait ModelElement extends Ordered[ModelElement] {
 
   protected def infoDetail = ""
 
-  protected def infoName = elementId.id
+  protected def infoName: String = elementId.id
 
   override def toString: String = s"$infoTypeName $infoName [$infoPosString] $infoDetail [[$elementId]]"
 }
@@ -146,8 +146,6 @@ sealed trait ObjectModel extends ClassLike with FieldModel {
   }
 
   override final def getter: Option[GetterMethodModel] = None
-
-  final def otherFieldsInSameDeclaration = Nil
 
   type fieldType = ObjectModel
 }
@@ -223,6 +221,8 @@ abstract sealed class ElementId(val id: String) {
 
 package impl {
 
+  import java.nio.file.Path
+
   case class BasicElementInfo(legacyElementId: LegacyElementId, elementId: ElementId, source: SourceData,
                               startPos: Int, endPos: Int,
                               flags: Long, extensions: Seq[ExtensionData],
@@ -247,7 +247,7 @@ package impl {
     def byTo: BasicRelationshipInfo = {
       def byToSymbol[T <: Reference](from: Map[ElementId, List[T]]): Map[ElementId, List[T]] = {
         from.values.flatten.groupBy(_.toElementId).map {
-          case (k, v) => k -> (v.toList)
+          case (k, v) => k -> v.toList
         }
       }
 
@@ -333,13 +333,13 @@ package impl {
     }
 
     override def internalDirectOverriddenBy: List[ModelElement] = {
-      overriden collect {
+      overridden collect {
         case o if o.isDirect => o.fromElement
       }
     }
 
     override def internalTransitiveOverriddenBy: List[ModelElement] = {
-      overriden map {
+      overridden map {
         _.fromElement
       }
     }
@@ -388,22 +388,22 @@ package impl {
       refersTo = relsFrom.refers.getOrElse(elementId, Nil)
       refersFrom = relsTo.refers.getOrElse(elementId, Nil)
       _overrides = relsFrom.overrides.getOrElse(elementId, Nil)
-      overriden = relsTo.overrides.getOrElse(elementId, Nil)
+      overridden = relsTo.overrides.getOrElse(elementId, Nil)
     }
 
     override def extensions: Iterable[ExtensionData] = info.extensions
 
-    val source = info.source
+    val source: SourceData = info.source
 
-    def project = source.project
+    def project: Project = source.project
 
-    def projects = project.projects
+    def projects: ProjectSet = project.projects
 
     override val legacySymbol: LegacyElementId = info.legacyElementId
 
-    override val elementId = info.elementId
+    override val elementId: ElementId = info.elementId
 
-    override def name = legacySymbol.displayName
+    override def name: String = legacySymbol.displayName
 
     //start set by `complete`
     var within: List[ElementModelImpl] = _
@@ -414,9 +414,9 @@ package impl {
 
     var _overrides: List[Overrides] = _
 
-    override def overrides = _overrides
+    override def overrides: List[Overrides] = _overrides
 
-    var overriden: List[Overrides] = _
+    var overridden: List[Overrides] = _
     //end set by `complete`
 
     override def enclosing: List[ElementModelImpl] = within
@@ -535,11 +535,11 @@ package impl {
 
     private var fields_ : AnyRef = _fields
 
-    def declaredIn = fields_.asInstanceOf[Option[FieldsModel]]
+    def declaredIn: Option[FieldsModel] = fields_.asInstanceOf[Option[FieldsModel]]
 
     private var getter_ : Option[GetterMethodModel] = _
 
-    def getter = getter_
+    def getter: Option[GetterMethodModel] = getter_
 
   }
 
@@ -577,7 +577,7 @@ package impl {
 
     private var field_ : Option[FieldModel] = _
 
-    def field = field_
+    def field: Option[FieldModel] = field_
   }
 
   class SetterMethodModelImpl(
@@ -598,7 +598,7 @@ package impl {
 
     private var field_ : Option[VarModel] = _
 
-    def field = field_
+    def field: Option[VarModel] = field_
   }
 
   class FieldsModelImpl(
@@ -641,14 +641,14 @@ package impl {
 
     private var setter_ : Option[SetterMethodModel] = _
 
-    def setter = setter_
+    def setter: Option[SetterMethodModel] = setter_
 
   }
 
   class SourceModelImpl(
                          val info: BasicElementInfo, relationships: BasicRelationshipInfo) extends ElementModelImpl(info, relationships) with SourceModel {
 
-    def filename = info.source.path
+    def filename: Path = info.source.path
 
   }
 
@@ -658,7 +658,7 @@ package impl {
 
     val interned = new ConcurrentHashMap[String, ElementIdImpl]
 
-    def apply(id: String) = interned.computeIfAbsent(id, id => new ElementIdImpl(id.intern()))
+    def apply(id: String): ElementIdImpl = interned.computeIfAbsent(id, id => new ElementIdImpl(id.intern()))
   }
 
   final class ElementIdImpl private(id: String) extends ElementId(id) {

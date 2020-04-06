@@ -237,7 +237,7 @@ class ScalaCompilerPluginComponent(
       val sourceFile = unit.source.file.canonicalPath
       val sourceSymbol = ModelSource(unit.body, ModelCommon(isGlobal = true, s"source:$sourceFile", s"S:$sourceFile", sourceFile, -1, -1, "<NA>"))
       enterScope(sourceSymbol) {
-        s =>
+        _ =>
           traverse(unit.body)
       }
 
@@ -305,7 +305,7 @@ class ScalaCompilerPluginComponent(
       }
     }
 
-    def isObjectOrAny(sym: Symbol) = {
+    def isObjectOrAny(sym: Symbol): Boolean = {
       sym == definitions.AnyClass || sym == definitions.ObjectClass
     }
 
@@ -326,7 +326,7 @@ class ScalaCompilerPluginComponent(
         val entry = cursor.currentPair
         if (entry.low.owner == classSymbol) {
           model.remainingChildOverrides.getOrElseUpdate(entry.low, new mutable.HashSet[Global#Symbol]) += entry.high
-        } else if ((!isObjectOrAny(entry.low.owner) || !isObjectOrAny(entry.high.owner))) {
+        } else if (!isObjectOrAny(entry.low.owner) || !isObjectOrAny(entry.high.owner)) {
 
           val dummyMethodSym = entry.low.cloneSymbol(classSymbol)
           dummyMethodSym.setPos(classSymbol.pos.focusStart)
@@ -375,7 +375,6 @@ class ScalaCompilerPluginComponent(
 
       tree match {
         case packageDef: PackageDef =>
-          val symbol = packageDef.symbol
 
           // ignore package symbol for now
           enterTransScope("PackageDef") {
@@ -414,7 +413,7 @@ class ScalaCompilerPluginComponent(
           }
         case EmptyTree =>
         // do nothing
-        case thisTree: This =>
+        case _: This =>
           scopeLog("This")
         // do nothing
         case literalTree: Literal =>
@@ -431,7 +430,7 @@ class ScalaCompilerPluginComponent(
           }
 
         //          scopeLog("Ident " + identTree.name)
-        case importTree: Import =>
+        case _: Import =>
           //TODO need to track imports so that we can remove them
           scopeLog("Import")
         case objectDef: ModuleDef =>
@@ -669,7 +668,7 @@ class ScalaCompilerPluginComponent(
 //          val direct = directSymbols.contains(ancestorSymbol)
 //          val overridden = symbol.overriddenSymbol(ancestorSymbol)
 //          if (overridden != NoSymbol) {
-//            scopeLog(s"    AAAAA ${overridden} $direct")
+//            scopeLog(s"    ${overridden} $direct")
 //          }
 //        }
 

@@ -15,7 +15,7 @@ case class LegacyElementId private(isGlobal: Boolean, symbol: Symbol) {
 
   def isRootPackage: Boolean = symbol.isRootPackage
 
-  def displayName = symbol.displayName
+  def displayName: String = symbol.displayName
 
   def asNonEmpty: Option[LegacyElementId] = symbol.asNonEmpty.map(s => LegacyElementId(s))
 
