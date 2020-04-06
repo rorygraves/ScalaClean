@@ -45,7 +45,7 @@ abstract class TreeVisitor()(implicit doc: SemanticDocument) {
     }
   }
 
-  private def processHandler(tree: Tree, handleRes: (Patch, Boolean), scope: List[Scope]): Patch = {
+  private def h(tree: Tree, handleRes: (Patch, Boolean), scope: List[Scope]): Patch = {
     val (patch, traverseChildren) = handleRes
     if (traverseChildren)
       patch + visitChildren(tree, scope)
@@ -53,52 +53,26 @@ abstract class TreeVisitor()(implicit doc: SemanticDocument) {
       patch
   }
 
-
-  def visitTree(tree: Tree, scope: List[Scope]): Patch = {
-
-    tree match {
-      case pkg: Pkg =>
-        val newScope = Scope.PkgScope(pkg.name.toString()) :: scope
-        processHandler(pkg, handlePackage(pkg.name, pkg, scope), newScope)
-      case obj: Defn.Object =>
-        val newScope = Scope.ObjScope(obj.symbol.toString()) :: scope
-        processHandler(obj, handleObject(LegacyElementId(obj.symbol), obj, scope), newScope)
-      case cls: Defn.Class =>
-        val newScope = Scope.ClassScope(cls.symbol.displayName) :: scope
-        processHandler(cls, handleClass(LegacyElementId(cls.symbol), cls, scope), newScope)
-      case cls: Defn.Trait =>
-        val newScope = Scope.TraitScope(cls.symbol.displayName) :: scope
-        processHandler(cls, handleTrait(LegacyElementId(cls.symbol), cls, scope), newScope)
-      case method: Defn.Def =>
-        val typeSigs = method.paramss.map(_.map(v => v.decltpe.get)).toString
-        val fullSig = s"${method.symbol}:$typeSigs"
-        val newScope = Scope.MethodScope(fullSig) :: scope
-        processHandler(method, handleMethod(LegacyElementId(method.symbol), fullSig, method, scope), newScope)
-      case method: Decl.Def =>
-        val typeSigs = method.paramss.map(_.map(v => v.decltpe.get)).toString
-        val fullSig = s"${method.symbol}:$typeSigs"
-        val newScope = Scope.MethodScope(fullSig) :: scope
-        processHandler(method, handleMethod(LegacyElementId(method.symbol), fullSig, method, scope), newScope)
-      case valDef: Defn.Val =>
-        val newScope = Scope.ValScope(valDef.symbol.displayName) :: scope
-        processHandler(valDef, handleVal(valDef, scope), newScope)
-      case valDef: Decl.Val =>
-        val newScope = Scope.ValScope(valDef.symbol.displayName) :: scope
-        processHandler(valDef, handleVal(valDef, scope), newScope)
-      case varDef: Defn.Var =>
-        val newScope = Scope.ValScope(varDef.symbol.displayName) :: scope
-        processHandler(varDef, handleVar(varDef, scope), newScope)
-      case varDef: Decl.Var =>
-        val newScope = Scope.ValScope(varDef.symbol.displayName) :: scope
-        processHandler(varDef, handleVar(varDef, scope), newScope)
-      case importStat: Import =>
-        processHandler(importStat, handleImport(importStat, scope), scope)
-      case _ =>
-        //        println(s"Visiting ${tree.getClass} ${tree.symbol}")
-        processHandler(tree, handleOther(tree, scope), scope)
+  private def visitTree(t: Tree, scope: List[Scope]): Patch = {
+    t match {
+      case p: Pkg         => h(p, handlePackage(p.name, p, scope), Scope.PkgScope(p.name.toString()) :: scope)
+      case o: Defn.Object => h(o, handleObject(LegacyElementId(o.symbol), o, scope), Scope.ObjScope(o.symbol.toString()) :: scope)
+      case c: Defn.Class  => h(c, handleClass(LegacyElementId(c.symbol), c, scope), Scope.ClassScope(c.symbol.displayName) :: scope)
+      case t: Defn.Trait  => h(t, handleTrait(LegacyElementId(t.symbol), t, scope), Scope.TraitScope(t.symbol.displayName) :: scope)
+      case d: Defn.Def    => h(d, handleMethod(LegacyElementId(d.symbol), sig1(d), d, scope), Scope.MethodScope(sig1(d)) :: scope)
+      case d: Decl.Def    => h(d, handleMethod(LegacyElementId(d.symbol), sig2(d), d, scope), Scope.MethodScope(sig2(d)) :: scope)
+      case v: Defn.Val    => h(v, handleVal(v, scope), Scope.ValScope(v.symbol.displayName) :: scope)
+      case v: Decl.Val    => h(v, handleVal(v, scope), Scope.ValScope(v.symbol.displayName) :: scope)
+      case v: Defn.Var    => h(v, handleVar(v, scope), Scope.ValScope(v.symbol.displayName) :: scope)
+      case v: Decl.Var    => h(v, handleVar(v, scope), Scope.ValScope(v.symbol.displayName) :: scope)
+      case i: Import      => h(i, handleImport(i, scope), scope)
+      case _              => h(t, handleOther(t, scope), scope)
     }
   }
 
+  private def sig(t: Tree, params: List[Term.Param]) = s"${t.symbol}:${params.map(_.decltpe.get)}"
+  private def sig1(x: Defn.Def)                      = sig(x, x.paramss.flatten)
+  private def sig2(x: Decl.Def)                      = sig(x, x.paramss.flatten)
 
   def handleVar(varDef: Defn.Var, scope: List[Scope]): (Patch, Boolean)
 

@@ -130,15 +130,9 @@ class DeadCodeRemover(model: ProjectModel, debug: Boolean) extends AbstractRule(
         enclosed => markUsed(enclosed, markEnclosing = false, purpose, element :: path, s"$comment - overrides")
       }
       element match {
-        case getter:GetterMethodModel =>
-          getter.field foreach {
-            f => markUsed (f, markEnclosing = true, purpose, element :: path, s"$comment - field ")
-          }
-        case setter:SetterMethodModel =>
-          setter.field foreach {
-            f => markUsed (f, markEnclosing = true, purpose, element :: path, s"$comment - field ")
-          }
-        case _ =>
+        case getter: GetterMethodModel => getter.field.foreach(f => markUsed(f, markEnclosing = true, purpose, element :: path, s"$comment - field "))
+        case setter: SetterMethodModel => setter.field.foreach(f => markUsed(f, markEnclosing = true, purpose, element :: path, s"$comment - field "))
+        case _                         =>
       }
     }
   }
