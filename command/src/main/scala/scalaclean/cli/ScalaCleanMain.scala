@@ -1,19 +1,20 @@
 package scalaclean.cli
 
 import java.nio.charset.StandardCharsets
-import java.nio.file.{Files, Paths}
+import java.nio.file.{Files, Path, Paths}
 
 import scalaclean.model.ProjectModel
 import scalaclean.model.impl.{Project, ProjectSet}
 import scalaclean.rules.AbstractRule
 import scalaclean.rules.deadcode.DeadCodeRemover
+import scalaclean.util.FileUtils
 import scalafix.internal.patch.PatchInternals
 import scalafix.internal.reflect.ClasspathOps
 import scalafix.lint.RuleDiagnostic
 import scalafix.rule.RuleName
 import scalafix.scalaclean.cli.DocHelper
 import scalafix.testkit.DiffAssertions
-import scalafix.v1.SemanticDocument
+import scalafix.v1.{SemanticDocument, SyntacticDocument}
 
 import scala.meta._
 import scala.meta.internal.io.FileIO
@@ -42,11 +43,12 @@ object ScalaCleanMain {
 
 class ScalaCleanMain(dcOptions: SCOptions, ruleCreateFn: ProjectModel => AbstractRule) extends DiffAssertions {
 
+  @deprecated
   def semanticPatch(
-    rule: AbstractRule,
-    sdoc: SemanticDocument,
-    suppress: Boolean
-  ): (String, List[RuleDiagnostic]) = {
+                     rule: AbstractRule,
+                     sdoc: SemanticDocument,
+                     suppress: Boolean
+                   ): (String, List[RuleDiagnostic]) = {
     val fixes = Some(RuleName(rule.name) -> rule.fix(sdoc)).map(Map.empty + _).getOrElse(Map.empty)
     PatchInternals.semantic(fixes, sdoc, suppress)
   }
@@ -77,8 +79,8 @@ class ScalaCleanMain(dcOptions: SCOptions, ruleCreateFn: ProjectModel => Abstrac
     outputFile
   }
 
-  def compareAgainstFile(existingFile: AbsolutePath, obtained: String): Boolean = {
-    val expected = FileIO.slurp(existingFile, StandardCharsets.UTF_8)
+  def compareAgainstFile(existingFile: Path, obtained: String): Boolean = {
+    val expected = FileUtils.readAllBytes(existingFile)
 
     val diff = DiffAssertions.compareContents(obtained, expected)
     if (diff.nonEmpty) {
@@ -106,7 +108,9 @@ class ScalaCleanMain(dcOptions: SCOptions, ruleCreateFn: ProjectModel => Abstrac
   def runRuleOnProject(
     rule: AbstractRule, project: Project, validateMode: Boolean, replace: Boolean, debug: Boolean): Boolean = {
 
+    @deprecated
     val symtab: SymbolTable = ClasspathOps.newSymbolTable(project.classPath)
+    @deprecated
     val classLoader = project.classloader
 
     var changed = false
@@ -116,6 +120,8 @@ class ScalaCleanMain(dcOptions: SCOptions, ruleCreateFn: ProjectModel => Abstrac
     val srcBase = AbsolutePath(project.src)
     val base = AbsolutePath(project.srcBuildBase)
 
+    // TODO should read this from the ModelSource
+    @deprecated
     val files: Seq[AbsolutePath] = project.srcFiles.toList.map(AbsolutePath(_))
 
     def findRelativeSrc(
@@ -126,40 +132,50 @@ class ScalaCleanMain(dcOptions: SCOptions, ruleCreateFn: ProjectModel => Abstrac
       baseOpt.map(bp => (bp, absTargetFile.toRelative(bp))).getOrElse(throw new IllegalStateException(s"Unable to resolve source root for $absTargetFile"))
     }
 
-    files.foreach { absTargetFile =>
-      val (relBase, targetFile) = findRelativeSrc(absTargetFile, project.srcRoots)
-      val sdoc = DocHelper.readSemanticDoc(classLoader, symtab, absTargetFile, base, targetFile)
-      val (fixed, _) = semanticPatch(rule, sdoc, suppress = false)
-
-      // compare results
-      val tokens = fixed.tokenize.get
-      val obtained = tokens.mkString
-
-      if (validateMode) {
-        val expectedFile = expectedPathForTarget(relBase, targetFile)
-
-        changed |= compareAgainstFile(expectedFile, obtained)
-        if (replace) {
-          // overwrite the '.expected' file
-          val overwritePath = expectedPathForTarget(relBase, targetFile)
-          writeToFile(overwritePath, obtained)
+    if (rule.isLegacy) {
+      files.foreach { absTargetFile =>
+        val (relBase, targetFile) = findRelativeSrc(absTargetFile, project.srcRoots)
+        val fixed = {
+          val sdoc = DocHelper.readSemanticDoc(classLoader, symtab, absTargetFile, base, targetFile)
+          semanticPatch(rule, sdoc, suppress = false)._1
         }
-      } else {
-        if (replace) {
-          // overwrite the base file
-          val overwritePath = absTargetFile
-          if (debug)
-            println(s"DEBUG: Overwriting existing file: $overwritePath")
-          writeToFile(overwritePath, obtained)
+
+        // compare results
+        val tokens = fixed.tokenize.get
+        val obtained = tokens.mkString
+
+        if (validateMode) {
+          val expectedFile = expectedPathForTarget(relBase, targetFile)
+
+          changed |= compareAgainstFile(expectedFile.toNIO, obtained)
+          if (replace) {
+            // overwrite the '.expected' file
+            val overwritePath = expectedPathForTarget(relBase, targetFile)
+            writeToFile(overwritePath, obtained)
+          }
         } else {
-          val expectedFile = relBase.resolve(targetFile)
+          if (replace) {
+            // overwrite the base file
+            val overwritePath = absTargetFile
+            if (debug)
+              println(s"DEBUG: Overwriting existing file: $overwritePath")
+            writeToFile(overwritePath, obtained)
+          } else {
+            val expectedFile = relBase.resolve(targetFile)
 
-          if (debug)
-            println("DEBUG Comparing obtained vs " + expectedFile)
+            if (debug)
+              println("DEBUG Comparing obtained vs " + expectedFile)
 
-          // diff against original file
-          changed |= compareAgainstFile(expectedFile, obtained)
+            // diff against original file
+            changed |= compareAgainstFile(expectedFile.toNIO, obtained)
+          }
         }
+      }
+    } else {
+      project.sources foreach {
+        file =>
+          val patch = rule.patcher.visitSourceFile(file)
+
       }
     }
     rule.printSummary()

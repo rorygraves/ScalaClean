@@ -11,7 +11,9 @@ import scala.meta.inputs.Input
 import scala.meta.internal.io.FileIO
 import scala.meta.internal.symtab.SymbolTable
 
+@deprecated
 object DocHelper {
+  @deprecated
   def readSemanticDoc(
                        classLoader: ClassLoader,
                        symtab: SymbolTable,

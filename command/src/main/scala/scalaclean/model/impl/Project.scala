@@ -42,25 +42,34 @@ object Project {
 class Project private(
                        val projects: ProjectSet, val classPath: Classpath, val outputPath: String, val src: String, val srcRoots: List[AbsolutePath], val srcBuildBase: String,
                        elementsFilePath: String, relationshipsFilePath: String, extensionsFilePath: String,
-                       val srcFiles: Set[String]) {
+                       @deprecated val srcFiles: Set[String]) {
+  @deprecated //probably
   def symbolTable: SymbolTable = GlobalSymbolTable(classPath, includeJdk = true)
 
+  @deprecated //probably
   lazy val classloader: ClassLoader = new URLClassLoader(Array(new URL("file:" + outputPath + "/")), null)
 
+  @deprecated
   private val infos = new ConcurrentHashMap[LegacyElementId, SymbolInformation]()
 
+  @deprecated
   def symbolInfo(viewedFrom: ElementModelImpl, symbol: LegacyElementId): SymbolInformation = {
     infos.computeIfAbsent(symbol,
       s => //any doc in the project would do though
         viewedFrom.source.doc.info(s.symbol).orNull)
   }
 
-  def read: (Vector[ElementModelImpl], BasicRelationshipInfo) = ModelReader.read(this, elementsFilePath, relationshipsFilePath, extensionsFilePath)
+  private[impl] def read: (Vector[ElementModelImpl], BasicRelationshipInfo) = ModelReader.read(this, elementsFilePath, relationshipsFilePath, extensionsFilePath)
 
   private val sourcesMap = new ConcurrentHashMap[String, SourceData]()
 
-  def source(name: String): SourceData = {
+  private[impl] def source(name: String): SourceData = {
     sourcesMap.computeIfAbsent(name, p => SourceData(this, Paths.get(p)))
+  }
+
+  lazy val sources:List[SourceModelImpl] = {
+    val impl = projects.allOf[SourceModelImpl].filter{_.info.source.project == this}.toList
+    impl.sortBy(_.filename.toString)
   }
 
 }

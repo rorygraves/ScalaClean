@@ -1,10 +1,14 @@
 package scalaclean.rules
 
+import com.sun.media.sound.ModelSource
+import scalaclean.fix.NewTreeVisitor
 import scalaclean.model._
 import scalafix.patch.Patch
 import scalafix.v1.SemanticDocument
 
 abstract class AbstractRule(val name: String, val model: ProjectModel, debug: Boolean) {
+  val isLegacy: Boolean
+
   def printSummary(): Unit
 
   type Colour <: Mark
@@ -31,6 +35,7 @@ abstract class AbstractRule(val name: String, val model: ProjectModel, debug: Bo
   def runRule(): Unit
 
   def fix(implicit doc: SemanticDocument): Patch
+  val patcher: NewTreeVisitor
 
   def markAll[T <: ModelElement : Manifest](colour: => Colour): Unit = {
     model.allOf[T].foreach {

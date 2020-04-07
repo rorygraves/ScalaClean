@@ -1,7 +1,7 @@
 package scalaclean.model
 
 import org.scalaclean.analysis.{AnnotationData, ExtensionData}
-import scalaclean.model.impl.LegacyElementId
+import scalaclean.model.impl.{ElementModelImpl, LegacyElementId}
 
 import scala.reflect.ClassTag
 
@@ -91,16 +91,16 @@ sealed trait ModelElement extends Ordered[ModelElement] {
   def innerClassLike: Seq[ClassLike]
 
   final protected def infoTypeName = this match {
-    case _: ClassModel        => "ClassModel"
-    case _: ObjectModel       => "ObjectModel"
-    case _: TraitModel        => "TraitModel"
+    case _: ClassModel => "ClassModel"
+    case _: ObjectModel => "ObjectModel"
+    case _: TraitModel => "TraitModel"
     case _: GetterMethodModel => "GetterMethodModel"
     case _: SetterMethodModel => "SetterMethodModel"
-    case _: PlainMethodModel  => "PlainMethodModel"
-    case _: ValModel          => "ValModel"
-    case _: VarModel          => "VarModel"
-    case _: FieldsModel       => "FieldsModel"
-    case _: SourceModel       => "SourceModel"
+    case _: PlainMethodModel => "PlainMethodModel"
+    case _: ValModel => "ValModel"
+    case _: VarModel => "VarModel"
+    case _: FieldsModel => "FieldsModel"
+    case _: SourceModel => "SourceModel"
   }
 
   protected def infoPosString: String
@@ -120,6 +120,8 @@ sealed trait ModelElement extends Ordered[ModelElement] {
   protected def infoName: String = elementId.id
 
   override def toString: String = s"$infoTypeName $infoName [$infoPosString] $infoDetail [[$elementId]]"
+
+  def directChildren: List[ModelElement]
 }
 
 sealed trait ClassLike extends ModelElement {
@@ -215,7 +217,8 @@ trait ProjectModel {
 }
 
 abstract sealed class ElementId(val id: String) {
-  def stableTestId: String = id.replaceAll("(\\{\\{Local.*?#)[0-9]+\\}\\}", "$1####}}")
+  def stableTestId: String
+  def isLocal: Boolean
 }
 
 
@@ -373,7 +376,7 @@ package impl {
   }
 
   abstract sealed class ElementModelImpl(
-                                          info: BasicElementInfo, relationships: BasicRelationshipInfo) extends ModelElement
+                                          private val info: BasicElementInfo, relationships: BasicRelationshipInfo) extends ModelElement
     with LegacyReferences with LegacyOverrides {
     def complete(
                   modelElements: Map[ElementId, ElementModelImpl],
@@ -384,7 +387,7 @@ package impl {
       }
       children = relsTo.within.getOrElse(elementId, Nil) map {
         _.fromElement.asInstanceOf[ElementModelImpl]
-      }
+      } sortBy { e: ElementModelImpl => e.info.traversal }
       refersTo = relsFrom.refers.getOrElse(elementId, Nil)
       refersFrom = relsTo.refers.getOrElse(elementId, Nil)
       _overrides = relsFrom.overrides.getOrElse(elementId, Nil)
@@ -422,6 +425,8 @@ package impl {
     override def enclosing: List[ElementModelImpl] = within
 
     override def classOrEnclosing: ClassLike = enclosing.head.classOrEnclosing
+
+    override def directChildren: List[ElementModelImpl] = children
 
     override def fields: List[FieldModel] = children collect {
       case f: FieldModelImpl => f
@@ -659,9 +664,13 @@ package impl {
     val interned = new ConcurrentHashMap[String, ElementIdImpl]
 
     def apply(id: String): ElementIdImpl = interned.computeIfAbsent(id, id => new ElementIdImpl(id.intern()))
+    private val localRegex = "(\\{\\{Local.*?#)[0-9]+\\}\\}".r
   }
 
   final class ElementIdImpl private(id: String) extends ElementId(id) {
+    def stableTestId: String = ElementIdImpl.localRegex.replaceAllIn(id, "$1####}}")
+    def isLocal: Boolean = ElementIdImpl.localRegex.findFirstIn(id).isDefined
+
     override def hashCode(): Int = id.hashCode()
 
     override def toString: String = s"ModelSymbol[$id]"

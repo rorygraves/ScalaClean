@@ -1,5 +1,6 @@
 package scalaclean.rules.privatiser
 
+import scalaclean.fix.NewTreeVisitor
 import scalaclean.model._
 import scalaclean.model.impl.LegacyElementId
 import scalaclean.rules.AbstractRule
@@ -262,4 +263,7 @@ class Privatiser(model: ProjectModel, debug: Boolean) extends AbstractRule("Priv
 
     tv.visitDocument(doc.tree)
   }
+
+  override val isLegacy: Boolean = true
+  override val patcher: NewTreeVisitor = null
 }

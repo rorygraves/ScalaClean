@@ -7,9 +7,9 @@ import scalafix.v1.{SemanticDocument, SyntacticDocument}
 import scala.meta.internal.semanticdb.TextDocuments
 import scala.meta.internal.symtab.SymbolTable
 import scala.meta.io.RelativePath
-
+@deprecated
 object FixUtils {
-
+@deprecated
   private[scalafix] def fromPath(
                                   doc: SyntacticDocument,
                                   path: RelativePath,
