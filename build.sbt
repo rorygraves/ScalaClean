@@ -1,12 +1,8 @@
-import sbt.Keys.libraryDependencies
-
-lazy val scala212 = "2.12.10"
-lazy val scalametaVersion = "4.3.6"
-lazy val scalaFixVersion = "0.9.11"
-lazy val junitVersion = "4.13"
-//lazy val scalaTestVersion = "3.1.1"
-
-lazy val scalaTestVersion = "3.0.8"
+val scala212         = "2.12.12"
+val scalametaVersion = "4.3.20"
+val scalaFixVersion  = "0.9.19"
+val junitVersion     = "4.13"
+val scalaTestVersion = "3.2.1"
 
 inThisBuild(
   List(
@@ -15,6 +11,7 @@ inThisBuild(
     licenses := List("Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0")),
     scalaVersion := scala212,
     scalacOptions ++= List(
+      "-deprecation",
       "-Yrangepos"
     )
   )
@@ -67,7 +64,7 @@ lazy val analysisPlugin = project.dependsOn(shared).settings(
     mergeSettings,
 
     libraryDependencies += "org.scalameta" % "semanticdb-scalac-core" % scalametaVersion cross CrossVersion.full,
-    addCompilerPlugin("org.scalameta" % "semanticdb-scalac" % scalametaVersion cross CrossVersion.full),
+    addCompilerPlugin("org.scalameta"      % "semanticdb-scalac"      % scalametaVersion cross CrossVersion.full),
 
     scalacOptions in Test ++= {
       // we depend on the assembly jar
@@ -91,12 +88,10 @@ lazy val command = project.dependsOn(shared)
   .settings(
     moduleName := "command",
     scalaVersion := scala212,
-    libraryDependencies += "args4j" % "args4j" % "2.33",
-    libraryDependencies += "com.github.scopt" %% "scopt" % "4.0.0-RC2",
-    libraryDependencies += "ch.epfl.scala" %% "scalafix-core" % scalaFixVersion,
-    libraryDependencies += "ch.epfl.scala" % "scalafix-testkit" % scalaFixVersion cross CrossVersion.full,
-    libraryDependencies += "junit" % "junit" % junitVersion % Test,
-    libraryDependencies += "org.scalatest" %% "scalatest" % scalaTestVersion % Test,
+    libraryDependencies += "args4j"           %  "args4j"           % "2.33",
+    libraryDependencies += "com.github.scopt" %% "scopt"            % "4.0.0-RC2",
+    libraryDependencies += "ch.epfl.scala"    %% "scalafix-core"    % scalaFixVersion,
+    libraryDependencies += "ch.epfl.scala"    %  "scalafix-testkit" % scalaFixVersion cross CrossVersion.full,
 
     mainClass in assembly := Some("scalaclean.cli.ScalaCleanMain"),
     // exclude some of the semanticdb classes which are imported twice
@@ -111,7 +106,6 @@ lazy val command = project.dependsOn(shared)
 
 lazy val unitTestProject = project.in(file("testProjects/unitTestProject")).settings(
   addCompilerPlugin("org.scalameta" % "semanticdb-scalac" % scalametaVersion cross CrossVersion.full),
-  libraryDependencies += "org.scalaz" %% "scalaz-core" % "7.2.28",
   scalacOptions += "-P:semanticdb:synthetics:on",
   skip in publish := true,
 
@@ -137,7 +131,6 @@ lazy val unitTestProject = project.in(file("testProjects/unitTestProject")).sett
 def testInputProject(id: String, projectLocation: String, showTrees: Boolean = false)(dependencies: ClasspathDep[ProjectReference]*) = sbt.Project.apply(id, file(projectLocation)).settings(
   addCompilerPlugin("org.scalameta" % "semanticdb-scalac" % scalametaVersion cross CrossVersion.full),
   scalacOptions += "-Yrangepos",
-  libraryDependencies += "org.scalaz" %% "scalaz-core" % "7.2.30",
   scalacOptions += "-P:semanticdb:synthetics:on",
   skip in publish := true,
 
@@ -203,11 +196,12 @@ lazy val testDep = List(command, unitTestProject) ::: privatiserTests ::: deadCo
 lazy val tests = project.dependsOn(testDep map (classpathDependency(_)) : _*)
   .settings(
     moduleName := "tests",
-    libraryDependencies += "args4j" % "args4j" % "2.33",
-    libraryDependencies += "ch.epfl.scala" %% "scalafix-core" % scalaFixVersion,
-    libraryDependencies += "ch.epfl.scala" % "scalafix-testkit" % scalaFixVersion cross CrossVersion.full,
-    libraryDependencies += "junit" % "junit" % junitVersion % Test,
-    libraryDependencies += "org.scalatest" %% "scalatest" % scalaTestVersion % Test,
+    libraryDependencies += "args4j"            %  "args4j"           % "2.33",
+    libraryDependencies += "ch.epfl.scala"     %% "scalafix-core"    % scalaFixVersion,
+    libraryDependencies += "ch.epfl.scala"     %  "scalafix-testkit" % scalaFixVersion cross CrossVersion.full,
+    libraryDependencies += "junit"             %  "junit"            % junitVersion           % Test,
+    libraryDependencies += "org.scalatest"     %% "scalatest"        % scalaTestVersion       % Test,
+    libraryDependencies += "org.scalatestplus" %% "junit-4-12"       % s"$scalaTestVersion.0" % Test,
     scalaVersion := scala212,
     crossPaths := false,
     libraryDependencies += "com.novocode" % "junit-interface" % "0.11" % Test,

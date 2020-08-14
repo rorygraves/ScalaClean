@@ -1,10 +1,10 @@
 package scalaclean
 
-import org.scalatest.FunSuite
 import org.scalatest.{ BeforeAndAfterAllConfigMap, ConfigMap }
+import org.scalatest.funsuite.AnyFunSuite
 import scalaclean.cli.{DeadCodeProjectTestRunner, PrivatiserProjectTestRunner}
 
-abstract class AbstractProjectTests extends FunSuite with BeforeAndAfterAllConfigMap {
+abstract class AbstractProjectTests extends AnyFunSuite with BeforeAndAfterAllConfigMap {
   private var overwrite = false
 
   override protected def beforeAll(configMap: ConfigMap) = {

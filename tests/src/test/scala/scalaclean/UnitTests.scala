@@ -4,8 +4,9 @@ import java.io.{File, FileOutputStream}
 import java.nio.charset.StandardCharsets
 import java.nio.file.Paths
 
-import org.scalatest.{ BeforeAndAfterAllConfigMap, ConfigMap, FunSuite }
-import org.scalatest.junit.AssertionsForJUnit
+import org.scalatest.{ BeforeAndAfterAllConfigMap, ConfigMap }
+import org.scalatest.funsuite.AnyFunSuite
+import org.scalatestplus.junit.AssertionsForJUnit
 import scalaclean.cli.FileHelper
 import scalaclean.cli.FileHelper.toPlatform
 import scalaclean.model.impl.ProjectSet
@@ -21,7 +22,7 @@ import scalafix.v1.SemanticDocument
 import scala.meta._
 import scala.meta.internal.io.FileIO
 
-class UnitTests extends FunSuite with AssertionsForJUnit with DiffAssertions with BeforeAndAfterAllConfigMap {
+class UnitTests extends AnyFunSuite with AssertionsForJUnit with DiffAssertions with BeforeAndAfterAllConfigMap {
   private var overwrite = false
 
   override protected def beforeAll(configMap: ConfigMap) = {
@@ -93,7 +94,7 @@ class UnitTests extends FunSuite with AssertionsForJUnit with DiffAssertions wit
     )
 
     val outputClassDir: String = s"${scalaCleanWorkspace}/testProjects/$projectName/target/scala-2.12/classes/"
-    val inputClasspath = Classpath(toPlatform(s"$outputClassDir|$ivyDir/org.scala-lang/scala-library/jars/scala-library-2.12.8.jar|$ivyDir/org.scalaz/scalaz-core_2.12/bundles/scalaz-core_2.12-7.2.27.jar"))
+    val inputClasspath = Classpath(toPlatform(s"$outputClassDir|$ivyDir/org.scala-lang/scala-library/jars/scala-library-2.12.8.jar"))
     val sourceRoot = AbsolutePath(scalaCleanWorkspace)
     val inputSourceDirectories: List[AbsolutePath] = Classpath(toPlatform(s"$scalaCleanWorkspace/testProjects/$projectName/src/main/scala")).entries
 
