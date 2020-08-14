@@ -1,30 +1,30 @@
 package scalaclean.test.references.internalIncomingReferences
 
 class Parent {
-  def foo: Unit = ()/* internalIncomingReferences(G:scalaclean/test/references/internalIncomingReferences/Parent#foo().) - G:scalaclean/test/references/internalIncomingReferences/XX. */
-}/* internalIncomingReferences(G:scalaclean/test/references/internalIncomingReferences/Parent#) - G:scalaclean/test/references/internalIncomingReferences/Child# :: G:scalaclean/test/references/internalIncomingReferences/Child#`<init>`(). :: G:scalaclean/test/references/internalIncomingReferences/Parent#`<init>`(). */
+  def foo: Unit = ()/* internalIncomingReferences(<root>/scalaclean/test/references/internalIncomingReferences/Parent#/{M}foo().) - <root>/scalaclean/test/references/internalIncomingReferences/XX. */
+}/* internalIncomingReferences(<root>/scalaclean/test/references/internalIncomingReferences/Parent#) - <root>/scalaclean/test/references/internalIncomingReferences/Child# :: <root>/scalaclean/test/references/internalIncomingReferences/Child#/{M}<init>(). :: <root>/scalaclean/test/references/internalIncomingReferences/Parent#/{M}<init>(). */
 class Child extends Parent{
-  def bar(x:Any): Unit = ()/* internalIncomingReferences(G:scalaclean/test/references/internalIncomingReferences/Child#bar().) - G:scalaclean/test/references/internalIncomingReferences/XX. */
-}/* internalIncomingReferences(G:scalaclean/test/references/internalIncomingReferences/Child#) - G:scalaclean/test/references/internalIncomingReferences/Child#`<init>`(). :: G:scalaclean/test/references/internalIncomingReferences/XX. */
+  def bar(x:Any): Unit = ()/* internalIncomingReferences(<root>/scalaclean/test/references/internalIncomingReferences/Child#/{M}bar(scala.Any).) - <root>/scalaclean/test/references/internalIncomingReferences/XX. */
+}/* internalIncomingReferences(<root>/scalaclean/test/references/internalIncomingReferences/Child#) - <root>/scalaclean/test/references/internalIncomingReferences/Child#/{M}<init>(). :: <root>/scalaclean/test/references/internalIncomingReferences/XX. */
 object Special {
-  def myVar1 = 1/* internalIncomingReferences(G:scalaclean/test/references/internalIncomingReferences/Special.myVar1().) - G:scalaclean/test/references/internalIncomingReferences/XX. */
-  def myVar1_=(i: Int) = ()/* internalIncomingReferences(G:scalaclean/test/references/internalIncomingReferences/Special.`myVar1_=`().) - G:scalaclean/test/references/internalIncomingReferences/XX. */
+  def myVar1 = 1/* internalIncomingReferences(<root>/scalaclean/test/references/internalIncomingReferences/Special/{M}myVar1().) - <root>/scalaclean/test/references/internalIncomingReferences/XX. */
+  def myVar1_=(i: Int) = ()/* internalIncomingReferences(<root>/scalaclean/test/references/internalIncomingReferences/Special/{M}myVar1_$eq(scala.Int).) - <root>/scalaclean/test/references/internalIncomingReferences/XX. */
 
-  def myVar2 = 1/* internalIncomingReferences(G:scalaclean/test/references/internalIncomingReferences/Special.myVar2().) - G:scalaclean/test/references/internalIncomingReferences/XX. */
-  def myVar2_=(i: Int) = ()/* internalIncomingReferences(G:scalaclean/test/references/internalIncomingReferences/Special.`myVar2_=`().) - G:scalaclean/test/references/internalIncomingReferences/XX. */
+  def myVar2 = 1/* internalIncomingReferences(<root>/scalaclean/test/references/internalIncomingReferences/Special/{M}myVar2().) - <root>/scalaclean/test/references/internalIncomingReferences/XX. */
+  def myVar2_=(i: Int) = ()/* internalIncomingReferences(<root>/scalaclean/test/references/internalIncomingReferences/Special/{M}myVar2_$eq(scala.Int).) - <root>/scalaclean/test/references/internalIncomingReferences/XX. */
 
   def myVar3 = 1
-  def myVar3_=(i: Int) = ()/* internalIncomingReferences(G:scalaclean/test/references/internalIncomingReferences/Special.`myVar3_=`().) - G:scalaclean/test/references/internalIncomingReferences/XX. */
+  def myVar3_=(i: Int) = ()/* internalIncomingReferences(<root>/scalaclean/test/references/internalIncomingReferences/Special/{M}myVar3_$eq(scala.Int).) - <root>/scalaclean/test/references/internalIncomingReferences/XX. */
 
-  def myVar4 = 1/* internalIncomingReferences(G:scalaclean/test/references/internalIncomingReferences/Special.myVar4().) - G:scalaclean/test/references/internalIncomingReferences/XX. */
+  def myVar4 = 1/* internalIncomingReferences(<root>/scalaclean/test/references/internalIncomingReferences/Special/{M}myVar4().) - <root>/scalaclean/test/references/internalIncomingReferences/XX. */
   def myVar4_=(i: Int) = ()
 
-  def apply() = 7/* internalIncomingReferences(G:scalaclean/test/references/internalIncomingReferences/Special.apply().) - G:scalaclean/test/references/internalIncomingReferences/XX. */
-  def unapply(a:Any) = Some(1,2)/* internalIncomingReferences(G:scalaclean/test/references/internalIncomingReferences/Special.unapply().) - G:scalaclean/test/references/internalIncomingReferences/XX. */
+  def apply() = 7/* internalIncomingReferences(<root>/scalaclean/test/references/internalIncomingReferences/Special/{M}apply().) - <root>/scalaclean/test/references/internalIncomingReferences/XX. */
+  def unapply(a:Any) = Some(1,2)/* internalIncomingReferences(<root>/scalaclean/test/references/internalIncomingReferences/Special/{M}unapply(scala.Any).) - <root>/scalaclean/test/references/internalIncomingReferences/XX. */
 
-  def update(i: Int, j: Int) = ()/* internalIncomingReferences(G:scalaclean/test/references/internalIncomingReferences/Special.update().) - G:scalaclean/test/references/internalIncomingReferences/XX. */
+  def update(i: Int, j: Int) = ()/* internalIncomingReferences(<root>/scalaclean/test/references/internalIncomingReferences/Special/{M}update(scala.Int;scala.Int).) - <root>/scalaclean/test/references/internalIncomingReferences/XX. */
 
-}/* internalIncomingReferences(G:scalaclean/test/references/internalIncomingReferences/Special.) - G:scalaclean/test/references/internalIncomingReferences/XX. */
+}/* internalIncomingReferences(<root>/scalaclean/test/references/internalIncomingReferences/Special.) - <root>/scalaclean/test/references/internalIncomingReferences/XX. */
 
 object XX {
   new Child().foo
@@ -40,7 +40,7 @@ object XX {
   println(Special.myVar4)
 
   Special()
-  val x: Any = 1/* internalIncomingReferences(G:scalaclean/test/references/internalIncomingReferences/XX.x.) - G:scalaclean/test/references/internalIncomingReferences/XX.x. */
+  val x: Any = 1/* internalIncomingReferences(<root>/scalaclean/test/references/internalIncomingReferences/XX/x .) - <root>/scalaclean/test/references/internalIncomingReferences/XX/{M}x(). */
   x match {
     case i: Int => ???
     case Special(a,b) => ???
