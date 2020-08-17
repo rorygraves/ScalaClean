@@ -12,12 +12,7 @@ class DeadCodeProjectTestRunner(
 
   def taskName = SCOptions.deadCodeCmd
 
-  def createModelTaskFn(propsFiles: Seq[File], debug: Boolean): ProjectModel => AbstractRule = {
-
-    def fn(model: ProjectModel): AbstractRule = {
-      new DeadCodeRemover(model, debug)
-    }
-
-    fn
+  def createRule(propsFiles: Seq[File], debug: Boolean): ProjectModel => AbstractRule = {
+    new DeadCodeRemover(_, debug)
   }
 }

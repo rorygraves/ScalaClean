@@ -4,7 +4,14 @@ import scalaclean.model._
 import scalafix.patch.Patch
 import scalafix.v1.SemanticDocument
 
-abstract class AbstractRule(val name: String, val model: ProjectModel, debug: Boolean) {
+trait NamedRule {
+  def ruleName: String
+  def fix(implicit doc: SemanticDocument): Patch
+}
+
+abstract class AbstractRule(val name: String, val model: ProjectModel, debug: Boolean) extends NamedRule {
+  final def ruleName = name
+
   def printSummary(): Unit
 
   type Colour <: Mark

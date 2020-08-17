@@ -2,16 +2,18 @@ package scalaclean.test
 
 import scalaclean.model._
 import scalaclean.model.impl.LegacyElementId
+import scalaclean.rules.NamedRule
 import scalaclean.util._
 import scalafix.v1._
 
 import scala.meta.{Decl, Defn, Import, Pat, Pkg, Stat, Term, Tree}
 
 /**
-  * A rule use to test the that incoming references ar set correctly,
-  * needs to be run after ScalaCleanTestAnalysis
-  */
-abstract class TestBase(name: String, model: ProjectModel) extends SemanticRule(name) {
+ * A rule use to test the that incoming references ar set correctly,
+ * needs to be run after ScalaCleanTestAnalysis
+ */
+abstract class TestBase(name: String, model: ProjectModel) extends SemanticRule(name) with NamedRule {
+  override final def ruleName = name
 
   override def beforeStart(): Unit = {
     println(s"Test Rule $name beforeStart START")
