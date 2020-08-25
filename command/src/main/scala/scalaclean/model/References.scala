@@ -9,7 +9,7 @@ sealed trait Reference extends Ordered[Reference] {
 
   def toElement: Option[ModelElement]
 
-  final protected def refType = this match {
+  final protected def refType: String = this match {
     case _: Refers    => "Refers"
     case _: Extends   => "Extends"
     case _: Overrides => "Overrides"

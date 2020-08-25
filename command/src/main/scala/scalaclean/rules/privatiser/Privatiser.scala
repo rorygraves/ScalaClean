@@ -3,10 +3,9 @@ package scalaclean.rules.privatiser
 import org.scalaclean.analysis.plugin.VisibilityData
 import scalaclean.model._
 import scalaclean.rules.AbstractRule
-import scalaclean.util.{ElementTreeVisitor, ScalaCleanTreePatcher}
+import scalaclean.util.ScalaCleanTreePatcher
 import scalafix.v1.SyntacticDocument
 
-import scala.collection.mutable.ListBuffer
 import scala.meta.io.AbsolutePath
 import scala.meta.tokens.Token
 

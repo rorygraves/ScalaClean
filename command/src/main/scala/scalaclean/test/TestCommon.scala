@@ -13,7 +13,7 @@ abstract class TestCommon(name: String, model: ProjectModel) extends TestBase(na
   }
 
   /**
-   * Visit a symbol (assuming it is visible in the source coee.
+   * Visit a symbol (assuming it is visible in the source code).
    * @param modelElement Target element
    * @return The comment th add about this element.
    */

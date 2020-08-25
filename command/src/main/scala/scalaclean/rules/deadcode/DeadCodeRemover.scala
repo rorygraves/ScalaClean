@@ -2,7 +2,7 @@ package scalaclean.rules.deadcode
 
 import scalaclean.model._
 import scalaclean.rules.AbstractRule
-import scalaclean.util.{ElementTreeVisitor, PatchStats, ScalaCleanTreePatcher}
+import scalaclean.util.ScalaCleanTreePatcher
 import scalafix.v1.SyntacticDocument
 
 import scala.meta.io.AbsolutePath
@@ -130,7 +130,7 @@ class DeadCodeRemover(model: ProjectModel, debug: Boolean) extends AbstractRule(
           case field: FieldModel if field.inCompoundFieldDeclaration =>
             // do nothing - do not recurse
             false
-          case gmm: GetterMethodModel if(gmm.field.forall(_.existsInSource)) =>
+          case gmm: GetterMethodModel if gmm.field.forall(_.existsInSource) =>
 
             false
           case fields: FieldsModel =>

@@ -3,7 +3,7 @@ package org.scalaclean.analysis
 import java.util.concurrent.atomic.AtomicInteger
 
 import scalaclean.model.ElementId
-import scalaclean.model.impl.{FieldPathImpl}
+import scalaclean.model.impl.FieldPathImpl
 
 import scala.collection.mutable
 import scala.meta.internal.semanticdb.scalac.SemanticdbOps
@@ -72,24 +72,6 @@ trait ModelSymbolBuilder extends SemanticdbOps {
     recur(sym)
   }
 
-  private def getNewName(sym: global.Symbol): String = {
-    //    if (debug)
-    //      println(s"getNewName $sym")
-    symbolNames.getOrElseUpdate(sym, fullNameString(sym))
-    //    import global.{ModuleDef, ClassDef, ValDef, DefDef, NoSymbol}
-    //
-    //    symbolNames.getOrElseUpdate(sym, sym =>
-    //    val usefulParent = sym.ownersIterator.collectFirst {
-    //      case defn: ModuleDef => getNewName(defn.info.termSymbol)
-    //      case defn: ClassDef =>  getNewName(defn.info.termSymbol)
-    //      case defn: ValDef =>  getNewName(defn.info.termSymbol)
-    //      case defn: DefDef =>  getNewName(defn.info.termSymbol)
-    //    }.getOrElse("")
-    //      s"$usefulParent/${sym.nameString}".reverse.mkString("/")
-    //
-    //  )
-  }
-
   private val mSymbolCache2 = mutable.Map[global.Symbol, ModelCommon]()
   private val mSymbolCache = mutable.Map[global.Symbol, ModelCommon]()
 
@@ -98,12 +80,12 @@ trait ModelSymbolBuilder extends SemanticdbOps {
   }
 
   def asMSymbol(gSym: global.Symbol): ModelCommon = {
-    asMSymbolX(gSym, false)
+    asMSymbolX(gSym, forceField = false)
   }
   def asMSymbolForceField(gSym: global.Symbol): ModelCommon = {
-    val unforced = asMSymbolX(gSym, false)
+    val unforced = asMSymbolX(gSym, forceField = false)
     if (unforced.elementId.isInstanceOf[FieldPathImpl]) unforced
-    else asMSymbolX(gSym, true)
+    else asMSymbolX(gSym, forceField = true)
   }
   private def asMSymbolX(gSym: global.Symbol, forceField:Boolean): ModelCommon = {
     val cache = if (forceField) mSymbolCache2 else mSymbolCache

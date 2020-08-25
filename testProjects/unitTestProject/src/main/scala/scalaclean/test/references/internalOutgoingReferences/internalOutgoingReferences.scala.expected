@@ -5,7 +5,7 @@ class Parent {
 }
 class Child extends Parent{
   def bar(x:Any): Unit = ()
-}/* internalOutgoingReferences(<root>/scalaclean/test/references/internalOutgoingReferences/Child#) - <root>/scalaclean/test/references/internalOutgoingReferences/Parent# */
+}/* internalOutgoingReferences(C:scalaclean.test.references.internalOutgoingReferences.Child) - C:scalaclean.test.references.internalOutgoingReferences.Parent */
 object Special {
   def myVar1 = 1
   def myVar1_=(i: Int) = ()
@@ -37,4 +37,4 @@ object XX {
   }
 
   Special(1) = 7
-}/* internalOutgoingReferences(<root>/scalaclean/test/references/internalOutgoingReferences/XX.) - <root>/scalaclean/test/references/internalOutgoingReferences/Child# :: <root>/scalaclean/test/references/internalOutgoingReferences/Child#/{M}<init>(). :: <root>/scalaclean/test/references/internalOutgoingReferences/Child#/{M}bar(scala.Any). :: <root>/scalaclean/test/references/internalOutgoingReferences/Parent#/{M}foo(). :: <root>/scalaclean/test/references/internalOutgoingReferences/Special. :: <root>/scalaclean/test/references/internalOutgoingReferences/Special/{M}apply(). :: <root>/scalaclean/test/references/internalOutgoingReferences/Special/{M}myVar1(). :: <root>/scalaclean/test/references/internalOutgoingReferences/Special/{M}myVar1_$eq(scala.Int). :: <root>/scalaclean/test/references/internalOutgoingReferences/Special/{M}myVar2(). :: <root>/scalaclean/test/references/internalOutgoingReferences/Special/{M}myVar2_$eq(scala.Int). :: <root>/scalaclean/test/references/internalOutgoingReferences/Special/{M}unapply(scala.Any). :: <root>/scalaclean/test/references/internalOutgoingReferences/Special/{M}update(scala.Int;scala.Int). :: <root>/scalaclean/test/references/internalOutgoingReferences/XX/{M}x(). */
+}/* internalOutgoingReferences(O:scalaclean.test.references.internalOutgoingReferences.XX) - C:scalaclean.test.references.internalOutgoingReferences.Child :: C:scalaclean.test.references.internalOutgoingReferences.Child/M:<init>() :: C:scalaclean.test.references.internalOutgoingReferences.Child/M:bar(scala.Any) :: C:scalaclean.test.references.internalOutgoingReferences.Parent/M:foo() :: C:scalaclean.test.references.internalOutgoingReferences.Special/M:apply() :: C:scalaclean.test.references.internalOutgoingReferences.Special/M:myVar1() :: C:scalaclean.test.references.internalOutgoingReferences.Special/M:myVar1_$eq(scala.Int) :: C:scalaclean.test.references.internalOutgoingReferences.Special/M:myVar2() :: C:scalaclean.test.references.internalOutgoingReferences.Special/M:myVar2_$eq(scala.Int) :: C:scalaclean.test.references.internalOutgoingReferences.Special/M:unapply(scala.Any) :: C:scalaclean.test.references.internalOutgoingReferences.Special/M:update(scala.Int;scala.Int) :: C:scalaclean.test.references.internalOutgoingReferences.XX/M:x() :: O:scalaclean.test.references.internalOutgoingReferences.Special */

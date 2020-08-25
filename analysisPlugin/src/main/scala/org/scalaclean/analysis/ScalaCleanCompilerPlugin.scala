@@ -2,7 +2,7 @@ package org.scalaclean.analysis
 
 import java.nio.file.{Files, Paths}
 
-import org.scalaclean.analysis.plugin.{AnnotationPlugin, ExtensionPlugin, ExtensionPluginFactory, ModsPlugin}
+import org.scalaclean.analysis.plugin.{AnnotationPlugin, ExtensionPluginFactory, ModsPlugin}
 
 import scala.tools.nsc.Global
 import scala.tools.nsc.plugins.{Plugin, PluginComponent}

@@ -38,7 +38,7 @@ private[privatiser] object AccessScope {
 
 private[privatiser] final case class AccessScope(elementId: ElementId, reasons: Set[String]) {
   def print(name: String): String = s"$name $elementId $sortedReasons"
-  def sortedReasons = reasons.toList.sorted
+  def sortedReasons: List[String] = reasons.toList.sorted
 
   def widen(other: AccessScope): AccessScope =
     if (elementId.isNone) other

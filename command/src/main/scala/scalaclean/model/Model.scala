@@ -7,7 +7,7 @@ import scala.reflect.ClassTag
 
 sealed trait ModelElement extends Ordered[ModelElement] {
 
-  override def compare(that: ModelElement): Int = elementId.id.compare(that.elementId.id)
+  override def compare(that: ModelElement): Int = modelElementId.id.compare(that.modelElementId.id)
 
   def modelElementId: ElementId
 
@@ -50,7 +50,7 @@ sealed trait ModelElement extends Ordered[ModelElement] {
   def overrides: Iterable[Overrides] = {
     val direct: Set[ElementId] = (allDirectOverrides map (_._2)).toSet
     allTransitiveOverrides map {
-      case (_, modelSym) => new impl.OverridesImpl(elementId, modelSym, direct.contains(modelSym))
+      case (_, modelSym) => new impl.OverridesImpl(modelElementId, modelSym, direct.contains(modelSym))
     }
   }
 
@@ -136,9 +136,9 @@ sealed trait ModelElement extends Ordered[ModelElement] {
 
   protected def infoDetail = ""
 
-  protected def infoName: String = elementId.id
+  protected def infoName: String = modelElementId.id
 
-  override def toString: String = s"$infoTypeName $infoName [$infoPosString] $infoDetail [[$elementId]]"
+  override def toString: String = s"$infoTypeName $infoName [$infoPosString] $infoDetail [[$modelElementId]]"
 }
 
 sealed trait ClassLike extends ModelElement {
@@ -166,8 +166,8 @@ sealed trait ObjectModel extends ClassLike with FieldModel {
   }
 
   override final def getter: Option[GetterMethodModel] = None
-  override final def accessors = Nil
-  override final def declaredIn = None
+  override final def accessors: Iterable[AccessorModel]  = Nil
+  override final def declaredIn: Option[FieldsModel] = None
   override final def fieldsInSameDeclaration = Nil
 
   final type fieldType = ObjectModel
@@ -244,6 +244,8 @@ trait ProjectModel {
 
 
 package impl {
+
+  import java.nio.file.Path
 
   import org.scalaclean.analysis.FlagHelper
 
@@ -529,8 +531,8 @@ package impl {
                            relsFrom: BasicRelationshipInfo,
                            relsTo: BasicRelationshipInfo): Unit = {
       super.complete(modelElements, relsFrom, relsTo)
-      extnds = relsFrom.extnds.getOrElse(elementId, Nil)
-      extendedBy = relsTo.extnds.getOrElse(elementId, Nil)
+      extnds = relsFrom.extnds.getOrElse(modelElementId, Nil)
+      extendedBy = relsTo.extnds.getOrElse(modelElementId, Nil)
 
     }
 
@@ -695,8 +697,8 @@ package impl {
 
     private var setter_ : Option[SetterMethodModel] = _
 
-    override def setter = setter_
-    override def accessors = getter ++ setter
+    override def setter: Option[SetterMethodModel] = setter_
+    override def accessors: Iterable[AccessorModel] = getter ++ setter
 
   }
 

@@ -81,7 +81,7 @@ trait AbstractUnitTests extends AnyFunSuite with AssertionsForJUnit with DiffAss
         val outputFile = inputSourceDirectories.head.resolve(targetOutput)
         val expected = stripLocalIds(FileIO.slurp(outputFile, StandardCharsets.UTF_8))
 
-        if (UnitTests.this.overwrite || overwrite) {
+        if (overwrite) {
           println("Overwriting target file: " + outputFile)
           val w = new FileOutputStream(outputFile.toString())
           w.write(obtained.getBytes(StandardCharsets.UTF_8))
