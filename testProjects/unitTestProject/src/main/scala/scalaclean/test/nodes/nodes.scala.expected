@@ -1,77 +1,77 @@
 package scalaclean.test.nodes
 
 trait GrandParentTrait {
-  def d1: Int/* MethodModel d1 [3:2 - 3:13]  */
-  def d2(a:Int): Int/* MethodModel d2 [4:2 - 4:20]  */
-  def d2a(a:Int)(b:Int): Int/* MethodModel d2a [5:2 - 5:28]  */
-  def d3()(): Int/* MethodModel d3 [6:2 - 6:17]  */
+  def d1: Int/* PlainMethodModel C:scalaclean.test.nodes.GrandParentTrait/M:d1() [58-69]  [[C:scalaclean.test.nodes.GrandParentTrait/M:d1()]] */
+  def d2(a:Int): Int/* PlainMethodModel C:scalaclean.test.nodes.GrandParentTrait/M:d2(scala.Int) [72-90]  [[C:scalaclean.test.nodes.GrandParentTrait/M:d2(scala.Int)]] */
+  def d2a(a:Int)(b:Int): Int/* PlainMethodModel C:scalaclean.test.nodes.GrandParentTrait/M:d2a(scala.Intscala.Int) [93-119]  [[C:scalaclean.test.nodes.GrandParentTrait/M:d2a(scala.Intscala.Int)]] */
+  def d3()(): Int/* PlainMethodModel C:scalaclean.test.nodes.GrandParentTrait/M:d3() [122-137]  [[C:scalaclean.test.nodes.GrandParentTrait/M:d3()]] */
 
-}/* TraitModel GrandParentTrait [2:0 - 8:1]  */
+}/* TraitModel C:scalaclean.test.nodes.GrandParentTrait [31-140]  [[C:scalaclean.test.nodes.GrandParentTrait]] */
 trait ParentTrait extends GrandParentTrait {
-  def d3(): () => Int = ???/* MethodModel d3 [10:2 - 10:27]  */
-}/* TraitModel ParentTrait [9:0 - 11:1]  */
+  def d3(): () => Int = ???/* PlainMethodModel C:scalaclean.test.nodes.ParentTrait/M:d3() [188-213]  [[C:scalaclean.test.nodes.ParentTrait/M:d3()]] */
+}/* TraitModel C:scalaclean.test.nodes.ParentTrait [141-215]  [[C:scalaclean.test.nodes.ParentTrait]] */
 trait ChildTrait extends ParentTrait {
-  override def d3(): () => Int = ???/* MethodModel d3 [13:2 - 13:36]  */
-  def d2a(a:Int) = d2 _/* MethodModel d2a [14:2 - 14:23]  */
+  override def d3(): () => Int = ???/* PlainMethodModel C:scalaclean.test.nodes.ChildTrait/M:d3() [257-291]  [[C:scalaclean.test.nodes.ChildTrait/M:d3()]] */
+  def d2a(a:Int) = d2 _/* PlainMethodModel C:scalaclean.test.nodes.ChildTrait/M:d2a(scala.Int) [294-315]  [[C:scalaclean.test.nodes.ChildTrait/M:d2a(scala.Int)]] */
 
-}/* TraitModel ChildTrait [12:0 - 16:1]  */
+}/* TraitModel C:scalaclean.test.nodes.ChildTrait [216-318]  [[C:scalaclean.test.nodes.ChildTrait]] */
 trait Trait_ChildTrait extends ParentTrait {
-  override def equals(obj: Any): Boolean = super.equals(obj)/* MethodModel equals [18:2 - 18:60]  */
+  override def equals(obj: Any): Boolean = super.equals(obj)/* PlainMethodModel C:scalaclean.test.nodes.Trait_ChildTrait/M:equals(scala.Any) [366-424]  [[C:scalaclean.test.nodes.Trait_ChildTrait/M:equals(scala.Any)]] */
 
-  override def clone(): AnyRef = super.clone()/* MethodModel clone [20:2 - 20:46]  */
+  override def clone(): AnyRef = super.clone()/* PlainMethodModel C:scalaclean.test.nodes.Trait_ChildTrait/M:clone() [428-472]  [[C:scalaclean.test.nodes.Trait_ChildTrait/M:clone()]] */
 
-  override def toString: String = super.toString/* MethodModel toString [22:2 - 22:48]  */
+  override def toString: String = super.toString/* PlainMethodModel C:scalaclean.test.nodes.Trait_ChildTrait/M:toString() [476-522]  [[C:scalaclean.test.nodes.Trait_ChildTrait/M:toString()]] */
 
-  override def finalize(): Unit = super.finalize()/* MethodModel finalize [24:2 - 24:50]  */
+  override def finalize(): Unit = super.finalize()/* PlainMethodModel C:scalaclean.test.nodes.Trait_ChildTrait/M:finalize() [526-574]  [[C:scalaclean.test.nodes.Trait_ChildTrait/M:finalize()]] */
 
-  override def hashCode(): Int = super.hashCode()/* MethodModel hashCode [26:2 - 26:49]  */
+  override def hashCode(): Int = super.hashCode()/* PlainMethodModel C:scalaclean.test.nodes.Trait_ChildTrait/M:hashCode() [578-625]  [[C:scalaclean.test.nodes.Trait_ChildTrait/M:hashCode()]] */
 
-  override def d1: Int = ???/* MethodModel d1 [28:2 - 28:28]  */
+  override def d1: Int = ???/* PlainMethodModel C:scalaclean.test.nodes.Trait_ChildTrait/M:d1() [629-655]  [[C:scalaclean.test.nodes.Trait_ChildTrait/M:d1()]] */
 
-  override def d2(a: Int): Int = ???/* MethodModel d2 [30:2 - 30:36]  */
+  override def d2(a: Int): Int = ???/* PlainMethodModel C:scalaclean.test.nodes.Trait_ChildTrait/M:d2(scala.Int) [659-693]  [[C:scalaclean.test.nodes.Trait_ChildTrait/M:d2(scala.Int)]] */
 
-  override def d2a(a: Int)(b: Int): Int = ???/* MethodModel d2a [32:2 - 32:45]  */
+  override def d2a(a: Int)(b: Int): Int = ???/* PlainMethodModel C:scalaclean.test.nodes.Trait_ChildTrait/M:d2a(scala.Intscala.Int) [697-740]  [[C:scalaclean.test.nodes.Trait_ChildTrait/M:d2a(scala.Intscala.Int)]] */
 
-  override def d3()(): Int = ???/* MethodModel d3 [34:2 - 34:32]  */
-}/* TraitModel Trait_ChildTrait [17:0 - 35:1]  */
+  override def d3()(): Int = ???/* PlainMethodModel C:scalaclean.test.nodes.Trait_ChildTrait/M:d3() [744-774]  [[C:scalaclean.test.nodes.Trait_ChildTrait/M:d3()]] */
+}/* TraitModel C:scalaclean.test.nodes.Trait_ChildTrait [319-776]  [[C:scalaclean.test.nodes.Trait_ChildTrait]] */
 class Class_ChildTrait extends ParentTrait {
-  override def equals(obj: Any): Boolean = super.equals(obj)/* MethodModel equals [37:2 - 37:60]  */
+  override def equals(obj: Any): Boolean = super.equals(obj)/* PlainMethodModel C:scalaclean.test.nodes.Class_ChildTrait/M:equals(scala.Any) [824-882]  [[C:scalaclean.test.nodes.Class_ChildTrait/M:equals(scala.Any)]] */
 
-  override def clone(): AnyRef = super.clone()/* MethodModel clone [39:2 - 39:46]  */
+  override def clone(): AnyRef = super.clone()/* PlainMethodModel C:scalaclean.test.nodes.Class_ChildTrait/M:clone() [886-930]  [[C:scalaclean.test.nodes.Class_ChildTrait/M:clone()]] */
 
-  override def toString: String = super.toString/* MethodModel toString [41:2 - 41:48]  */
+  override def toString: String = super.toString/* PlainMethodModel C:scalaclean.test.nodes.Class_ChildTrait/M:toString() [934-980]  [[C:scalaclean.test.nodes.Class_ChildTrait/M:toString()]] */
 
-  override def finalize(): Unit = super.finalize()/* MethodModel finalize [43:2 - 43:50]  */
+  override def finalize(): Unit = super.finalize()/* PlainMethodModel C:scalaclean.test.nodes.Class_ChildTrait/M:finalize() [984-1032]  [[C:scalaclean.test.nodes.Class_ChildTrait/M:finalize()]] */
 
-  override def hashCode(): Int = super.hashCode()/* MethodModel hashCode [45:2 - 45:49]  */
+  override def hashCode(): Int = super.hashCode()/* PlainMethodModel C:scalaclean.test.nodes.Class_ChildTrait/M:hashCode() [1036-1083]  [[C:scalaclean.test.nodes.Class_ChildTrait/M:hashCode()]] */
 
-  override def d1: Int = ???/* MethodModel d1 [47:2 - 47:28]  */
+  override def d1: Int = ???/* PlainMethodModel C:scalaclean.test.nodes.Class_ChildTrait/M:d1() [1087-1113]  [[C:scalaclean.test.nodes.Class_ChildTrait/M:d1()]] */
 
-  override def d2(a: Int): Int = ???/* MethodModel d2 [49:2 - 49:36]  */
+  override def d2(a: Int): Int = ???/* PlainMethodModel C:scalaclean.test.nodes.Class_ChildTrait/M:d2(scala.Int) [1117-1151]  [[C:scalaclean.test.nodes.Class_ChildTrait/M:d2(scala.Int)]] */
 
-  override def d2a(a: Int)(b: Int): Int = ???/* MethodModel d2a [51:2 - 51:45]  */
+  override def d2a(a: Int)(b: Int): Int = ???/* PlainMethodModel C:scalaclean.test.nodes.Class_ChildTrait/M:d2a(scala.Intscala.Int) [1155-1198]  [[C:scalaclean.test.nodes.Class_ChildTrait/M:d2a(scala.Intscala.Int)]] */
 
-  override def d3()(): Int = ???/* MethodModel d3 [53:2 - 53:32]  */
-}/* ClassModel Class_ChildTrait [36:0 - 54:1]  */
+  override def d3()(): Int = ???/* PlainMethodModel C:scalaclean.test.nodes.Class_ChildTrait/M:d3() [1202-1232]  [[C:scalaclean.test.nodes.Class_ChildTrait/M:d3()]] */
+}/* ClassModel C:scalaclean.test.nodes.Class_ChildTrait [777-1234]  [[C:scalaclean.test.nodes.Class_ChildTrait]] */
 object Object_ChildTrait extends ParentTrait {
-  override def equals(obj: Any): Boolean = super.equals(obj)/* MethodModel equals [56:2 - 56:60]  */
+  override def equals(obj: Any): Boolean = super.equals(obj)/* PlainMethodModel C:scalaclean.test.nodes.Object_ChildTrait/M:equals(scala.Any) [1284-1342]  [[C:scalaclean.test.nodes.Object_ChildTrait/M:equals(scala.Any)]] */
 
-  override def clone(): AnyRef = super.clone()/* MethodModel clone [58:2 - 58:46]  */
+  override def clone(): AnyRef = super.clone()/* PlainMethodModel C:scalaclean.test.nodes.Object_ChildTrait/M:clone() [1346-1390]  [[C:scalaclean.test.nodes.Object_ChildTrait/M:clone()]] */
 
-  override def toString: String = super.toString/* MethodModel toString [60:2 - 60:48]  */
+  override def toString: String = super.toString/* PlainMethodModel C:scalaclean.test.nodes.Object_ChildTrait/M:toString() [1394-1440]  [[C:scalaclean.test.nodes.Object_ChildTrait/M:toString()]] */
 
-  override def finalize(): Unit = super.finalize()/* MethodModel finalize [62:2 - 62:50]  */
+  override def finalize(): Unit = super.finalize()/* PlainMethodModel C:scalaclean.test.nodes.Object_ChildTrait/M:finalize() [1444-1492]  [[C:scalaclean.test.nodes.Object_ChildTrait/M:finalize()]] */
 
-  override def hashCode(): Int = super.hashCode()/* MethodModel hashCode [64:2 - 64:49]  */
+  override def hashCode(): Int = super.hashCode()/* PlainMethodModel C:scalaclean.test.nodes.Object_ChildTrait/M:hashCode() [1496-1543]  [[C:scalaclean.test.nodes.Object_ChildTrait/M:hashCode()]] */
 
-  override def d1: Int = ???/* MethodModel d1 [66:2 - 66:28]  */
+  override def d1: Int = ???/* PlainMethodModel C:scalaclean.test.nodes.Object_ChildTrait/M:d1() [1547-1573]  [[C:scalaclean.test.nodes.Object_ChildTrait/M:d1()]] */
 
-  override def d2(a: Int): Int = ???/* MethodModel d2 [68:2 - 68:36]  */
+  override def d2(a: Int): Int = ???/* PlainMethodModel C:scalaclean.test.nodes.Object_ChildTrait/M:d2(scala.Int) [1577-1611]  [[C:scalaclean.test.nodes.Object_ChildTrait/M:d2(scala.Int)]] */
 
-  override def d2a(a: Int)(b: Int): Int = ???/* MethodModel d2a [70:2 - 70:45]  */
+  override def d2a(a: Int)(b: Int): Int = ???/* PlainMethodModel C:scalaclean.test.nodes.Object_ChildTrait/M:d2a(scala.Intscala.Int) [1615-1658]  [[C:scalaclean.test.nodes.Object_ChildTrait/M:d2a(scala.Intscala.Int)]] */
 
-  override def d3()(): Int = ???/* MethodModel d3 [72:2 - 72:32]  */
-}/* ObjectModel Object_ChildTrait [55:0 - 73:1]  */
+  override def d3()(): Int = ???/* PlainMethodModel C:scalaclean.test.nodes.Object_ChildTrait/M:d3() [1662-1692]  [[C:scalaclean.test.nodes.Object_ChildTrait/M:d3()]] */
+}/* ObjectModel O:scalaclean.test.nodes.Object_ChildTrait [1235-1694]  [[O:scalaclean.test.nodes.Object_ChildTrait]] */
 
 
 //class GrandParentClass {
@@ -90,12 +90,12 @@ object Object_ChildTrait extends ParentTrait {
 //}
 
 object TestVarVal {
-  val x1:Int = 5/* ValModel x1 [92:2 - 92:16] lazy=false */
-  var x2:Int = 5/* VarModel x2 [93:2 - 93:16]  */
-  lazy val x3:Int = 5/* ValModel x3 [94:2 - 94:21] lazy=true */
+  val x1:Int = 5/* ValModel C:scalaclean.test.nodes.TestVarVal/V:x1  [1994-2008]  lazy=false [[C:scalaclean.test.nodes.TestVarVal/V:x1 ]] */
+  var x2:Int = 5/* VarModel C:scalaclean.test.nodes.TestVarVal/V:x2  [2011-2025]  [[C:scalaclean.test.nodes.TestVarVal/V:x2 ]] */
+  lazy val x3:Int = 5/* ValModel C:scalaclean.test.nodes.TestVarVal/V:x3 [2028-2047]  lazy=true [[C:scalaclean.test.nodes.TestVarVal/V:x3]] *//* GetterMethodModel C:scalaclean.test.nodes.TestVarVal/M:x3() [2028-2047]  [[C:scalaclean.test.nodes.TestVarVal/M:x3()]] */
 
-  val (x10, x11) = (1,2)/* ValModel x11 [96:2 - 96:24] lazy=false*//*ValModel x10 [96:2 - 96:24] lazy=false */
-  var (x20, x21) = (1,2)/* VarModel x21 [97:2 - 97:24] *//*VarModel x20 [97:2 - 97:24]  */
-  lazy val (x30, x31) = (1,2)/* ValModel x31 [98:2 - 98:29] lazy=true*//*ValModel x30 [98:2 - 98:29] lazy=true */
+  val (x10/* ValModel C:scalaclean.test.nodes.TestVarVal/V:x10  [2056-2059]  lazy=false [[C:scalaclean.test.nodes.TestVarVal/V:x10 ]] */, x11/* ValModel C:scalaclean.test.nodes.TestVarVal/V:x11  [2061-2064]  lazy=false [[C:scalaclean.test.nodes.TestVarVal/V:x11 ]] */) = (1,2)/* FieldsModel C:scalaclean.test.nodes.TestVarVal/V:x$1 [2051-2073]  [[C:scalaclean.test.nodes.TestVarVal/V:x$1]] */
+  var (x20/* VarModel C:scalaclean.test.nodes.TestVarVal/V:x20  [2081-2084]  [[C:scalaclean.test.nodes.TestVarVal/V:x20 ]] */, x21/* VarModel C:scalaclean.test.nodes.TestVarVal/V:x21  [2086-2089]  [[C:scalaclean.test.nodes.TestVarVal/V:x21 ]] */) = (1,2)/* FieldsModel C:scalaclean.test.nodes.TestVarVal/V:x$2 [2076-2098]  [[C:scalaclean.test.nodes.TestVarVal/V:x$2]] */
+  lazy val (x30/* ValModel C:scalaclean.test.nodes.TestVarVal/V:x30 [2111-2114]  lazy=true [[C:scalaclean.test.nodes.TestVarVal/V:x30]] *//* GetterMethodModel C:scalaclean.test.nodes.TestVarVal/M:x30() [2111-2114]  [[C:scalaclean.test.nodes.TestVarVal/M:x30()]] */, x31/* ValModel C:scalaclean.test.nodes.TestVarVal/V:x31 [2116-2119]  lazy=true [[C:scalaclean.test.nodes.TestVarVal/V:x31]] *//* GetterMethodModel C:scalaclean.test.nodes.TestVarVal/M:x31() [2116-2119]  [[C:scalaclean.test.nodes.TestVarVal/M:x31()]] */) = (1,2)/* FieldsModel C:scalaclean.test.nodes.TestVarVal/M:x$3() [2101-2128]  [[C:scalaclean.test.nodes.TestVarVal/M:x$3()]] */
 
-}/* ObjectModel TestVarVal [91:0 - 100:1]  */
+}/* ObjectModel O:scalaclean.test.nodes.TestVarVal [1972-2131]  [[O:scalaclean.test.nodes.TestVarVal]] */
