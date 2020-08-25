@@ -1,24 +1,24 @@
 package scalaclean.test.references.allOutgoingReferences
 
 class Parent {
-  def foo: Unit = ()/* allOutgoingReferences(<root>/scalaclean/test/references/allOutgoingReferences/Parent#/{M}foo().) - <root>/scala :: <root>/scala/Unit# */
-}/* allOutgoingReferences(<root>/scalaclean/test/references/allOutgoingReferences/Parent#) - <root> :: <root>/java/lang/Object# :: <root>/scala :: <root>/scala. :: <root>/scala/AnyRef# :: <root>/scalaclean/test/references/allOutgoingReferences */
+  def foo: Unit = ()/* allOutgoingReferences(C:scalaclean.test.references.allOutgoingReferences.Parent/M:foo()) - C:scala.Unit :: P:scala */
+}/* allOutgoingReferences(C:scalaclean.test.references.allOutgoingReferences.Parent) - <root> :: C:java.lang.Object :: P:scala :: P:scalaT:AnyRef :: P:scalaclean.test.references.allOutgoingReferences */
 class Child extends Parent{
-  def bar(x:Any): Unit = ()/* allOutgoingReferences(<root>/scalaclean/test/references/allOutgoingReferences/Child#/{M}bar(scala.Any).) - <root>/scala :: <root>/scala/Any# :: <root>/scala/Unit# */
-}/* allOutgoingReferences(<root>/scalaclean/test/references/allOutgoingReferences/Child#) - <root>/scalaclean/test/references/allOutgoingReferences :: <root>/scalaclean/test/references/allOutgoingReferences/Parent# */
+  def bar(x:Any): Unit = ()/* allOutgoingReferences(C:scalaclean.test.references.allOutgoingReferences.Child/M:bar(scala.Any)) - C:scala.Any :: C:scala.Unit :: P:scala */
+}/* allOutgoingReferences(C:scalaclean.test.references.allOutgoingReferences.Child) - C:scalaclean.test.references.allOutgoingReferences.Parent :: P:scalaclean.test.references.allOutgoingReferences */
 object Special {
-  def myVar1 = 1/* allOutgoingReferences(<root>/scalaclean/test/references/allOutgoingReferences/Special/{M}myVar1().) - <root>/scala :: <root>/scala/Int# */
-  def myVar1_=(i: Int) = ()/* allOutgoingReferences(<root>/scalaclean/test/references/allOutgoingReferences/Special/{M}myVar1_$eq(scala.Int).) - <root>/scala :: <root>/scala/Int# :: <root>/scala/Unit# */
+  def myVar1 = 1/* allOutgoingReferences(C:scalaclean.test.references.allOutgoingReferences.Special/M:myVar1()) - C:scala.Int :: P:scala */
+  def myVar1_=(i: Int) = ()/* allOutgoingReferences(C:scalaclean.test.references.allOutgoingReferences.Special/M:myVar1_$eq(scala.Int)) - C:scala.Int :: C:scala.Unit :: P:scala */
 
-  def myVar2 = 1/* allOutgoingReferences(<root>/scalaclean/test/references/allOutgoingReferences/Special/{M}myVar2().) - <root>/scala :: <root>/scala/Int# */
-  def myVar2_=(i: Int) = ()/* allOutgoingReferences(<root>/scalaclean/test/references/allOutgoingReferences/Special/{M}myVar2_$eq(scala.Int).) - <root>/scala :: <root>/scala/Int# :: <root>/scala/Unit# */
+  def myVar2 = 1/* allOutgoingReferences(C:scalaclean.test.references.allOutgoingReferences.Special/M:myVar2()) - C:scala.Int :: P:scala */
+  def myVar2_=(i: Int) = ()/* allOutgoingReferences(C:scalaclean.test.references.allOutgoingReferences.Special/M:myVar2_$eq(scala.Int)) - C:scala.Int :: C:scala.Unit :: P:scala */
 
-  def apply() = 7/* allOutgoingReferences(<root>/scalaclean/test/references/allOutgoingReferences/Special/{M}apply().) - <root>/scala :: <root>/scala/Int# */
-  def unapply(a:Any) = Some(1,2)/* allOutgoingReferences(<root>/scalaclean/test/references/allOutgoingReferences/Special/{M}unapply(scala.Any).) - <root> :: <root>/scala :: <root>/scala. :: <root>/scala/Any# :: <root>/scala/Int# :: <root>/scala/Nothing# :: <root>/scala/Some :: <root>/scala/Some# :: <root>/scala/Some. :: <root>/scala/Some/{M}apply[<none>](scala.Some.A). :: <root>/scala/Tuple2 :: <root>/scala/Tuple2# :: <root>/scala/Tuple2. :: <root>/scala/Tuple2/{M}apply[<none>;<none>](scala.Tuple2.T1;scala.Tuple2.T2). */
+  def apply() = 7/* allOutgoingReferences(C:scalaclean.test.references.allOutgoingReferences.Special/M:apply()) - C:scala.Int :: P:scala */
+  def unapply(a:Any) = Some(1,2)/* allOutgoingReferences(C:scalaclean.test.references.allOutgoingReferences.Special/M:unapply(scala.Any)) - <root> :: C:scala.Any :: C:scala.Int :: C:scala.Nothing :: C:scala.Some :: C:scala.Some/M:apply[<none>](scala.Some.A) :: C:scala.Tuple2 :: C:scala.Tuple2/M:apply[<none>;<none>](scala.Tuple2.T1;scala.Tuple2.T2) :: O:scala.Some :: O:scala.Tuple2 :: P:scala */
 
-  def update(i: Int, j: Int) = ()/* allOutgoingReferences(<root>/scalaclean/test/references/allOutgoingReferences/Special/{M}update(scala.Int;scala.Int).) - <root>/scala :: <root>/scala/Int# :: <root>/scala/Unit# */
+  def update(i: Int, j: Int) = ()/* allOutgoingReferences(C:scalaclean.test.references.allOutgoingReferences.Special/M:update(scala.Int;scala.Int)) - C:scala.Int :: C:scala.Unit :: P:scala */
 
-}/* allOutgoingReferences(<root>/scalaclean/test/references/allOutgoingReferences/Special.) - <root> :: <root>/java/lang :: <root>/java/lang/Object# :: <root>/java/lang/Object#/{M}<init>(). :: <root>/scala :: <root>/scala. :: <root>/scala/AnyRef# :: <root>/scala/Unit# :: <root>/scalaclean/test/references/allOutgoingReferences :: <root>/scalaclean/test/references/allOutgoingReferences/Special */
+}/* allOutgoingReferences(O:scalaclean.test.references.allOutgoingReferences.Special) - <root> :: C:java.lang.Object :: C:java.lang.Object/M:<init>() :: C:scala.Unit :: C:scalaclean.test.references.allOutgoingReferences.Special :: P:java.lang :: P:scala :: P:scalaT:AnyRef :: P:scalaclean.test.references.allOutgoingReferences */
 
 object XX {
   new Child().foo
@@ -30,11 +30,11 @@ object XX {
   println(Special.myVar2)
 
   Special()
-  val x: Any = 1/* allOutgoingReferences(<root>/scalaclean/test/references/allOutgoingReferences/XX/x .) - <root>/scala :: <root>/scala/Any# */
+  val x: Any = 1/* allOutgoingReferences(C:scalaclean.test.references.allOutgoingReferences.XX/V:x ) - C:scala.Any :: P:scala */
   x match {
     case i: Int => ???
     case Special(a,b) => ???
   }
 
   Special(1) = 7
-}/* allOutgoingReferences(<root>/scalaclean/test/references/allOutgoingReferences/XX.) - <root> :: <root>/java/lang :: <root>/java/lang/Object# :: <root>/java/lang/Object#/{M}<init>(). :: <root>/scala :: <root>/scala. :: <root>/scala/Any# :: <root>/scala/Any#/{M}isInstanceOf[<none>](). :: <root>/scala/AnyRef# :: <root>/scala/Boolean# :: <root>/scala/Boolean#/{M}unary_$bang(). :: <root>/scala/Int# :: <root>/scala/Int#/{M}$plus(scala.Int). :: <root>/scala/MatchError# :: <root>/scala/MatchError#/{M}<init>(scala.Any). :: <root>/scala/Nothing# :: <root>/scala/Predef :: <root>/scala/Predef. :: <root>/scala/Predef/{M}$qmark$qmark$qmark(). :: <root>/scala/Predef/{M}println(scala.Any). :: <root>/scala/Some# :: <root>/scala/Some#/{M}isEmpty(). :: <root>/scala/Tuple2# :: <root>/scala/Unit# :: <root>/scalaclean/test/references/allOutgoingReferences :: <root>/scalaclean/test/references/allOutgoingReferences/Child# :: <root>/scalaclean/test/references/allOutgoingReferences/Child#/{M}<init>(). :: <root>/scalaclean/test/references/allOutgoingReferences/Child#/{M}bar(scala.Any). :: <root>/scalaclean/test/references/allOutgoingReferences/Parent#/{M}foo(). :: <root>/scalaclean/test/references/allOutgoingReferences/Special :: <root>/scalaclean/test/references/allOutgoingReferences/Special. :: <root>/scalaclean/test/references/allOutgoingReferences/Special/{M}apply(). :: <root>/scalaclean/test/references/allOutgoingReferences/Special/{M}myVar1(). :: <root>/scalaclean/test/references/allOutgoingReferences/Special/{M}myVar1_$eq(scala.Int). :: <root>/scalaclean/test/references/allOutgoingReferences/Special/{M}myVar2(). :: <root>/scalaclean/test/references/allOutgoingReferences/Special/{M}myVar2_$eq(scala.Int). :: <root>/scalaclean/test/references/allOutgoingReferences/Special/{M}unapply(scala.Any). :: <root>/scalaclean/test/references/allOutgoingReferences/Special/{M}update(scala.Int;scala.Int). :: <root>/scalaclean/test/references/allOutgoingReferences/XX :: <root>/scalaclean/test/references/allOutgoingReferences/XX/{M}x(). */
+}/* allOutgoingReferences(O:scalaclean.test.references.allOutgoingReferences.XX) - <root> :: C:java.lang.Object :: C:java.lang.Object/M:<init>() :: C:scala.Any :: C:scala.Any/M:isInstanceOf[<none>]() :: C:scala.Boolean :: C:scala.Boolean/M:unary_$bang() :: C:scala.Int :: C:scala.Int/M:$plus(scala.Int) :: C:scala.MatchError :: C:scala.MatchError/M:<init>(scala.Any) :: C:scala.Nothing :: C:scala.Predef :: C:scala.Predef/M:$qmark$qmark$qmark() :: C:scala.Predef/M:println(scala.Any) :: C:scala.Some :: C:scala.Some/M:isEmpty() :: C:scala.Tuple2 :: C:scala.Unit :: C:scalaclean.test.references.allOutgoingReferences.Child :: C:scalaclean.test.references.allOutgoingReferences.Child/M:<init>() :: C:scalaclean.test.references.allOutgoingReferences.Child/M:bar(scala.Any) :: C:scalaclean.test.references.allOutgoingReferences.Parent/M:foo() :: C:scalaclean.test.references.allOutgoingReferences.Special :: C:scalaclean.test.references.allOutgoingReferences.Special/M:apply() :: C:scalaclean.test.references.allOutgoingReferences.Special/M:myVar1() :: C:scalaclean.test.references.allOutgoingReferences.Special/M:myVar1_$eq(scala.Int) :: C:scalaclean.test.references.allOutgoingReferences.Special/M:myVar2() :: C:scalaclean.test.references.allOutgoingReferences.Special/M:myVar2_$eq(scala.Int) :: C:scalaclean.test.references.allOutgoingReferences.Special/M:unapply(scala.Any) :: C:scalaclean.test.references.allOutgoingReferences.Special/M:update(scala.Int;scala.Int) :: C:scalaclean.test.references.allOutgoingReferences.XX :: C:scalaclean.test.references.allOutgoingReferences.XX/M:x() :: O:scala.Predef :: O:scalaclean.test.references.allOutgoingReferences.Special :: P:java.lang :: P:scala :: P:scalaT:AnyRef :: P:scalaclean.test.references.allOutgoingReferences */
