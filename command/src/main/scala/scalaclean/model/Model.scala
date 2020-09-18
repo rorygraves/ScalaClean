@@ -107,7 +107,7 @@ sealed trait ModelElement extends Ordered[ModelElement] {
 
   def isAbstract: Boolean
 
-  final protected def infoTypeName = this match {
+  final protected def infoTypeName: String = this match {
     case _: ClassModel        => "ClassModel"
     case _: ObjectModel       => "ObjectModel"
     case _: TraitModel        => "TraitModel"

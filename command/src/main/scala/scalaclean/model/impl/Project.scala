@@ -13,7 +13,8 @@ object Project {
 
   import org.scalaclean.analysis.PropertyNames._
 
-  def apply(propsPath: Path, projects: ProjectSet): Project = {
+
+  def apply(propsPath: Path, projects: ProjectSet): Project = this.synchronized {
     val props = new Properties()
     println("PropsPath = " + propsPath)
     props.load(Files.newBufferedReader(propsPath))

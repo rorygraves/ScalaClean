@@ -175,5 +175,6 @@ lazy val tests = project.dependsOn(testDep map (classpathDependency(_)) : _*)
     libraryDependencies += "org.scalatestplus" %% "junit-4-12" % s"$scalaTestVersion.0" % Test,
     scalaVersion := scala212,
     crossPaths := false,
+    parallelExecution := false,
     libraryDependencies += "com.novocode" % "junit-interface" % "0.11" % Test,
   )
