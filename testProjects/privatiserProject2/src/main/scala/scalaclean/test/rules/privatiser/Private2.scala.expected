@@ -15,7 +15,7 @@ object Private2 extends App {
   new Other.usedAndVisible3{}
   new Other.usedAndVisible3a with Other.usedAndVisible3b {}
 }
-object Other {
+private[p2] object Other {
 
   private[p2] def used = {
     //content should be unaffected inside a def
@@ -59,7 +59,7 @@ object Other {
     x+y+z
   }
 
-  protected[usedAndVisible2a] class usedAndVisible2a extends AnyRef {
+  protected[Other] class usedAndVisible2a extends AnyRef {
     //content should be affected inside a class
     //as the values are not visible
     private val x = 1
@@ -73,7 +73,7 @@ object Other {
     x+y+z
   }
 
-  protected trait usedAndVisible3 extends AnyRef {
+  protected[this] trait usedAndVisible3 extends AnyRef {
     //content should be affected inside a trait
     //as the values are not visible
     private val x = 1
@@ -86,7 +86,7 @@ object Other {
 
     x+y+z
   }
-  protected trait usedAndVisible3a extends AnyRef {
+  protected[this] trait usedAndVisible3a extends AnyRef {
     //content should be affected inside a trait
     //as the values are not visible
     private val Xx = 1
@@ -99,7 +99,7 @@ object Other {
 
     Xx+Xy+Xz
   }
-  protected trait usedAndVisible3b extends AnyRef {
+  protected[this] trait usedAndVisible3b extends AnyRef {
     //content should be affected inside a trait
     //as the values are not visible
     private val Yx = 1

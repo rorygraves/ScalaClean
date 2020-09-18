@@ -17,7 +17,7 @@ package x2.scalaclean.test.rules.privatiser.MakePublic {
     var myVar = 1
     def myDef = 1
     object myObj
-    protected trait myTrait
+    protected[this] trait myTrait
     class myClass
   }
   private[MakePublic] object Other2 {
@@ -25,7 +25,7 @@ package x2.scalaclean.test.rules.privatiser.MakePublic {
     private[MakePublic] var myVar = 1
     private[MakePublic] def myDef = 1
     private[MakePublic] object myObj
-    protected trait myTrait
+    protected[this] trait myTrait
     private[MakePublic] class myClass
   }
   object Other3 {
@@ -34,7 +34,7 @@ package x2.scalaclean.test.rules.privatiser.MakePublic {
     private[this] def myDef = 1
     private[this] object myObj
     private[this] trait myTrait
-    private[this] class myClass
+    private[Other3] class myClass
   }
   object Access{
     def access2() = {
