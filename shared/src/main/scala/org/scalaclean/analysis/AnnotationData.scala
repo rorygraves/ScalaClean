@@ -6,8 +6,7 @@ object AnnotationData extends StandardExtensionDescriptor[AnnotationData] {
     val map: Map[String, String] = otherParams.toList.drop(1).grouped(2).collect {
       case k :: v :: Nil => k -> v
       case x :: Nil =>
-        println(s"***** $x")
-        x.toString -> "UNKNOWN"
+        x -> "UNKNOWN"
     }.toMap
     new AnnotationData(posOffsetStart, posOffsetEnd, otherParams(0), map)
   }
