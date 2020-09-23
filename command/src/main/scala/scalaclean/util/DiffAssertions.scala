@@ -2,7 +2,6 @@ package scalaclean.util
 
 object DiffAssertions {
   def compareContents(original: String, revised: String): String = {
-    "".lines
     def splitLines(s: String) =
       s.trim.replaceAllLiterally("\r\n", "\n").split("\n")
     compareContents(splitLines(original), splitLines(revised))
