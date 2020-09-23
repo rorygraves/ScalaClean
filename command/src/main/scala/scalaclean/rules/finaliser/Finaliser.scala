@@ -143,6 +143,7 @@ class Finaliser(model: ProjectModel, debug: Boolean) extends AbstractRule("Final
     visitor.visit(sModel)
 
     val result = visitor.result
+    elementsChanged += result.size
     println("--------NEW----------")
     result.foreach(println)
     println("------------------")
