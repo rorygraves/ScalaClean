@@ -5,6 +5,7 @@ import java.util.concurrent.atomic.AtomicInteger
 import scalaclean.model.ElementId
 import scalaclean.model.impl.FieldPathImpl
 
+import scala.annotation.tailrec
 import scala.collection.mutable
 import scala.meta.internal.semanticdb.scalac.SemanticdbOps
 import scala.reflect.internal.util.NoPosition
@@ -87,12 +88,47 @@ trait ModelSymbolBuilder extends SemanticdbOps {
     if (unforced.elementId.isInstanceOf[FieldPathImpl]) unforced
     else asMSymbolX(gSym, forceField = true)
   }
+  private def newIsGlobal(gSym: global.Symbol, expected: Boolean): Boolean  = {
+    def check(calculated: Boolean) = {
+      if (calculated != expected) {
+        println("************************************")
+      }
+      calculated
+    }
+    @tailrec def determineGlobal(sym: global.Symbol): Boolean = {
+      if (sym.hasPackageFlag)
+        check(true)
+      else if (sym == g.NoSymbol)
+        check(false)
+      else if ((sym.owner.isAliasType || sym.owner.isAbstractType) && !sym.isParameter)
+        check(false)
+      else if (sym.owner.thisSym == sym)
+        check(false)
+      else if (sym.isLocalDummy)
+        check(false)
+      else if (sym.isRefinementClass)
+        check(false)
+      else if (sym.isAnonymousClass)
+        check(false)
+      else if (sym.isAnonymousFunction)
+        check(false)
+      else if (sym.isExistential)
+        check(false)
+      else
+        determineGlobal(sym.owner)
+    }
+    if (gSym.owner.isTerm)
+      check(false)
+    else determineGlobal(gSym)
+
+  }
   private def asMSymbolX(gSym: global.Symbol, forceField:Boolean): ModelCommon = {
     val cache = if (forceField) mSymbolCache2 else mSymbolCache
 
     cache.getOrElseUpdate(gSym, {
       val isGlobal = gSym.isSemanticdbGlobal && !gSym.isLocalToBlock
-      val newIsGlobal = gSym.ownersIterator.forall(o => o.isType && !o.isSynthetic)
+      val newGlobal = newIsGlobal(gSym, isGlobal)
+      println(s"GGGGGGGGGGGGGGGGGGG:isGlobal/newIsGlobal = $isGlobal/$newGlobal   ---   $gSym")
       val (startPos, endPos, focusPos) = if (gSym.pos == NoPosition) (-1, -1, -1) else (gSym.pos.start, gSym.pos.end, gSym.pos.focus.start)
       val sourceFile = if (gSym.sourceFile != null)
         mungeUnitPath(gSym.sourceFile.toString)
