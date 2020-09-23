@@ -43,7 +43,7 @@ object VisibilityData extends StandardExtensionDescriptor[VisibilityData] {
   */
 case class VisibilityData(posOffsetStart: Int, posOffsetEnd: Int, group: String, scope: Option[ElementId]) extends StandardExtensionData {
   require(group == "private" || group == "protected" || group == "", group)
-  require(!scope.contains(","))
+  require(!scope.map(_.id).contains(","))
 
   override def restToCSV: String = s",$group,${scope.map(_.id).getOrElse("")}"
 }
