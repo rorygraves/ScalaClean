@@ -34,8 +34,7 @@ abstract class TestBase(val name: String, model: ProjectModel) {
       }
     }
 
-    val targetFileName = targetFile.toString
-    val sModel = model.allOf[SourceModel].filter(_.toString.contains(targetFileName)).toList.headOption.getOrElse(throw new IllegalStateException(s"Unable to find source model for $targetFileName"))
+    val sModel = model.allOf[SourceModel].filter(_.toString.contains(targetFile)).toList.headOption.getOrElse(throw new IllegalStateException(s"Unable to find source model for $targetFile"))
 
     visitor.visit(sModel)
     visitor.result
