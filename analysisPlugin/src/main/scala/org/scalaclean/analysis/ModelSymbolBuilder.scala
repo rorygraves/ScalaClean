@@ -16,62 +16,6 @@ trait ModelSymbolBuilder {
   def debug: Boolean
   def sourceDirs: List[String]
 
-  private val symbolNames = mutable.Map[global.Symbol, String]()
-  private val ownerSymbolNames = mutable.Map[global.Symbol, LocalSymbolNames]()
-  class LocalSymbolNames {
-    val localSymbolNames: mutable.Map[global.Symbol, String] = mutable.Map[global.Symbol, String]()
-    val idGen: mutable.Map[String, AtomicInteger] = mutable.Map[String, AtomicInteger]()
-    val globalIdGen: AtomicInteger = new AtomicInteger
-  }
-
-  private def localId(sym: global.Symbol) = {
-    val local = ownerSymbolNames.getOrElseUpdate(sym.owner, new LocalSymbolNames)
-
-    local.localSymbolNames.getOrElseUpdate(sym,
-      if (sym.pos.isDefined) {
-        val pos = s"${sym.pos.line}/${sym.pos.column}"
-        val suffix = local.idGen.getOrElseUpdate(pos, new AtomicInteger).incrementAndGet()
-        s"{{Local-Pos[$pos]#$suffix}}"
-      } else
-        s"{{Local-NoPos#${local.globalIdGen.incrementAndGet()}}}")
-  }
-
-  private def localName(sym: global.Symbol): String = sym match {
-    case sym if sym.isLocalToBlock =>
-      //for locals we don't have to preserve identity across compiles as they can't be referenced
-      //but we need to preserve across the same compile!
-      localId(sym) + suffix(sym)
-    case sym if sym.isMethod =>
-      "{M}" + sym.encodedName +
-        typeParams(sym) +
-        sym.paramss.map { params => params.map(param => paramName(param)).mkString(";") }.mkString("(", ")(", ")") +
-        suffix(sym)
-    case sym => sym.encodedName + suffix(sym)
-  }
-
-  private def suffix(sym: global.Symbol) = sym match {
-    case _: global.ModuleClassSymbol => ""
-    case _: global.TermSymbol        => "."
-    case _: global.TypeSymbol        => "#"
-    case _: global.NoSymbol          => ""
-    case _ => throw new AssertionError(s"Symbols should be either terms, types, or NoSymbol, but got $sym")
-  }
-
-  private def paramName(param: global.Symbol) = param.info.typeSymbol.fullName + typeParams(param)
-
-  private def typeParams(sym: global.Symbol) =
-    if (sym.typeParams.isEmpty) ""
-    else sym.typeParams.map(_.info.typeSymbol.fullName).mkString("[", ";", "]")
-
-  private def fullNameString(sym: global.Symbol): String = {
-    def recur(sym: global.Symbol): String = {
-      if (sym.isRootSymbol || sym == global.NoSymbol) sym.nameString
-      else recur(sym.owner) + "/" + localName(sym)
-    }
-
-    recur(sym)
-  }
-
   private val mSymbolCache2 = mutable.Map[global.Symbol, ModelCommon]()
   private val mSymbolCache = mutable.Map[global.Symbol, ModelCommon]()
 
