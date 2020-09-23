@@ -63,7 +63,6 @@ lazy val analysisPlugin = project.dependsOn(shared).settings(
     libraryDependencies += "org.scala-lang" % "scala-compiler" % scala212,
     libraryDependencies += "org.scala-lang" % "scala-reflect" % scala212,
     mergeSettings,
-    libraryDependencies += "org.scalameta" % "semanticdb-scalac-core" % scalametaVersion cross CrossVersion.full,
     fork in Test := true
   )
 
