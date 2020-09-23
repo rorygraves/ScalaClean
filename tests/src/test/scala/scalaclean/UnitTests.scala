@@ -21,7 +21,7 @@ import scala.meta.internal.io.FileIO
 trait AbstractUnitTests extends AnyFunSuite with AssertionsForJUnit with DiffAssertions with BeforeAndAfterAllConfigMap {
   private var overwrite = false
 
-  override protected def beforeAll(configMap: ConfigMap) = {
+  override protected def beforeAll(configMap: ConfigMap): Unit = {
     overwrite = configMap.getWithDefault("overwrite", "false").equalsIgnoreCase("true")
   }
 
@@ -44,8 +44,7 @@ trait AbstractUnitTests extends AnyFunSuite with AssertionsForJUnit with DiffAss
     def applyRule(
                    rule: TestCommon,
                    filename: String,
-                   origDocContents: String,
-                   syntacticDocument: SyntacticDocument
+                   origDocContents: String
                  ): String = {
 
       rule.beforeStart()
@@ -74,8 +73,7 @@ trait AbstractUnitTests extends AnyFunSuite with AssertionsForJUnit with DiffAss
       targetFiles.foreach { targetFile =>
         val absFile = inputSourceDirectories.head.resolve(targetFile)
         val origFile = FileIO.slurp(absFile, StandardCharsets.UTF_8)
-        val syntacticDocument = DocHelper.readSyntacticDoc(absFile, targetFile)
-        val obtained = stripLocalIds(applyRule(rule, targetFile.toString(), origFile, syntacticDocument))
+        val obtained = stripLocalIds(applyRule(rule, targetFile.toString(), origFile))
 
         val targetOutput = RelativePath(targetFile.toString() + ".expected")
         val outputFile = inputSourceDirectories.head.resolve(targetOutput)
