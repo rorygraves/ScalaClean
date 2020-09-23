@@ -7,11 +7,10 @@ import scalaclean.model.impl.FieldPathImpl
 
 import scala.annotation.tailrec
 import scala.collection.mutable
-import scala.meta.internal.semanticdb.scalac.SemanticdbOps
 import scala.reflect.internal.util.NoPosition
 import scala.tools.nsc.Global
 
-trait ModelSymbolBuilder extends SemanticdbOps {
+trait ModelSymbolBuilder {
   val global: scala.tools.nsc.Global
 
   def debug: Boolean
@@ -88,47 +87,35 @@ trait ModelSymbolBuilder extends SemanticdbOps {
     if (unforced.elementId.isInstanceOf[FieldPathImpl]) unforced
     else asMSymbolX(gSym, forceField = true)
   }
-  private def newIsGlobal(gSym: global.Symbol, expected: Boolean): Boolean  = {
-    def check(calculated: Boolean) = {
-      if (calculated != expected) {
-        println("************************************")
-      }
-      calculated
-    }
+
+  private def newIsGlobal(gSym: global.Symbol): Boolean = {
     @tailrec def determineGlobal(sym: global.Symbol): Boolean = {
       if (sym.hasPackageFlag)
-        check(true)
-      else if (sym == g.NoSymbol)
-        check(false)
-      else if ((sym.owner.isAliasType || sym.owner.isAbstractType) && !sym.isParameter)
-        check(false)
-      else if (sym.owner.thisSym == sym)
-        check(false)
-      else if (sym.isLocalDummy)
-        check(false)
-      else if (sym.isRefinementClass)
-        check(false)
-      else if (sym.isAnonymousClass)
-        check(false)
-      else if (sym.isAnonymousFunction)
-        check(false)
-      else if (sym.isExistential)
-        check(false)
+        true
+      else if (sym == global.NoSymbol
+        || ((sym.owner.isAliasType || sym.owner.isAbstractType) && !sym.isParameter)
+        || sym.owner.thisSym == sym
+        || sym.isLocalDummy
+        || sym.isRefinementClass
+        || sym.isAnonymousClass
+        || sym.isAnonymousFunction
+        || sym.isExistential)
+        false
       else
         determineGlobal(sym.owner)
     }
+
     if (gSym.owner.isTerm)
-      check(false)
+      false
     else determineGlobal(gSym)
 
   }
-  private def asMSymbolX(gSym: global.Symbol, forceField:Boolean): ModelCommon = {
+
+  private def asMSymbolX(gSym: global.Symbol, forceField: Boolean): ModelCommon = {
     val cache = if (forceField) mSymbolCache2 else mSymbolCache
 
     cache.getOrElseUpdate(gSym, {
-      val isGlobal = gSym.isSemanticdbGlobal && !gSym.isLocalToBlock
-      val newGlobal = newIsGlobal(gSym, isGlobal)
-      println(s"GGGGGGGGGGGGGGGGGGG:isGlobal/newIsGlobal = $isGlobal/$newGlobal   ---   $gSym")
+      val isGlobal = newIsGlobal(gSym)
       val (startPos, endPos, focusPos) = if (gSym.pos == NoPosition) (-1, -1, -1) else (gSym.pos.start, gSym.pos.end, gSym.pos.focus.start)
       val sourceFile = if (gSym.sourceFile != null)
         mungeUnitPath(gSym.sourceFile.toString)
@@ -139,8 +126,7 @@ trait ModelSymbolBuilder extends SemanticdbOps {
 
       ModelCommon(isGlobal, newName, sourceFile, startPos, endPos, focusPos, gSym.nameString)
 
-    }
-    )
+    })
   }
 
   // TODO this is a total hack - need to discover the source root of the compilation unit and remove
