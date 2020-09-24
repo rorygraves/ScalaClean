@@ -108,10 +108,9 @@ trait AbstractUnitTests extends AnyFunSuite with AssertionsForJUnit with DiffAss
 }
 
 class UnitTests extends AbstractUnitTests {
-// this test is unstable
-//  test("nodesTest") {
-//    runTest("scalaclean/test/nodes/nodes.scala", new TestNodes(_),true)
-//  }
+  test("nodesTest") {
+    runTest("scalaclean/test/nodes/nodes.scala", new TestNodes(_),true)
+  }
 
   test("akkaTimeoutTest") {
     runTest("scalaclean/test/akka/Timeout.scala", new Test_allTransitiveOverrides(_))
@@ -122,7 +121,7 @@ class UnitTests extends AbstractUnitTests {
   }
 
   test("internalTransitiveOverriddenByTest") {
-    runTest("scalaclean/test/overriddenBy/internalTransitiveOverriddenBy/internalTransitiveOverriddenBy.scala", new Test_internalTransitiveOverriddenBy(_))
+    runTest("scalaclean/test/overriddenBy/internalTransitiveOverriddenBy/internalTransitiveOverriddenBy.scala", new Test_internalTransitiveOverriddenBy(_)  )
   }
 
   test("internalDirectOverriddenBy") {

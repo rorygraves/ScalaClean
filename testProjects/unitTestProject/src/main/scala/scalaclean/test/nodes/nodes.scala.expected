@@ -92,7 +92,7 @@ object Object_ChildTrait extends ParentTrait {
 object TestVarVal {
   val x1:Int = 5/* ValModel C:scalaclean.test.nodes.TestVarVal/V:x1  [1994-2008]  lazy=false [[C:scalaclean.test.nodes.TestVarVal/V:x1 ]] */
   var x2:Int = 5/* VarModel C:scalaclean.test.nodes.TestVarVal/V:x2  [2011-2025]  [[C:scalaclean.test.nodes.TestVarVal/V:x2 ]] */
-  lazy val x3:Int = 5/* ValModel C:scalaclean.test.nodes.TestVarVal/V:x3 [2028-2047]  lazy=true [[C:scalaclean.test.nodes.TestVarVal/V:x3]] *//* GetterMethodModel C:scalaclean.test.nodes.TestVarVal/M:x3() [2028-2047]  [[C:scalaclean.test.nodes.TestVarVal/M:x3()]] */
+  lazy val x3:Int = 5/* GetterMethodModel C:scalaclean.test.nodes.TestVarVal/M:x3() [2028-2047]  [[C:scalaclean.test.nodes.TestVarVal/M:x3()]] *//* ValModel C:scalaclean.test.nodes.TestVarVal/V:x3 [2028-2047]  lazy=true [[C:scalaclean.test.nodes.TestVarVal/V:x3]] */
 
   val (x10/* ValModel C:scalaclean.test.nodes.TestVarVal/V:x10  [2056-2059]  lazy=false [[C:scalaclean.test.nodes.TestVarVal/V:x10 ]] */, x11/* ValModel C:scalaclean.test.nodes.TestVarVal/V:x11  [2061-2064]  lazy=false [[C:scalaclean.test.nodes.TestVarVal/V:x11 ]] */) = (1,2)/* FieldsModel C:scalaclean.test.nodes.TestVarVal/V:x$1 [2051-2073]  [[C:scalaclean.test.nodes.TestVarVal/V:x$1]] */
   var (x20/* VarModel C:scalaclean.test.nodes.TestVarVal/V:x20  [2081-2084]  [[C:scalaclean.test.nodes.TestVarVal/V:x20 ]] */, x21/* VarModel C:scalaclean.test.nodes.TestVarVal/V:x21  [2086-2089]  [[C:scalaclean.test.nodes.TestVarVal/V:x21 ]] */) = (1,2)/* FieldsModel C:scalaclean.test.nodes.TestVarVal/V:x$2 [2076-2098]  [[C:scalaclean.test.nodes.TestVarVal/V:x$2]] */

@@ -1,8 +1,8 @@
 val scala212         = "2.12.12"
 val scalametaVersion = "4.3.20"
-val scalaFixVersion  = "0.9.19"
+val scalaFixVersion  = "0.9.21"
 val junitVersion     = "4.13"
-val scalaTestVersion = "3.2.1"
+val scalaTestVersion = "3.2.2"
 
 inThisBuild(
   List(
