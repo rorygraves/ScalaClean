@@ -50,7 +50,7 @@ abstract sealed class ElementId {
   private[model] final def isGlobal = parent.isContentGlobal
 
   private[model] def isContentGlobal: Boolean
-  private[model] def appendPath(sb: java.lang.StringBuilder): Unit
+  private[model] def appendPath(sb: java.lang.StringBuilder): java.lang.StringBuilder
   override def toString = id
 }
 sealed trait PathType {
@@ -95,11 +95,8 @@ package impl {
     private val fromSymbol = new mutable.HashMap[Sym, ElementId]
 
     private val localSymbolNames = mutable.Map[Sym, String]()
-    private val idGen = new AtomicInteger()
-
-    private def localId(sym: Sym) = {
-      localSymbolNames.getOrElseUpdate(sym, s"##${idGen.incrementAndGet()}")
-    }
+    /** parent element -> local generator */
+    private val localIdGens = mutable.Map[ElementId, AtomicInteger]()
 
     private def buildFromSymbol(sym: Sym): ElementId = {
       @tailrec def interestingOwner(s: Sym):Sym = {
@@ -117,7 +114,10 @@ package impl {
       val suffix = if (sym.isLocalToBlock) {
         //for locals we dont have to preserve identity across compiles as they cant be referenced
         //but we need to preserve across the same compile!
-        localId(sym)
+        localSymbolNames.getOrElseUpdate(sym, {
+          val idGen = localIdGens.getOrElseUpdate(parent, new AtomicInteger())
+          s"##${idGen.incrementAndGet()}"
+        })
       } else ""
       val encodedName = sym.encodedName
       val name = encodedName+suffix
@@ -241,7 +241,7 @@ package impl {
     override def parent: ElementPathNode = ???
     override private[model] def canBeParent = true
     override private[model] def isContentGlobal: Boolean = true
-    override private[model] def appendPath(sb: java.lang.StringBuilder): Unit = ()
+    override private[model] def appendPath(sb: java.lang.StringBuilder): java.lang.StringBuilder = sb
   }
   private[model] object NodeNone extends ElementId {
     override def isLocal: Boolean = false
@@ -251,19 +251,18 @@ package impl {
     override def parent: ElementPathNode = ???
     override private[model] def canBeParent = false
     override private[model] def isContentGlobal: Boolean = true
-    override private[model] def appendPath(sb: java.lang.StringBuilder): Unit = ()
+    override private[model] def appendPath(sb: java.lang.StringBuilder): java.lang.StringBuilder = sb
   }
   private[model] sealed abstract class ElementPathNode(val parent: ElementId) extends ElementId {
 
-    override def id: String = {
-      val sb = new java.lang.StringBuilder
-      appendPath(sb)
-      sb.toString
+    override lazy val id: String = {
+      appendPath(new java.lang.StringBuilder).toString
     }
 
-    override private[model] def appendPath(sb: java.lang.StringBuilder): Unit = {
+    override private[model] def appendPath(sb: java.lang.StringBuilder): java.lang.StringBuilder = {
       parent.appendPath(sb)
       appendSelf(sb)
+      sb
     }
 
     def appendSelf(sb: lang.StringBuilder)
@@ -285,7 +284,7 @@ package impl {
     def nodeSourceName: String
   }
   private[model] sealed abstract class FQPathNode(parent: ElementId, nodeSourceName: String) extends SimpleElementPathNode(parent, nodeSourceName) {
-    override private[model] def appendPath(sb: java.lang.StringBuilder): Unit = {
+    override private[model] def appendPath(sb: java.lang.StringBuilder): java.lang.StringBuilder = {
       parent match {
         case p: PackagePathImpl =>
         case NodeRoot =>
@@ -293,6 +292,7 @@ package impl {
           parent.appendPath(sb)
       }
       appendSelf(sb)
+      sb
     }
     override def appendSelf(sb: lang.StringBuilder) = {
       if (sb.length > 0) {

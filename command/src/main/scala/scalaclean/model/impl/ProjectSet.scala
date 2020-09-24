@@ -30,8 +30,8 @@ class ProjectSet(projectPropertyPaths: Path*) extends ProjectModel {
       throw new IllegalStateException("Duplicate elements found")
     }
 
-    val relsFrom = rels.reduce(_ + _)
-    val relsTo = relsFrom.byTo
+    val relsFrom = rels.reduce(_ + _).sortValues
+    val relsTo = relsFrom.byTo.sortValues
 
     relsFrom.complete(modelElements)
     modelElements.values foreach (_.complete(modelElements, relsFrom = relsFrom, relsTo = relsTo))

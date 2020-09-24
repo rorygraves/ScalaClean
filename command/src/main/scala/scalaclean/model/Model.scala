@@ -266,6 +266,17 @@ package impl {
                                     within: Map[ElementId, List[WithinImpl]],
                                     getter: Map[ElementId, List[GetterImpl]],
                                     setter: Map[ElementId, List[SetterImpl]]) {
+    def sortValues: BasicRelationshipInfo = {
+      BasicRelationshipInfo(
+        refers = refers.transform { case (k, v) => v.sortBy(v => (v.fromElementId.id, v.toElementId.id))},
+        extnds = extnds.transform { case (k, v) => v.sortBy(v => (v.fromElementId.id, v.toElementId.id))},
+        overrides = overrides.transform { case (k, v) => v.sortBy(v => (v.fromElementId.id, v.toElementId.id))},
+        within = within.transform { case (k, v) => v.sortBy(v => (v.fromElementId.id, v.toElementId.id))},
+        getter = getter.transform { case (k, v) => v.sortBy(v => (v.fromElementId.id, v.toElementId.id))},
+        setter = setter.transform { case (k, v) => v.sortBy(v => (v.fromElementId.id, v.toElementId.id))}
+      )
+    }
+
     def complete(modelElements: Map[ElementId, ElementModelImpl]): Unit = {
       refers.values.foreach(_.foreach(_.complete(modelElements)))
       extnds.values.foreach(_.foreach(_.complete(modelElements)))
@@ -413,6 +424,16 @@ package impl {
   abstract sealed class ElementModelImpl(
     info: BasicElementInfo, relationships: BasicRelationshipInfo) extends ModelElement
     with LegacyReferences with LegacyOverrides {
+
+    private def elementSort(e1: ElementModelImpl, e2: ElementModelImpl): Boolean = {
+      (e1 compare e2) > 0
+    }
+    private def elementPositionSort(e1: ElementModelImpl, e2: ElementModelImpl): Boolean = {
+      val p1 = e1.rawStart
+      val p2 = e2.rawStart
+      if ( p1 == p2 ) elementSort(e1, e2)
+      else p1 < p2
+    }
     def complete(
                   modelElements: Map[ElementId, ElementModelImpl],
                   relsFrom: BasicRelationshipInfo,
@@ -420,10 +441,10 @@ package impl {
 
       within = (relsFrom.within.getOrElse(modelElementId, Nil) map {
         _.toElement.get.asInstanceOf[ElementModelImpl]
-      }).distinct
-      children = relsTo.within.getOrElse(modelElementId, Nil) map {
+      }).distinct.sortWith(elementSort)
+      children = (relsTo.within.getOrElse(modelElementId, Nil) map {
         _.fromElement.asInstanceOf[ElementModelImpl]
-      }
+      }).sortWith(elementPositionSort)
       refersTo = relsFrom.refers.getOrElse(modelElementId, Nil)
       refersFrom = relsTo.refers.getOrElse(modelElementId, Nil)
       _overrides = relsFrom.overrides.getOrElse(modelElementId, Nil)
@@ -462,8 +483,8 @@ package impl {
 
     override def classOrEnclosing: ClassLike = enclosing.head.classOrEnclosing
 
-    // sorting added to make debugging easier
-    override def allChildren: List[ElementModelImpl] = children.sortBy(_.rawStart)
+    // sorting in complete()  to make debugging easier
+    override def allChildren: List[ElementModelImpl] = children
     override def fields: List[FieldModel] = children collect {
       case f: FieldModelImpl => f
     }
