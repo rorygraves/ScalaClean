@@ -95,7 +95,7 @@ trait AbstractUnitTests extends AnyFunSuite with AssertionsForJUnit with DiffAss
           println("###########> Diff       <###########")
           println(error2message(obtained, expected))
 
-          fail
+          fail("Differences detected, see diff above")
         }
       }
     }
