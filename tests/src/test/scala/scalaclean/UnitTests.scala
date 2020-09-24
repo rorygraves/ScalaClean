@@ -121,7 +121,7 @@ class UnitTests extends AbstractUnitTests {
   }
 
   test("internalTransitiveOverriddenByTest") {
-    runTest("scalaclean/test/overriddenBy/internalTransitiveOverriddenBy/internalTransitiveOverriddenBy.scala", new Test_internalTransitiveOverriddenBy(_)  )
+    runTest("scalaclean/test/overriddenBy/internalTransitiveOverriddenBy/internalTransitiveOverriddenBy.scala", new Test_internalTransitiveOverriddenBy(_) )
   }
 
   test("internalDirectOverriddenBy") {
