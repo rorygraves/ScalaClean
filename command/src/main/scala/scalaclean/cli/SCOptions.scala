@@ -15,6 +15,7 @@ case class SCOptions(
 object SCOptions {
   val deadCodeCmd = "deadcode"
   val privatiserCmd = "privatiser"
+  val finaliserCmd = "finaliser"
   val simpleDeadCodeCmd = "simpledeadcode"
   val simplePrivatiserCmd = "simpleprivatiser"
 

@@ -142,7 +142,7 @@ lazy val deadCodeProject6b = testInputProject("deadCodeProject6b", "testProjects
 lazy val deadCodeProject7 = testInputProject("deadCodeProject7", "testProjects/deadCodeProject7")()
 lazy val deadCodeProject8 = testInputProject("deadCodeProject8", "testProjects/deadCodeProject8")()
 lazy val deadCodeProject9 = testInputProject("deadCodeProject9", "testProjects/deadCodeProject9")()
-lazy val deadCodeProject10_vals = testInputProject("deadCodeProject10_vals", "testProjects/deadCodeProject10-vals")()
+lazy val deadCodeProject10_vals = testInputProject("deadCodeProject10_vals", "testProjects/deadCodeProject10_vals")()
 lazy val deadCodeProject11_constants = testInputProject("deadCodeProject11_constants", "testProjects/deadCodeProject11_constants")()
 
 lazy val privatiserProject1 = testInputProject("privatiserProject1", "testProjects/privatiserProject1")()
@@ -153,6 +153,8 @@ lazy val privatiserProject5 = testInputProject("privatiserProject5", "testProjec
 lazy val privatiserProject6 = testInputProject("privatiserProject6", "testProjects/privatiserProject6")()
 lazy val privatiserProject7 = testInputProject("privatiserProject7", "testProjects/privatiserProject7")()
 
+lazy val finaliserProject1 = testInputProject("finaliserProject1", "testProjects/finaliserProject1")()
+
 lazy val scratch = testInputProject("scratch", "testProjects/scratch", showTrees = true)()
 
 lazy val privatiserTests = List(privatiserProject1, privatiserProject2, privatiserProject3,
@@ -161,8 +163,10 @@ lazy val deadCodeTests = List(deadCodeProject1, deadCodeProject2, deadCodeProjec
   deadCodeProject5, deadCodeProject6a, deadCodeProject6b, deadCodeProject7, deadCodeProject8, deadCodeProject9,
   deadCodeProject10_vals, deadCodeProject11_constants
 )
+lazy val finaliserTests = List(finaliserProject1)
+
 lazy val scratchProjects = List(scratch)
-lazy val testDep = List(command, unitTestProject) ::: privatiserTests ::: deadCodeTests ::: scratchProjects
+lazy val testDep = List(command, unitTestProject) ::: privatiserTests ::: deadCodeTests ::: finaliserTests ::: scratchProjects
 
 lazy val tests = project.dependsOn(testDep map (classpathDependency(_)) : _*)
   .settings(

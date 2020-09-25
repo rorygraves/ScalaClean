@@ -47,12 +47,8 @@ sealed trait ModelElement extends Ordered[ModelElement] {
   //start target APIs
   // def outgoingReferences: Iterable[Refers] = allOutgoingReferences map (_._2)
 
-  def overrides: Iterable[Overrides] = {
-    val direct: Set[ElementId] = (allDirectOverrides map (_._2)).toSet
-    allTransitiveOverrides map {
-      case (_, modelSym) => new impl.OverridesImpl(modelElementId, modelSym, direct.contains(modelSym))
-    }
-  }
+  def overrides: Iterable[Overrides]
+  def overridden: Iterable[Overrides]
 
   //should be in the following form
   def outgoingReferences: Iterable[Refers]
@@ -148,14 +144,8 @@ sealed trait ClassLike extends ModelElement {
 
   def xtends(symbol: ElementId): Boolean
 
-  def directExtends: Set[ElementId]
-
-  def transitiveExtends: Set[ElementId]
-
-  /** Dont use these */
-  def directExtendedBy: Set[ClassLike]
-
-  def transitiveExtendedBy: Set[ClassLike]
+  def extnds: Seq[Extends]
+  def extendedBy: Seq[Extends]
 }
 
 sealed trait ClassModel extends ClassLike
@@ -336,19 +326,19 @@ package impl {
     self: ElementModelImpl =>
 
     override def internalOutgoingReferences: List[(ModelElement, Refers)] = {
-      refersTo.collect {
+      _refersTo.collect {
         case r if r.toElement.isDefined => (r.toElement.get, r)
       }
     }
 
     override def internalIncomingReferences: List[(ModelElement, Refers)] = {
-      refersFrom.collect {
+      _refersFrom.collect {
         case r => (r.fromElement, r)
       }
     }
 
     override def allOutgoingReferences: List[(Option[ModelElement], Refers)] = {
-      refersTo map {
+      _refersTo map {
         r => (r.toElement, r)
       }
     }
@@ -394,33 +384,6 @@ package impl {
     }
   }
 
-  trait LegacyExtends {
-    self: ClassLikeModelImpl =>
-
-    override def directExtends: Set[ElementId] = {
-      extnds.collect {
-        case s if s.isDirect => s.toElementId
-      }.toSet
-    }
-
-    override def transitiveExtends: Set[ElementId] = {
-      extnds.map(_.toElementId).toSet
-    }
-
-    override def directExtendedBy: Set[ClassLike] = {
-      extendedBy.collect {
-        case e if e.isDirect => e.fromElement
-      }.toSet
-    }
-
-    override def transitiveExtendedBy: Set[ClassLike] = {
-      extendedBy.map {
-        _.fromElement
-      }.toSet
-    }
-
-  }
-
   abstract sealed class ElementModelImpl(
     info: BasicElementInfo, relationships: BasicRelationshipInfo) extends ModelElement
     with LegacyReferences with LegacyOverrides {
@@ -439,16 +402,16 @@ package impl {
                   relsFrom: BasicRelationshipInfo,
                   relsTo: BasicRelationshipInfo): Unit = {
 
-      within = (relsFrom.within.getOrElse(modelElementId, Nil) map {
+      _within = (relsFrom.within.getOrElse(modelElementId, Nil) map {
         _.toElement.get.asInstanceOf[ElementModelImpl]
       }).distinct.sortWith(elementSort)
-      children = (relsTo.within.getOrElse(modelElementId, Nil) map {
+      _children = (relsTo.within.getOrElse(modelElementId, Nil) map {
         _.fromElement.asInstanceOf[ElementModelImpl]
       }).sortWith(elementPositionSort)
-      refersTo = relsFrom.refers.getOrElse(modelElementId, Nil)
-      refersFrom = relsTo.refers.getOrElse(modelElementId, Nil)
+      _refersTo = relsFrom.refers.getOrElse(modelElementId, Nil)
+      _refersFrom = relsTo.refers.getOrElse(modelElementId, Nil)
       _overrides = relsFrom.overrides.getOrElse(modelElementId, Nil)
-      overridden = relsTo.overrides.getOrElse(modelElementId, Nil)
+      _overridden = relsTo.overrides.getOrElse(modelElementId, Nil)
     }
 
     override def extensions: Iterable[ExtensionData] = info.extensions
@@ -466,34 +429,34 @@ package impl {
     override def flags: Long = info.flags
 
     //start set by `complete`
-    var within: List[ElementModelImpl] = _
-    var children: List[ElementModelImpl] = _
+    private var _within: List[ElementModelImpl] = _
+    private var _children: List[ElementModelImpl] = _
 
-    var refersTo: List[Refers] = _
-    var refersFrom: List[Refers] = _
+    private[impl] var _refersTo: List[Refers] = _
+    private[impl] var _refersFrom: List[Refers] = _
 
-    var _overrides: List[Overrides] = _
-
-    override def overrides: List[Overrides] = _overrides
-
-    var overridden: List[Overrides] = _
+    private var _overrides: List[Overrides] = _
+    private var _overridden: List[Overrides] = _
     //end set by `complete`
 
-    override def enclosing: List[ElementModelImpl] = within
+    override def overrides: List[Overrides] = _overrides
+    override def overridden: List[Overrides] = _overridden
+
+    override def enclosing: List[ElementModelImpl] = _within
 
     override def classOrEnclosing: ClassLike = enclosing.head.classOrEnclosing
 
     // sorting in complete()  to make debugging easier
-    override def allChildren: List[ElementModelImpl] = children
-    override def fields: List[FieldModel] = children collect {
+    override def allChildren: List[ElementModelImpl] = _children
+    override def fields: List[FieldModel] = _children collect {
       case f: FieldModelImpl => f
     }
 
-    override def methods: List[MethodModel] = children collect {
+    override def methods: List[MethodModel] = _children collect {
       case m: MethodModel => m
     }
 
-    override def innerClassLike: Seq[ClassLike] = children collect {
+    override def innerClassLike: Seq[ClassLike] = _children collect {
       case c: ClassLikeModelImpl => c
     }
 
@@ -531,9 +494,9 @@ package impl {
 
     override def sourceFileName: String = source.path.toString
 
-    override def incomingReferences: Iterable[Refers] = refersFrom
+    override def incomingReferences: Iterable[Refers] = _refersFrom
 
-    override def outgoingReferences: Iterable[Refers] = refersTo
+    override def outgoingReferences: Iterable[Refers] = _refersTo
 
     override def isAbstract: Boolean = false
 
@@ -542,20 +505,25 @@ package impl {
 
   abstract sealed class ClassLikeModelImpl(
     info: BasicElementInfo, relationships: BasicRelationshipInfo) extends ElementModelImpl(info, relationships)
-    with ClassLike with LegacyExtends {
+    with ClassLike {
 
-    var extnds: List[Extends] = _
-    var extendedBy: List[Extends] = _
+    private var _extnds: List[Extends] = _
+    private var _extendedBy: List[Extends] = _
 
     override def complete(
                            modelElements: Map[ElementId, ElementModelImpl],
                            relsFrom: BasicRelationshipInfo,
                            relsTo: BasicRelationshipInfo): Unit = {
       super.complete(modelElements, relsFrom, relsTo)
-      extnds = relsFrom.extnds.getOrElse(modelElementId, Nil)
-      extendedBy = relsTo.extnds.getOrElse(modelElementId, Nil)
+      _extnds = relsFrom.extnds.getOrElse(modelElementId, Nil)
+      _extendedBy = relsTo.extnds.getOrElse(modelElementId, Nil)
 
     }
+
+
+    override def extnds: Seq[Extends] = _extnds
+
+    override def extendedBy: Seq[Extends] = _extendedBy
 
     override def classOrEnclosing: ClassLike = this
 

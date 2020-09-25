@@ -199,6 +199,7 @@ package impl {
           val rest = id.substring(parentIndex + 1)
           rest match {
             case "<root>" => NodeRoot
+            case "<none>" => NodeNone
             case "this" =>
               ThisPathImpl(apply(id.substring(0, parentIndex)))
             case _ =>

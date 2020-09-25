@@ -42,26 +42,48 @@ class Finaliser(model: ProjectModel, debug: Boolean) extends AbstractRule("Final
   def localLevel(element: ModelElement): Colour = {
     if (element.colour == Undefined) {
       val colour = element match {
-//        case x if x.modelElementId.isLocal => NoChange("its local")
+        case x if x.modelElementId.isLocal => NoChange("its local")
         case x if !x.existsInSource => NoChange("no source")
         case _: SourceModel => NoChange("source")
-//        case x if inMethod(x) => NoChange("in a method and not visible")
+        case x if inMethod(x) => NoChange("in a method and not visible")
+        case _: ObjectModel => NoChange("object is effectively final")
+        case _: VarModel => NoChange("var is always final")
+        case fieldsModel: FieldsModel if (fieldsModel.fields.exists(_.isInstanceOf[VarModel])) => NoChange("vars are always final")
+        case fieldModel: FieldModel if fieldModel.inCompoundFieldDeclaration => NoChange("part of a compound decl")
+
         case fieldsModel: FieldsModel => calcFieldsLevel(fieldsModel)
-        case fieldModel: FieldModel if fieldModel.inCompoundFieldDeclaration => localLevel(fieldModel.declaredIn.get)
-        case getterMethodModel: GetterMethodModel => localLevel(getterMethodModel.field.get)
-        case setterMethodModel: SetterMethodModel => localLevel(setterMethodModel.field.get)
+        case methodModel: MethodModel => calcMethodLevel(methodModel)
         case fieldModel: FieldModel => calcFieldLevel(fieldModel)
-        case _ =>
-          calcSingleLevel(element)
+        case clsOrTrait: ClassLike => calcClassLevel(clsOrTrait)
       }
       element.colour = colour
     }
     element.colour
   }
 
+  def calcMethodLevel(method: MethodModel): Colour = {
+    method.enclosing.head match {
+      case cls: ClassModel if localLevel(cls) == Final => NoChange("owner is a final class")
+      case cls: ObjectModel => NoChange("owner is a an object")
+      case cls: ClassLike =>
+        val overrides = method.overridden
+        if (overrides isEmpty) Final
+        else Open("")
+      case encl => NoChange(s"enclosed in $encl")
+    }
+
+  }
   def calcFieldLevel(field: FieldModel): Colour = {
-    field.accessors.foldLeft(calcSingleLevel(field)) {
-      case (level, accessor) => level.widen(calcSingleLevel(accessor))
+    field.declaredIn.getOrElse(field).enclosing.head match {
+      case cls: ClassModel if localLevel(cls) == Final => NoChange("owner is a final class")
+      case cls: ObjectModel => NoChange("owner is a an object")
+      case cls: ClassLike =>
+        val overrides = field.overridden
+        if (overrides isEmpty)
+          Final
+        else
+          Open("")
+      case encl => NoChange(s"enclosed in $encl")
     }
   }
 
@@ -75,14 +97,29 @@ class Finaliser(model: ProjectModel, debug: Boolean) extends AbstractRule("Final
       case sourceModel: SourceModel => sourceModel
       case _ => getSource(element.enclosing.head)
     }
+  def calcClassLevel(classLike: ClassLike): FinaliserLevel = classLike match {
+    case model: ClassModel =>
+      val ext = model.extendedBy
+      if (ext isEmpty)
+        Final
+      else {
+        val mySource = getSource(model)
+        if (ext forall { o  => getSource(o.fromElement) == mySource})
+          Sealed("")
+        else
+          Open("")
+      }
+    case model: ObjectModel => NoChange("objects are final")
+    case model: TraitModel =>
+      val mySource = getSource(model)
+      val ext = model.extendedBy
+      if (ext forall { o  => getSource(o.fromElement) == mySource})
+        Sealed("")
+      else
+        Open("")
 
-  def calcSingleLevel(element: ModelElement): FinaliserLevel = {
-    val overrides = element.overrides
-    val mySource = getSource(element)
-    if (overrides isEmpty) Final
-    else if (overrides forall { o  => getSource(o.fromElement) == mySource}) Sealed("")
-    else Open("")
   }
+
 
   var elementsObserved = 0
   var elementsChanged = 0
@@ -118,10 +155,14 @@ class Finaliser(model: ProjectModel, debug: Boolean) extends AbstractRule("Final
           case NoChange(reason) =>
           case Undefined => ???
           case Sealed(reason) =>
+            val isSealed = (Flags.SEALED & modelElement.flags) != 0
+            if (!isSealed)
+              collect(SCPatch(modelElement.rawStart, modelElement.rawStart, "sealed ", ""))
           case Final =>
             val isFinal = (Flags.FINAL & modelElement.flags) != 0
             val isSealed = (Flags.SEALED & modelElement.flags) != 0
-            
+            //TODO cope with sealed -> final
+            if (!isFinal && !isSealed)
               collect(SCPatch(modelElement.rawStart, modelElement.rawStart, "final ", ""))
         }
       }

@@ -37,8 +37,8 @@ class DeadCodeTests extends  AbstractProjectTests {
   test("deadCode9-naming") {
     deadCodeProjectTest("deadCodeProject9")
   }
-  test("deadCode10-vals") {
-    deadCodeProjectTest("deadCodeProject10-vals")
+  test("deadCode10_vals") {
+    deadCodeProjectTest("deadCodeProject10_vals")
   }
 
   test("deadCode11_constants") {
