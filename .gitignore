@@ -2,12 +2,8 @@
 *.DS_Store
 *.generated
 *.log
-*.semanticdb
-.idea/
-input/target/
-output/target/
-rules/target/
-test/target/
-project/target/
-project/project/target/
 target/
+.idea/
+/.shelf/
+/ScalaClean.ipr
+/ScalaClean.iws
