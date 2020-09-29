@@ -3,11 +3,11 @@ package scalaclean.test
 import scalaclean.model._
 
 /**
-  * A rule use to test that annotations are st correctly,
-  * needs to be run after TestAnalysis
-  */
-class TestExtensions(
-                        model: ProjectModel) extends TestCommon("TestExtensions", model) {
+ * A rule use to test that annotations are st correctly,
+ * needs to be run after TestAnalysis
+ */
+class TestExtensions(model: ProjectModel) extends TestCommon("TestExtensions", model) {
+
   override def visitInSource(modelElement: ModelElement): String = {
     modelElement.annotations match {
       case Nil => "XX"
@@ -16,4 +16,5 @@ class TestExtensions(
         asDebug.mkString(s"annotations(${modelElement.modelElementId.debugValue}) - ", " :: ", "")
     }
   }
+
 }

@@ -1,6 +1,6 @@
 package scalaclean.test.deadcode4
 
-import scalaclean.test.deadcode4.Outer.{overloaded, Inner2 => I2}
+import scalaclean.test.deadcode4.Outer.{ overloaded, Inner2 => I2 }
 
 object App1 extends App {
   Outer.Inner
@@ -8,16 +8,17 @@ object App1 extends App {
   println(overloaded(1))
   println()
 }
+
 object Outer {
   object Inner
   object Inner2
   object NotUsed
 
-  def overloaded() = 1
-  def overloaded(i: Int) = 1
+  def overloaded()          = 1
+  def overloaded(i: Int)    = 1
   def overloaded(i: String) = Nil
 
-  def overloadedUnused() = 1
-  def overloadedUnused(i: Int) = 1
+  def overloadedUnused()          = 1
+  def overloadedUnused(i: Int)    = 1
   def overloadedUnused(i: String) = Nil
 }

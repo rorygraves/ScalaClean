@@ -9,7 +9,7 @@ class ScratchTests extends AbstractProjectTests {
       case Succeeded   =>
       case Canceled(e) => throw e
       case Pending     => throw new TestPendingException()
-      case Failed(e)   =>
+      case Failed(e) =>
         Console.err.println(e)
         e.getStackTrace.take(7).foreach(e => Console.err.println(s"\tat $e"))
         throw new TestPendingException()

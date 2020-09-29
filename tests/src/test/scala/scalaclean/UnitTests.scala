@@ -1,11 +1,11 @@
 package scalaclean
 
-import java.io.{File, FileOutputStream}
+import java.io.{ File, FileOutputStream }
 import java.nio.charset.StandardCharsets
 import java.nio.file.Paths
 
 import org.junit.Test
-import org.scalatest.{BeforeAndAfterAllConfigMap, ConfigMap}
+import org.scalatest.{ BeforeAndAfterAllConfigMap, ConfigMap }
 import org.scalatest.funsuite.AnyFunSuite
 import org.scalatestplus.junit.AssertionsForJUnit
 import scalaclean.util.FileHelper.toPlatform
@@ -13,13 +13,17 @@ import scalaclean.cli.SCPatchUtil
 import scalaclean.model.ProjectModel
 import scalaclean.model.impl.ProjectSet
 import scalaclean.test._
-import scalaclean.util.{DiffAssertions, DocHelper, FileHelper}
+import scalaclean.util.{ DiffAssertions, DocHelper, FileHelper }
 import scalafix.v1.SyntacticDocument
 
 import scala.meta._
 import scala.meta.internal.io.FileIO
 
-trait AbstractUnitTests extends AnyFunSuite with AssertionsForJUnit with DiffAssertions with BeforeAndAfterAllConfigMap {
+trait AbstractUnitTests
+    extends AnyFunSuite
+    with AssertionsForJUnit
+    with DiffAssertions
+    with BeforeAndAfterAllConfigMap {
   private var overwrite = false
 
   override protected def beforeAll(configMap: ConfigMap): Unit = {
@@ -40,13 +44,15 @@ trait AbstractUnitTests extends AnyFunSuite with AssertionsForJUnit with DiffAss
     )
 
     val outputClassDir: String = s"$scalaCleanWorkspace/testProjects/$projectName/target/scala-2.12/classes/"
-    val inputSourceDirectories: List[AbsolutePath] = Classpath(toPlatform(s"$scalaCleanWorkspace/testProjects/$projectName/src/main/scala")).entries
+    val inputSourceDirectories: List[AbsolutePath] = Classpath(
+      toPlatform(s"$scalaCleanWorkspace/testProjects/$projectName/src/main/scala")
+    ).entries
 
     def applyRule(
-                   rule: TestCommon,
-                   filename: String,
-                   origDocContents: String
-                 ): String = {
+        rule: TestCommon,
+        filename: String,
+        origDocContents: String
+    ): String = {
 
       rule.beforeStart()
       val patches = rule.run(filename)
@@ -56,10 +62,10 @@ trait AbstractUnitTests extends AnyFunSuite with AssertionsForJUnit with DiffAss
     def run(): Unit = {
 
       val classDir = outputClassDir + FileHelper.fileSep + "META-INF" + FileHelper.fileSep + "ScalaClean"
-      val srcDir = Paths.get(classDir).toAbsolutePath
+      val srcDir   = Paths.get(classDir).toAbsolutePath
 
       val propsFile = srcDir.resolve("ScalaClean.properties")
-      val projects = new ProjectSet(propsFile)
+      val projects  = new ProjectSet(propsFile)
 
       runRule(projects)
     }
@@ -72,13 +78,13 @@ trait AbstractUnitTests extends AnyFunSuite with AssertionsForJUnit with DiffAss
       val rule = ruleFn(projectModel)
       rule.beforeStart()
       targetFiles.foreach { targetFile =>
-        val absFile = inputSourceDirectories.head.resolve(targetFile)
+        val absFile  = inputSourceDirectories.head.resolve(targetFile)
         val origFile = FileIO.slurp(absFile, StandardCharsets.UTF_8)
         val obtained = stripLocalIds(applyRule(rule, targetFile.toString(), origFile))
 
         val targetOutput = RelativePath(targetFile.toString() + ".expected")
-        val outputFile = inputSourceDirectories.head.resolve(targetOutput)
-        val expected = stripLocalIds(FileIO.slurp(outputFile, StandardCharsets.UTF_8))
+        val outputFile   = inputSourceDirectories.head.resolve(targetOutput)
+        val expected     = stripLocalIds(FileIO.slurp(outputFile, StandardCharsets.UTF_8))
 
         if (overwrite) {
           println("Overwriting target file: " + outputFile)
@@ -104,13 +110,14 @@ trait AbstractUnitTests extends AnyFunSuite with AssertionsForJUnit with DiffAss
     run()
   }
 
-  private val LocalIds = "/local([0-9]+)".r
+  private val LocalIds                 = "/local([0-9]+)".r
   private def stripLocalIds(s: String) = LocalIds.replaceAllIn(s, "/localXXXXXXXX")
 }
 
 class UnitTests extends AbstractUnitTests {
+
   @Test def nodesTest: Unit = {
-    runTest("scalaclean/test/nodes/nodes.scala", new TestNodes(_),true)
+    runTest("scalaclean/test/nodes/nodes.scala", new TestNodes(_), true)
   }
 
   @Test def akkaTimeoutTest: Unit = {
@@ -118,15 +125,24 @@ class UnitTests extends AbstractUnitTests {
   }
 
   @Test def internalOutgoingReferences: Unit = {
-    runTest("scalaclean/test/references/internalOutgoingReferences/internalOutgoingReferences.scala", new Test_internalOutgoingReferences(_))
+    runTest(
+      "scalaclean/test/references/internalOutgoingReferences/internalOutgoingReferences.scala",
+      new Test_internalOutgoingReferences(_)
+    )
   }
 
   @Test def internalTransitiveOverriddenByTest: Unit = {
-    runTest("scalaclean/test/overriddenBy/internalTransitiveOverriddenBy/internalTransitiveOverriddenBy.scala", new Test_internalTransitiveOverriddenBy(_) )
+    runTest(
+      "scalaclean/test/overriddenBy/internalTransitiveOverriddenBy/internalTransitiveOverriddenBy.scala",
+      new Test_internalTransitiveOverriddenBy(_)
+    )
   }
 
   @Test def internalDirectOverriddenBy: Unit = {
-    runTest("scalaclean/test/overriddenBy/internalDirectOverriddenBy/internalDirectOverriddenBy.scala", new Test_internalTransitiveOverriddenBy(_))
+    runTest(
+      "scalaclean/test/overriddenBy/internalDirectOverriddenBy/internalDirectOverriddenBy.scala",
+      new Test_internalTransitiveOverriddenBy(_)
+    )
   }
 
   @Test def allDirectOverrides: Unit = {
@@ -134,27 +150,42 @@ class UnitTests extends AbstractUnitTests {
   }
 
   @Test def allTransitiveOverrides: Unit = {
-    runTest("scalaclean/test/overrides/allTransitiveOverrides/allTransitiveOverrides.scala", new Test_allTransitiveOverrides(_))
+    runTest(
+      "scalaclean/test/overrides/allTransitiveOverrides/allTransitiveOverrides.scala",
+      new Test_allTransitiveOverrides(_)
+    )
   }
 
   @Test def internalDirectOverrides: Unit = {
-    runTest("scalaclean/test/overrides/internalDirectOverrides/internalDirectOverrides.scala", new Test_internalDirectOverrides(_))
+    runTest(
+      "scalaclean/test/overrides/internalDirectOverrides/internalDirectOverrides.scala",
+      new Test_internalDirectOverrides(_)
+    )
   }
 
   @Test def internalTransitiveOverrides: Unit = {
-    runTest("scalaclean/test/overrides/internalTransitiveOverrides/internalTransitiveOverrides.scala", new Test_internalTransitiveOverrides(_))
+    runTest(
+      "scalaclean/test/overrides/internalTransitiveOverrides/internalTransitiveOverrides.scala",
+      new Test_internalTransitiveOverrides(_)
+    )
   }
 
-
   @Test def allOutgoingReferences: Unit = {
-    runTest("scalaclean/test/references/allOutgoingReferences/allOutgoingReferences.scala", new Test_allOutgoingReferences(_))
+    runTest(
+      "scalaclean/test/references/allOutgoingReferences/allOutgoingReferences.scala",
+      new Test_allOutgoingReferences(_)
+    )
   }
 
   @Test def internalIncomingReferences: Unit = {
-    runTest("scalaclean/test/references/internalIncomingReferences/internalIncomingReferences.scala", new Test_internalIncomingReferences(_))
+    runTest(
+      "scalaclean/test/references/internalIncomingReferences/internalIncomingReferences.scala",
+      new Test_internalIncomingReferences(_)
+    )
   }
 
   @Test def annotations: Unit = {
-    runTest("scalaclean/test/annotation/Annotated.scala",new TestExtensions(_))
+    runTest("scalaclean/test/annotation/Annotated.scala", new TestExtensions(_))
   }
+
 }

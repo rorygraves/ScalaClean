@@ -1,6 +1,6 @@
 package scalaclean
 
-class DeadCodeTests extends  AbstractProjectTests {
+class DeadCodeTests extends AbstractProjectTests {
 
   test("deadCode1") {
     deadCodeProjectTest("deadCodeProject1")

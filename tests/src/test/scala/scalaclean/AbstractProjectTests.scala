@@ -1,8 +1,8 @@
 package scalaclean
 
-import org.scalatest.{BeforeAndAfterAllConfigMap, ConfigMap}
+import org.scalatest.{ BeforeAndAfterAllConfigMap, ConfigMap }
 import org.scalatest.funsuite.AnyFunSuite
-import scalaclean.cli.{DeadCodeProjectTestRunner, FinaliserProjectTestRunner, PrivatiserProjectTestRunner}
+import scalaclean.cli.{ DeadCodeProjectTestRunner, FinaliserProjectTestRunner, PrivatiserProjectTestRunner }
 
 abstract class AbstractProjectTests extends AnyFunSuite with BeforeAndAfterAllConfigMap {
   private var overwrite = false
@@ -17,7 +17,7 @@ abstract class AbstractProjectTests extends AnyFunSuite with BeforeAndAfterAllCo
 
   def deadCodeProjectTest(projectNames: List[String], overwriteTarget: Boolean): Unit = {
     val res = new DeadCodeProjectTestRunner(projectNames, overwrite || overwriteTarget).run()
-    if(!res)
+    if (!res)
       fail(s" Failed for projects $projectNames, overwriteTarget=$overwriteTarget")
   }
 
@@ -27,10 +27,9 @@ abstract class AbstractProjectTests extends AnyFunSuite with BeforeAndAfterAllCo
 
   def privatiserProjectTest(projectNames: List[String], overwriteTarget: Boolean): Unit = {
     val res = new PrivatiserProjectTestRunner(projectNames, overwrite || overwriteTarget).run()
-    if(!res)
+    if (!res)
       fail(s" Failed for projects $projectNames, overwriteTarget=$overwriteTarget")
   }
-
 
   def finaliserProjectTest(projectName: String, overwriteTarget: Boolean = false): Unit = {
     finaliserProjectTest(List(projectName), overwriteTarget)
@@ -38,9 +37,8 @@ abstract class AbstractProjectTests extends AnyFunSuite with BeforeAndAfterAllCo
 
   def finaliserProjectTest(projectNames: List[String], overwriteTarget: Boolean): Unit = {
     val res = new FinaliserProjectTestRunner(projectNames, overwrite || overwriteTarget).run()
-    if(!res)
+    if (!res)
       fail(s" Failed for projects $projectNames, overwriteTarget=$overwriteTarget")
   }
-
 
 }

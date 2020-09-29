@@ -1,21 +1,22 @@
 package scalaclean.util
 
-import scalaclean.model.{ModelElement, SCPatch, SourceModel}
+import scalaclean.model.{ ModelElement, SCPatch, SourceModel }
 import scalafix.v1.SyntacticDocument
 
 import scala.collection.mutable.ListBuffer
 
 /**
-  * a tree visitor that accumulates patches, and counts some basic stats.
-  *
-  * It has some utility methods for managing patches
-  *
-  * It has default handling of source files and non source elements
-  */
-abstract class ScalaCleanTreePatcher(stats: PatchStats, _syntacticDocument: () => SyntacticDocument) extends ElementTreeVisitor {
+ * a tree visitor that accumulates patches, and counts some basic stats.
+ *
+ * It has some utility methods for managing patches
+ *
+ * It has default handling of source files and non source elements
+ */
+abstract class ScalaCleanTreePatcher(stats: PatchStats, _syntacticDocument: () => SyntacticDocument)
+    extends ElementTreeVisitor {
 
   protected lazy val syntacticDocument: SyntacticDocument = _syntacticDocument()
-  protected def visitSourceFile(s: SourceModel) = true
+  protected def visitSourceFile(s: SourceModel)           = true
 
   protected def visitNotInSource(modelElement: ModelElement) = true
 
@@ -31,7 +32,7 @@ abstract class ScalaCleanTreePatcher(stats: PatchStats, _syntacticDocument: () =
       case _ if modelElement.existsInSource =>
         _sourceElementsVisited += 1
         visitInSource(modelElement)
-      case _  =>
+      case _ =>
         visitNotInSource(modelElement)
     }
     if (patchcount != patchCount)
@@ -39,16 +40,15 @@ abstract class ScalaCleanTreePatcher(stats: PatchStats, _syntacticDocument: () =
     res
   }
 
-  private var _filesVisited = 0
-  private var _elementsVisited = 0
+  private var _filesVisited          = 0
+  private var _elementsVisited       = 0
   private var _sourceElementsVisited = 0
-  private var _elementsChanged = 0
+  private var _elementsChanged       = 0
 
-  def filesVisited = _filesVisited
-  def elementsVisited = _elementsVisited
+  def filesVisited          = _filesVisited
+  def elementsVisited       = _elementsVisited
   def sourceElementsVisited = _sourceElementsVisited
-  def elementsChanged = _elementsChanged
-
+  def elementsChanged       = _elementsChanged
 
   lazy val tokens = syntacticDocument.tokens.tokens
 
@@ -59,10 +59,11 @@ abstract class ScalaCleanTreePatcher(stats: PatchStats, _syntacticDocument: () =
   def replace(element: ModelElement, text: String, actionName: String = "replace", comment: String = ""): Unit = {
     log(s" $actionName(${element.name},'$text')")
 
-    val start = element.annotations.map(a => element.rawStart + a.posOffsetStart - 1).headOption.getOrElse(element.rawStart)
+    val start =
+      element.annotations.map(a => element.rawStart + a.posOffsetStart - 1).headOption.getOrElse(element.rawStart)
     val candidateBeginToken = tokens.find(t => t.start >= start && t.start <= t.end).head
-    val newBeingToken = TokenHelper.whitespaceOrCommentsBefore(candidateBeginToken, syntacticDocument.tokens)
-    val newStartPos = newBeingToken.headOption.map(_.start).getOrElse(start)
+    val newBeingToken       = TokenHelper.whitespaceOrCommentsBefore(candidateBeginToken, syntacticDocument.tokens)
+    val newStartPos         = newBeingToken.headOption.map(_.start).getOrElse(start)
 
     collect(SCPatch(newStartPos, element.rawEnd, text, comment))
   }
@@ -77,7 +78,9 @@ abstract class ScalaCleanTreePatcher(stats: PatchStats, _syntacticDocument: () =
     val text = s"/* *** SCALA CLEAN $msg */"
     collect(SCPatch(element.rawStart, element.rawStart, text, comment))
   }
+
   private val collector = new ListBuffer[SCPatch]()
+
   final def collect(value: SCPatch): Unit = {
     collector.+=(value)
   }

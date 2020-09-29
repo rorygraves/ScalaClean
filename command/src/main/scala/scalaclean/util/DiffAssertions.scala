@@ -1,9 +1,9 @@
 package scalaclean.util
 
 object DiffAssertions {
+
   def compareContents(original: String, revised: String): String = {
-    def splitLines(s: String) =
-      s.trim.replaceAllLiterally("\r\n", "\n").split("\n")
+    def splitLines(s: String) = s.trim.replaceAllLiterally("\r\n", "\n").split("\n")
     compareContents(splitLines(original), splitLines(revised))
   }
 
@@ -23,6 +23,7 @@ object DiffAssertions {
         .asScala
         .mkString("\n")
   }
+
 }
 
 trait DiffAssertions {
@@ -33,11 +34,11 @@ trait DiffAssertions {
   }
 
   case class DiffFailure(
-                          title: String,
-                          expected: String,
-                          obtained: String,
-                          diff: String
-                        ) extends Exception
+      title: String,
+      expected: String,
+      obtained: String,
+      diff: String
+  ) extends Exception
 
   def error2message(obtained: String, expected: String): String = {
     val sb = new StringBuilder
@@ -56,6 +57,5 @@ trait DiffAssertions {
 
   def trailingSpace(str: String): String = str.replaceAll(" \n", "∙\n")
 
-  def compareContents(original: String, revised: String): String =
-    DiffAssertions.compareContents(original, revised)
+  def compareContents(original: String, revised: String): String = DiffAssertions.compareContents(original, revised)
 }

@@ -1,6 +1,5 @@
 package scalaclean
 
-
 // These tests are known to be broken - once they are working move them into PrivatiserTests
 class BrokenPrivatiserTests extends AbstractProjectTests {
 

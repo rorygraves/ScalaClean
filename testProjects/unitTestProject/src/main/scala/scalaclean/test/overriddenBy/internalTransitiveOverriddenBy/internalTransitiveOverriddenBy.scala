@@ -2,19 +2,22 @@ package scalaclean.test.overriddenBy.internalTransitiveOverriddenBy
 
 trait GrandParentTrait {
   def d1: Int
-  def d2(a:Int): Int
-  def d2a(a:Int)(b:Int): Int
+  def d2(a: Int): Int
+  def d2a(a: Int)(b: Int): Int
   def d3()(): Int
 
 }
+
 trait ParentTrait extends GrandParentTrait {
   def d3(): () => Int = ???
 }
+
 trait ChildTrait extends ParentTrait {
   override def d3(): () => Int = ???
-  def d2a(a:Int) = d2 _
+  def d2a(a: Int)              = d2 _
 
 }
+
 trait Trait_ChildTrait extends ParentTrait {
   override def equals(obj: Any): Boolean = super.equals(obj)
 
@@ -34,6 +37,7 @@ trait Trait_ChildTrait extends ParentTrait {
 
   override def d3()(): Int = ???
 }
+
 class Class_ChildTrait extends ParentTrait {
   override def equals(obj: Any): Boolean = super.equals(obj)
 
@@ -53,6 +57,7 @@ class Class_ChildTrait extends ParentTrait {
 
   override def d3()(): Int = ???
 }
+
 object Object_ChildTrait extends ParentTrait {
   override def equals(obj: Any): Boolean = super.equals(obj)
 
@@ -72,7 +77,6 @@ object Object_ChildTrait extends ParentTrait {
 
   override def d3()(): Int = ???
 }
-
 
 //class GrandParentClass {
 //

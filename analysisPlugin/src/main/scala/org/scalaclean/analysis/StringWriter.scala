@@ -1,11 +1,15 @@
 package org.scalaclean.analysis
 
-import java.nio.file.{Files, Path, StandardOpenOption}
-
+import java.nio.file.{ Files, Path, StandardOpenOption }
 
 class StringWriter(targetPath: Path) {
-  private val target = Files.newBufferedWriter(targetPath,
-    StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.WRITE, StandardOpenOption.CREATE)
+
+  private val target = Files.newBufferedWriter(
+    targetPath,
+    StandardOpenOption.TRUNCATE_EXISTING,
+    StandardOpenOption.WRITE,
+    StandardOpenOption.CREATE
+  )
 
   def writeLine(line: String): Boolean = {
     target.write(line)
@@ -21,4 +25,5 @@ class StringWriter(targetPath: Path) {
     flush()
     target.close()
   }
+
 }

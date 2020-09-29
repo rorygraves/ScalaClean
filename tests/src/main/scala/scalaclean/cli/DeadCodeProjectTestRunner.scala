@@ -6,9 +6,8 @@ import scalaclean.model.ProjectModel
 import scalaclean.rules.AbstractRule
 import scalaclean.rules.deadcode.DeadCodeRemover
 
-class DeadCodeProjectTestRunner(
-  projectNames: List[String],
-  overwriteTargetFiles: Boolean) extends AbstractProjectTestRunner(projectNames, overwriteTargetFiles) {
+class DeadCodeProjectTestRunner(projectNames: List[String], overwriteTargetFiles: Boolean)
+    extends AbstractProjectTestRunner(projectNames, overwriteTargetFiles) {
 
   override def taskName: String = SCOptions.deadCodeCmd
 
@@ -20,4 +19,5 @@ class DeadCodeProjectTestRunner(
 
     fn
   }
+
 }

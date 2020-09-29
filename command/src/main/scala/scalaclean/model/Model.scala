@@ -1,6 +1,6 @@
 package scalaclean.model
 
-import org.scalaclean.analysis.{AnnotationData, ExtensionData}
+import org.scalaclean.analysis.{ AnnotationData, ExtensionData }
 import scalaclean.model.impl.ElementModelImpl
 
 import scala.reflect.ClassTag
@@ -23,25 +23,18 @@ sealed trait ModelElement extends Ordered[ModelElement] {
 
   def classOrEnclosing: ClassLike
 
-  def annotationsOf(cls: Class[_]): Iterable[AnnotationData] =
-    annotations filter (_.fqName == cls.getName)
+  def annotationsOf(cls: Class[_]): Iterable[AnnotationData] = annotations.filter(_.fqName == cls.getName)
 
-  def annotations: Iterable[AnnotationData] =
-    extensions collect {
-      case a: AnnotationData => a
-    }
+  def annotations: Iterable[AnnotationData] = extensions.collect { case a: AnnotationData => a }
 
   def extensions: Iterable[ExtensionData]
 
   def extensionsOfType[T <: ExtensionData: ClassTag]: Iterable[T] = {
-    extensions collect {
-      case a: T => a
-    }
+    extensions.collect { case a: T => a }
   }
+
   def extensionOfType[T <: ExtensionData: ClassTag]: Option[T] = {
-    extensions collectFirst {
-      case a: T => a
-    }
+    extensions.collectFirst { case a: T => a }
   }
 
   //start target APIs
@@ -151,14 +144,15 @@ sealed trait ClassLike extends ModelElement {
 sealed trait ClassModel extends ClassLike
 
 sealed trait ObjectModel extends ClassLike with FieldModel {
+
   def isTopLevel: Boolean = {
     enclosing.forall(_.isInstanceOf[SourceModel])
   }
 
-  override final def getter: Option[GetterMethodModel] = None
-  override final def accessors: Iterable[AccessorModel]  = Nil
-  override final def declaredIn: Option[FieldsModel] = None
-  override final def fieldsInSameDeclaration = Nil
+  override final def getter: Option[GetterMethodModel]  = None
+  override final def accessors: Iterable[AccessorModel] = Nil
+  override final def declaredIn: Option[FieldsModel]    = None
+  override final def fieldsInSameDeclaration            = Nil
 
   final type fieldType = ObjectModel
 }
@@ -225,13 +219,10 @@ trait ProjectModel {
 
   def size: Int
 
-  def allOf[T <: ModelElement : ClassTag]: Iterator[T]
+  def allOf[T <: ModelElement: ClassTag]: Iterator[T]
 
-  def printStructure(): Unit = allOf[ClassLike] foreach {
-    cls => println(s"class ${cls.fullName}")
-  }
+  def printStructure(): Unit = allOf[ClassLike].foreach(cls => println(s"class ${cls.fullName}"))
 }
-
 
 package impl {
 
@@ -240,30 +231,39 @@ package impl {
   import org.scalaclean.analysis.FlagHelper
 
   case class BasicElementInfo(
-                               elementId: ElementId, source: SourceData,
-                               startPos: Int, endPos: Int, focusStart: Int,
-                               flags: Long, extensions: Seq[ExtensionData],
-                               traversal: Int) {
+      elementId: ElementId,
+      source: SourceData,
+      startPos: Int,
+      endPos: Int,
+      focusStart: Int,
+      flags: Long,
+      extensions: Seq[ExtensionData],
+      traversal: Int
+  ) {
+
     override def toString: String = {
       s"Info[elementId:$elementId, source:$source, pos:$startPos->$endPos, flags:${FlagHelper.hexAndString(flags)}"
     }
+
   }
 
   case class BasicRelationshipInfo(
-                                    refers: Map[ElementId, List[RefersImpl]],
-                                    extnds: Map[ElementId, List[ExtendsImpl]],
-                                    overrides: Map[ElementId, List[OverridesImpl]],
-                                    within: Map[ElementId, List[WithinImpl]],
-                                    getter: Map[ElementId, List[GetterImpl]],
-                                    setter: Map[ElementId, List[SetterImpl]]) {
+      refers: Map[ElementId, List[RefersImpl]],
+      extnds: Map[ElementId, List[ExtendsImpl]],
+      overrides: Map[ElementId, List[OverridesImpl]],
+      within: Map[ElementId, List[WithinImpl]],
+      getter: Map[ElementId, List[GetterImpl]],
+      setter: Map[ElementId, List[SetterImpl]]
+  ) {
+
     def sortValues: BasicRelationshipInfo = {
       BasicRelationshipInfo(
-        refers = refers.transform { case (k, v) => v.sortBy(v => (v.fromElementId.id, v.toElementId.id))},
-        extnds = extnds.transform { case (k, v) => v.sortBy(v => (v.fromElementId.id, v.toElementId.id))},
-        overrides = overrides.transform { case (k, v) => v.sortBy(v => (v.fromElementId.id, v.toElementId.id))},
-        within = within.transform { case (k, v) => v.sortBy(v => (v.fromElementId.id, v.toElementId.id))},
-        getter = getter.transform { case (k, v) => v.sortBy(v => (v.fromElementId.id, v.toElementId.id))},
-        setter = setter.transform { case (k, v) => v.sortBy(v => (v.fromElementId.id, v.toElementId.id))}
+        refers = refers.transform { case (k, v) => v.sortBy(v => (v.fromElementId.id, v.toElementId.id)) },
+        extnds = extnds.transform { case (k, v) => v.sortBy(v => (v.fromElementId.id, v.toElementId.id)) },
+        overrides = overrides.transform { case (k, v) => v.sortBy(v => (v.fromElementId.id, v.toElementId.id)) },
+        within = within.transform { case (k, v) => v.sortBy(v => (v.fromElementId.id, v.toElementId.id)) },
+        getter = getter.transform { case (k, v) => v.sortBy(v => (v.fromElementId.id, v.toElementId.id)) },
+        setter = setter.transform { case (k, v) => v.sortBy(v => (v.fromElementId.id, v.toElementId.id)) }
       )
     }
 
@@ -278,9 +278,7 @@ package impl {
 
     def byTo: BasicRelationshipInfo = {
       def byToSymbol[T <: Reference](from: Map[ElementId, List[T]]): Map[ElementId, List[T]] = {
-        from.values.flatten.groupBy(_.toElementId).map {
-          case (k, v) => k -> v.toList
-        }
+        from.values.flatten.groupBy(_.toElementId).map { case (k, v) => k -> v.toList }
       }
 
       BasicRelationshipInfo(
@@ -320,6 +318,7 @@ package impl {
 
       res
     }
+
   }
 
   trait LegacyReferences {
@@ -332,82 +331,89 @@ package impl {
     }
 
     override def internalIncomingReferences: List[(ModelElement, Refers)] = {
-      _refersFrom.collect {
-        case r => (r.fromElement, r)
-      }
+      _refersFrom.collect { case r => (r.fromElement, r) }
     }
 
     override def allOutgoingReferences: List[(Option[ModelElement], Refers)] = {
-      _refersTo map {
-        r => (r.toElement, r)
-      }
+      _refersTo.map(r => (r.toElement, r))
     }
+
   }
 
   trait LegacyOverrides {
     self: ElementModelImpl =>
 
     override def internalDirectOverrides: List[ModelElement] = {
-      overrides collect {
+      overrides.collect {
         case o if o.isDirect && o.toElement.isDefined => o.toElement.get
       }
     }
 
     override def internalTransitiveOverrides: List[ModelElement] = {
-      overrides collect {
+      overrides.collect {
         case o if o.toElement.isDefined => o.toElement.get
       }
     }
 
     override def allDirectOverrides: List[(Option[ModelElement], ElementId)] = {
-      overrides collect {
+      overrides.collect {
         case o if o.isDirect => (o.toElement, o.toElementId)
       }
     }
 
     override def allTransitiveOverrides: List[(Option[ModelElement], ElementId)] = {
-      overrides collect {
-        case o => (o.toElement, o.toElementId)
-      }
+      overrides.collect { case o => (o.toElement, o.toElementId) }
     }
 
     override def internalDirectOverriddenBy: List[ModelElement] = {
-      overridden collect {
+      overridden.collect {
         case o if o.isDirect => o.fromElement
       }
     }
 
     override def internalTransitiveOverriddenBy: List[ModelElement] = {
-      overridden map {
+      overridden.map {
         _.fromElement
       }
     }
+
   }
 
-  abstract sealed class ElementModelImpl(
-    info: BasicElementInfo, relationships: BasicRelationshipInfo) extends ModelElement
-    with LegacyReferences with LegacyOverrides {
+  abstract sealed class ElementModelImpl(info: BasicElementInfo, relationships: BasicRelationshipInfo)
+      extends ModelElement
+      with LegacyReferences
+      with LegacyOverrides {
 
     private def elementSort(e1: ElementModelImpl, e2: ElementModelImpl): Boolean = {
-      (e1 compare e2) > 0
+      (e1.compare(e2)) > 0
     }
+
     private def elementPositionSort(e1: ElementModelImpl, e2: ElementModelImpl): Boolean = {
       val p1 = e1.rawStart
       val p2 = e2.rawStart
-      if ( p1 == p2 ) elementSort(e1, e2)
+      if (p1 == p2) elementSort(e1, e2)
       else p1 < p2
     }
-    def complete(
-                  modelElements: Map[ElementId, ElementModelImpl],
-                  relsFrom: BasicRelationshipInfo,
-                  relsTo: BasicRelationshipInfo): Unit = {
 
-      _within = (relsFrom.within.getOrElse(modelElementId, Nil) map {
-        _.toElement.get.asInstanceOf[ElementModelImpl]
-      }).distinct.sortWith(elementSort)
-      _children = (relsTo.within.getOrElse(modelElementId, Nil) map {
-        _.fromElement.asInstanceOf[ElementModelImpl]
-      }).sortWith(elementPositionSort)
+    def complete(
+        modelElements: Map[ElementId, ElementModelImpl],
+        relsFrom: BasicRelationshipInfo,
+        relsTo: BasicRelationshipInfo
+    ): Unit = {
+
+      _within = (relsFrom.within
+        .getOrElse(modelElementId, Nil)
+        .map {
+          _.toElement.get.asInstanceOf[ElementModelImpl]
+        })
+        .distinct
+        .sortWith(elementSort)
+      _children = (relsTo.within
+        .getOrElse(modelElementId, Nil)
+        .map {
+          _.fromElement.asInstanceOf[ElementModelImpl]
+        })
+        .sortWith(elementPositionSort)
       _refersTo = relsFrom.refers.getOrElse(modelElementId, Nil)
       _refersFrom = relsTo.refers.getOrElse(modelElementId, Nil)
       _overrides = relsFrom.overrides.getOrElse(modelElementId, Nil)
@@ -429,17 +435,17 @@ package impl {
     override def flags: Long = info.flags
 
     //start set by `complete`
-    private var _within: List[ElementModelImpl] = _
+    private var _within: List[ElementModelImpl]   = _
     private var _children: List[ElementModelImpl] = _
 
-    private[impl] var _refersTo: List[Refers] = _
+    private[impl] var _refersTo: List[Refers]   = _
     private[impl] var _refersFrom: List[Refers] = _
 
-    private var _overrides: List[Overrides] = _
+    private var _overrides: List[Overrides]  = _
     private var _overridden: List[Overrides] = _
     //end set by `complete`
 
-    override def overrides: List[Overrides] = _overrides
+    override def overrides: List[Overrides]  = _overrides
     override def overridden: List[Overrides] = _overridden
 
     override def enclosing: List[ElementModelImpl] = _within
@@ -448,17 +454,11 @@ package impl {
 
     // sorting in complete()  to make debugging easier
     override def allChildren: List[ElementModelImpl] = _children
-    override def fields: List[FieldModel] = _children collect {
-      case f: FieldModelImpl => f
-    }
+    override def fields: List[FieldModel]            = _children.collect { case f: FieldModelImpl => f }
 
-    override def methods: List[MethodModel] = _children collect {
-      case m: MethodModel => m
-    }
+    override def methods: List[MethodModel] = _children.collect { case m: MethodModel => m }
 
-    override def innerClassLike: Seq[ClassLike] = _children collect {
-      case c: ClassLikeModelImpl => c
-    }
+    override def innerClassLike: Seq[ClassLike] = _children.collect { case c: ClassLikeModelImpl => c }
 
     final protected def typeName = this match {
       case _: ClassModelImpl        => "class"
@@ -473,9 +473,9 @@ package impl {
       case _: SourceModelImpl       => "source"
     }
 
-    private val offsetStart = info.startPos
-    private val offsetEnd = info.endPos
-    private val offsetFocusStart= info.focusStart
+    private val offsetStart      = info.startPos
+    private val offsetEnd        = info.endPos
+    private val offsetFocusStart = info.focusStart
 
     override protected def infoPosString: String = {
       s"$offsetStart-$offsetEnd"
@@ -503,23 +503,23 @@ package impl {
     override def existsInSource: Boolean = offsetEnd != offsetStart
   }
 
-  abstract sealed class ClassLikeModelImpl(
-    info: BasicElementInfo, relationships: BasicRelationshipInfo) extends ElementModelImpl(info, relationships)
-    with ClassLike {
+  abstract sealed class ClassLikeModelImpl(info: BasicElementInfo, relationships: BasicRelationshipInfo)
+      extends ElementModelImpl(info, relationships)
+      with ClassLike {
 
-    private var _extnds: List[Extends] = _
+    private var _extnds: List[Extends]     = _
     private var _extendedBy: List[Extends] = _
 
     override def complete(
-                           modelElements: Map[ElementId, ElementModelImpl],
-                           relsFrom: BasicRelationshipInfo,
-                           relsTo: BasicRelationshipInfo): Unit = {
+        modelElements: Map[ElementId, ElementModelImpl],
+        relsFrom: BasicRelationshipInfo,
+        relsTo: BasicRelationshipInfo
+    ): Unit = {
       super.complete(modelElements, relsFrom, relsTo)
       _extnds = relsFrom.extnds.getOrElse(modelElementId, Nil)
       _extendedBy = relsTo.extnds.getOrElse(modelElementId, Nil)
 
     }
-
 
     override def extnds: Seq[Extends] = _extnds
 
@@ -536,18 +536,26 @@ package impl {
     override def xtends(symbol: ElementId): Boolean = {
       extnds.exists(_.toElementId == symbol)
     }
+
   }
 
   abstract sealed class FieldModelImpl(
-    info: BasicElementInfo, relationships: BasicRelationshipInfo,
-    val fieldName: String, override val isAbstract: Boolean, _fields: String)
-    extends ElementModelImpl(info, relationships) with FieldModel {
-    override def fieldsInSameDeclaration = (declaredIn.map(_.fieldsInDeclaration)).getOrElse(Nil).asInstanceOf[List[fieldType]]
+      info: BasicElementInfo,
+      relationships: BasicRelationshipInfo,
+      val fieldName: String,
+      override val isAbstract: Boolean,
+      _fields: String
+  ) extends ElementModelImpl(info, relationships)
+      with FieldModel {
+
+    override def fieldsInSameDeclaration =
+      (declaredIn.map(_.fieldsInDeclaration)).getOrElse(Nil).asInstanceOf[List[fieldType]]
 
     override def complete(
-                           modelElements: Map[ElementId, ElementModelImpl],
-                           relsFrom: BasicRelationshipInfo,
-                           relsTo: BasicRelationshipInfo): Unit = {
+        modelElements: Map[ElementId, ElementModelImpl],
+        relsFrom: BasicRelationshipInfo,
+        relsTo: BasicRelationshipInfo
+    ): Unit = {
       super.complete(modelElements, relsFrom, relsTo)
 
       relsTo.getter.get(info.elementId) match {
@@ -561,13 +569,14 @@ package impl {
           Some(modelElements(ElementId(f)).asInstanceOf[FieldsModelImpl])
         case _ => ???
       }
-      fieldImpl foreach (_.addField(this))
+      fieldImpl.foreach(_.addField(this))
       fields_ = fieldImpl
     }
 
-    /** before completion the name of the compound field
-      * after completion Option[FieldsModel]
-      */
+    /**
+     * before completion the name of the compound field
+     * after completion Option[FieldsModel]
+     */
 
     private var fields_ : AnyRef = _fields
 
@@ -575,38 +584,49 @@ package impl {
 
     private var getter_ : Option[GetterMethodModel] = _
 
-    def getter = getter_
+    def getter                             = getter_
     def accessors: Iterable[AccessorModel] = getter
 
   }
 
   class ClassModelImpl(info: BasicElementInfo, relationships: BasicRelationshipInfo)
-    extends ClassLikeModelImpl(info, relationships) with ClassModel
+      extends ClassLikeModelImpl(info, relationships)
+      with ClassModel
 
   class ObjectModelImpl(info: BasicElementInfo, relationships: BasicRelationshipInfo)
-    extends ClassLikeModelImpl(info, relationships) with ObjectModel
+      extends ClassLikeModelImpl(info, relationships)
+      with ObjectModel
 
   class TraitModelImpl(info: BasicElementInfo, relationships: BasicRelationshipInfo)
-    extends ClassLikeModelImpl(info, relationships) with TraitModel
+      extends ClassLikeModelImpl(info, relationships)
+      with TraitModel
 
   class PlainMethodModelImpl(
-    info: BasicElementInfo, relationships: BasicRelationshipInfo,
-    val methodName: String, override val isAbstract: Boolean, val hasDeclaredType: Boolean)
-    extends ElementModelImpl(info, relationships) with PlainMethodModel
+      info: BasicElementInfo,
+      relationships: BasicRelationshipInfo,
+      val methodName: String,
+      override val isAbstract: Boolean,
+      val hasDeclaredType: Boolean
+  ) extends ElementModelImpl(info, relationships)
+      with PlainMethodModel
 
   class GetterMethodModelImpl(
-    info: BasicElementInfo, relationships: BasicRelationshipInfo,
-    val methodName: String, override val isAbstract: Boolean, val hasDeclaredType: Boolean)
-    extends ElementModelImpl(info, relationships) with GetterMethodModel {
+      info: BasicElementInfo,
+      relationships: BasicRelationshipInfo,
+      val methodName: String,
+      override val isAbstract: Boolean,
+      val hasDeclaredType: Boolean
+  ) extends ElementModelImpl(info, relationships)
+      with GetterMethodModel {
 
     override def complete(
-                           modelElements: Map[ElementId, ElementModelImpl],
-                           relsFrom: BasicRelationshipInfo,
-                           relsTo: BasicRelationshipInfo): Unit = {
+        modelElements: Map[ElementId, ElementModelImpl],
+        relsFrom: BasicRelationshipInfo,
+        relsTo: BasicRelationshipInfo
+    ): Unit = {
       super.complete(modelElements, relsFrom, relsTo)
       relsFrom.getter.get(info.elementId) match {
-        case None => field_ =
-          None
+        case None => field_ = None
         case Some(f :: Nil) =>
           field_ = f.toElement
         case Some(error) => ???
@@ -619,18 +639,22 @@ package impl {
   }
 
   class SetterMethodModelImpl(
-    info: BasicElementInfo, relationships: BasicRelationshipInfo,
-    val methodName: String, override val isAbstract: Boolean, val hasDeclaredType: Boolean)
-    extends ElementModelImpl(info, relationships) with SetterMethodModel {
+      info: BasicElementInfo,
+      relationships: BasicRelationshipInfo,
+      val methodName: String,
+      override val isAbstract: Boolean,
+      val hasDeclaredType: Boolean
+  ) extends ElementModelImpl(info, relationships)
+      with SetterMethodModel {
 
     override def complete(
-                           modelElements: Map[ElementId, ElementModelImpl],
-                           relsFrom: BasicRelationshipInfo,
-                           relsTo: BasicRelationshipInfo): Unit = {
+        modelElements: Map[ElementId, ElementModelImpl],
+        relsFrom: BasicRelationshipInfo,
+        relsTo: BasicRelationshipInfo
+    ): Unit = {
       super.complete(modelElements, relsFrom, relsTo)
       relsFrom.setter.get(info.elementId) match {
-        case None => field_ =
-          None
+        case None => field_ = None
         case Some(f :: Nil) =>
           field_ = f.toElement
         case Some(error) => ???
@@ -643,9 +667,13 @@ package impl {
   }
 
   class FieldsModelImpl(
-    val info: BasicElementInfo, relationships: BasicRelationshipInfo,
-    fieldName: String, isLazy: Boolean, size: Int
-  ) extends ElementModelImpl(info, relationships) with FieldsModel {
+      val info: BasicElementInfo,
+      relationships: BasicRelationshipInfo,
+      fieldName: String,
+      isLazy: Boolean,
+      size: Int
+  ) extends ElementModelImpl(info, relationships)
+      with FieldsModel {
 
     private var _fields = List.empty[FieldModel]
 
@@ -657,27 +685,36 @@ package impl {
   }
 
   class ValModelImpl(
-    val info: BasicElementInfo, relationships: BasicRelationshipInfo,
-    fieldName: String, isAbstract: Boolean, fields: String, val isLazy: Boolean)
-    extends FieldModelImpl(info, relationships, fieldName, isAbstract, fields) with ValModel {
+      val info: BasicElementInfo,
+      relationships: BasicRelationshipInfo,
+      fieldName: String,
+      isAbstract: Boolean,
+      fields: String,
+      val isLazy: Boolean
+  ) extends FieldModelImpl(info, relationships, fieldName, isAbstract, fields)
+      with ValModel {
 
     protected override def infoDetail = s"${super.infoDetail} lazy=$isLazy"
 
   }
 
   class VarModelImpl(
-    val info: BasicElementInfo, relationships: BasicRelationshipInfo,
-    fieldName: String, isAbstract: Boolean, fields: String)
-    extends FieldModelImpl(info, relationships, fieldName, isAbstract, fields) with VarModel {
+      val info: BasicElementInfo,
+      relationships: BasicRelationshipInfo,
+      fieldName: String,
+      isAbstract: Boolean,
+      fields: String
+  ) extends FieldModelImpl(info, relationships, fieldName, isAbstract, fields)
+      with VarModel {
 
     override def complete(
-                           modelElements: Map[ElementId, ElementModelImpl],
-                           relsFrom: BasicRelationshipInfo,
-                           relsTo: BasicRelationshipInfo): Unit = {
+        modelElements: Map[ElementId, ElementModelImpl],
+        relsFrom: BasicRelationshipInfo,
+        relsTo: BasicRelationshipInfo
+    ): Unit = {
       super.complete(modelElements, relsFrom, relsTo)
       relsTo.setter.get(info.elementId) match {
-        case None => setter_ =
-          None
+        case None => setter_ = None
         case Some(f :: Nil) =>
           setter_ = Some(f.fromElement)
         case Some(error) => ???
@@ -686,16 +723,17 @@ package impl {
 
     private var setter_ : Option[SetterMethodModel] = _
 
-    override def setter: Option[SetterMethodModel] = setter_
+    override def setter: Option[SetterMethodModel]  = setter_
     override def accessors: Iterable[AccessorModel] = getter ++ setter
 
   }
 
-  class SourceModelImpl(
-    val info: BasicElementInfo,
-    relationships: BasicRelationshipInfo) extends ElementModelImpl(info, relationships) with SourceModel {
+  class SourceModelImpl(val info: BasicElementInfo, relationships: BasicRelationshipInfo)
+      extends ElementModelImpl(info, relationships)
+      with SourceModel {
 
     def filename: Path = info.source.path
 
   }
+
 }
