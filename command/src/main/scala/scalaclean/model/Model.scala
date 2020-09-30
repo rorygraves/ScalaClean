@@ -4,6 +4,7 @@ import org.scalaclean.analysis.{AnnotationData, ExtensionData}
 import scalaclean.model.impl.ElementModelImpl
 
 import scala.reflect.ClassTag
+import scala.tools.nsc.symtab.Flags
 
 sealed trait ModelElement extends Ordered[ModelElement] {
 
@@ -16,6 +17,9 @@ sealed trait ModelElement extends Ordered[ModelElement] {
   def name: String
 
   def flags: Long
+  final def isFinal   = (Flags.FINAL & flags) != 0
+  final def isPrivate = (Flags.PRIVATE & flags) != 0
+  final def isPrivateThis = (Flags.PrivateLocal & flags) == Flags.PrivateLocal
 
   //usually just one element. Can be >1 for  RHS of a val (a,b,c) = ...
   //where a,b,c are the enclosing

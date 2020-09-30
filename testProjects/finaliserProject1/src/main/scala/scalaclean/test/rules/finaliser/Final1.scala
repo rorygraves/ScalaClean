@@ -20,6 +20,7 @@ class ShouldBeFinal {
 
   private class X
   private object Y
+  class Z
 }
 abstract class NotFinalClass {
   def a = 1
@@ -37,6 +38,7 @@ abstract class NotFinalClass {
 
   private class X
   private object Y
+  class Z
 }
 trait NotFinalTrait {
   def a = 1
@@ -49,12 +51,10 @@ trait NotFinalTrait {
 
   private class X
   private object Y
+  class Z
 }
 
 class ExtNotFinalTrait extends NotFinalTrait {
-
-  override def a = 1
-  override val b = 1
 
   override def a1: Int = 1
   override val b1: Int = 1

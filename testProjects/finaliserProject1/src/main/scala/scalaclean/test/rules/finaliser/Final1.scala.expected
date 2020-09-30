@@ -20,10 +20,11 @@ final class ShouldBeFinal {
 
   private class X
   private object Y
+  final class Z
 }
 sealed abstract class NotFinalClass {
   def a = 1
-  final val b = 1
+  val b = 1
   var c = 1
 
   final def fa = 1
@@ -32,15 +33,16 @@ sealed abstract class NotFinalClass {
   var fc = 1
 
   def a1: Int
-  final val b1: Int
-  final var c1: Int
+  val b1: Int
+  var c1: Int
 
   private class X
   private object Y
+  final class Z
 }
 sealed trait NotFinalTrait {
-  def a = 1
-  val b = 1
+  final def a = 1
+  final val b = 1
   var c = 1
 
   def a1: Int
@@ -49,12 +51,10 @@ sealed trait NotFinalTrait {
 
   private class X
   private object Y
+  final class Z
 }
 
 final class ExtNotFinalTrait extends NotFinalTrait {
-
-  override def a = 1
-  override val b = 1
 
   override def a1: Int = 1
   override val b1: Int = 1
