@@ -155,7 +155,7 @@ lazy val privatiserProject7 = testInputProject("privatiserProject7", "testProjec
 
 lazy val finaliserProject1 = testInputProject("finaliserProject1", "testProjects/finaliserProject1")()
 
-lazy val scratch = testInputProject("scratch", "testProjects/scratch", showTrees = true)()
+lazy val scratch = testInputProject("scratch", "testProjects/scratch", showTrees = false)()
 
 lazy val privatiserTests = List(privatiserProject1, privatiserProject2, privatiserProject3,
   privatiserProject4, privatiserProject5, privatiserProject6, privatiserProject7)

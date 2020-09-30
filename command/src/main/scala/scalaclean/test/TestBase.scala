@@ -19,6 +19,9 @@ abstract class TestBase(val name: String, model: ProjectModel) {
 
   def run(targetFile: String): List[SCPatch] = {
     object visitor extends ScalaCleanTreePatcher(new PatchStats, () => ???) {
+      override def debug: Boolean = false
+      override def addComments: Boolean = false
+
       private def visit(modelElement: ModelElement): Boolean = {
         toPatch(elementInfo(modelElement), modelElement)
         true

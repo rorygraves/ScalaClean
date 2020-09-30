@@ -4,13 +4,30 @@ import java.io.File
 
 import scopt.OParser
 
+trait RunOptions {
+  val addComments: Boolean
+  val debug: Boolean
+  val replace: Boolean
+}
+
+case class SimpleRunOptions(
+                             debug: Boolean = false,
+                             addComments: Boolean = false,
+                             replace: Boolean = false,
+) extends RunOptions {
+  def orReplace(replace: Boolean): SimpleRunOptions = {
+    if (replace) copy(replace=replace) else this
+  }
+}
+
 case class SCOptions(
                       mode: String = "",
                       debug: Boolean = false,
+                      addComments: Boolean = false,
                       validate: Boolean = false,
                       replace: Boolean = false,
                       files: Seq[File] = Seq(),
-                    )
+                    ) extends RunOptions
 
 object SCOptions {
   val deadCodeCmd = "deadcode"
@@ -28,6 +45,9 @@ object SCOptions {
     val sharedOptions = List(opt[Unit]("debug")
       .action((_, c) => c.copy(debug = true))
       .text("this option is hidden in the usage text"),
+      opt[Unit]("addComments")
+        .action((_, c) => c.copy(addComments = true))
+        .text("this option is hidden in the usage text"),
       opt[Unit]("validate (used in development)")
         .action((_, c) => c.copy(validate = true))
         .text("Validate the files against an expectation"),

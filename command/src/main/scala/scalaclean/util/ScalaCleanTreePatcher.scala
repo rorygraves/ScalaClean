@@ -20,6 +20,8 @@ abstract class ScalaCleanTreePatcher(stats: PatchStats, _syntacticDocument: () =
   protected def visitNotInSource(modelElement: ModelElement) = true
 
   protected def visitInSource(modelElement: ModelElement): Boolean
+  def debug: Boolean
+  def addComments: Boolean
 
   override protected final def visitElement(modelElement: ModelElement): Boolean = {
     val patchcount = patchCount
@@ -30,6 +32,8 @@ abstract class ScalaCleanTreePatcher(stats: PatchStats, _syntacticDocument: () =
         visitSourceFile(s)
       case _ if modelElement.existsInSource =>
         _sourceElementsVisited += 1
+        if (addComments)
+          addComment(modelElement, s"mark - ${modelElement.mark}")
         visitInSource(modelElement)
       case _  =>
         visitNotInSource(modelElement)
@@ -57,7 +61,8 @@ abstract class ScalaCleanTreePatcher(stats: PatchStats, _syntacticDocument: () =
   }
 
   def replace(element: ModelElement, text: String, actionName: String = "replace", comment: String = ""): Unit = {
-    log(s" $actionName(${element.name},'$text')")
+    if (debug)
+      log(s" $actionName(${element.name},'$text')")
 
     val start = element.annotations.map(a => element.rawStart + a.posOffsetStart - 1).headOption.getOrElse(element.rawStart)
     val candidateBeginToken = tokens.find(t => t.start >= start && t.start <= t.end).head
@@ -68,12 +73,14 @@ abstract class ScalaCleanTreePatcher(stats: PatchStats, _syntacticDocument: () =
   }
 
   def replaceFromFocus(element: ModelElement, text: String, comment: String): Unit = {
-    log(s" replaceFromFocus(${element.name},'$text')  ${element.rawFocusStart}->${element.rawEnd}")
+    if (debug)
+      log(s" replaceFromFocus(${element.name},'$text')  ${element.rawFocusStart}->${element.rawEnd}")
     collect(SCPatch(element.rawFocusStart, element.rawEnd, text, comment))
   }
 
   def addComment(element: ModelElement, msg: String, comment: String = ""): Unit = {
-    log(" addComment(" + element.name + ",'" + msg + "')")
+    if (debug)
+      log(" addComment(" + element.name + ",'" + msg + "')")
     val text = s"/* *** SCALA CLEAN $msg */"
     collect(SCPatch(element.rawStart, element.rawStart, text, comment))
   }

@@ -7,15 +7,16 @@ import scalaclean.rules.AbstractRule
 import scalaclean.rules.deadcode.DeadCodeRemover
 
 class DeadCodeProjectTestRunner(
-  projectNames: List[String],
-  overwriteTargetFiles: Boolean) extends AbstractProjectTestRunner(projectNames, overwriteTargetFiles) {
+    projectNames: List[String],
+    runOptions: SimpleRunOptions)
+  extends AbstractProjectTestRunner(projectNames, runOptions) {
 
   override def taskName: String = SCOptions.deadCodeCmd
 
   override def createModelTaskFn(propsFiles: Seq[File], debug: Boolean): ProjectModel => AbstractRule = {
 
     def fn(model: ProjectModel): AbstractRule = {
-      new DeadCodeRemover(model, debug)
+      new DeadCodeRemover(model, runOptions)
     }
 
     fn

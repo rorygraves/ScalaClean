@@ -1,6 +1,7 @@
 package scalaclean.rules.privatiser
 
 import org.scalaclean.analysis.plugin.VisibilityData
+import scalaclean.cli.RunOptions
 import scalaclean.model._
 import scalaclean.rules.AbstractRule
 import scalaclean.util.ScalaCleanTreePatcher
@@ -9,7 +10,7 @@ import scalafix.v1.SyntacticDocument
 import scala.meta.io.AbsolutePath
 import scala.meta.tokens.Token
 
-class Privatiser(model: ProjectModel, debug: Boolean) extends AbstractRule("Privatiser", model, debug) {
+class Privatiser(model: ProjectModel, options: RunOptions) extends AbstractRule("Privatiser", model, options) {
 
   type Colour = PrivatiserLevel
 
@@ -25,8 +26,9 @@ class Privatiser(model: ProjectModel, debug: Boolean) extends AbstractRule("Priv
         e.colour = NoChange("source")
       case e => e.colour = localLevel(e)
     }
-    model.allOf[ModelElement].toList.sortBy(_.infoPosSorted).foreach(ele =>
-      println(s"$ele  colour: ${ele.colour}"))
+    if (debug)
+      model.allOf[ModelElement].toList.sortBy(_.infoPosSorted).foreach(ele =>
+        println(s"$ele  colour: ${ele.colour}"))
   }
 
   def inMethod(element: ModelElement): Boolean = {
@@ -197,6 +199,9 @@ class Privatiser(model: ProjectModel, debug: Boolean) extends AbstractRule("Priv
       //      }
       //
 
+      override def debug: Boolean = options.debug
+      override def addComments: Boolean = options.addComments
+
       override protected def visitInSource(modelElement: ModelElement): Boolean = {
         if (!modelElement.modelElementId.isLocal) {
 
@@ -238,7 +243,8 @@ class Privatiser(model: ProjectModel, debug: Boolean) extends AbstractRule("Priv
                 }
                 (start._2.start, end._2.end)
               }
-            log(s" TargetPos = $targetStart -> $targetEnd")
+            if (debug)
+              log(s" TargetPos = $targetStart -> $targetEnd")
 
             val replacementText = if (targetStart == targetEnd) visText + " " else visText
             this.collect(SCPatch(targetStart, targetEnd, replacementText))
@@ -268,10 +274,11 @@ class Privatiser(model: ProjectModel, debug: Boolean) extends AbstractRule("Priv
     visitor.visit(sModel)
 
     val result = visitor.result
-    println("--------NEW----------")
-    result.foreach(println)
-    println("------------------")
-
+    if (debug) {
+      println("--------NEW----------")
+      result.foreach(println)
+      println("------------------")
+    }
     result
   }
 }

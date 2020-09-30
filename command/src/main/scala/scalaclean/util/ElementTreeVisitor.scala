@@ -4,6 +4,7 @@ import scalaclean.model.{ModelElement, SourceModel}
 
 abstract class ElementTreeVisitor {
 
+  def debug: Boolean
   private var currentDepth = 0
   final def log( msg: String) = {
     println("  " * currentDepth + msg)
@@ -20,7 +21,8 @@ abstract class ElementTreeVisitor {
     afterSource(source)
   }
   private def visit0(element: ModelElement): Unit = {
-    log("Reached " + element)
+    if (debug)
+      log("Reached " + element)
     val recurse: Boolean = visitElement(element)
     if(recurse) {
       currentDepth += 1

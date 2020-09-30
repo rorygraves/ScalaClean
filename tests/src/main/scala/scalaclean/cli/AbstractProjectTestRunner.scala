@@ -8,7 +8,9 @@ import scalaclean.rules.AbstractRule
 import scalaclean.util.DiffAssertions
 
 abstract class AbstractProjectTestRunner(
-  val projectNames: List[String], overwriteTargetFiles: Boolean) extends DiffAssertions {
+    val projectNames: List[String],
+    runOptions: SimpleRunOptions)
+  extends DiffAssertions {
 
   def taskName: String
 
@@ -31,8 +33,8 @@ abstract class AbstractProjectTestRunner(
 
     }
 
-    val options = SCOptions(taskName, debug = true, validate = true, replace = overwriteTargetFiles, propsFiles)
+    val options = SCOptions(taskName, debug = runOptions.debug, addComments = runOptions.addComments, validate = true, replace = runOptions.replace, propsFiles)
     val main = new ScalaCleanMain(options, createModelTaskFn(propsFiles, options.debug))
-    !main.run() || overwriteTargetFiles
+    !main.run() || options.replace
   }
 }

@@ -1,13 +1,16 @@
 package scalaclean.rules
 
+import scalaclean.cli.RunOptions
 import scalaclean.model._
 import scalaclean.util.PatchStats
 import scalafix.v1.SyntacticDocument
 
 import scala.meta.io.AbsolutePath
 
-abstract class AbstractRule(val name: String, val model: ProjectModel, debug: Boolean) {
+abstract class AbstractRule(val name: String, val model: ProjectModel, options: RunOptions) {
   val patchStats = new PatchStats
+  def debug = options.debug
+  def addComments = options.addComments
   def printSummary(projectName: String): Unit = patchStats.printSummary(projectName)
 
   type Colour <: Mark

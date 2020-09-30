@@ -2,7 +2,7 @@ package scalaclean
 
 import org.scalatest.{BeforeAndAfterAllConfigMap, ConfigMap}
 import org.scalatest.funsuite.AnyFunSuite
-import scalaclean.cli.{DeadCodeProjectTestRunner, FinaliserProjectTestRunner, PrivatiserProjectTestRunner}
+import scalaclean.cli.{DeadCodeProjectTestRunner, FinaliserProjectTestRunner, PrivatiserProjectTestRunner, SimpleRunOptions}
 
 abstract class AbstractProjectTests extends AnyFunSuite with BeforeAndAfterAllConfigMap {
   private var overwrite = false
@@ -11,35 +11,52 @@ abstract class AbstractProjectTests extends AnyFunSuite with BeforeAndAfterAllCo
     overwrite = configMap.getWithDefault("overwrite", "false").equalsIgnoreCase("true")
   }
 
-  def deadCodeProjectTest(projectName: String, overwriteTarget: Boolean = false): Unit = {
-    deadCodeProjectTest(List(projectName), overwriteTarget)
+  def deadCodeProjectTest(
+      projectName: String,
+      options: SimpleRunOptions = SimpleRunOptions()
+    ): Unit = {
+    deadCodeProjectTests(List(projectName), options)
   }
 
-  def deadCodeProjectTest(projectNames: List[String], overwriteTarget: Boolean): Unit = {
-    val res = new DeadCodeProjectTestRunner(projectNames, overwrite || overwriteTarget).run()
+  def deadCodeProjectTests(
+      projectNames: List[String],
+      options: SimpleRunOptions = SimpleRunOptions()): Unit = {
+    val res = new DeadCodeProjectTestRunner(projectNames, options.orReplace(overwrite)).run()
     if(!res)
-      fail(s" Failed for projects $projectNames, overwriteTarget=$overwriteTarget")
+      fail(s" Failed for projects $projectNames, options=$options")
   }
 
-  def privatiserProjectTest(projectName: String, overwriteTarget: Boolean = false): Unit = {
-    privatiserProjectTest(List(projectName), overwriteTarget)
+  def privatiserProjectTest(
+      projectName: String,
+      options: SimpleRunOptions = SimpleRunOptions()
+    ): Unit = {
+    privatiserProjectTests(List(projectName), options)
   }
 
-  def privatiserProjectTest(projectNames: List[String], overwriteTarget: Boolean): Unit = {
-    val res = new PrivatiserProjectTestRunner(projectNames, overwrite || overwriteTarget).run()
+  def privatiserProjectTests(
+      projectNames: List[String],
+      options: SimpleRunOptions = SimpleRunOptions()
+    ): Unit = {
+    val res = new PrivatiserProjectTestRunner(projectNames, options.orReplace(overwrite)).run()
     if(!res)
-      fail(s" Failed for projects $projectNames, overwriteTarget=$overwriteTarget")
+      fail(s" Failed for projects $projectNames, options=$options")
   }
 
 
-  def finaliserProjectTest(projectName: String, overwriteTarget: Boolean = false): Unit = {
-    finaliserProjectTest(List(projectName), overwriteTarget)
+  def finaliserProjectTest(
+      projectName: String,
+      options: SimpleRunOptions = SimpleRunOptions()
+    ): Unit = {
+    finaliserProjectTests(List(projectName), options)
   }
 
-  def finaliserProjectTest(projectNames: List[String], overwriteTarget: Boolean): Unit = {
-    val res = new FinaliserProjectTestRunner(projectNames, overwrite || overwriteTarget).run()
+  def finaliserProjectTests(
+      projectNames: List[String],
+      options: SimpleRunOptions = SimpleRunOptions()
+    ): Unit = {
+    val res = new FinaliserProjectTestRunner(projectNames, options.orReplace(overwrite)).run()
     if(!res)
-      fail(s" Failed for projects $projectNames, overwriteTarget=$overwriteTarget")
+      fail(s" Failed for projects $projectNames, options=$options")
   }
 
 

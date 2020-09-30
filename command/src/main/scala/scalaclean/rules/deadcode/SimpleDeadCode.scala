@@ -1,8 +1,9 @@
 package scalaclean.rules.deadcode
 
+import scalaclean.cli.RunOptions
 import scalaclean.model._
 
-class SimpleDeadCode(model: ProjectModel, debug: Boolean) extends DeadCodeRemover(model, debug) {
+class SimpleDeadCode(model: ProjectModel, options: RunOptions) extends DeadCodeRemover(model, options) {
 
   override val name: String = "SimpleDeadCodeRemover"
 
@@ -10,7 +11,8 @@ class SimpleDeadCode(model: ProjectModel, debug: Boolean) extends DeadCodeRemove
   def markUsed(element: ModelElement, purpose: Purpose, path: List[ModelElement], comment: String): Unit = {
     val current = element.colour
     if(!current.hasPurpose(purpose)) {
-      println(s"mark $element as used for $purpose due to ${path.mkString("->")} $comment - elementID: ${element.modelElementId}")
+      if (debug)
+        println(s"mark $element as used for $purpose due to ${path.mkString("->")} $comment - elementID: ${element.modelElementId}")
       element.colour = current.withPurpose(purpose)
 
       //enclosing
