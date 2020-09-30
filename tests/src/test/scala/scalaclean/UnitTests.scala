@@ -26,9 +26,8 @@ trait AbstractUnitTests extends AnyFunSuite with AssertionsForJUnit with DiffAss
     overwrite = configMap.getWithDefault("overwrite", "false").equalsIgnoreCase("true")
   }
 
-  def runTest(file: String, ruleFn: ProjectModel => TestCommon, overwrite: Boolean = false): Unit = {
+  def runTest(file: String, ruleFn: ProjectModel => TestCommon, expectationSuffix: String = "", overwrite: Boolean = false): Unit = {
     val projectName = "unitTestProject"
-
     val scalaCleanWorkspace = if (new File(toPlatform("../testProjects")).exists()) {
       ".."
     } else {
@@ -76,7 +75,7 @@ trait AbstractUnitTests extends AnyFunSuite with AssertionsForJUnit with DiffAss
         val origFile = FileIO.slurp(absFile, StandardCharsets.UTF_8)
         val obtained = stripLocalIds(applyRule(rule, targetFile.toString(), origFile))
 
-        val targetOutput = RelativePath(targetFile.toString() + ".expected")
+        val targetOutput = RelativePath(targetFile.toString() + expectationSuffix + ".expected")
         val outputFile = inputSourceDirectories.head.resolve(targetOutput)
         val expected = stripLocalIds(FileIO.slurp(outputFile, StandardCharsets.UTF_8))
 
@@ -108,9 +107,10 @@ trait AbstractUnitTests extends AnyFunSuite with AssertionsForJUnit with DiffAss
   private def stripLocalIds(s: String) = LocalIds.replaceAllIn(s, "/localXXXXXXXX")
 }
 
+
 class UnitTests extends AbstractUnitTests {
   @Test def nodesTest: Unit = {
-    runTest("scalaclean/test/nodes/nodes.scala", new TestNodes(_),true)
+    runTest("scalaclean/test/nodes/nodes.scala", new TestNodes(_))
   }
 
   @Test def akkaTimeoutTest: Unit = {
