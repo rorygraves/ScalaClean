@@ -110,7 +110,7 @@ trait AbstractUnitTests extends AnyFunSuite with AssertionsForJUnit with DiffAss
 
 class UnitTests extends AbstractUnitTests {
   @Test def nodesTest: Unit = {
-    runTest("scalaclean/test/nodes/nodes.scala", new TestNodes(_),true)
+    runTest("scalaclean/test/nodes/nodes.scala", new TestNodes(_))
   }
 
   @Test def akkaTimeoutTest: Unit = {
