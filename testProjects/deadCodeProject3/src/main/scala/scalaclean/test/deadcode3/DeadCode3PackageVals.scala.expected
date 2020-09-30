@@ -5,6 +5,7 @@ object DeadCodePackageVals extends App {
 }
 
 object Outer {
+
   object Inner {
 
     var r1 = referred1
