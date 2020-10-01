@@ -1,0 +1,40 @@
+package scalaclean.test.extends_
+
+trait GrandParentTrait extends Iterable[String]
+
+trait ParentTrait extends GrandParentTrait with java.util.Iterator[String]/* extendsCompiled(C:scalaclean.test.extends_.ParentTrait) - C:scalaclean.test.extends_.GrandParentTrait */
+
+trait ChildTrait extends ParentTrait/* extendsCompiled(C:scalaclean.test.extends_.ChildTrait) - C:scalaclean.test.extends_.GrandParentTrait :: C:scalaclean.test.extends_.ParentTrait */
+
+trait GChildTrait extends ChildTrait/* extendsCompiled(C:scalaclean.test.extends_.GChildTrait) - C:scalaclean.test.extends_.ChildTrait :: C:scalaclean.test.extends_.GrandParentTrait :: C:scalaclean.test.extends_.ParentTrait */
+
+trait Trait_ChildTrait extends ParentTrait/* extendsCompiled(C:scalaclean.test.extends_.Trait_ChildTrait) - C:scalaclean.test.extends_.GrandParentTrait :: C:scalaclean.test.extends_.ParentTrait */
+
+abstract class Class_ChildTrait extends ParentTrait/* extendsCompiled(C:scalaclean.test.extends_.Class_ChildTrait) - C:scalaclean.test.extends_.GrandParentTrait :: C:scalaclean.test.extends_.ParentTrait */
+
+object Object_ChildTrait extends ParentTrait {
+  override def iterator: Iterator[String] = ???
+
+  override def hasNext: Boolean = ???
+
+  override def next(): String = ???
+}/* extendsCompiled(O:scalaclean.test.extends_.Object_ChildTrait) - C:scalaclean.test.extends_.GrandParentTrait :: C:scalaclean.test.extends_.ParentTrait */
+
+trait Mix1
+
+trait Mix2
+
+trait Mix3
+
+class GrandParentClass extends Iterable[String] {
+  self: Mix2 =>
+  override def iterator: Iterator[String] = ???
+}
+
+abstract class ParentClass extends GrandParentClass with Mix2/* extendsCompiled(C:scalaclean.test.extends_.ParentClass) - C:scalaclean.test.extends_.GrandParentClass :: C:scalaclean.test.extends_.Mix2 */
+
+class ChildClass extends ParentClass/* extendsCompiled(C:scalaclean.test.extends_.ChildClass) - C:scalaclean.test.extends_.GrandParentClass :: C:scalaclean.test.extends_.Mix2 :: C:scalaclean.test.extends_.ParentClass */
+class Marker2 extends ParentClass/* extendsCompiled(C:scalaclean.test.extends_.Marker2) - C:scalaclean.test.extends_.GrandParentClass :: C:scalaclean.test.extends_.Mix2 :: C:scalaclean.test.extends_.ParentClass */
+
+object ChildObject extends ChildClass/* extendsCompiled(O:scalaclean.test.extends_.ChildObject) - C:scalaclean.test.extends_.ChildClass :: C:scalaclean.test.extends_.GrandParentClass :: C:scalaclean.test.extends_.Mix2 :: C:scalaclean.test.extends_.ParentClass */
+object Marker1 extends ChildClass/* extendsCompiled(O:scalaclean.test.extends_.Marker1) - C:scalaclean.test.extends_.ChildClass :: C:scalaclean.test.extends_.GrandParentClass :: C:scalaclean.test.extends_.Mix2 :: C:scalaclean.test.extends_.ParentClass */

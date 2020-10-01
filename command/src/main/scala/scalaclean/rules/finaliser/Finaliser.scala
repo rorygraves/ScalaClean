@@ -110,12 +110,12 @@ class Finaliser(model: ProjectModel, options: RunOptions) extends AbstractRule("
     }
   def calcClassLevel(classLike: ClassLike): FinaliserLevel = classLike match {
     case model: ClassModel =>
-      val ext = model.extendedBy
+      val ext = model.extendedByClassLike()
       if (ext isEmpty)
         Final
       else {
         val mySource = getSource(model)
-        if (ext forall { o  => getSource(o.fromElement) == mySource})
+        if (ext forall { cls  => getSource(cls) == mySource})
           Sealed("")
         else
           Open("")
@@ -123,8 +123,8 @@ class Finaliser(model: ProjectModel, options: RunOptions) extends AbstractRule("
     case model: ObjectModel => NoChange("objects are final")
     case model: TraitModel =>
       val mySource = getSource(model)
-      val ext = model.extendedBy
-      if (ext forall { o  => getSource(o.fromElement) == mySource})
+      val ext = model.extendedByClassLike()
+      if (ext forall { cls  => getSource(cls) == mySource})
         Sealed("")
       else
         Open("")

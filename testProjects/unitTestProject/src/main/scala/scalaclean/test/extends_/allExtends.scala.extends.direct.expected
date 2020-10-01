@@ -1,0 +1,40 @@
+package scalaclean.test.extends_
+
+trait GrandParentTrait extends Iterable[String]/* extends(C:scalaclean.test.extends_.GrandParentTrait) - {false}~C:java.lang.Object :: {false}~C:scala.collection.Iterable */
+
+trait ParentTrait extends GrandParentTrait with java.util.Iterator[String]/* extends(C:scalaclean.test.extends_.ParentTrait) - {false}~C:java.lang.Object :: {false}~C:java.util.Iterator :: {true}~C:scalaclean.test.extends_.GrandParentTrait */
+
+trait ChildTrait extends ParentTrait/* extends(C:scalaclean.test.extends_.ChildTrait) - {false}~C:java.lang.Object :: {true}~C:scalaclean.test.extends_.ParentTrait */
+
+trait GChildTrait extends ChildTrait/* extends(C:scalaclean.test.extends_.GChildTrait) - {false}~C:java.lang.Object :: {true}~C:scalaclean.test.extends_.ChildTrait */
+
+trait Trait_ChildTrait extends ParentTrait/* extends(C:scalaclean.test.extends_.Trait_ChildTrait) - {false}~C:java.lang.Object :: {true}~C:scalaclean.test.extends_.ParentTrait */
+
+abstract class Class_ChildTrait extends ParentTrait/* extends(C:scalaclean.test.extends_.Class_ChildTrait) - {false}~C:java.lang.Object :: {true}~C:scalaclean.test.extends_.ParentTrait */
+
+object Object_ChildTrait extends ParentTrait {
+  override def iterator: Iterator[String] = ???
+
+  override def hasNext: Boolean = ???
+
+  override def next(): String = ???
+}/* extends(O:scalaclean.test.extends_.Object_ChildTrait) - {false}~C:java.lang.Object :: {true}~C:scalaclean.test.extends_.ParentTrait */
+
+trait Mix1/* extends(C:scalaclean.test.extends_.Mix1) - {false}~C:java.lang.Object */
+
+trait Mix2/* extends(C:scalaclean.test.extends_.Mix2) - {false}~C:java.lang.Object */
+
+trait Mix3/* extends(C:scalaclean.test.extends_.Mix3) - {false}~C:java.lang.Object */
+
+class GrandParentClass extends Iterable[String] {
+  self: Mix2 =>
+  override def iterator: Iterator[String] = ???
+}/* extends(C:scalaclean.test.extends_.GrandParentClass) - {false}~C:java.lang.Object :: {false}~C:scala.collection.Iterable */
+
+abstract class ParentClass extends GrandParentClass with Mix2/* extends(C:scalaclean.test.extends_.ParentClass) - {true}~C:scalaclean.test.extends_.GrandParentClass :: {true}~C:scalaclean.test.extends_.Mix2 */
+
+class ChildClass extends ParentClass/* extends(C:scalaclean.test.extends_.ChildClass) - {true}~C:scalaclean.test.extends_.ParentClass */
+class Marker2 extends ParentClass/* extends(C:scalaclean.test.extends_.Marker2) - {true}~C:scalaclean.test.extends_.ParentClass */
+
+object ChildObject extends ChildClass/* extends(O:scalaclean.test.extends_.ChildObject) - {true}~C:scalaclean.test.extends_.ChildClass */
+object Marker1 extends ChildClass/* extends(O:scalaclean.test.extends_.Marker1) - {true}~C:scalaclean.test.extends_.ChildClass */
