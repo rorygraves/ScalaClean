@@ -34,7 +34,7 @@ class GrandParentClass extends Iterable[String] {
 abstract class ParentClass extends GrandParentClass with Mix2
 
 class ChildClass extends ParentClass
-class Marker2 extends ParentClass
+class Marker2    extends ParentClass
 
 object ChildObject extends ChildClass
-object Marker1 extends ChildClass
+object Marker1     extends ChildClass

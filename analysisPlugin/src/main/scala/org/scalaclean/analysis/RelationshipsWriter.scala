@@ -5,41 +5,65 @@ import java.io.File
 class RelationshipsWriter(file: File) {
 
   var logger: ScopeLogging = _
-  val writer = new StringWriter(file.toPath)
+  val writer               = new StringWriter(file.toPath)
 
   def commonOutput(from: HasModelCommon, token: String, to: HasModelCommon): String = {
     s"${from.newCsvString},$token,${to.newCsvString}"
   }
 
   def overrides(overrider: ModelMethod, overridden: HasModelCommon, isDirect: Boolean): Unit = {
-    writeLine(overrider, overridden, s"${commonOutput(overrider, IoTokens.relOverrides, overridden)},$isDirect",
-      s"${IoTokens.relOverrides} ${overridden.legacyCsvIDString}) Direct:$isDirect")
+    writeLine(
+      overrider,
+      overridden,
+      s"${commonOutput(overrider, IoTokens.relOverrides, overridden)},$isDirect",
+      s"${IoTokens.relOverrides} ${overridden.legacyCsvIDString}) Direct:$isDirect"
+    )
   }
 
   def refers(container: HasModelCommon, target: HasModelCommon, isSynthetic: Boolean): Unit = {
-    writeLine(container, target, s"${commonOutput(container, IoTokens.relRefers, target)},$isSynthetic",
-      s"${IoTokens.relRefers} ${target.legacyCsvIDString}) Synthetic:$isSynthetic")
+    writeLine(
+      container,
+      target,
+      s"${commonOutput(container, IoTokens.relRefers, target)},$isSynthetic",
+      s"${IoTokens.relRefers} ${target.legacyCsvIDString}) Synthetic:$isSynthetic"
+    )
   }
 
   def extendsCls(parentSym: HasModelCommon, childSym: ModelSymbol, direct: Boolean): Unit = {
-    writeLine(parentSym, childSym, s"${commonOutput(childSym, IoTokens.relExtends, parentSym)},$direct",
-      s"${IoTokens.relExtends} ${parentSym.legacyCsvIDString} Direct:$direct")
+    writeLine(
+      parentSym,
+      childSym,
+      s"${commonOutput(childSym, IoTokens.relExtends, parentSym)},$direct",
+      s"${IoTokens.relExtends} ${parentSym.legacyCsvIDString} Direct:$direct"
+    )
   }
 
   def within(outerSym: ModelSymbol, innerSym: ModelSymbol): Unit = {
-    writeLine(outerSym, innerSym, s"${commonOutput(innerSym, IoTokens.relWithin, outerSym)}",
-      s"${IoTokens.relWithin} ${outerSym.legacyCsvIDString}")
+    writeLine(
+      outerSym,
+      innerSym,
+      s"${commonOutput(innerSym, IoTokens.relWithin, outerSym)}",
+      s"${IoTokens.relWithin} ${outerSym.legacyCsvIDString}"
+    )
 
   }
 
   def getterFor(method: ModelCommon, field: ModelCommon): Unit = {
-    writeLine(method, field, s"${commonOutput(method, IoTokens.relGetter, field)}",
-      s"${IoTokens.relGetter} ${field.legacyCsvIDString}")
+    writeLine(
+      method,
+      field,
+      s"${commonOutput(method, IoTokens.relGetter, field)}",
+      s"${IoTokens.relGetter} ${field.legacyCsvIDString}"
+    )
   }
 
   def setterFor(method: ModelCommon, field: ModelCommon): Unit = {
-    writeLine(method, field, s"${commonOutput(method, IoTokens.relSetter, field)}",
-      s"${IoTokens.relSetter} ${field.legacyCsvIDString}")
+    writeLine(
+      method,
+      field,
+      s"${commonOutput(method, IoTokens.relSetter, field)}",
+      s"${IoTokens.relSetter} ${field.legacyCsvIDString}"
+    )
   }
 
   def endUnit(): Unit = {

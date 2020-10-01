@@ -1,22 +1,22 @@
 package scalaclean.cli
 
-import java.io.{PrintWriter, StringWriter}
+import java.io.{ PrintWriter, StringWriter }
 import java.nio.charset.StandardCharsets
-import java.nio.file.{Files, Paths}
+import java.nio.file.{ Files, Paths }
 
-import scalaclean.model.impl.{Project, ProjectSet}
-import scalaclean.model.{ProjectModel, SCPatch}
+import scalaclean.model.impl.{ Project, ProjectSet }
+import scalaclean.model.{ ProjectModel, SCPatch }
 import scalaclean.rules.AbstractRule
-import scalaclean.rules.deadcode.{DeadCodeRemover, SimpleDeadCode}
-import scalaclean.rules.privatiser.{Privatiser, SimplePrivatiser}
-import scalaclean.util.{DiffAssertions, DocHelper}
+import scalaclean.rules.deadcode.{ DeadCodeRemover, SimpleDeadCode }
+import scalaclean.rules.privatiser.{ Privatiser, SimplePrivatiser }
+import scalaclean.util.{ DiffAssertions, DocHelper }
 import scalafix.v1.SyntacticDocument
 
 import scala.meta._
 import scala.meta.internal.io.FileIO
 
-
 object ScalaCleanMain {
+
   def main(args: Array[String]): Unit = {
     SCOptions.parseCommandLine(args) match {
       case Some(options) =>
@@ -37,8 +37,8 @@ object ScalaCleanMain {
         System.exit(0)
     }
   }
-}
 
+}
 
 class ScalaCleanMain(options: SCOptions, ruleCreateFn: ProjectModel => AbstractRule) extends DiffAssertions {
 
@@ -59,7 +59,8 @@ class ScalaCleanMain(options: SCOptions, ruleCreateFn: ProjectModel => AbstractR
         |    </head>
         |    <body onload="initializeLinked()">
         |        <pre>
-        |""".stripMargin)
+        |""".stripMargin
+    )
 
     pw.println(generated)
     pw.println("--------------------")
@@ -80,20 +81,19 @@ class ScalaCleanMain(options: SCOptions, ruleCreateFn: ProjectModel => AbstractR
     //    Runtime.getRuntime.exec("open /tmp/code.html")
     //    System.exit(1)
 
-
   }
 
   def applyRule(
-                 targetFile: AbsolutePath,
-                 rule: AbstractRule,
-                 syntacticDocument: ()=> SyntacticDocument,
-                 suppress: Boolean,
-                 source: String,
-               ): String = {
+      targetFile: AbsolutePath,
+      rule: AbstractRule,
+      syntacticDocument: () => SyntacticDocument,
+      suppress: Boolean,
+      source: String,
+  ): String = {
 
     // actually run the rule
     val fixes: Seq[SCPatch] = rule.fix(targetFile, syntacticDocument)
-    val fixedSource = SCPatchUtil.applyFixes(source, fixes)
+    val fixedSource         = SCPatchUtil.applyFixes(source, fixes)
 
 //    generateHTML(fixedSource, source)
 
@@ -112,7 +112,7 @@ class ScalaCleanMain(options: SCOptions, ruleCreateFn: ProjectModel => AbstractR
     rule.beforeStart()
 
     var changed = false
-    projectSet.projects foreach { project =>
+    projectSet.projects.foreach { project =>
       changed |= runRuleOnProject(rule, project, options.validate, options.replace, options.debug)
     }
     if (options.debug)
@@ -122,7 +122,7 @@ class ScalaCleanMain(options: SCOptions, ruleCreateFn: ProjectModel => AbstractR
 
   def expectedPathForTarget(srcBase: AbsolutePath, targetFile: RelativePath): AbsolutePath = {
     val targetOutput = RelativePath(targetFile.toString() + ".expected")
-    val outputFile = srcBase.resolve(targetOutput)
+    val outputFile   = srcBase.resolve(targetOutput)
     outputFile
   }
 
@@ -147,13 +147,17 @@ class ScalaCleanMain(options: SCOptions, ruleCreateFn: ProjectModel => AbstractR
   }
 
   /**
-   *
    * @param rule    The rule to run
    * @param project The target project
    * @return True if diffs were seen or files were changed
    */
   def runRuleOnProject(
-                        rule: AbstractRule, project: Project, validateMode: Boolean, replace: Boolean, debug: Boolean): Boolean = {
+      rule: AbstractRule,
+      project: Project,
+      validateMode: Boolean,
+      replace: Boolean,
+      debug: Boolean
+  ): Boolean = {
 
     var changed = false
 
@@ -163,18 +167,22 @@ class ScalaCleanMain(options: SCOptions, ruleCreateFn: ProjectModel => AbstractR
     val files: Seq[AbsolutePath] = project.srcFiles.toList.map(AbsolutePath(_))
 
     def findRelativeSrc(
-                         absTargetFile: meta.AbsolutePath, basePaths: List[AbsolutePath]): (AbsolutePath, RelativePath) = {
+        absTargetFile: meta.AbsolutePath,
+        basePaths: List[AbsolutePath]
+    ): (AbsolutePath, RelativePath) = {
 
       val nioTargetFile = absTargetFile.toNIO
-      val baseOpt = basePaths.find(bp => nioTargetFile.startsWith(bp.toNIO))
-      baseOpt.map(bp => (bp, absTargetFile.toRelative(bp))).getOrElse(throw new IllegalStateException(s"Unable to resolve source root for $absTargetFile"))
+      val baseOpt       = basePaths.find(bp => nioTargetFile.startsWith(bp.toNIO))
+      baseOpt
+        .map(bp => (bp, absTargetFile.toRelative(bp)))
+        .getOrElse(throw new IllegalStateException(s"Unable to resolve source root for $absTargetFile"))
     }
 
     files.foreach { absTargetFile =>
       val (relBase, targetFile) = findRelativeSrc(absTargetFile, project.srcRoots)
 
       val existingFilePath = relBase.resolve(targetFile)
-      val existingFile = FileIO.slurp(existingFilePath, StandardCharsets.UTF_8)
+      val existingFile     = FileIO.slurp(existingFilePath, StandardCharsets.UTF_8)
 
       val syntacticDocument = () => DocHelper.readSyntacticDoc(absTargetFile, targetFile)
 

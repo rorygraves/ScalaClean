@@ -8,7 +8,6 @@ object FileHelper {
 
   def pathSep: String = System.getProperty("path.separator")
 
-
   def toPlatform(fileOrPath: String): String = {
     var res = fileOrPath
 
@@ -19,4 +18,5 @@ object FileHelper {
     res
 
   }
+
 }

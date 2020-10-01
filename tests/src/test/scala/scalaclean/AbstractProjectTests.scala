@@ -7,7 +7,7 @@ import scalaclean.cli.{DeadCodeProjectTestRunner, FinaliserProjectTestRunner, Pr
 abstract class AbstractProjectTests extends AnyFunSuite with BeforeAndAfterAllConfigMap {
   private var overwrite = false
 
-  override protected def beforeAll(configMap: ConfigMap) = {
+  override protected def beforeAll(configMap: ConfigMap): Unit = {
     overwrite = configMap.getWithDefault("overwrite", "false").equalsIgnoreCase("true")
   }
 

@@ -6,7 +6,6 @@ import scala.collection.immutable.ListSet
 import scala.collection.mutable
 import scala.tools.nsc.Global
 
-
 trait HasModelCommon {
   def common: ModelCommon
 
@@ -73,12 +72,12 @@ sealed trait ModelSymbol extends HasModelCommon {
 
   var children: Map[ModelCommon, ModelSymbol] = Map.empty
 
-  var extendsRels: ListSet[(HasModelCommon, Boolean)] = ListSet.empty
+  var extendsRels: ListSet[(HasModelCommon, Boolean)]   = ListSet.empty
   var overridesRels: ListSet[(HasModelCommon, Boolean)] = ListSet.empty
-  var refersRels: ListSet[(HasModelCommon, Boolean)] = ListSet.empty
-  var withinRels: ListSet[ModelSymbol] = ListSet.empty
-  var gettersFor: ListSet[ModelCommon] = ListSet.empty
-  var settersFor: ListSet[ModelCommon] = ListSet.empty
+  var refersRels: ListSet[(HasModelCommon, Boolean)]    = ListSet.empty
+  var withinRels: ListSet[ModelSymbol]                  = ListSet.empty
+  var gettersFor: ListSet[ModelCommon]                  = ListSet.empty
+  var settersFor: ListSet[ModelCommon]                  = ListSet.empty
 
   def addGetterFor(field: ModelCommon): Unit = {
     gettersFor += field
@@ -107,7 +106,6 @@ sealed trait ModelSymbol extends HasModelCommon {
   def addChild(modelSymbol: ModelSymbol): Unit = {
     children = children + (modelSymbol.common -> modelSymbol)
   }
-
 
   def printStructure(): Unit = {
     printStructureInt(0)
@@ -142,7 +140,6 @@ sealed trait ModelSymbol extends HasModelCommon {
       println(s"within: ${within.newCsvString}")
     }
 
-
     refersRels.foreach { case (refers, isSynthetic) =>
       printRelStart()
       println(s"refers: ${refers.newCsvString}   isGlobal=${refers.common.isGlobal}")
@@ -158,13 +155,14 @@ sealed trait ModelSymbol extends HasModelCommon {
       println(s"setterFor: ${setterTarget.newCsvString}")
     }
 
-    children.values.foreach { child =>
-      child.printStructureInt(depth + 1)
-    }
+    children.values.foreach(child => child.printStructureInt(depth + 1))
   }
 
-
-  def outputStructure(eleWriter: ElementsWriter, relWriter: RelationshipsWriter, extensionWriter: ExtensionWriter): Unit = {
+  def outputStructure(
+      eleWriter: ElementsWriter,
+      relWriter: RelationshipsWriter,
+      extensionWriter: ExtensionWriter
+  ): Unit = {
     eleWriter.write(this)
     extensionWriter.writeExtensions(this)
 
@@ -177,29 +175,21 @@ sealed trait ModelSymbol extends HasModelCommon {
       relWriter.overrides(this.asInstanceOf[ModelMethod], ovr, direct)
     }
 
-    withinRels.foreach { within =>
-      relWriter.within(within, this)
-    }
+    withinRels.foreach(within => relWriter.within(within, this))
 
     refersRels.foreach { case (refers, isSynthetic) =>
       relWriter.refers(this, refers, isSynthetic)
     }
 
-    gettersFor.foreach { getterTarget =>
-      relWriter.getterFor(this.common, getterTarget)
-    }
+    gettersFor.foreach(getterTarget => relWriter.getterFor(this.common, getterTarget))
 
-    settersFor.foreach { setterTarget =>
-      relWriter.setterFor(this.common, setterTarget)
-    }
+    settersFor.foreach(setterTarget => relWriter.setterFor(this.common, setterTarget))
 
-    children.values.foreach { child =>
-      child.outputStructure(eleWriter, relWriter, extensionWriter)
-    }
+    children.values.foreach(child => child.outputStructure(eleWriter, relWriter, extensionWriter))
   }
 
   def flatten(): Unit = {
-    children = children.flatMap { case t@(common, child) =>
+    children = children.flatMap { case t @ (common, child) =>
       child.flatten()
       child match {
         case mf: ModelField if mf.isParameter || !mf.isGlobal =>
@@ -222,19 +212,21 @@ sealed trait ClassLike extends ModelSymbol {
   def addPostProcess(fn: () => Unit): Unit = postProcessing ::= fn
 
   def postProcess(): Unit = {
-    postProcessing foreach (_.apply())
+    postProcessing.foreach(_.apply())
   }
 
-
-  /** the overrides that have not yet been processed
-    * After the ClassLike is processed this is  the overrides for each of the def/val in the class
-    * As they are processed they are removed, and the remainder are processed after the class
-    * is completed */
+  /**
+   * the overrides that have not yet been processed
+   * After the ClassLike is processed this is  the overrides for each of the def/val in the class
+   * As they are processed they are removed, and the remainder are processed after the class
+   * is completed
+   */
   val remainingChildOverrides: mutable.Map[Global#Symbol, mutable.Set[Global#Symbol]] = new mutable.HashMap
 
   def removeChildOveride(child: Global#Symbol) = {
     remainingChildOverrides.remove(child)
   }
+
 }
 
 sealed abstract class ModelField extends ModelSymbol {
@@ -243,8 +235,14 @@ sealed abstract class ModelField extends ModelSymbol {
 }
 
 case class ModelCommon(
-                        isGlobal: Boolean, elementId: ElementId, sourceFile: String, posStart: Int, posEnd: Int, posFocus: Int,
-                        sourceName: String) extends HasModelCommon {
+    isGlobal: Boolean,
+    elementId: ElementId,
+    sourceFile: String,
+    posStart: Int,
+    posEnd: Int,
+    posFocus: Int,
+    sourceName: String
+) extends HasModelCommon {
   override def common: ModelCommon = this
 
   //TODO remove isGlobal and sourceName as they should come from newId
@@ -256,26 +254,35 @@ case class ModelCommon(
   override def newCsvString: String = elementId.id
 }
 
-case class ModelFields(
-                        tree: Global#ValDef, common: ModelCommon, isLazy: Boolean) extends ModelSymbol {
+case class ModelFields(tree: Global#ValDef, common: ModelCommon, isLazy: Boolean) extends ModelSymbol {
   //TODO should validate that there is some reference, but the references may not match `fieldCount`, but can't exceed it
   //TODO should validate that fields are consistent
   private var fields = List.empty[ModelField]
+
   def addField(field: ModelField): Unit = {
     fields ::= field
   }
 
   def syntheticName: Global#TermName = tree.name
-  def fieldCount: Int = tree.tpe.typeArgs.size
+  def fieldCount: Int                = tree.tpe.typeArgs.size
 }
 
 case class ModelVar(
-                     tree: Global#ValDef, common: ModelCommon, isAbstract: Boolean,
-                     override val isParameter: Boolean, fields: Option[ModelFields]) extends ModelField
+    tree: Global#ValDef,
+    common: ModelCommon,
+    isAbstract: Boolean,
+    override val isParameter: Boolean,
+    fields: Option[ModelFields]
+) extends ModelField
 
 case class ModelVal(
-                     tree: Global#ValDef, common: ModelCommon, isAbstract: Boolean, isLazy: Boolean,
-                     override val isParameter: Boolean, fields: Option[ModelFields]) extends ModelField
+    tree: Global#ValDef,
+    common: ModelCommon,
+    isAbstract: Boolean,
+    isLazy: Boolean,
+    override val isParameter: Boolean,
+    fields: Option[ModelFields]
+) extends ModelField
 
 sealed trait ModelMethod extends ModelSymbol {
   val tree: Global#DefDef
@@ -288,10 +295,20 @@ sealed trait ModelAccessorMethod extends ModelMethod {
   var addedAccessor = false
 }
 
-case class ModelGetterMethod(tree: Global#DefDef, common: ModelCommon, isTyped: Boolean, isAbstract: Boolean) extends ModelAccessorMethod
-case class ModelSetterMethod(tree: Global#DefDef, common: ModelCommon, isTyped: Boolean, isAbstract: Boolean) extends ModelAccessorMethod
-case class ModelPlainMethod(tree: Global#DefDef, common: ModelCommon, isTyped: Boolean, isAbstract: Boolean) extends ModelMethod
+case class ModelGetterMethod(tree: Global#DefDef, common: ModelCommon, isTyped: Boolean, isAbstract: Boolean)
+    extends ModelAccessorMethod
+
+case class ModelSetterMethod(tree: Global#DefDef, common: ModelCommon, isTyped: Boolean, isAbstract: Boolean)
+    extends ModelAccessorMethod
+
+case class ModelPlainMethod(tree: Global#DefDef, common: ModelCommon, isTyped: Boolean, isAbstract: Boolean)
+    extends ModelMethod
+
 case class ModelObject(tree: Global#ModuleDef, common: ModelCommon) extends ModelSymbol with ClassLike
-case class ModelClass(tree: Global#ClassDef, common: ModelCommon, isAbstract: Boolean) extends ModelSymbol with ClassLike
+
+case class ModelClass(tree: Global#ClassDef, common: ModelCommon, isAbstract: Boolean)
+    extends ModelSymbol
+    with ClassLike
+
 case class ModelTrait(tree: Global#ClassDef, common: ModelCommon) extends ModelSymbol with ClassLike
-case class ModelSource(tree: Global#Tree, common: ModelCommon) extends ModelSymbol
+case class ModelSource(tree: Global#Tree, common: ModelCommon)    extends ModelSymbol

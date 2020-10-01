@@ -11,40 +11,42 @@ trait RunOptions {
 }
 
 case class SimpleRunOptions(
-                             debug: Boolean = false,
-                             addComments: Boolean = false,
-                             replace: Boolean = false,
+    debug: Boolean = false,
+    addComments: Boolean = false,
+    replace: Boolean = false,
 ) extends RunOptions {
+
   def orReplace(replace: Boolean): SimpleRunOptions = {
-    if (replace) copy(replace=replace) else this
+    if (replace) copy(replace = replace) else this
   }
+
 }
 
 case class SCOptions(
-                      mode: String = "",
-                      debug: Boolean = false,
-                      addComments: Boolean = false,
-                      validate: Boolean = false,
-                      replace: Boolean = false,
-                      files: Seq[File] = Seq(),
-                    ) extends RunOptions
+    mode: String = "",
+    debug: Boolean = false,
+    addComments: Boolean = false,
+    validate: Boolean = false,
+    replace: Boolean = false,
+    files: Seq[File] = Seq(),
+) extends RunOptions
 
 object SCOptions {
-  val deadCodeCmd = "deadcode"
-  val privatiserCmd = "privatiser"
-  val finaliserCmd = "finaliser"
-  val simpleDeadCodeCmd = "simpledeadcode"
+  val deadCodeCmd         = "deadcode"
+  val privatiserCmd       = "privatiser"
+  val finaliserCmd        = "finaliser"
+  val simpleDeadCodeCmd   = "simpledeadcode"
   val simplePrivatiserCmd = "simpleprivatiser"
-
 
   val optionsParser: OParser[Unit, SCOptions] = {
 
     val builder = OParser.builder[SCOptions]
     import builder._
 
-    val sharedOptions = List(opt[Unit]("debug")
-      .action((_, c) => c.copy(debug = true))
-      .text("this option is hidden in the usage text"),
+    val sharedOptions = List(
+      opt[Unit]("debug")
+        .action((_, c) => c.copy(debug = true))
+        .text("this option is hidden in the usage text"),
       opt[Unit]("addComments")
         .action((_, c) => c.copy(addComments = true))
         .text("this option is hidden in the usage text"),
@@ -58,7 +60,8 @@ object SCOptions {
         .unbounded()
         .required()
         .action((x, c) => c.copy(files = c.files :+ x))
-        .text("target ScalaClean properties files for target projects"))
+        .text("target ScalaClean properties files for target projects")
+    )
 
     OParser.sequence(
       programName("ScalaCleanMain"),
@@ -100,4 +103,5 @@ object SCOptions {
     }
 
   }
+
 }

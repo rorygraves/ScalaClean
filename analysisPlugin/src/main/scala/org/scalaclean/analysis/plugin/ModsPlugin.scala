@@ -10,7 +10,12 @@ object ModsPlugin extends ExtensionPluginFactory {
 }
 
 class ModsPlugin(val sc: ScalaCompilerPluginComponent) extends ExtensionPlugin {
-  override def extendedData(mSymbol: ModelSymbol, tree: g.Tree, enclosingModel: List[ModelSymbol]): List[ExtensionData] = {
+
+  override def extendedData(
+      mSymbol: ModelSymbol,
+      tree: g.Tree,
+      enclosingModel: List[ModelSymbol]
+  ): List[ExtensionData] = {
     // Visibility encoding seems to be like this
     // for vals and vars the encoding is on the getter (and setter for vars) not on the val & var
     // as the actual field is private[this]
@@ -23,10 +28,10 @@ class ModsPlugin(val sc: ScalaCompilerPluginComponent) extends ExtensionPlugin {
     // protected[foo]  === Flags.PROTECTED &  'privateWithin=="foo"'
     val vis: List[VisibilityData] = {
       val symbol: g.Symbol = mSymbol match {
-        case field:ModelField => tree.symbol.getterIn(tree.symbol.owner)
-        case accessor:ModelAccessorMethod => g.NoSymbol
-        case fields:ModelFields => g.NoSymbol
-        case _ => tree.symbol
+        case field: ModelField             => tree.symbol.getterIn(tree.symbol.owner)
+        case accessor: ModelAccessorMethod => g.NoSymbol
+        case fields: ModelFields           => g.NoSymbol
+        case _                             => tree.symbol
       }
       if (symbol.hasFlag(Flags.PROTECTED | Flags.PRIVATE) || symbol.hasAccessBoundary) {
         val within =
@@ -41,14 +46,14 @@ class ModsPlugin(val sc: ScalaCompilerPluginComponent) extends ExtensionPlugin {
 
     val others: List[ExtensionData] = tree match {
       case d: g.MemberDefApi =>
-        d.mods.positions.collect {
-          case (f, pos) =>
-            val basePos = tree.pos.start
-            ModData(pos.start - basePos, pos.end - basePos, f)
+        d.mods.positions.collect { case (f, pos) =>
+          val basePos = tree.pos.start
+          ModData(pos.start - basePos, pos.end - basePos, f)
         }(scala.collection.breakOut)
       case _ => Nil
     }
     vis ::: others
 
   }
+
 }

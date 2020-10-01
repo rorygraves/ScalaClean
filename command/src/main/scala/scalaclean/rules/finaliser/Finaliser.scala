@@ -16,9 +16,7 @@ class Finaliser(model: ProjectModel, options: RunOptions) extends AbstractRule("
   type Colour = FinaliserLevel
 
   override def markInitial(): Unit = {
-    model.allOf[ModelElement].foreach { e =>
-      e.colour = Undefined
-    }
+    model.allOf[ModelElement].foreach(e => e.colour = Undefined)
   }
 
   override def runRule(): Unit = {
@@ -28,14 +26,13 @@ class Finaliser(model: ProjectModel, options: RunOptions) extends AbstractRule("
       case e => e.colour = localLevel(e)
     }
     if (options.debug)
-      model.allOf[ModelElement].toList.sortBy(_.infoPosSorted).foreach(ele =>
-        println(s"$ele  colour: ${ele.colour}"))
+      model.allOf[ModelElement].toList.sortBy(_.infoPosSorted).foreach(ele => println(s"$ele  colour: ${ele.colour}"))
   }
 
   def inMethod(element: ModelElement): Boolean = {
     def isOrInMethod(element: ModelElement): Boolean = {
       element.isInstanceOf[MethodModel] ||
-        element.enclosing.exists(isOrInMethod)
+      element.enclosing.exists(isOrInMethod)
     }
 
     element.enclosing.exists(isOrInMethod)
@@ -45,22 +42,25 @@ class Finaliser(model: ProjectModel, options: RunOptions) extends AbstractRule("
     if (element.colour == Undefined) {
       val colour = element match {
         case x if x.modelElementId.isLocal => NoChange("its local")
-        case x if !x.existsInSource => NoChange("no source")
-        case _: SourceModel => NoChange("source")
-        case x if inMethod(x) => NoChange("in a method and not visible")
-        case _: ObjectModel => NoChange("object is effectively final")
-        case _: VarModel => NoChange("var is always final")
-        case _ if (element.isFinal) => NoChange("its already final")
-        case _ if element.isPrivate
-          //fieds are marked private, so exclude them and handle in calcFieldLevel
-          && !element.isInstanceOf[FieldModel] => NoChange("its private so probably not worth the change")
-        case fieldsModel: FieldsModel if (fieldsModel.fields.exists(_.isInstanceOf[VarModel])) => NoChange("vars are always final")
+        case x if !x.existsInSource        => NoChange("no source")
+        case _: SourceModel                => NoChange("source")
+        case x if inMethod(x)              => NoChange("in a method and not visible")
+        case _: ObjectModel                => NoChange("object is effectively final")
+        case _: VarModel                   => NoChange("var is always final")
+        case _ if (element.isFinal)        => NoChange("its already final")
+        case _
+            if element.isPrivate
+            //fieds are marked private, so exclude them and handle in calcFieldLevel
+              && !element.isInstanceOf[FieldModel] =>
+          NoChange("its private so probably not worth the change")
+        case fieldsModel: FieldsModel if (fieldsModel.fields.exists(_.isInstanceOf[VarModel])) =>
+          NoChange("vars are always final")
         case fieldModel: FieldModel if fieldModel.inCompoundFieldDeclaration => NoChange("part of a compound decl")
 
         case fieldsModel: FieldsModel => calcFieldsLevel(fieldsModel)
         case methodModel: MethodModel => calcMethodLevel(methodModel)
-        case fieldModel: FieldModel => calcFieldLevel(fieldModel)
-        case clsOrTrait: ClassLike => calcClassLevel(clsOrTrait)
+        case fieldModel: FieldModel   => calcFieldLevel(fieldModel)
+        case clsOrTrait: ClassLike    => calcClassLevel(clsOrTrait)
       }
       element.colour = colour
     }
@@ -70,7 +70,7 @@ class Finaliser(model: ProjectModel, options: RunOptions) extends AbstractRule("
   def calcMethodLevel(method: MethodModel): Colour = {
     method.enclosing.head match {
       case cls: ClassModel if localLevel(cls) == Final => NoChange("owner is a final class")
-      case cls: ObjectModel => NoChange("owner is a an object")
+      case cls: ObjectModel                            => NoChange("owner is a an object")
       case cls: ClassLike =>
         val overrides = method.overridden
         if (overrides isEmpty) Final
@@ -79,12 +79,13 @@ class Finaliser(model: ProjectModel, options: RunOptions) extends AbstractRule("
     }
 
   }
+
   def calcFieldLevel(field: FieldModel): Colour = {
     field.declaredIn.getOrElse(field).enclosing.head match {
       case cls: ClassModel if cls.isFinal || cls.isPrivate => NoChange("owner is private/final")
-      case cls: ClassModel if localLevel(cls) == Final => NoChange("owner will be a final class")
-      case cls: ObjectModel => NoChange("owner is a an object (so final)")
-      case cls: ClassLike =>
+      case cls: ClassModel if localLevel(cls) == Final     => NoChange("owner will be a final class")
+      case cls: ObjectModel                                => NoChange("owner is a an object (so final)")
+      case cls: ClassLike                                  =>
         // we need to consider the accessors. The val isn't overidded, but if the accessor is then we cant make it final
         // in the parent
         val overrides: Iterable[Overrides] = field.overridden ++ field.accessors.flatMap(_.overridden)
@@ -99,15 +100,16 @@ class Finaliser(model: ProjectModel, options: RunOptions) extends AbstractRule("
   }
 
   def calcFieldsLevel(fieldsModel: FieldsModel): FinaliserLevel = {
-    fieldsModel.fieldsInDeclaration.foldLeft(Undefined: FinaliserLevel) {
-      case (level, field) => level.widen(calcFieldLevel(field))
+    fieldsModel.fieldsInDeclaration.foldLeft(Undefined: FinaliserLevel) { case (level, field) =>
+      level.widen(calcFieldLevel(field))
     }
   }
-  @tailrec final def getSource(element: ModelElement): SourceModel =
-    element match {
-      case sourceModel: SourceModel => sourceModel
-      case _ => getSource(element.enclosing.head)
-    }
+
+  @tailrec final def getSource(element: ModelElement): SourceModel = element match {
+    case sourceModel: SourceModel => sourceModel
+    case _                        => getSource(element.enclosing.head)
+  }
+
   def calcClassLevel(classLike: ClassLike): FinaliserLevel = classLike match {
     case model: ClassModel =>
       val ext = model.extendedByClassLike()
@@ -115,7 +117,7 @@ class Finaliser(model: ProjectModel, options: RunOptions) extends AbstractRule("
         Final
       else {
         val mySource = getSource(model)
-        if (ext forall { cls  => getSource(cls) == mySource})
+        if (ext.forall(cls => getSource(cls) == mySource))
           Sealed("")
         else
           Open("")
@@ -123,40 +125,42 @@ class Finaliser(model: ProjectModel, options: RunOptions) extends AbstractRule("
     case model: ObjectModel => NoChange("objects are final")
     case model: TraitModel =>
       val mySource = getSource(model)
-      val ext = model.extendedByClassLike()
-      if (ext forall { cls  => getSource(cls) == mySource})
+      val ext      = model.extendedByClassLike()
+      if (ext.forall(cls => getSource(cls) == mySource))
         Sealed("")
       else
         Open("")
 
   }
 
-
   var elementsObserved = 0
-  var elementsChanged = 0
+  var elementsChanged  = 0
 
-  override def printSummary(projectName: String): Unit =
-    println(
-      s"""Elements Observed = $elementsObserved
-         |Elements Changed  = $elementsChanged
-         |Effect rate       = ${(elementsChanged.toDouble / elementsObserved.toDouble * 10000).toInt / 100} %"
-         |""".stripMargin)
+  override def printSummary(projectName: String): Unit = println(s"""Elements Observed = $elementsObserved
+                                                                    |Elements Changed  = $elementsChanged
+                                                                    |Effect rate       = ${(elementsChanged.toDouble / elementsObserved.toDouble * 10000).toInt / 100} %"
+                                                                    |""".stripMargin)
 
   override def fix(targetFile: AbsolutePath, syntacticDocument: () => SyntacticDocument): List[SCPatch] = {
     val targetFileName = targetFile.toString
     // find source model
-    val sModel = model.allOf[SourceModel].filter(_.toString.contains(targetFileName)).toList.headOption.getOrElse(throw new IllegalStateException(s"Unable to find source model for $targetFileName"))
+    val sModel = model
+      .allOf[SourceModel]
+      .filter(_.toString.contains(targetFileName))
+      .toList
+      .headOption
+      .getOrElse(throw new IllegalStateException(s"Unable to find source model for $targetFileName"))
 
     object visitor extends ScalaCleanTreePatcher(patchStats, syntacticDocument) {
-      override def debug: Boolean = options.debug
+      override def debug: Boolean       = options.debug
       override def addComments: Boolean = options.addComments
 
       def handleDecl(modelElement: ModelElement) = {
         modelElement.colour match {
-          case Open(reason) =>
+          case Open(reason)     =>
           case NoChange(reason) =>
-          case Undefined => ???
-          case Sealed(reason) =>
+          case Undefined        => ???
+          case Sealed(reason)   =>
           case Final =>
             if ((Flags.FINAL & modelElement.flags) == 0)
               collect(SCPatch(modelElement.rawStart, modelElement.rawStart, "final ", ""))
@@ -164,15 +168,15 @@ class Finaliser(model: ProjectModel, options: RunOptions) extends AbstractRule("
       }
       def handleClass(modelElement: ModelElement) = {
         modelElement.colour match {
-          case Open(reason) =>
+          case Open(reason)     =>
           case NoChange(reason) =>
-          case Undefined => ???
+          case Undefined        => ???
           case Sealed(reason) =>
             val isSealed = (Flags.SEALED & modelElement.flags) != 0
             if (!isSealed)
               collect(SCPatch(modelElement.rawStart, modelElement.rawStart, "sealed ", ""))
           case Final =>
-            val isFinal = (Flags.FINAL & modelElement.flags) != 0
+            val isFinal  = (Flags.FINAL & modelElement.flags) != 0
             val isSealed = (Flags.SEALED & modelElement.flags) != 0
             //TODO cope with sealed -> final
             if (!isFinal && !isSealed)
@@ -182,7 +186,7 @@ class Finaliser(model: ProjectModel, options: RunOptions) extends AbstractRule("
 
       override protected def visitInSource(modelElement: ModelElement): Boolean = {
         modelElement match {
-          case fieldModel: FieldModel if fieldModel.declaredIn.nonEmpty =>
+          case fieldModel: FieldModel if fieldModel.declaredIn.nonEmpty      =>
           case accessorModel: AccessorModel if accessorModel.field.isDefined =>
           case _: MethodModel | _: FieldModel | _: FieldsModel =>
             elementsObserved += 1
@@ -205,4 +209,5 @@ class Finaliser(model: ProjectModel, options: RunOptions) extends AbstractRule("
     }
     result
   }
+
 }

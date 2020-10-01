@@ -3,36 +3,41 @@ package scalaclean.test.deadcode1.main
 import scalaclean.test.deadcode1.main.Outer.Inner3
 
 object AppWithMain1 {
+
   def main(args: Array[String]): Unit = {
     val used = Used1
     println(used.aMethod())
     Outer.Inner1
     ()
   }
+
 }
+
 object Used1 {
   def aMethod(): Unit = {}
-  def aMethod(notUsed:Int): Unit = {}
+  def aMethod(notUsed: Int): Unit = {}
   def notUsedMethod(): Unit = {}
 }
 
 object AppWithMain2 {
   import Outer._
+
   def main(): Unit = {
     val used = Used2
     println(used.aMethod())
     Inner2
     ()
   }
+
 }
 
 trait UnusedTrait {
-  def unusedTraitMethod(x:Int)
+  def unusedTraitMethod(x: Int)
 }
 
 object Used2 {
   def aMethod(): Unit = {}
-  def aMethod(notUsed:Int): Unit = {}
+  def aMethod(notUsed: Int): Unit = {}
   def notUsedMethod(): Unit = {}
 }
 
@@ -42,9 +47,10 @@ object App1 extends App {
   Inner3
   ()
 }
+
 object Used3 {
   def aMethod(): Unit = {}
-  def aMethod(notUsed:Int): Unit = {}
+  def aMethod(notUsed: Int): Unit = {}
   def notUsedMethod(): Unit = {}
 }
 
@@ -58,4 +64,5 @@ object Outer {
 
   object NotUsed
 }
+
 case class UnusedClass(value: String)

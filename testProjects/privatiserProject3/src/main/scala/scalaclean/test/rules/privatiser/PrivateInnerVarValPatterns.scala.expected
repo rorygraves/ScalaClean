@@ -27,10 +27,11 @@ object PrivateInnerVarValPatterns extends App {
 
   private object Inner {
     // used in Inner
-    private val (a1,b1,c1) = (1,2,3)
+    private val (a1, b1, c1) = (1, 2, 3)
     println(this.b1)
 
     // used in PrivateInnerVarValPatterns.usage
-    private[PrivateInnerVarValPatterns] val (a2,b2,c2) = (1,2,3)
+    private[PrivateInnerVarValPatterns] val (a2, b2, c2) = (1, 2, 3)
   }
+
 }
