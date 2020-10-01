@@ -4,7 +4,7 @@ import java.nio.file.Path
 
 import scalaclean.model.impl.PathNodes
 
-import java.lang.{StringBuilder => JStringBuilder}
+import java.lang.{ StringBuilder => JStringBuilder }
 import scala.reflect.ClassTag
 
 object ElementId {
@@ -37,9 +37,9 @@ abstract sealed class ElementId {
   def id: String
   def debugValue: String = id
   def testOnlyId: String
-  def isThis: Boolean    = false
-  def isNone: Boolean    = false
-  def isRoot: Boolean    = false
+  def isThis: Boolean = false
+  def isNone: Boolean = false
+  def isRoot: Boolean = false
   def isLocal: Boolean
 
   def parent: ElementId
@@ -259,26 +259,26 @@ package impl {
   }
 
   private[model] object NodeRoot extends ElementId {
-    override def isLocal: Boolean                                                                = false
-    override def isRoot: Boolean                                                                 = true
-    override def innerScopeString: String                                                        = ???
-    override val id: String                                                                      = "<root>"
-    override def testOnlyId: String                                                              = id
-    override def parent: ElementPathNode                                                         = ???
-    override private[model] def canBeParent                                                      = true
-    override private[model] def isContentGlobal: Boolean                                         = true
+    override def isLocal: Boolean                                                                   = false
+    override def isRoot: Boolean                                                                    = true
+    override def innerScopeString: String                                                           = ???
+    override val id: String                                                                         = "<root>"
+    override def testOnlyId: String                                                                 = id
+    override def parent: ElementPathNode                                                            = ???
+    override private[model] def canBeParent                                                         = true
+    override private[model] def isContentGlobal: Boolean                                            = true
     override private[model] def appendPath(sb: JStringBuilder, testFormat: Boolean): JStringBuilder = sb
   }
 
   private[model] object NodeNone extends ElementId {
-    override def isLocal: Boolean                                                                = false
-    override def isNone: Boolean                                                                 = true
-    override def innerScopeString: String                                                        = ???
-    override val id: String                                                                      = "<none>"
-    override def testOnlyId: String                                                              = id
-    override def parent: ElementPathNode                                                         = ???
-    override private[model] def canBeParent                                                      = false
-    override private[model] def isContentGlobal: Boolean                                         = true
+    override def isLocal: Boolean                                                                   = false
+    override def isNone: Boolean                                                                    = true
+    override def innerScopeString: String                                                           = ???
+    override val id: String                                                                         = "<none>"
+    override def testOnlyId: String                                                                 = id
+    override def parent: ElementPathNode                                                            = ???
+    override private[model] def canBeParent                                                         = false
+    override private[model] def isContentGlobal: Boolean                                            = true
     override private[model] def appendPath(sb: JStringBuilder, testFormat: Boolean): JStringBuilder = sb
   }
 
@@ -287,8 +287,7 @@ package impl {
     override lazy val id: String =
       appendPath(new JStringBuilder, false).toString
 
-    override def testOnlyId: String =
-      appendPath(new JStringBuilder, true).toString
+    override def testOnlyId: String = appendPath(new JStringBuilder, true).toString
 
     override private[model] def appendPath(sb: JStringBuilder, testFormat: Boolean): JStringBuilder = {
       parent.appendPath(sb, testFormat)
@@ -308,7 +307,11 @@ package impl {
       }
       sb.append(nodeType)
       sb.append(':')
-      sb.append(nodeId)
+      val localId = nodeId
+      if (!testFormat || !isLocal)
+        sb.append(nodeId)
+      else
+        sb.append(nodeId.substring(0, nodeId.indexOf("##") + 2))
     }
 
     def nodeType: Char
@@ -453,25 +456,30 @@ package impl {
     override private[model] def isContentGlobal: Boolean = parent.isContentGlobal
 
     override def appendSelf(sb: JStringBuilder, testFormat: Boolean): Unit = sb.append("/this")
-    override def innerScopeString: String                 = "this"
-    override private[model] def canBeParent               = false
+    override def innerScopeString: String                                  = "this"
+    override private[model] def canBeParent                                = false
   }
 
   private[impl] final class SourcePathImpl private (fileName: String) extends ElementPathNode(NodeRoot) {
     override def isLocal: Boolean                        = false
     override private[model] def isContentGlobal: Boolean = true
 
-    override def appendSelf(sb: JStringBuilder, testFormat: Boolean): Unit = sb.append(s"${SourcePathImpl.nodeType}:$fileName")
-    override def innerScopeString: String                 = ???
-    override private[model] def canBeParent               = false
+    override def appendSelf(sb: JStringBuilder, testFormat: Boolean): Unit =
+      sb.append(s"${SourcePathImpl.nodeType}:$fileName")
+
+    override def innerScopeString: String   = ???
+    override private[model] def canBeParent = false
   }
 
   private[impl] final class TypePathImpl private (parent: ElementId, typeName: String) extends ElementPathNode(parent) {
-    override def isLocal: Boolean                         = false
-    override private[model] def isContentGlobal: Boolean  = false
-    override def appendSelf(sb: JStringBuilder, testFormat: Boolean): Unit = sb.append(s"${TypePathImpl.nodeType}:$typeName")
-    override private[model] def canBeParent: Boolean      = false
-    override def innerScopeString: String                 = ???
+    override def isLocal: Boolean                        = false
+    override private[model] def isContentGlobal: Boolean = false
+
+    override def appendSelf(sb: JStringBuilder, testFormat: Boolean): Unit =
+      sb.append(s"${TypePathImpl.nodeType}:$typeName")
+
+    override private[model] def canBeParent: Boolean = false
+    override def innerScopeString: String            = ???
   }
 
 }
