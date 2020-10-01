@@ -53,7 +53,9 @@ class SimpleDeadCode(model: ProjectModel, options: RunOptions) extends DeadCodeR
 
   def isUsed(e: ModelElement): Boolean = {
     val usedAnnotations = Set[String](
-      "org.junit.Test"
+      "org.junit.Test",
+      "org.springframework.jmx.export.annotation.ManagedOperation",
+      "org.springframework.jmx.export.annotation.ManagedAttribute"
     )
     e.incomingReferences.nonEmpty || e.modelElementId.id.contains(
       "_:="
