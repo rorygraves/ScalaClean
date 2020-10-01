@@ -9,13 +9,9 @@ import scalaclean.model._
 class Test_internalIncomingReferences(model: ProjectModel)
     extends TestCommon("Test_internalIncomingReferences", model) {
 
-  override def visitInSource(modelElement: ModelElement): String = {
-    modelElement.internalIncomingReferences.map(_._1.modelElementId.debugValue).distinct.sorted match {
-      case Nil => ""
-      case refs =>
-        refs.mkString(s"internalIncomingReferences(${modelElement.modelElementId.debugValue}) - ", " :: ", "")
-    }
-  }
+  override def visitInSource(modelElement: ModelElement): String =
+    elementsInTestFormat("internalIncomingReferences", modelElement,
+      modelElement.internalIncomingReferences.map(_._1))
 
 }
 
@@ -27,11 +23,8 @@ class Test_internalOutgoingReferences(model: ProjectModel)
     extends TestCommon("Test_internalOutgoingReferences", model) {
 
   override def visitInSource(modelElement: ModelElement): String = {
-    modelElement.internalOutgoingReferences.map(_._1.modelElementId.debugValue).distinct.sorted match {
-      case Nil => ""
-      case refs =>
-        refs.mkString(s"internalOutgoingReferences(${modelElement.modelElementId.debugValue}) - ", " :: ", "")
-    }
+    elementsInTestFormat("internalOutgoingReferences", modelElement,
+      modelElement.internalOutgoingReferences.map(_._1))
   }
 
 }
@@ -42,11 +35,8 @@ class Test_internalOutgoingReferences(model: ProjectModel)
  */
 class Test_allOutgoingReferences(model: ProjectModel) extends TestCommon("Test_allOutgoingReferences", model) {
 
-  override def visitInSource(modelElement: ModelElement): String = {
-    modelElement.allOutgoingReferences.map(_._2.toElementId.id).distinct.sorted match {
-      case Nil  => ""
-      case refs => refs.mkString(s"allOutgoingReferences(${modelElement.modelElementId.debugValue}) - ", " :: ", "")
-    }
-  }
+  override def visitInSource(modelElement: ModelElement): String =
+    elementIdsTestFormat("allOutgoingReferences", modelElement,
+      modelElement.allOutgoingReferences.map(_._2.toElementId))
 
 }
