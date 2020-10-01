@@ -22,13 +22,13 @@ object ScalaCleanMain {
       case Some(options) =>
         val commandFn: ProjectModel => AbstractRule = options.mode match {
           case SCOptions.privatiserCmd =>
-            model => new Privatiser(model, options.debug)
+            model => new Privatiser(model, options)
           case SCOptions.simplePrivatiserCmd =>
-            model => new SimplePrivatiser(model, options.debug)
+            model => new SimplePrivatiser(model, options)
           case SCOptions.deadCodeCmd =>
-            model => new DeadCodeRemover(model, options.debug)
+            model => new DeadCodeRemover(model, options)
           case SCOptions.simpleDeadCodeCmd =>
-            model => new SimpleDeadCode(model, options.debug)
+            model => new SimpleDeadCode(model, options)
           case _ =>
             throw new IllegalStateException(s"Invalid command argument ${options.mode}")
         }
@@ -157,7 +157,8 @@ class ScalaCleanMain(options: SCOptions, ruleCreateFn: ProjectModel => AbstractR
 
     var changed = false
 
-    println("---------------------------------------------------------------------------------------------------")
+    if (debug)
+      println("---------------------------------------------------------------------------------------------------")
 
     val files: Seq[AbsolutePath] = project.srcFiles.toList.map(AbsolutePath(_))
 

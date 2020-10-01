@@ -1,5 +1,6 @@
 package scalaclean.rules.finaliser
 
+import scalaclean.cli.RunOptions
 import scalaclean.model._
 import scalaclean.rules.AbstractRule
 import scalaclean.util.ScalaCleanTreePatcher
@@ -10,7 +11,7 @@ import scala.meta.io.AbsolutePath
 import scala.reflect.internal.Flags
 
 //marks things final and sealed were it can
-class Finaliser(model: ProjectModel, debug: Boolean) extends AbstractRule("Finaliser", model, debug) {
+class Finaliser(model: ProjectModel, options: RunOptions) extends AbstractRule("Finaliser", model, options) {
 
   type Colour = FinaliserLevel
 
@@ -26,8 +27,9 @@ class Finaliser(model: ProjectModel, debug: Boolean) extends AbstractRule("Final
         e.colour = NoChange("source")
       case e => e.colour = localLevel(e)
     }
-    model.allOf[ModelElement].toList.sortBy(_.infoPosSorted).foreach(ele =>
-      println(s"$ele  colour: ${ele.colour}"))
+    if (options.debug)
+      model.allOf[ModelElement].toList.sortBy(_.infoPosSorted).foreach(ele =>
+        println(s"$ele  colour: ${ele.colour}"))
   }
 
   def inMethod(element: ModelElement): Boolean = {
@@ -146,6 +148,8 @@ class Finaliser(model: ProjectModel, debug: Boolean) extends AbstractRule("Final
     val sModel = model.allOf[SourceModel].filter(_.toString.contains(targetFileName)).toList.headOption.getOrElse(throw new IllegalStateException(s"Unable to find source model for $targetFileName"))
 
     object visitor extends ScalaCleanTreePatcher(patchStats, syntacticDocument) {
+      override def debug: Boolean = options.debug
+      override def addComments: Boolean = options.addComments
 
       def handleDecl(modelElement: ModelElement) = {
         modelElement.colour match {
@@ -194,10 +198,11 @@ class Finaliser(model: ProjectModel, debug: Boolean) extends AbstractRule("Final
 
     val result = visitor.result
     elementsChanged += result.size
-    println("--------NEW----------")
-    result.foreach(println)
-    println("------------------")
-
+    if (debug) {
+      println("--------NEW----------")
+      result.foreach(println)
+      println("------------------")
+    }
     result
   }
 }

@@ -1,5 +1,6 @@
 package scalaclean.rules.deadcode
 
+import scalaclean.cli.RunOptions
 import scalaclean.model._
 import scalaclean.rules.AbstractRule
 import scalaclean.util.ScalaCleanTreePatcher
@@ -11,7 +12,7 @@ import scala.meta.io.AbsolutePath
  * A rule that removes unreferenced classes,
  * needs to be run after Analysis
  */
-class DeadCodeRemover(model: ProjectModel, debug: Boolean) extends AbstractRule("ScalaCleanDeadCodeRemover", model, debug) {
+class DeadCodeRemover(model: ProjectModel, options: RunOptions) extends AbstractRule("ScalaCleanDeadCodeRemover", model, options) {
 
   type Colour = Usage
 
@@ -69,7 +70,8 @@ class DeadCodeRemover(model: ProjectModel, debug: Boolean) extends AbstractRule(
     val current = element.colour
 
     if (!current.hasPurpose(purpose)) {
-      println(s"mark $element as used for $purpose due to ${path.mkString("->")} $comment")
+      if (debug)
+        println(s"mark $element as used for $purpose due to ${path.mkString("->")} $comment")
 
       element.colour = current.withPurpose(purpose)
       //all the elements that this refers to
@@ -124,6 +126,8 @@ class DeadCodeRemover(model: ProjectModel, debug: Boolean) extends AbstractRule(
     val sModel = model.allOf[SourceModel].filter(_.toString.contains(targetFileName)).toList.headOption.getOrElse(throw new IllegalStateException(s"Unable to find source model for $targetFileName"))
 
     object visitor extends ScalaCleanTreePatcher(patchStats, syntacticDocument) {
+      override def debug: Boolean = options.debug
+      override def addComments: Boolean = options.addComments
 
       override protected def visitInSource(element: ModelElement): Boolean = {
         element match {
@@ -134,7 +138,8 @@ class DeadCodeRemover(model: ProjectModel, debug: Boolean) extends AbstractRule(
 
             false
           case fields: FieldsModel =>
-            log("FieldsModel - " + fields.name)
+            if (debug)
+              log("FieldsModel - " + fields.name)
             // fields are a bit special. They will be marked as used (by the implementation of the var/val that uses it)
             // but we take a deeper look here - there are 3 cases
             // 1. all of the child fields are used - leave as is
@@ -164,7 +169,8 @@ class DeadCodeRemover(model: ProjectModel, debug: Boolean) extends AbstractRule(
             }
 
           case element =>
-            log(" basic element handling")
+            if (debug)
+              log(" basic element handling")
             if (element.colour.isUnused && element.existsInSource) {
               remove(element, s"Simple ${element.name} (${element.getClass} unused")
               false
@@ -178,10 +184,11 @@ class DeadCodeRemover(model: ProjectModel, debug: Boolean) extends AbstractRule(
     visitor.visit(sModel)
 
     val result = visitor.result
-    println("--------NEW----------")
-    result.foreach(println)
-    println("------------------")
-
+    if (debug) {
+      println("--------NEW----------")
+      result.foreach(println)
+      println("------------------")
+    }
 
     result.map(s => SCPatch(s.startPos, s.endPos, s.replacementText))
   }
