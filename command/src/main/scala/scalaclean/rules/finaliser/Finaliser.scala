@@ -48,6 +48,10 @@ class Finaliser(model: ProjectModel, debug: Boolean) extends AbstractRule("Final
         case x if inMethod(x) => NoChange("in a method and not visible")
         case _: ObjectModel => NoChange("object is effectively final")
         case _: VarModel => NoChange("var is always final")
+        case _ if (element.isFinal) => NoChange("its already final")
+        case _ if element.isPrivate
+          //fieds are marked private, so exclude them and handle in calcFieldLevel
+          && !element.isInstanceOf[FieldModel] => NoChange("its private so probably not worth the change")
         case fieldsModel: FieldsModel if (fieldsModel.fields.exists(_.isInstanceOf[VarModel])) => NoChange("vars are always final")
         case fieldModel: FieldModel if fieldModel.inCompoundFieldDeclaration => NoChange("part of a compound decl")
 
@@ -75,14 +79,19 @@ class Finaliser(model: ProjectModel, debug: Boolean) extends AbstractRule("Final
   }
   def calcFieldLevel(field: FieldModel): Colour = {
     field.declaredIn.getOrElse(field).enclosing.head match {
-      case cls: ClassModel if localLevel(cls) == Final => NoChange("owner is a final class")
-      case cls: ObjectModel => NoChange("owner is a an object")
+      case cls: ClassModel if cls.isFinal || cls.isPrivate => NoChange("owner is private/final")
+      case cls: ClassModel if localLevel(cls) == Final => NoChange("owner will be a final class")
+      case cls: ObjectModel => NoChange("owner is a an object (so final)")
       case cls: ClassLike =>
-        val overrides = field.overridden
+        // we need to consider the accessors. The val isn't overidded, but if the accessor is then we cant make it final
+        // in the parent
+        val overrides: Iterable[Overrides] = field.overridden ++ field.accessors.flatMap(_.overridden)
         if (overrides isEmpty)
           Final
-        else
-          Open("")
+        else {
+          val size = overrides.size
+          NoChange(s"$size overrides - e.g. ${overrides.head.fromElementId}")
+        }
       case encl => NoChange(s"enclosed in $encl")
     }
   }
