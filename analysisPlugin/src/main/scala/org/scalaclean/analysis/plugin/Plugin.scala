@@ -1,6 +1,6 @@
 package org.scalaclean.analysis.plugin
 
-import org.scalaclean.analysis.{ExtensionData, ModelSymbol, ScalaCompilerPluginComponent}
+import org.scalaclean.analysis.{ ExtensionData, ModelSymbol, ScalaCompilerPluginComponent }
 
 import scala.tools.nsc.Global
 

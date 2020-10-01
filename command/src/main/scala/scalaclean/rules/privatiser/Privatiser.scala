@@ -15,9 +15,7 @@ class Privatiser(model: ProjectModel, options: RunOptions) extends AbstractRule(
   type Colour = PrivatiserLevel
 
   override def markInitial(): Unit = {
-    model.allOf[ModelElement].foreach { e =>
-      e.colour = Undefined
-    }
+    model.allOf[ModelElement].foreach(e => e.colour = Undefined)
   }
 
   override def runRule(): Unit = {
@@ -27,14 +25,13 @@ class Privatiser(model: ProjectModel, options: RunOptions) extends AbstractRule(
       case e => e.colour = localLevel(e)
     }
     if (debug)
-      model.allOf[ModelElement].toList.sortBy(_.infoPosSorted).foreach(ele =>
-        println(s"$ele  colour: ${ele.colour}"))
+      model.allOf[ModelElement].toList.sortBy(_.infoPosSorted).foreach(ele => println(s"$ele  colour: ${ele.colour}"))
   }
 
   def inMethod(element: ModelElement): Boolean = {
     def isOrInMethod(element: ModelElement): Boolean = {
       element.isInstanceOf[MethodModel] ||
-        element.enclosing.exists(isOrInMethod)
+      element.enclosing.exists(isOrInMethod)
     }
 
     element.enclosing.exists(isOrInMethod)
@@ -43,15 +40,15 @@ class Privatiser(model: ProjectModel, options: RunOptions) extends AbstractRule(
   def localLevel(element: ModelElement): PrivatiserLevel = {
     if (element.colour == Undefined) {
       val colour = element match {
-        case x if x.modelElementId.isLocal => NoChange("its local")
-        case x if !x.existsInSource => NoChange("no source")
-        case s: SourceModel => NoChange("source")
-        case x if inMethod(x) => NoChange("in a method and not visible")
-        case fieldsModel: FieldsModel => calcFieldsLevel(fieldsModel)
+        case x if x.modelElementId.isLocal                                   => NoChange("its local")
+        case x if !x.existsInSource                                          => NoChange("no source")
+        case s: SourceModel                                                  => NoChange("source")
+        case x if inMethod(x)                                                => NoChange("in a method and not visible")
+        case fieldsModel: FieldsModel                                        => calcFieldsLevel(fieldsModel)
         case fieldModel: FieldModel if fieldModel.inCompoundFieldDeclaration => localLevel(fieldModel.declaredIn.get)
-        case getterMethodModel: GetterMethodModel => localLevel(getterMethodModel.field.get)
-        case setterMethodModel: SetterMethodModel => localLevel(setterMethodModel.field.get)
-        case fieldModel: FieldModel => calcFieldLevel(fieldModel)
+        case getterMethodModel: GetterMethodModel                            => localLevel(getterMethodModel.field.get)
+        case setterMethodModel: SetterMethodModel                            => localLevel(setterMethodModel.field.get)
+        case fieldModel: FieldModel                                          => calcFieldLevel(fieldModel)
         case _ =>
           calcSingleLevel(element)
       }
@@ -61,24 +58,24 @@ class Privatiser(model: ProjectModel, options: RunOptions) extends AbstractRule(
   }
 
   def calcFieldLevel(field: FieldModel): PrivatiserLevel = {
-    field.accessors.foldLeft(calcSingleLevel(field)) {
-      case (level, accessor) => level.widen(calcSingleLevel(accessor))
+    field.accessors.foldLeft(calcSingleLevel(field)) { case (level, accessor) =>
+      level.widen(calcSingleLevel(accessor))
     }
   }
 
   def calcFieldsLevel(fieldsModel: FieldsModel): PrivatiserLevel = {
-    fieldsModel.fieldsInDeclaration.foldLeft(Undefined: PrivatiserLevel) {
-      case (level, field) => level.widen(calcFieldLevel(field))
+    fieldsModel.fieldsInDeclaration.foldLeft(Undefined: PrivatiserLevel) { case (level, field) =>
+      level.widen(calcFieldLevel(field))
     }
   }
 
   def calcSingleLevel(element: ModelElement): PrivatiserLevel = {
     val incoming = {
-      element.internalIncomingReferences map (_._1)
-      }.toSet - element -- (element match {
-      case f: FieldModel => f.accessors
+      element.internalIncomingReferences.map(_._1)
+    }.toSet - element -- (element match {
+      case f: FieldModel    => f.accessors
       case a: AccessorModel => a.field
-      case _ => Nil
+      case _                => Nil
     })
 
     val enclosing = element.classOrEnclosing
@@ -93,32 +90,33 @@ class Privatiser(model: ProjectModel, options: RunOptions) extends AbstractRule(
       case _ => Undefined
     }
 
-    incoming foreach { ref: ModelElement =>
+    incoming.foreach { ref: ModelElement =>
       val isFromChild = ref.classOrEnclosing.xtends(enclosing.modelElementId)
-      val access = if (isFromChild)
-        Scoped.Protected(ref.modelElementId, s"accessed from $ref", forceProtected = false)
-      else
-        Scoped.Private(ref.modelElementId, s"accessed from $ref")
+      val access =
+        if (isFromChild)
+          Scoped.Protected(ref.modelElementId, s"accessed from $ref", forceProtected = false)
+        else
+          Scoped.Private(ref.modelElementId, s"accessed from $ref")
       res = res.widen(access)
     }
     //we must be visible to anything that overrides us
-    element.internalDirectOverriddenBy foreach {
-      overriddenBy =>
-        res = res.widen(Scoped.Protected(overriddenBy.modelElementId, s"overridden in from $overriddenBy", forceProtected = false))
+    element.internalDirectOverriddenBy.foreach { overriddenBy =>
+      res = res.widen(
+        Scoped.Protected(overriddenBy.modelElementId, s"overridden in from $overriddenBy", forceProtected = false)
+      )
     }
 
     //We must be at least as visible as anything that we override
-    element.allDirectOverrides foreach {
+    element.allDirectOverrides.foreach {
       case (Some(overriddenModel), _) =>
         val overriddenVisibility = localLevel(overriddenModel) match {
           case s: Scoped if s.isProtected => s.copy(forceProtected = true)
-          case other => other
+          case other                      => other
         }
         res = res.widen(overriddenVisibility)
       case (None, _) =>
         //if it is not in the model, then we will leave this as is
         res = res.widen(NoChange("inherits from external"))
-
 
       //          val info = element.symbolInfo(parentSym)
       //          val reason = s"declared in $parentSym"
@@ -137,12 +135,17 @@ class Privatiser(model: ProjectModel, options: RunOptions) extends AbstractRule(
   }
 
   var elementsObserved = 0
-  var elementsChanged = 0
+  var elementsChanged  = 0
 
   override def fix(targetFile: AbsolutePath, syntacticDocument: () => SyntacticDocument): List[SCPatch] = {
     val targetFileName = targetFile.toString
     // find source model
-    val sModel = model.allOf[SourceModel].filter(_.toString.contains(targetFileName)).toList.headOption.getOrElse(throw new IllegalStateException(s"Unable to find source model for $targetFileName"))
+    val sModel = model
+      .allOf[SourceModel]
+      .filter(_.toString.contains(targetFileName))
+      .toList
+      .headOption
+      .getOrElse(throw new IllegalStateException(s"Unable to find source model for $targetFileName"))
 
     object visitor extends ScalaCleanTreePatcher(patchStats, syntacticDocument) {
 
@@ -199,7 +202,7 @@ class Privatiser(model: ProjectModel, options: RunOptions) extends AbstractRule(
       //      }
       //
 
-      override def debug: Boolean = options.debug
+      override def debug: Boolean       = options.debug
       override def addComments: Boolean = options.addComments
 
       override protected def visitInSource(modelElement: ModelElement): Boolean = {
@@ -210,26 +213,33 @@ class Privatiser(model: ProjectModel, options: RunOptions) extends AbstractRule(
 
             val expectedTokens: Seq[String] = {
               currentVis match {
-                case VisibilityData(start, end, "", None) => List()
-                case VisibilityData(start, end, vis, None) => List(vis)
+                case VisibilityData(start, end, "", None)         => List()
+                case VisibilityData(start, end, vis, None)        => List(vis)
                 case VisibilityData(start, end, vis, Some(scope)) => List(vis, "[", scope.innerScopeString, "]")
               }
             }
             val beginIndex = tokens.indexWhere(t => t.start == modelElement.rawStart)
             assert(beginIndex != -1)
 
-            def find(startIndex: Int, text: String, maxIndex: Option[Int] = None, maxPos: Option[Int] = None): (Int, Token) = {
+            def find(
+                startIndex: Int,
+                text: String,
+                maxIndex: Option[Int] = None,
+                maxPos: Option[Int] = None
+            ): (Int, Token) = {
               def showTokens(start: Int, count: Int, search: String, msg: String): Unit = {
-                (start to start + count) foreach { i =>
-                  println(s" token #$i ${tokens(i)}")
-                }
+                (start to start + count).foreach(i => println(s" token #$i ${tokens(i)}"))
                 throw new IllegalStateException(s"$msg")
               }
 
               val found = tokens.indexWhere(t => t.text == text, startIndex)
               assert(found != -1, showTokens(startIndex, 10, text, s"Can't find '$text'"))
-              maxIndex foreach { i => assert(found <= i, showTokens(startIndex, 10, text, s"too far when looking for '$text''")) }
-              maxPos foreach { p => assert(tokens(found).start <= p, showTokens(startIndex, 10, text, s"too far when looking for '$text''")) }
+              maxIndex.foreach { i =>
+                assert(found <= i, showTokens(startIndex, 10, text, s"too far when looking for '$text''"))
+              }
+              maxPos.foreach { p =>
+                assert(tokens(found).start <= p, showTokens(startIndex, 10, text, s"too far when looking for '$text''"))
+              }
 
               (found, tokens(found))
             }
@@ -238,8 +248,8 @@ class Privatiser(model: ProjectModel, options: RunOptions) extends AbstractRule(
               if (expectedTokens.isEmpty) (modelElement.rawStart, modelElement.rawStart)
               else {
                 val start = find(beginIndex, expectedTokens.head, maxPos = Some(modelElement.rawFocusStart))
-                val end = expectedTokens.tail.foldLeft(start) {
-                  case (index, text) => find(index._1, text, maxPos = Some(modelElement.rawFocusStart))
+                val end = expectedTokens.tail.foldLeft(start) { case (index, text) =>
+                  find(index._1, text, maxPos = Some(modelElement.rawFocusStart))
                 }
                 (start._2.start, end._2.end)
               }
@@ -251,12 +261,10 @@ class Privatiser(model: ProjectModel, options: RunOptions) extends AbstractRule(
           }
 
           modelElement match {
-            case fieldModel: FieldModel if fieldModel.declaredIn.nonEmpty =>
+            case fieldModel: FieldModel if fieldModel.declaredIn.nonEmpty      =>
             case accessorModel: AccessorModel if accessorModel.field.isDefined =>
             case _ =>
-              modelElement.colour.asText(modelElement) foreach { v =>
-                changeVisibility(v)
-              }
+              modelElement.colour.asText(modelElement).foreach(v => changeVisibility(v))
           }
         }
 
@@ -281,4 +289,5 @@ class Privatiser(model: ProjectModel, options: RunOptions) extends AbstractRule(
     }
     result
   }
+
 }

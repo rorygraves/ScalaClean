@@ -12,7 +12,8 @@ import scala.meta.io.AbsolutePath
  * A rule that removes unreferenced classes,
  * needs to be run after Analysis
  */
-class DeadCodeRemover(model: ProjectModel, options: RunOptions) extends AbstractRule("ScalaCleanDeadCodeRemover", model, options) {
+class DeadCodeRemover(model: ProjectModel, options: RunOptions)
+    extends AbstractRule("ScalaCleanDeadCodeRemover", model, options) {
 
   type Colour = Usage
 
@@ -38,30 +39,36 @@ class DeadCodeRemover(model: ProjectModel, options: RunOptions) extends Abstract
 //
   }
 
-
   override def markInitial(): Unit = {
     markAll[ModelElement](Usage.unused)
   }
 
-  def markUsed(element: ModelElement, markEnclosing: Boolean, purpose: Purpose, path: List[ModelElement], comment: String): Unit = {
+  def markUsed(
+      element: ModelElement,
+      markEnclosing: Boolean,
+      purpose: Purpose,
+      path: List[ModelElement],
+      comment: String
+  ): Unit = {
     def markRhs(element: ModelElement, path: List[ModelElement], comment: String): Unit = {
-      element.fields foreach {
-        case valDef: ValModel => if (!valDef.isLazy) {
-          valDef.internalOutgoingReferences foreach {
-            case (ref, _) => markUsed(ref, markEnclosing = true, purpose, valDef :: path, s"$comment -> valDef(outgoing)")
+      element.fields.foreach {
+        case valDef: ValModel =>
+          if (!valDef.isLazy) {
+            valDef.internalOutgoingReferences.foreach { case (ref, _) =>
+              markUsed(ref, markEnclosing = true, purpose, valDef :: path, s"$comment -> valDef(outgoing)")
+            }
+            markRhs(valDef, valDef :: path, s"$comment -> valDef")
           }
-          markRhs(valDef, valDef :: path, s"$comment -> valDef")
-        }
         case varDef: VarModel =>
-          varDef.internalOutgoingReferences foreach {
-            case (ref, _) => markUsed(ref, markEnclosing = true, purpose, varDef :: path, s"$comment -> varDef(outgoing)")
+          varDef.internalOutgoingReferences.foreach { case (ref, _) =>
+            markUsed(ref, markEnclosing = true, purpose, varDef :: path, s"$comment -> varDef(outgoing)")
           }
           markRhs(varDef, varDef :: path, s"$comment -> varDef")
         //TODO - not sure if this is correct
         // an inner object is lazy in scala, so probably should only be marked when used
         case obj: ObjectModel =>
-          obj.internalOutgoingReferences foreach {
-            case (ref, _) => markUsed(ref, markEnclosing = true, purpose, obj :: path, s"$comment -> obj(outgoing)")
+          obj.internalOutgoingReferences.foreach { case (ref, _) =>
+            markUsed(ref, markEnclosing = true, purpose, obj :: path, s"$comment -> obj(outgoing)")
           }
           markRhs(obj, obj :: path, s"$comment -> obj")
       }
@@ -75,8 +82,8 @@ class DeadCodeRemover(model: ProjectModel, options: RunOptions) extends Abstract
 
       element.colour = current.withPurpose(purpose)
       //all the elements that this refers to
-      element.internalOutgoingReferences foreach {
-        case (ref, _) => markUsed(ref, markEnclosing = true, purpose, element :: path, s"$comment -> internalOutgoingReferences")
+      element.internalOutgoingReferences.foreach { case (ref, _) =>
+        markUsed(ref, markEnclosing = true, purpose, element :: path, s"$comment -> internalOutgoingReferences")
       }
 
       // for the vars, (non lazy) vals and objects - eagerly traverse the RHS, as it is called
@@ -88,45 +95,48 @@ class DeadCodeRemover(model: ProjectModel, options: RunOptions) extends Abstract
       markRhs(element, element :: path, s"$comment -> markRhs")
 
       //enclosing
-      element.enclosing foreach {
-        enclosed => markUsed(enclosed, markEnclosing = true, purpose, element :: path, s"$comment - enclosing")
+      element.enclosing.foreach { enclosed =>
+        markUsed(enclosed, markEnclosing = true, purpose, element :: path, s"$comment - enclosing")
       }
 
       //overridden
-      element.internalTransitiveOverrides foreach {
-        enclosed => markUsed(enclosed, markEnclosing = true, purpose, element :: path, s"$comment - overrides")
+      element.internalTransitiveOverrides.foreach { enclosed =>
+        markUsed(enclosed, markEnclosing = true, purpose, element :: path, s"$comment - overrides")
       }
 
       //overrides
-      element.internalTransitiveOverriddenBy foreach {
-        enclosed => markUsed(enclosed, markEnclosing = false, purpose, element :: path, s"$comment - overrides")
+      element.internalTransitiveOverriddenBy.foreach { enclosed =>
+        markUsed(enclosed, markEnclosing = false, purpose, element :: path, s"$comment - overrides")
       }
       element match {
         case accessor: AccessorModel =>
-          accessor.field foreach {
-            f => markUsed(f, markEnclosing = true, purpose, element :: path, s"$comment - field ")
+          accessor.field.foreach { f =>
+            markUsed(f, markEnclosing = true, purpose, element :: path, s"$comment - field ")
           }
         case _ =>
       }
     }
   }
 
-
   override def runRule(): Unit = {
-    allMainEntryPoints foreach (e => markUsed(e, markEnclosing = true, Main, e :: Nil, ""))
-    allJunitTest foreach (e => markUsed(e, markEnclosing = true, Test, e :: Nil, ""))
-    allSerialisationEntries foreach (e => markUsed(e, markEnclosing = false, Main, e :: Nil, "serialisationCode"))
+    allMainEntryPoints.foreach(e => markUsed(e, markEnclosing = true, Main, e :: Nil, ""))
+    allJunitTest.foreach(e => markUsed(e, markEnclosing = true, Test, e :: Nil, ""))
+    allSerialisationEntries.foreach(e => markUsed(e, markEnclosing = false, Main, e :: Nil, "serialisationCode"))
   }
-
 
   override def fix(targetFile: AbsolutePath, syntacticDocument: () => SyntacticDocument): List[SCPatch] = {
 
     val targetFileName = targetFile.toString
     // find source model
-    val sModel = model.allOf[SourceModel].filter(_.toString.contains(targetFileName)).toList.headOption.getOrElse(throw new IllegalStateException(s"Unable to find source model for $targetFileName"))
+    val sModel = model
+      .allOf[SourceModel]
+      .filter(_.toString.contains(targetFileName))
+      .toList
+      .headOption
+      .getOrElse(throw new IllegalStateException(s"Unable to find source model for $targetFileName"))
 
     object visitor extends ScalaCleanTreePatcher(patchStats, syntacticDocument) {
-      override def debug: Boolean = options.debug
+      override def debug: Boolean       = options.debug
       override def addComments: Boolean = options.addComments
 
       override protected def visitInSource(element: ModelElement): Boolean = {
@@ -135,7 +145,6 @@ class DeadCodeRemover(model: ProjectModel, options: RunOptions) extends Abstract
             // do nothing - do not recurse
             false
           case gmm: GetterMethodModel if gmm.field.forall(_.existsInSource) =>
-
             false
           case fields: FieldsModel =>
             if (debug)
@@ -160,11 +169,13 @@ class DeadCodeRemover(model: ProjectModel, options: RunOptions) extends Abstract
               false
             } else {
               //case 3
-              addComment(fields, s"consider rewriting pattern as ${unused.size} values are not used", "mutiple fields unused")
+              addComment(
+                fields,
+                s"consider rewriting pattern as ${unused.size} values are not used",
+                "mutiple fields unused"
+              )
 
-              unused foreach { f =>
-                replaceFromFocus(f, "_",s"${f.name} unused in patmat")
-              }
+              unused.foreach(f => replaceFromFocus(f, "_", s"${f.name} unused in patmat"))
               true
             }
 
@@ -174,8 +185,7 @@ class DeadCodeRemover(model: ProjectModel, options: RunOptions) extends Abstract
             if (element.colour.isUnused && element.existsInSource) {
               remove(element, s"Simple ${element.name} (${element.getClass} unused")
               false
-            }
-            else
+            } else
               true
         }
       }
@@ -194,16 +204,17 @@ class DeadCodeRemover(model: ProjectModel, options: RunOptions) extends Abstract
   }
 
   case class Usage(existingPurposes: Int = 0) extends Mark {
+
     def withPurpose(addedPurpose: Purpose): Usage = {
       Usage(existingPurposes | addedPurpose.id)
     }
 
-    def hasPurpose(purpose: Purpose): Boolean =
-      0 != (existingPurposes & purpose.id)
+    def hasPurpose(purpose: Purpose): Boolean = 0 != (existingPurposes & purpose.id)
 
     def isUnused: Boolean = {
       existingPurposes == 0
     }
+
   }
 
   object Main extends Purpose {

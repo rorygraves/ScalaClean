@@ -3,6 +3,7 @@ package scalaclean.model
 import scala.annotation.tailrec
 
 object ElementScope {
+
   @tailrec final def isOrHasParent(aChild: ElementId, aParent: ElementId): Boolean = {
     (aChild eq aParent) || (!aChild.isNone && !aChild.isRoot && isOrHasParent(aChild.parent, aParent))
   }
@@ -17,12 +18,24 @@ object ElementScope {
 
   final def isOrHasParentScope(aChild: ElementId, aParent: ElementId): Boolean = {
     isOrHasParentScopeImpl(aChild, aParent, aParent.companionOrSelf) || {
-      aChild.companionOrSelf != aChild && isOrHasParentScopeImpl(aChild.companionOrSelf, aParent, aParent.companionOrSelf)
+      aChild.companionOrSelf != aChild && isOrHasParentScopeImpl(
+        aChild.companionOrSelf,
+        aParent,
+        aParent.companionOrSelf
+      )
     }
   }
 
-  @tailrec private def isOrHasParentScopeImpl(aChild: ElementId, aParent: ElementId, parentCompanion: ElementId): Boolean = {
-    (aChild eq aParent) || (aChild eq parentCompanion) || (!aChild.isNone && !aChild.isRoot && isOrHasParentScopeImpl(aChild.parent, aParent, parentCompanion))
+  @tailrec private def isOrHasParentScopeImpl(
+      aChild: ElementId,
+      aParent: ElementId,
+      parentCompanion: ElementId
+  ): Boolean = {
+    (aChild eq aParent) || (aChild eq parentCompanion) || (!aChild.isNone && !aChild.isRoot && isOrHasParentScopeImpl(
+      aChild.parent,
+      aParent,
+      parentCompanion
+    ))
   }
 
   @scala.annotation.tailrec
@@ -47,7 +60,5 @@ object ElementScope {
       else scope1
     } else findCommonScopeParent(scope1.parent, scope2.parent)
   }
-
-
 
 }

@@ -3,19 +3,17 @@ package org.scalaclean.analysis
 import java.io.File
 
 class ExtensionWriter(file: File) {
+
   def writeExtensions(mSymbol: ModelSymbol): Unit = {
     val data = mSymbol.extensionData
     if (data.nonEmpty) {
       val prefix = s"${mSymbol.legacyCsvIDString},${mSymbol.newCsvString},"
-      data foreach {
-        d =>
-          writeLine(s"$prefix${d.getClass.getName},${d.toCsv}", d)
-      }
+      data.foreach(d => writeLine(s"$prefix${d.getClass.getName},${d.toCsv}", d))
     }
   }
 
   var logger: ScopeLogging = _
-  val writer = new SortedStringWriter(file.toPath)
+  val writer               = new SortedStringWriter(file.toPath)
 
   def endUnit(): Unit = {
     writer.flush()
