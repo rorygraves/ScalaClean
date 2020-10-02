@@ -12,17 +12,8 @@ class Test_extends(directOnly: Boolean, filter: ExtendsClassLike, testNameSuffix
 
   override def visitInSource(modelElement: ModelElement): String = modelElement match {
     case classLike: ClassLike =>
-      val ex = classLike.extendsClassLike(directOnly, filter).toList.sortBy(_._2.debugValue)
-      val strings = ex.map { case (clOpt: Option[ClassLike], elementId: ElementId) =>
-        clOpt.foreach(cl =>
-          assert(cl.modelElementId == elementId, s"cl.modelElementId(${cl.modelElementId}) != elementId($elementId)")
-        )
-        s"{${clOpt.isDefined}}~${elementId.debugValue}"
-      }
-      strings match {
-        case Nil  => ""
-        case refs => refs.mkString(s"extends(${modelElement.modelElementId.debugValue}) - ", " :: ", "")
-      }
+      elementAndIdsInTestFormat("extends", modelElement,
+        classLike.extendsClassLike(directOnly, filter))
     case _ => ""
   }
 
@@ -41,12 +32,8 @@ class Test_extendsCompiled(
 
   override def visitInSource(modelElement: ModelElement): String = modelElement match {
     case classLike: ClassLike =>
-      val ex      = classLike.extendsClassLikeCompiled(directOnly, filter).toList.sortBy(_.modelElementId.debugValue)
-      val strings = ex.map(_.modelElementId.debugValue)
-      strings match {
-        case Nil  => ""
-        case refs => refs.mkString(s"extendsCompiled(${modelElement.modelElementId.debugValue}) - ", " :: ", "")
-      }
+      elementsInTestFormat("extendsCompiled", modelElement,
+        classLike.extendsClassLikeCompiled(directOnly, filter))
     case _ => ""
   }
 
@@ -61,12 +48,8 @@ class Test_extendedBy(directOnly: Boolean, filter: ExtendedByClassLike, testName
 
   override def visitInSource(modelElement: ModelElement): String = modelElement match {
     case classLike: ClassLike =>
-      val ex      = classLike.extendedByClassLike(directOnly, filter).toList.sortBy(_.modelElementId.debugValue)
-      val strings = ex.map(_.modelElementId.debugValue)
-      strings match {
-        case Nil  => ""
-        case refs => refs.mkString(s"extends(${modelElement.modelElementId.debugValue}) - ", " :: ", "")
-      }
+      elementsInTestFormat("extendedBy", modelElement,
+        classLike.extendedByClassLike(directOnly, filter))
     case _ => ""
   }
 
