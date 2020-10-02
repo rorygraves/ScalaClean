@@ -126,7 +126,7 @@ class UnitTests extends AbstractUnitTests with AssertionsForJUnit {
   }
 
   test("internalDirectOverriddenBy") {
-    runTest("scalaclean/test/overriddenBy/internalDirectOverriddenBy/internalDirectOverriddenBy.scala", new Test_internalTransitiveOverriddenBy(_))
+    runTest("scalaclean/test/overriddenBy/internalDirectOverriddenBy/internalDirectOverriddenBy.scala", new Test_internalDirectOverriddenBy(_))
   }
 
   test("allDirectOverrides") {

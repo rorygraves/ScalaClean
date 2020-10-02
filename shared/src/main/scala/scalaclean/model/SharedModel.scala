@@ -309,9 +309,9 @@ package impl {
       sb.append(':')
       val localId = nodeId
       if (!testFormat || !isLocal)
-        sb.append(nodeId)
+        sb.append(localId)
       else
-        sb.append(nodeId.substring(0, nodeId.indexOf("##") + 2))
+        sb.append(localId.substring(0, localId.indexOf("##") + 2))
     }
 
     def nodeType: Char
@@ -344,7 +344,11 @@ package impl {
           p.appendFQ(sb)
         case _ =>
       }
-      sb.append(nodeId)
+      val localId = nodeId
+      if (!testFormat || !isLocal)
+        sb.append(localId)
+      else
+        sb.append(localId.substring(0, localId.indexOf("##") + 2))
     }
 
   }
@@ -441,7 +445,7 @@ package impl {
 
   private[impl] final class MethodPathImpl private (parent: ElementId, methodDescriptor: String)
       extends BaseElementPathNode(parent) {
-    override def isLocal: Boolean                        = nodeSourceName.contains("##")
+    override def isLocal: Boolean                        = methodDescriptor.contains("##")
     override def nodeType                                = MethodPath.nodeType
     override private[model] def isContentGlobal: Boolean = false
     override def nodeId: String                          = methodDescriptor
