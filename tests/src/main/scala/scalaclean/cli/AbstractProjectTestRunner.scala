@@ -41,8 +41,10 @@ abstract class AbstractProjectTestRunner(val projectNames: List[String], runOpti
       replace = runOptions.replace,
       propsFiles
     )
-    val main = new ScalaCleanMain(options, createModelTaskFn(propsFiles, options.debug))
+    val main = new ScalaCleanMain(options, expectationSuffix, createModelTaskFn(propsFiles, options.debug))
     !main.run() || options.replace
   }
+
+  val expectationSuffix: String = ""
 
 }

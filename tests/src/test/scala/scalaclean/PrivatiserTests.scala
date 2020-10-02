@@ -1,6 +1,10 @@
 package scalaclean
 
+import scalaclean.cli.SCOptions
+
 class PrivatiserTests extends AbstractProjectTests {
+  val expectationSuffix: String = ""
+  val taskName: String          = SCOptions.privatiserCmd
 
   test("privatiser1") {
     privatiserProjectTest("privatiserProject1")

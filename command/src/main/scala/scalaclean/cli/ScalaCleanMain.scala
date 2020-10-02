@@ -32,7 +32,7 @@ object ScalaCleanMain {
           case _ =>
             throw new IllegalStateException(s"Invalid command argument ${options.mode}")
         }
-        new ScalaCleanMain(options, commandFn).run()
+        new ScalaCleanMain(options, "", commandFn).run()
       case None =>
         System.exit(0)
     }
@@ -40,7 +40,8 @@ object ScalaCleanMain {
 
 }
 
-class ScalaCleanMain(options: SCOptions, ruleCreateFn: ProjectModel => AbstractRule) extends DiffAssertions {
+class ScalaCleanMain(options: SCOptions, expectationSuffix: String, ruleCreateFn: ProjectModel => AbstractRule)
+    extends DiffAssertions {
 
   def generateHTML(generated: String, original: String): Unit = {
     import scala.io.Source
@@ -121,7 +122,7 @@ class ScalaCleanMain(options: SCOptions, ruleCreateFn: ProjectModel => AbstractR
   }
 
   def expectedPathForTarget(srcBase: AbsolutePath, targetFile: RelativePath): AbsolutePath = {
-    val targetOutput = RelativePath(targetFile.toString() + ".expected")
+    val targetOutput = RelativePath(targetFile.toString() + expectationSuffix + ".expected")
     val outputFile   = srcBase.resolve(targetOutput)
     outputFile
   }

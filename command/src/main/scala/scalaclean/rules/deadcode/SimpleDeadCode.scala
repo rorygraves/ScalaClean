@@ -34,7 +34,8 @@ class SimpleDeadCode(model: ProjectModel, options: RunOptions) extends DeadCodeR
 
     //Not sure why
     model.allOf[ValModel].foreach { e =>
-      if (e.isLazy && e.internalTransitiveOverrides.nonEmpty) markUsed(e, Main, e :: Nil, "lazy")
+      if (e.isLazy && e.internalTransitiveOverrides.nonEmpty)
+        markUsed(e, markEnclosing = false, Main, e :: Nil, "lazy")
     }
   }
 

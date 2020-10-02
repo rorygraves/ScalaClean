@@ -1,0 +1,16 @@
+package scalaclean.test.deadcode4
+
+import scalaclean.test.deadcode4.Outer.{ overloaded, Inner2 => I2 }
+
+object App1 extends App {
+  Outer.Inner
+  I2
+  println(overloaded(1))
+  println()
+}
+
+object Outer {
+  object Inner
+  object Inner2
+  def overloaded(i: Int)    = 1
+}
