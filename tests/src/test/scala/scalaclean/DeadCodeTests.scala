@@ -1,6 +1,18 @@
 package scalaclean
 
-class DeadCodeTests extends  AbstractProjectTests {
+import scalaclean.cli.{ DeadCodeProjectTestRunner, SCOptions, SimpleRunOptions }
+
+class FullDeadCodeTests extends BaseDeadCodeTests {
+  val taskName                   = SCOptions.deadCodeCmd
+  override val expectationSuffix = ".full"
+}
+
+class SimpleDeadCodeTests extends BaseDeadCodeTests {
+  val taskName                           = SCOptions.simpleDeadCodeCmd
+  override val expectationSuffix: String = ".simple"
+}
+
+abstract class BaseDeadCodeTests extends AbstractProjectTests {
 
   test("deadCode1") {
     deadCodeProjectTest("deadCodeProject1")

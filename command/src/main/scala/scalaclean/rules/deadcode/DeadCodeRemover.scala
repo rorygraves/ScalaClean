@@ -26,8 +26,8 @@ class DeadCodeRemover(model: ProjectModel, options: RunOptions)
   override def debugDump(): Unit = {
     println("-------------------------------------------------------------")
 
-    val used   = model.allOf[ModelElement].filter(!_.colour.isUnused).toList.map(_.legacySymbol).sortBy(_.toString())
-    val unused = model.allOf[ModelElement].filter(_.colour.isUnused).toList.map(_.legacySymbol).sortBy(_.toString())
+    val used   = model.allOf[ModelElement].filter(!_.colour.isUnused).toList.map(_.modelElementId.id).sorted
+    val unused = model.allOf[ModelElement].filter(_.colour.isUnused).toList.map(_.modelElementId.id).sorted
 
     println("Used symbols =  " + used.size)
     println("Unused size = " + unused.size)
@@ -127,10 +127,6 @@ class DeadCodeRemover(model: ProjectModel, options: RunOptions)
         accessor.field.foreach { f =>
           markUsed(f, markEnclosing = true, purpose, element :: path, s"$comment - field ")
         }
-      case field: FieldModel =>
-        field.declaredIn.foreach { f =>
-          markUsed(f, markEnclosing = true, purpose, element :: path, s"$comment - fields declaration ")
-        }
       case obj: ObjectModel =>
         //not sure if this is needed. Apply method should be referenced directly
         //is this a ScalaMeta hangover??
@@ -138,6 +134,12 @@ class DeadCodeRemover(model: ProjectModel, options: RunOptions)
           if (m.methodName == "apply")
             markUsed(m, markEnclosing = false, purpose, element :: path, s"$comment - apply method of used object")
         }
+      case field: FieldModel =>
+        field.declaredIn.foreach { f =>
+          markUsed(f, markEnclosing = true, purpose, element :: path, s"$comment - fields declaration ")
+        }
+      //not sure if this is needed.
+      //is this a ScalaMeta hangover??
       case trt: TraitModel => {
         trt.fields.foreach { fieldsInTrait =>
           markUsed(fieldsInTrait, markEnclosing = false, purpose, element :: path, s"$comment - inside a used trait")

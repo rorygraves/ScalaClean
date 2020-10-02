@@ -9,7 +9,7 @@ package name1 {
 
   object x {
 
-    def immutableSeq(arr: Array[Class[_]]): immutable.Seq[Class[_]] = ???
+    def immutableSeq[T](arr: Array[T]): immutable.Seq[T] = ???
   }
 
 }

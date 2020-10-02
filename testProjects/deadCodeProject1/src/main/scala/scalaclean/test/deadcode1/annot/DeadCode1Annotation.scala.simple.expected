@@ -1,0 +1,3 @@
+package scalaclean.test.deadcode1.annot
+
+object AnnotApp1 extends App {}
