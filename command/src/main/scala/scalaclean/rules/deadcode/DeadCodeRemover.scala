@@ -24,24 +24,50 @@ class DeadCodeRemover(model: ProjectModel, options: RunOptions)
   }
 
   override def debugDump(): Unit = {
-//    println("-------------------------------------------------------------")
-//
-//    val used = model.allOf[ModelElement].filter(!_.colour.isUnused).toList.map(_.legacySymbol).sortBy(_.toString())
-//    val unused = model.allOf[ModelElement].filter(_.colour.isUnused).toList.map(_.legacySymbol).sortBy(_.toString())
-//
-//    println("Used symbols =  " + used.size)
-//    println("Unused size = " + unused.size)
-//    println("Used Elements: ")
-//    used foreach (e => println("  " + e))
-//    println("Unused Elements: ")
-//    unused foreach (e => println("  " + e))
-//    println("-------------------------------------------------------------")
-//
+    println("-------------------------------------------------------------")
+
+    val used   = model.allOf[ModelElement].filter(!_.colour.isUnused).toList.map(_.legacySymbol).sortBy(_.toString())
+    val unused = model.allOf[ModelElement].filter(_.colour.isUnused).toList.map(_.legacySymbol).sortBy(_.toString())
+
+    println("Used symbols =  " + used.size)
+    println("Unused size = " + unused.size)
+    println("Used Elements: ")
+    used.foreach(e => println("  " + e))
+    println("Unused Elements: ")
+    unused.foreach(e => println("  " + e))
+    println("-------------------------------------------------------------")
+
   }
 
   override def markInitial(): Unit = {
     markAll[ModelElement](Usage.unused)
   }
+
+  def markRhs(element: ModelElement, purpose: Purpose, path: List[ModelElement], comment: String): Unit = {
+    element.fields.foreach {
+      case valDef: ValModel =>
+        if (!valDef.isLazy) {
+          valDef.internalOutgoingReferences.foreach { case (ref, _) =>
+            markUsed(ref, markEnclosing = true, purpose, valDef :: path, s"$comment -> valDef(outgoing)")
+          }
+          markRhs(valDef, purpose, valDef :: path, s"$comment -> valDef")
+        }
+      case varDef: VarModel =>
+        varDef.internalOutgoingReferences.foreach { case (ref, _) =>
+          markUsed(ref, markEnclosing = true, purpose, varDef :: path, s"$comment -> varDef(outgoing)")
+        }
+        markRhs(varDef, purpose, varDef :: path, s"$comment -> varDef")
+      //TODO - not sure if this is correct
+      // an inner object is lazy in scala, so probably should only be marked when used
+      case obj: ObjectModel =>
+        obj.internalOutgoingReferences.foreach { case (ref, _) =>
+          markUsed(ref, markEnclosing = true, purpose, obj :: path, s"$comment -> obj(outgoing)")
+        }
+        markRhs(obj, purpose, obj :: path, s"$comment -> obj")
+    }
+  }
+
+  def markIndirectReferences = true
 
   def markUsed(
       element: ModelElement,
@@ -50,37 +76,24 @@ class DeadCodeRemover(model: ProjectModel, options: RunOptions)
       path: List[ModelElement],
       comment: String
   ): Unit = {
-    def markRhs(element: ModelElement, path: List[ModelElement], comment: String): Unit = {
-      element.fields.foreach {
-        case valDef: ValModel =>
-          if (!valDef.isLazy) {
-            valDef.internalOutgoingReferences.foreach { case (ref, _) =>
-              markUsed(ref, markEnclosing = true, purpose, valDef :: path, s"$comment -> valDef(outgoing)")
-            }
-            markRhs(valDef, valDef :: path, s"$comment -> valDef")
-          }
-        case varDef: VarModel =>
-          varDef.internalOutgoingReferences.foreach { case (ref, _) =>
-            markUsed(ref, markEnclosing = true, purpose, varDef :: path, s"$comment -> varDef(outgoing)")
-          }
-          markRhs(varDef, varDef :: path, s"$comment -> varDef")
-        //TODO - not sure if this is correct
-        // an inner object is lazy in scala, so probably should only be marked when used
-        case obj: ObjectModel =>
-          obj.internalOutgoingReferences.foreach { case (ref, _) =>
-            markUsed(ref, markEnclosing = true, purpose, obj :: path, s"$comment -> obj(outgoing)")
-          }
-          markRhs(obj, obj :: path, s"$comment -> obj")
-      }
-    }
-
     val current = element.colour
-
     if (!current.hasPurpose(purpose)) {
       if (debug)
         println(s"mark $element as used for $purpose due to ${path.mkString("->")} $comment")
 
       element.colour = current.withPurpose(purpose)
+      adjustUsage(element, purpose, path, comment, current)
+    }
+  }
+
+  protected def adjustUsage(
+      element: ModelElement,
+      purpose: Purpose,
+      path: List[ModelElement],
+      comment: String,
+      current: Usage
+  ) = {
+    if (markIndirectReferences) {
       //all the elements that this refers to
       element.internalOutgoingReferences.foreach { case (ref, _) =>
         markUsed(ref, markEnclosing = true, purpose, element :: path, s"$comment -> internalOutgoingReferences")
@@ -92,29 +105,45 @@ class DeadCodeRemover(model: ProjectModel, options: RunOptions)
       // we could consider marking at as used differently - a different colour
       //
       // don't mark the fields as used though
-      markRhs(element, element :: path, s"$comment -> markRhs")
+      markRhs(element, purpose, element :: path, s"$comment -> markRhs")
+    }
 
-      //enclosing
-      element.enclosing.foreach { enclosed =>
-        markUsed(enclosed, markEnclosing = true, purpose, element :: path, s"$comment - enclosing")
-      }
+    //enclosing
+    element.enclosing.foreach { enclosed =>
+      markUsed(enclosed, markEnclosing = true, purpose, element :: path, s"$comment - enclosing")
+    }
 
-      //overridden
-      element.internalTransitiveOverrides.foreach { enclosed =>
-        markUsed(enclosed, markEnclosing = true, purpose, element :: path, s"$comment - overrides")
-      }
+    //overridden
+    element.internalTransitiveOverrides.foreach { enclosed =>
+      markUsed(enclosed, markEnclosing = true, purpose, element :: path, s"$comment - overrides")
+    }
 
-      //overrides
-      element.internalTransitiveOverriddenBy.foreach { enclosed =>
-        markUsed(enclosed, markEnclosing = false, purpose, element :: path, s"$comment - overrides")
+    //overrides
+    element.internalTransitiveOverriddenBy.foreach { enclosed =>
+      markUsed(enclosed, markEnclosing = false, purpose, element :: path, s"$comment - overrides")
+    }
+    element match {
+      case accessor: AccessorModel =>
+        accessor.field.foreach { f =>
+          markUsed(f, markEnclosing = true, purpose, element :: path, s"$comment - field ")
+        }
+      case field: FieldModel =>
+        field.declaredIn.foreach { f =>
+          markUsed(f, markEnclosing = true, purpose, element :: path, s"$comment - fields declaration ")
+        }
+      case obj: ObjectModel =>
+        //not sure if this is needed. Apply method should be referenced directly
+        //is this a ScalaMeta hangover??
+        obj.methods.foreach { m =>
+          if (m.methodName == "apply")
+            markUsed(m, markEnclosing = false, purpose, element :: path, s"$comment - apply method of used object")
+        }
+      case trt: TraitModel => {
+        trt.fields.foreach { fieldsInTrait =>
+          markUsed(fieldsInTrait, markEnclosing = false, purpose, element :: path, s"$comment - inside a used trait")
+        }
       }
-      element match {
-        case accessor: AccessorModel =>
-          accessor.field.foreach { f =>
-            markUsed(f, markEnclosing = true, purpose, element :: path, s"$comment - field ")
-          }
-        case _ =>
-      }
+      case _ =>
     }
   }
 
