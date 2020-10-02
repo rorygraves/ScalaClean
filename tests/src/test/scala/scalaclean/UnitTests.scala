@@ -108,53 +108,53 @@ trait AbstractUnitTests extends AnyFunSuite with AssertionsForJUnit with DiffAss
 }
 
 
-class UnitTests extends AbstractUnitTests {
-  @Test def nodesTest: Unit = {
+class UnitTests extends AbstractUnitTests with AssertionsForJUnit {
+  test("nodesTest")  {
     runTest("scalaclean/test/nodes/nodes.scala", new TestNodes(_))
   }
 
-  @Test def akkaTimeoutTest: Unit = {
+  test("akkaTimeoutTest") {
     runTest("scalaclean/test/akka/Timeout.scala", new Test_allTransitiveOverrides(_))
   }
 
-  @Test def internalOutgoingReferences: Unit = {
+  test("internalOutgoingReferences") {
     runTest("scalaclean/test/references/internalOutgoingReferences/internalOutgoingReferences.scala", new Test_internalOutgoingReferences(_))
   }
 
-  @Test def internalTransitiveOverriddenByTest: Unit = {
-    runTest("scalaclean/test/overriddenBy/internalTransitiveOverriddenBy/internalTransitiveOverriddenBy.scala", new Test_internalTransitiveOverriddenBy(_) )
+  test("internalTransitiveOverriddenByTest") {
+    runTest("scalaclean/test/overriddenBy/internalTransitiveOverriddenBy/internalTransitiveOverriddenBy.scala", new Test_internalTransitiveOverriddenBy(_))
   }
 
-  @Test def internalDirectOverriddenBy: Unit = {
+  test("internalDirectOverriddenBy") {
     runTest("scalaclean/test/overriddenBy/internalDirectOverriddenBy/internalDirectOverriddenBy.scala", new Test_internalTransitiveOverriddenBy(_))
   }
 
-  @Test def allDirectOverrides: Unit = {
+  test("allDirectOverrides") {
     runTest("scalaclean/test/overrides/allDirectOverrides/allDirectOverrides.scala", new Test_allDirectOverrides(_))
   }
 
-  @Test def allTransitiveOverrides: Unit = {
+  test("allTransitiveOverrides") {
     runTest("scalaclean/test/overrides/allTransitiveOverrides/allTransitiveOverrides.scala", new Test_allTransitiveOverrides(_))
   }
 
-  @Test def internalDirectOverrides: Unit = {
+  test("internalDirectOverrides") {
     runTest("scalaclean/test/overrides/internalDirectOverrides/internalDirectOverrides.scala", new Test_internalDirectOverrides(_))
   }
 
-  @Test def internalTransitiveOverrides: Unit = {
+  test("internalTransitiveOverrides") {
     runTest("scalaclean/test/overrides/internalTransitiveOverrides/internalTransitiveOverrides.scala", new Test_internalTransitiveOverrides(_))
   }
 
 
-  @Test def allOutgoingReferences: Unit = {
+  test("allOutgoingReferences") {
     runTest("scalaclean/test/references/allOutgoingReferences/allOutgoingReferences.scala", new Test_allOutgoingReferences(_))
   }
 
-  @Test def internalIncomingReferences: Unit = {
+  test("internalIncomingReferences") {
     runTest("scalaclean/test/references/internalIncomingReferences/internalIncomingReferences.scala", new Test_internalIncomingReferences(_))
   }
 
-  @Test def annotations: Unit = {
+  test("annotations") {
     runTest("scalaclean/test/annotation/Annotated.scala",new TestExtensions(_))
   }
 }
