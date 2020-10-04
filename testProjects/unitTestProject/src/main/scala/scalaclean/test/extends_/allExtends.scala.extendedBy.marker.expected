@@ -22,19 +22,19 @@ object Object_ChildTrait extends ParentTrait {
 
 trait Mix1
 
-trait Mix2/* extends(C:scalaclean.test.extends_.Mix2) - C:scalaclean.test.extends_.Marker2 :: O:scalaclean.test.extends_.Marker1 */
+trait Mix2/* extendedBy(C:scalaclean.test.extends_.Mix2) - C:scalaclean.test.extends_.Marker2 :: O:scalaclean.test.extends_.Marker1 */
 
 trait Mix3
 
 class GrandParentClass extends Iterable[String] {
   self: Mix2 =>
   override def iterator: Iterator[String] = ???
-}/* extends(C:scalaclean.test.extends_.GrandParentClass) - C:scalaclean.test.extends_.Marker2 :: O:scalaclean.test.extends_.Marker1 */
+}/* extendedBy(C:scalaclean.test.extends_.GrandParentClass) - C:scalaclean.test.extends_.Marker2 :: O:scalaclean.test.extends_.Marker1 */
 
-abstract class ParentClass extends GrandParentClass with Mix2/* extends(C:scalaclean.test.extends_.ParentClass) - C:scalaclean.test.extends_.Marker2 :: O:scalaclean.test.extends_.Marker1 */
+abstract class ParentClass extends GrandParentClass with Mix2/* extendedBy(C:scalaclean.test.extends_.ParentClass) - C:scalaclean.test.extends_.Marker2 :: O:scalaclean.test.extends_.Marker1 */
 
-class ChildClass extends ParentClass/* extends(C:scalaclean.test.extends_.ChildClass) - O:scalaclean.test.extends_.Marker1 */
-class Marker2 extends ParentClass
+class ChildClass extends ParentClass/* extendedBy(C:scalaclean.test.extends_.ChildClass) - O:scalaclean.test.extends_.Marker1 */
+class Marker2    extends ParentClass
 
 object ChildObject extends ChildClass
-object Marker1 extends ChildClass
+object Marker1     extends ChildClass
