@@ -1,6 +1,6 @@
 package scalaclean.model
 
-sealed trait Reference extends Ordered[Reference] {
+sealed trait Reference {
   def fromElementId: ElementId
 
   def toElementId: ElementId
@@ -15,17 +15,6 @@ sealed trait Reference extends Ordered[Reference] {
     case _: Overrides => "Overrides"
     case _: Within    => "Within"
   }
-
-  override def compare(that: Reference): Int = {
-    var res = this.fromElementId.id.compareTo(that.fromElementId.id)
-    if (res == 0)
-      res = this.toElementId.id.compareTo(that.toElementId.id)
-    if (res == 0)
-      res = this.refType.compareTo(that.refType)
-
-    res
-  }
-
 }
 
 trait Refers extends Reference {
