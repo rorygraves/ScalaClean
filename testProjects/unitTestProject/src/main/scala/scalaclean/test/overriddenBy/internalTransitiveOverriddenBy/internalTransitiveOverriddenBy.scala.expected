@@ -1,20 +1,23 @@
 package scalaclean.test.overriddenBy.internalTransitiveOverriddenBy
 
 trait GrandParentTrait {
-  def d1: Int/* internalTransitiveOverriddenBy(C:scalaclean.test.overriddenBy.internalTransitiveOverriddenBy.GrandParentTrait/M:d1()) - C:scalaclean.test.overriddenBy.internalTransitiveOverriddenBy.Class_ChildTrait/M:d1() :: C:scalaclean.test.overriddenBy.internalTransitiveOverriddenBy.Object_ChildTrait/M:d1() :: C:scalaclean.test.overriddenBy.internalTransitiveOverriddenBy.Trait_ChildTrait/M:d1() :: O:scalaclean.test.overriddenBy.internalTransitiveOverriddenBy.Object_ChildTrait/M:d1()##10 */
-  def d2(a:Int): Int/* internalTransitiveOverriddenBy(C:scalaclean.test.overriddenBy.internalTransitiveOverriddenBy.GrandParentTrait/M:d2(scala.Int)) - C:scalaclean.test.overriddenBy.internalTransitiveOverriddenBy.Class_ChildTrait/M:d2(scala.Int) :: C:scalaclean.test.overriddenBy.internalTransitiveOverriddenBy.Object_ChildTrait/M:d2(scala.Int) :: C:scalaclean.test.overriddenBy.internalTransitiveOverriddenBy.Trait_ChildTrait/M:d2(scala.Int) :: O:scalaclean.test.overriddenBy.internalTransitiveOverriddenBy.Object_ChildTrait/M:d2(scala.Int)##8 */
-  def d2a(a:Int)(b:Int): Int/* internalTransitiveOverriddenBy(C:scalaclean.test.overriddenBy.internalTransitiveOverriddenBy.GrandParentTrait/M:d2a(scala.Intscala.Int)) - C:scalaclean.test.overriddenBy.internalTransitiveOverriddenBy.Class_ChildTrait/M:d2a(scala.Intscala.Int) :: C:scalaclean.test.overriddenBy.internalTransitiveOverriddenBy.Object_ChildTrait/M:d2a(scala.Intscala.Int) :: C:scalaclean.test.overriddenBy.internalTransitiveOverriddenBy.Trait_ChildTrait/M:d2a(scala.Intscala.Int) :: O:scalaclean.test.overriddenBy.internalTransitiveOverriddenBy.Object_ChildTrait/M:d2a(scala.Intscala.Int)##6 */
-  def d3()(): Int/* internalTransitiveOverriddenBy(C:scalaclean.test.overriddenBy.internalTransitiveOverriddenBy.GrandParentTrait/M:d3()) - C:scalaclean.test.overriddenBy.internalTransitiveOverriddenBy.Class_ChildTrait/M:d3() :: C:scalaclean.test.overriddenBy.internalTransitiveOverriddenBy.Object_ChildTrait/M:d3() :: C:scalaclean.test.overriddenBy.internalTransitiveOverriddenBy.Trait_ChildTrait/M:d3() :: O:scalaclean.test.overriddenBy.internalTransitiveOverriddenBy.Object_ChildTrait/M:d3()##1 */
+  def d1: Int/* internalTransitiveOverriddenBy(C:scalaclean.test.overriddenBy.internalTransitiveOverriddenBy.GrandParentTrait/M:d1()) - C:scalaclean.test.overriddenBy.internalTransitiveOverriddenBy.Class_ChildTrait/M:d1() :: C:scalaclean.test.overriddenBy.internalTransitiveOverriddenBy.Object_ChildTrait/M:d1() :: C:scalaclean.test.overriddenBy.internalTransitiveOverriddenBy.Trait_ChildTrait/M:d1() :: O:scalaclean.test.overriddenBy.internalTransitiveOverriddenBy.Object_ChildTrait/M:d1()## */
+  def d2(a: Int): Int/* internalTransitiveOverriddenBy(C:scalaclean.test.overriddenBy.internalTransitiveOverriddenBy.GrandParentTrait/M:d2(scala.Int)) - C:scalaclean.test.overriddenBy.internalTransitiveOverriddenBy.Class_ChildTrait/M:d2(scala.Int) :: C:scalaclean.test.overriddenBy.internalTransitiveOverriddenBy.Object_ChildTrait/M:d2(scala.Int) :: C:scalaclean.test.overriddenBy.internalTransitiveOverriddenBy.Trait_ChildTrait/M:d2(scala.Int) :: O:scalaclean.test.overriddenBy.internalTransitiveOverriddenBy.Object_ChildTrait/M:d2(scala.Int)## */
+  def d2a(a: Int)(b: Int): Int/* internalTransitiveOverriddenBy(C:scalaclean.test.overriddenBy.internalTransitiveOverriddenBy.GrandParentTrait/M:d2a(scala.Intscala.Int)) - C:scalaclean.test.overriddenBy.internalTransitiveOverriddenBy.Class_ChildTrait/M:d2a(scala.Intscala.Int) :: C:scalaclean.test.overriddenBy.internalTransitiveOverriddenBy.Object_ChildTrait/M:d2a(scala.Intscala.Int) :: C:scalaclean.test.overriddenBy.internalTransitiveOverriddenBy.Trait_ChildTrait/M:d2a(scala.Intscala.Int) :: O:scalaclean.test.overriddenBy.internalTransitiveOverriddenBy.Object_ChildTrait/M:d2a(scala.Intscala.Int)## */
+  def d3()(): Int/* internalTransitiveOverriddenBy(C:scalaclean.test.overriddenBy.internalTransitiveOverriddenBy.GrandParentTrait/M:d3()) - C:scalaclean.test.overriddenBy.internalTransitiveOverriddenBy.Class_ChildTrait/M:d3() :: C:scalaclean.test.overriddenBy.internalTransitiveOverriddenBy.Object_ChildTrait/M:d3() :: C:scalaclean.test.overriddenBy.internalTransitiveOverriddenBy.Trait_ChildTrait/M:d3() :: O:scalaclean.test.overriddenBy.internalTransitiveOverriddenBy.Object_ChildTrait/M:d3()## */
 
 }
+
 trait ParentTrait extends GrandParentTrait {
   def d3(): () => Int = ???/* internalTransitiveOverriddenBy(C:scalaclean.test.overriddenBy.internalTransitiveOverriddenBy.ParentTrait/M:d3()) - C:scalaclean.test.overriddenBy.internalTransitiveOverriddenBy.ChildTrait/M:d3() */
 }
+
 trait ChildTrait extends ParentTrait {
   override def d3(): () => Int = ???
-  def d2a(a:Int) = d2 _
+  def d2a(a: Int)              = d2 _
 
 }
+
 trait Trait_ChildTrait extends ParentTrait {
   override def equals(obj: Any): Boolean = super.equals(obj)
 
@@ -34,6 +37,7 @@ trait Trait_ChildTrait extends ParentTrait {
 
   override def d3()(): Int = ???
 }
+
 class Class_ChildTrait extends ParentTrait {
   override def equals(obj: Any): Boolean = super.equals(obj)
 
@@ -53,26 +57,26 @@ class Class_ChildTrait extends ParentTrait {
 
   override def d3()(): Int = ???
 }
+
 object Object_ChildTrait extends ParentTrait {
-  override def equals(obj: Any): Boolean = super.equals(obj)/* internalTransitiveOverriddenBy(C:scalaclean.test.overriddenBy.internalTransitiveOverriddenBy.Object_ChildTrait/M:equals(scala.Any)) - O:scalaclean.test.overriddenBy.internalTransitiveOverriddenBy.Object_ChildTrait/M:equals(scala.Any)##12 :: O:scalaclean.test.overriddenBy.internalTransitiveOverriddenBy.Object_ChildTrait/M:equals(scala.Any)##9 */
+  override def equals(obj: Any): Boolean = super.equals(obj)/* internalTransitiveOverriddenBy(C:scalaclean.test.overriddenBy.internalTransitiveOverriddenBy.Object_ChildTrait/M:equals(scala.Any)) - O:scalaclean.test.overriddenBy.internalTransitiveOverriddenBy.Object_ChildTrait/M:equals(scala.Any)## :: O:scalaclean.test.overriddenBy.internalTransitiveOverriddenBy.Object_ChildTrait/M:equals(scala.Any)## */
 
-  override def clone(): AnyRef = super.clone()/* internalTransitiveOverriddenBy(C:scalaclean.test.overriddenBy.internalTransitiveOverriddenBy.Object_ChildTrait/M:clone()) - O:scalaclean.test.overriddenBy.internalTransitiveOverriddenBy.Object_ChildTrait/M:clone()##5 */
+  override def clone(): AnyRef = super.clone()/* internalTransitiveOverriddenBy(C:scalaclean.test.overriddenBy.internalTransitiveOverriddenBy.Object_ChildTrait/M:clone()) - O:scalaclean.test.overriddenBy.internalTransitiveOverriddenBy.Object_ChildTrait/M:clone()## */
 
-  override def toString: String = super.toString/* internalTransitiveOverriddenBy(C:scalaclean.test.overriddenBy.internalTransitiveOverriddenBy.Object_ChildTrait/M:toString()) - O:scalaclean.test.overriddenBy.internalTransitiveOverriddenBy.Object_ChildTrait/M:toString()##4 :: O:scalaclean.test.overriddenBy.internalTransitiveOverriddenBy.Object_ChildTrait/M:toString()##7 */
+  override def toString: String = super.toString/* internalTransitiveOverriddenBy(C:scalaclean.test.overriddenBy.internalTransitiveOverriddenBy.Object_ChildTrait/M:toString()) - O:scalaclean.test.overriddenBy.internalTransitiveOverriddenBy.Object_ChildTrait/M:toString()## :: O:scalaclean.test.overriddenBy.internalTransitiveOverriddenBy.Object_ChildTrait/M:toString()## */
 
-  override def finalize(): Unit = super.finalize()/* internalTransitiveOverriddenBy(C:scalaclean.test.overriddenBy.internalTransitiveOverriddenBy.Object_ChildTrait/M:finalize()) - O:scalaclean.test.overriddenBy.internalTransitiveOverriddenBy.Object_ChildTrait/M:finalize()##11 */
+  override def finalize(): Unit = super.finalize()/* internalTransitiveOverriddenBy(C:scalaclean.test.overriddenBy.internalTransitiveOverriddenBy.Object_ChildTrait/M:finalize()) - O:scalaclean.test.overriddenBy.internalTransitiveOverriddenBy.Object_ChildTrait/M:finalize()## */
 
-  override def hashCode(): Int = super.hashCode()/* internalTransitiveOverriddenBy(C:scalaclean.test.overriddenBy.internalTransitiveOverriddenBy.Object_ChildTrait/M:hashCode()) - O:scalaclean.test.overriddenBy.internalTransitiveOverriddenBy.Object_ChildTrait/M:hashCode()##2 :: O:scalaclean.test.overriddenBy.internalTransitiveOverriddenBy.Object_ChildTrait/M:hashCode()##3 */
+  override def hashCode(): Int = super.hashCode()/* internalTransitiveOverriddenBy(C:scalaclean.test.overriddenBy.internalTransitiveOverriddenBy.Object_ChildTrait/M:hashCode()) - O:scalaclean.test.overriddenBy.internalTransitiveOverriddenBy.Object_ChildTrait/M:hashCode()## :: O:scalaclean.test.overriddenBy.internalTransitiveOverriddenBy.Object_ChildTrait/M:hashCode()## */
 
-  override def d1: Int = ???/* internalTransitiveOverriddenBy(C:scalaclean.test.overriddenBy.internalTransitiveOverriddenBy.Object_ChildTrait/M:d1()) - O:scalaclean.test.overriddenBy.internalTransitiveOverriddenBy.Object_ChildTrait/M:d1()##10 */
+  override def d1: Int = ???/* internalTransitiveOverriddenBy(C:scalaclean.test.overriddenBy.internalTransitiveOverriddenBy.Object_ChildTrait/M:d1()) - O:scalaclean.test.overriddenBy.internalTransitiveOverriddenBy.Object_ChildTrait/M:d1()## */
 
-  override def d2(a: Int): Int = ???/* internalTransitiveOverriddenBy(C:scalaclean.test.overriddenBy.internalTransitiveOverriddenBy.Object_ChildTrait/M:d2(scala.Int)) - O:scalaclean.test.overriddenBy.internalTransitiveOverriddenBy.Object_ChildTrait/M:d2(scala.Int)##8 */
+  override def d2(a: Int): Int = ???/* internalTransitiveOverriddenBy(C:scalaclean.test.overriddenBy.internalTransitiveOverriddenBy.Object_ChildTrait/M:d2(scala.Int)) - O:scalaclean.test.overriddenBy.internalTransitiveOverriddenBy.Object_ChildTrait/M:d2(scala.Int)## */
 
-  override def d2a(a: Int)(b: Int): Int = ???/* internalTransitiveOverriddenBy(C:scalaclean.test.overriddenBy.internalTransitiveOverriddenBy.Object_ChildTrait/M:d2a(scala.Intscala.Int)) - O:scalaclean.test.overriddenBy.internalTransitiveOverriddenBy.Object_ChildTrait/M:d2a(scala.Intscala.Int)##6 */
+  override def d2a(a: Int)(b: Int): Int = ???/* internalTransitiveOverriddenBy(C:scalaclean.test.overriddenBy.internalTransitiveOverriddenBy.Object_ChildTrait/M:d2a(scala.Intscala.Int)) - O:scalaclean.test.overriddenBy.internalTransitiveOverriddenBy.Object_ChildTrait/M:d2a(scala.Intscala.Int)## */
 
-  override def d3()(): Int = ???/* internalTransitiveOverriddenBy(C:scalaclean.test.overriddenBy.internalTransitiveOverriddenBy.Object_ChildTrait/M:d3()) - O:scalaclean.test.overriddenBy.internalTransitiveOverriddenBy.Object_ChildTrait/M:d3()##1 */
+  override def d3()(): Int = ???/* internalTransitiveOverriddenBy(C:scalaclean.test.overriddenBy.internalTransitiveOverriddenBy.Object_ChildTrait/M:d3()) - O:scalaclean.test.overriddenBy.internalTransitiveOverriddenBy.Object_ChildTrait/M:d3()## */
 }
-
 
 //class GrandParentClass {
 //
