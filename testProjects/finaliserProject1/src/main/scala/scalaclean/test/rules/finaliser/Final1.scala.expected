@@ -1,13 +1,12 @@
 package scalaclean.test.rules.finaliser.p1
 
-object Final1  {
+object Final1 {
   // some final elements, but should not be marked as owner is already
 
   val a = 1
   def b = 2
   var c = 3
-  a+b+c
-
+  a + b + c
 
 }
 
@@ -17,11 +16,11 @@ final class ShouldBeFinal {
   val b = 1
   var c = 1
 
-
   private class X
   private object Y
   final class Z
 }
+
 sealed abstract class NotFinalClass {
   def a = 1
   val b = 1
@@ -40,6 +39,7 @@ sealed abstract class NotFinalClass {
   private object Y
   final class Z
 }
+
 sealed trait NotFinalTrait {
   final def a = 1
   final val b = 1
@@ -60,6 +60,7 @@ final class ExtNotFinalTrait extends NotFinalTrait {
   override val b1: Int = 1
   override var c1: Int = 1
 }
+
 final class ExtNotFinalClass extends NotFinalClass {
   override def a = 1
   override val b = 1

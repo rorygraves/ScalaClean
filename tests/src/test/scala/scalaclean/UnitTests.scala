@@ -4,17 +4,15 @@ import java.io.{File, FileOutputStream}
 import java.nio.charset.StandardCharsets
 import java.nio.file.Paths
 
-import org.junit.Test
-import org.scalatest.{BeforeAndAfterAllConfigMap, ConfigMap}
 import org.scalatest.funsuite.AnyFunSuite
+import org.scalatest.{BeforeAndAfterAllConfigMap, ConfigMap}
 import org.scalatestplus.junit.AssertionsForJUnit
-import scalaclean.util.FileHelper.toPlatform
 import scalaclean.cli.SCPatchUtil
 import scalaclean.model.ProjectModel
 import scalaclean.model.impl.ProjectSet
 import scalaclean.test._
-import scalaclean.util.{DiffAssertions, DocHelper, FileHelper}
-import scalafix.v1.SyntacticDocument
+import scalaclean.util.FileHelper.toPlatform
+import scalaclean.util.{DiffAssertions, FileHelper}
 
 import scala.meta._
 import scala.meta.internal.io.FileIO

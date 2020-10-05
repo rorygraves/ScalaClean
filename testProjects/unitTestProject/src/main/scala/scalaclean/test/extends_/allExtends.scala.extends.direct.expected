@@ -34,7 +34,7 @@ class GrandParentClass extends Iterable[String] {
 abstract class ParentClass extends GrandParentClass with Mix2/* extends(C:scalaclean.test.extends_.ParentClass) - {true}~C:scalaclean.test.extends_.GrandParentClass :: {true}~C:scalaclean.test.extends_.Mix2 */
 
 class ChildClass extends ParentClass/* extends(C:scalaclean.test.extends_.ChildClass) - {true}~C:scalaclean.test.extends_.ParentClass */
-class Marker2 extends ParentClass/* extends(C:scalaclean.test.extends_.Marker2) - {true}~C:scalaclean.test.extends_.ParentClass */
+class Marker2    extends ParentClass/* extends(C:scalaclean.test.extends_.Marker2) - {true}~C:scalaclean.test.extends_.ParentClass */
 
 object ChildObject extends ChildClass/* extends(O:scalaclean.test.extends_.ChildObject) - {true}~C:scalaclean.test.extends_.ChildClass */
-object Marker1 extends ChildClass/* extends(O:scalaclean.test.extends_.Marker1) - {true}~C:scalaclean.test.extends_.ChildClass */
+object Marker1     extends ChildClass/* extends(O:scalaclean.test.extends_.Marker1) - {true}~C:scalaclean.test.extends_.ChildClass */

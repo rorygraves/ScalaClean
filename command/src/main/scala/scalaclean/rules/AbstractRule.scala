@@ -67,6 +67,17 @@ abstract class AbstractRule(val name: String, val model: ProjectModel, options: 
 
   }
 
+  def otherAnnotationBasedEntryPoints: Iterator[ModelElement] = {
+    model.allOf[ModelElement].filter { method =>
+      method.annotations.exists(a => annotationEntryPoints.contains(a.fqName))
+    }
+  }
+
+  protected val annotationEntryPoints = Set[String](
+    "org.springframework.jmx.export.annotation.ManagedOperation",
+    "org.springframework.jmx.export.annotation.ManagedAttribute"
+  )
+
   def allTestEntryPoints: Iterator[MethodModel] = {
     allJunitTest
   }

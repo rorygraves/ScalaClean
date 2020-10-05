@@ -1,8 +1,8 @@
 package scalaclean.test.extends_
 
-trait GrandParentTrait extends Iterable[String]/* extends(C:scalaclean.test.extends_.GrandParentTrait) - C:scalaclean.test.extends_.ChildTrait :: C:scalaclean.test.extends_.Class_ChildTrait :: C:scalaclean.test.extends_.GChildTrait :: C:scalaclean.test.extends_.Trait_ChildTrait :: O:scalaclean.test.extends_.Object_ChildTrait */
+trait GrandParentTrait extends Iterable[String]/* extendedBy(C:scalaclean.test.extends_.GrandParentTrait) - C:scalaclean.test.extends_.ChildTrait :: C:scalaclean.test.extends_.Class_ChildTrait :: C:scalaclean.test.extends_.GChildTrait :: C:scalaclean.test.extends_.Trait_ChildTrait :: O:scalaclean.test.extends_.Object_ChildTrait */
 
-trait ParentTrait extends GrandParentTrait with java.util.Iterator[String]/* extends(C:scalaclean.test.extends_.ParentTrait) - C:scalaclean.test.extends_.GChildTrait */
+trait ParentTrait extends GrandParentTrait with java.util.Iterator[String]/* extendedBy(C:scalaclean.test.extends_.ParentTrait) - C:scalaclean.test.extends_.GChildTrait */
 
 trait ChildTrait extends ParentTrait
 
@@ -22,19 +22,19 @@ object Object_ChildTrait extends ParentTrait {
 
 trait Mix1
 
-trait Mix2/* extends(C:scalaclean.test.extends_.Mix2) - C:scalaclean.test.extends_.ChildClass :: C:scalaclean.test.extends_.Marker2 :: O:scalaclean.test.extends_.ChildObject :: O:scalaclean.test.extends_.Marker1 */
+trait Mix2/* extendedBy(C:scalaclean.test.extends_.Mix2) - C:scalaclean.test.extends_.ChildClass :: C:scalaclean.test.extends_.Marker2 :: O:scalaclean.test.extends_.ChildObject :: O:scalaclean.test.extends_.Marker1 */
 
 trait Mix3
 
 class GrandParentClass extends Iterable[String] {
   self: Mix2 =>
   override def iterator: Iterator[String] = ???
-}/* extends(C:scalaclean.test.extends_.GrandParentClass) - C:scalaclean.test.extends_.ChildClass :: C:scalaclean.test.extends_.Marker2 :: O:scalaclean.test.extends_.ChildObject :: O:scalaclean.test.extends_.Marker1 */
+}/* extendedBy(C:scalaclean.test.extends_.GrandParentClass) - C:scalaclean.test.extends_.ChildClass :: C:scalaclean.test.extends_.Marker2 :: O:scalaclean.test.extends_.ChildObject :: O:scalaclean.test.extends_.Marker1 */
 
-abstract class ParentClass extends GrandParentClass with Mix2/* extends(C:scalaclean.test.extends_.ParentClass) - O:scalaclean.test.extends_.ChildObject :: O:scalaclean.test.extends_.Marker1 */
+abstract class ParentClass extends GrandParentClass with Mix2/* extendedBy(C:scalaclean.test.extends_.ParentClass) - O:scalaclean.test.extends_.ChildObject :: O:scalaclean.test.extends_.Marker1 */
 
 class ChildClass extends ParentClass
-class Marker2 extends ParentClass
+class Marker2    extends ParentClass
 
 object ChildObject extends ChildClass
-object Marker1 extends ChildClass
+object Marker1     extends ChildClass
