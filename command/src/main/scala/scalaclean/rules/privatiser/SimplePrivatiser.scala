@@ -1,16 +1,18 @@
 package scalaclean.rules.privatiser
 
-import scalaclean.cli.RunOptions
 import scalaclean.model._
+import scalaclean.rules.AbstractRule
 
-class SimplePrivatiser(model: ProjectModel, options: RunOptions) extends Privatiser(model, options) {
+object SimplePrivatiser extends AbstractRule[SimplePrivatiserCommandLine] {
+  override type Rule = SimplePrivatiser
 
-  override val name = "SimplePrivatiser"
+  override def cmdLine                                                          = new SimplePrivatiserCommandLine
+  override def apply(options: SimplePrivatiserCommandLine, model: ProjectModel) = new Rule(options, model)
+}
 
-  def isPublic(e: ModelElement): Boolean = {
-    // e.symbol.symbol.value.endsWith("_:=) ||
-    e.annotations.exists(ad => otherAnnotationBasedEntryPoints.contains(ad.fqName))
-  }
+class SimplePrivatiser(options: SimplePrivatiserCommandLine, model: ProjectModel)
+    extends AbstractPrivatiser(options, model) {
+
 
   def isOverridden(e: ModelElement): Boolean = {
     e.internalTransitiveOverriddenBy.nonEmpty
@@ -20,60 +22,44 @@ class SimplePrivatiser(model: ProjectModel, options: RunOptions) extends Privati
     e.allTransitiveOverrides.nonEmpty
   }
 
-  override def runRule(): Unit = {
-    allApp.foreach(e => e.mark = NoChange("It's an app"))
-
-    allJunitTest.foreach(e => e.mark = NoChange("It's a test"))
-
+  override def ruleSpecific(): Unit = {
     model.allOf[ModelElement].foreach {
-      case e: SourceModel =>
-        e.colour = NoChange("source")
-      case e if isPublic(e) =>
-        e.colour = NoChange("rule/annotation")
-      case e if e.isAbstract =>
-        e.colour = NoChange("It's abstract")
       case e if isOverridden(e) =>
         e.colour = NoChange(s"It's overridden ${e.internalTransitiveOverriddenBy.head}")
       case e if isOverrides(e) =>
         e.colour = NoChange(s"It overrides ${e.allTransitiveOverrides.head}")
       case e => e.colour = localLevel(e)
     }
-    model.allOf[ModelElement].toList.sortBy(_.infoPosSorted).foreach(ele => println(s"${ele}  colour: ${ele.colour}"))
   }
 
-  override def localLevel(element: ModelElement): PrivatiserLevel = {
-    element match {
-      case _ if element.colour != Undefined                           => element.colour
-      case _: SourceModel                                             => NoChange("This is a source element.")
-      case _ if element.enclosing.exists(_.isInstanceOf[SourceModel]) => NoChange("This is a top level element")
-      case _ if element.enclosing.size == 1 =>
-        val parent             = element.enclosing.head
-        val (file, start, end) = parent.infoPosSorted
-        // companion object situation
-        val companion = element.incomingReferences.filter { companion =>
-          val refersFromEnclosing            = element.incomingReferences.map(_.fromElement.enclosing.head).toSeq.distinct
-          val (fileFrom, startFrom, endFrom) = companion.fromElement.infoPosSorted
-          // TODO MIKE - referce to old symbols
-          // fileFrom == file && startFrom != start && endFrom != end && refersFromEnclosing.size == 1 && companion.fromElement.enclosing.head.symbol == element.enclosing.head.symbol
-          false
-        }
-        companion match {
-          case c if c.nonEmpty => Scoped.Private(parent.modelElementId, "It is a companion situation")
-          case _               =>
-            // refer & override
-            val referred = element.incomingReferences.find { refers =>
-              val (fileFrom, startFrom, endFrom) = refers.fromElement.infoPosSorted
-              fileFrom != file || startFrom < start || endFrom > end
-            }
-            referred match {
-              //referred
-              case Some(r) => NoChange(s"Its referred by other ${r.fromElement}")
-              //overrides
-              case None =>
-                Scoped.Private(parent.modelElementId, "Its private")
-            }
-        }
+  override def determineAccess(element: ModelElement, myClassLike: ElementId, incomingReferences: Iterable[Refers]): PrivatiserLevel = {
+    val myId = element.modelElementId
+
+    var refFromContainer: ModelElement = null
+    var refFromCompanion: ModelElement = null
+    var refFromOutside: ModelElement   = null
+    incomingReferences.foreach { ref =>
+      val from = ref.fromElement
+      if (from.modelElementId.equalsOrHasParent(myId)) {
+        if (debug)
+          println("internal reference can be ignored")
+      } else if (from.modelElementId.equalsOrHasParent(myClassLike))
+        refFromContainer = from
+      else if (from.modelElementId.equalsOrHasParentScope(myClassLike))
+        refFromCompanion = from
+      else
+        refFromOutside = from
     }
+    if (refFromOutside ne null)
+      NoChange(s"Its accessed by $refFromOutside")
+    else if (refFromCompanion ne null)
+      Scoped.Private(myClassLike, s"Its private (assessed by companion - $refFromCompanion)")
+    else if (refFromContainer ne null)
+      Scoped.Private(myClassLike, s"Its private (assessed by enclosing - $refFromContainer)")
+    else
+      Scoped.Private(myClassLike.dotThis, s"Its private (seems unused)")
   }
 
 }
+
+class SimplePrivatiserCommandLine extends AbstractPrivatiserCommandLine

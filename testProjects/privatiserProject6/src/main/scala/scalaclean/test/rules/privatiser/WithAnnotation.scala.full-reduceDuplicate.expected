@@ -8,7 +8,7 @@ object Entry extends App {
 
 //should be private class as only accessed from companion
 @deprecated
-class Entry {
+private class Entry {
 
   //should not be private as enclosing is
   @deprecated
@@ -18,7 +18,7 @@ class Entry {
 
 //should be private[withannotation] class as only accessed from package
 @deprecated
-class OtherClass {
+private[withannotation] class OtherClass {
 
   //should not be private as enclosing is same access
   @deprecated
@@ -28,7 +28,7 @@ class OtherClass {
 
 //should be private[withannotation] class as only accessed from package
 @deprecated
-class ThirdClass {
+private[withannotation] class ThirdClass {
 
   //should not be private as enclosing is same access
   @deprecated
@@ -36,6 +36,6 @@ class ThirdClass {
 
   //should not be private/private[this] as tighter than enclosing
   @deprecated
-  def foo: Int = foo + 1
+  private def foo: Int = foo + 1
 
 }

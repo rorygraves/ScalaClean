@@ -138,6 +138,12 @@ sealed trait ModelElement extends Ordered[ModelElement] {
 }
 
 sealed trait ClassLike extends ModelElement {
+  def getCompanionObject(model: ProjectModel): Option[ObjectModel] = {
+    val ele = modelElementId.companionObjectOrSelf
+    if (ele == modelElementId) None
+    else Some(model.element[ObjectModel](ele))
+  }
+
   def fullName: String
 
   def xtends[T](implicit cls: ClassTag[T]): Boolean
@@ -496,7 +502,7 @@ package impl {
 
   }
 
-  abstract sealed class ElementModelImpl(info: BasicElementInfo, relationships: BasicRelationshipInfo)
+  abstract sealed class ElementModelImpl(info: BasicElementInfo)
       extends ModelElement
       with LegacyReferences
       with LegacyOverrides {
@@ -620,8 +626,8 @@ package impl {
     override def existsInSource: Boolean = offsetEnd != offsetStart
   }
 
-  abstract sealed class ClassLikeModelImpl(info: BasicElementInfo, relationships: BasicRelationshipInfo)
-      extends ElementModelImpl(info, relationships)
+  abstract sealed class ClassLikeModelImpl(info: BasicElementInfo)
+      extends ElementModelImpl(info)
       with ClassLike {
 
     private var _extnds: List[Extends]     = _
@@ -658,11 +664,10 @@ package impl {
 
   abstract sealed class FieldModelImpl(
       info: BasicElementInfo,
-      relationships: BasicRelationshipInfo,
       val fieldName: String,
       override val isAbstract: Boolean,
       _fields: String
-  ) extends ElementModelImpl(info, relationships)
+  ) extends ElementModelImpl(info)
       with FieldModel {
 
     override def fieldsInSameDeclaration =
@@ -706,34 +711,32 @@ package impl {
 
   }
 
-  class ClassModelImpl(info: BasicElementInfo, relationships: BasicRelationshipInfo)
-      extends ClassLikeModelImpl(info, relationships)
+  class ClassModelImpl(info: BasicElementInfo)
+      extends ClassLikeModelImpl(info)
       with ClassModel
 
-  class ObjectModelImpl(info: BasicElementInfo, relationships: BasicRelationshipInfo)
-      extends ClassLikeModelImpl(info, relationships)
+  class ObjectModelImpl(info: BasicElementInfo)
+      extends ClassLikeModelImpl(info)
       with ObjectModel
 
-  class TraitModelImpl(info: BasicElementInfo, relationships: BasicRelationshipInfo)
-      extends ClassLikeModelImpl(info, relationships)
+  class TraitModelImpl(info: BasicElementInfo)
+      extends ClassLikeModelImpl(info)
       with TraitModel
 
   class PlainMethodModelImpl(
       info: BasicElementInfo,
-      relationships: BasicRelationshipInfo,
       val methodName: String,
       override val isAbstract: Boolean,
       val hasDeclaredType: Boolean
-  ) extends ElementModelImpl(info, relationships)
+  ) extends ElementModelImpl(info)
       with PlainMethodModel
 
   class GetterMethodModelImpl(
       info: BasicElementInfo,
-      relationships: BasicRelationshipInfo,
       val methodName: String,
       override val isAbstract: Boolean,
       val hasDeclaredType: Boolean
-  ) extends ElementModelImpl(info, relationships)
+  ) extends ElementModelImpl(info)
       with GetterMethodModel {
 
     override def complete(
@@ -757,11 +760,10 @@ package impl {
 
   class SetterMethodModelImpl(
       info: BasicElementInfo,
-      relationships: BasicRelationshipInfo,
       val methodName: String,
       override val isAbstract: Boolean,
       val hasDeclaredType: Boolean
-  ) extends ElementModelImpl(info, relationships)
+  ) extends ElementModelImpl(info)
       with SetterMethodModel {
 
     override def complete(
@@ -785,11 +787,10 @@ package impl {
 
   class FieldsModelImpl(
       val info: BasicElementInfo,
-      relationships: BasicRelationshipInfo,
       fieldName: String,
       isLazy: Boolean,
       size: Int
-  ) extends ElementModelImpl(info, relationships)
+  ) extends ElementModelImpl(info)
       with FieldsModel {
 
     private var _fields = List.empty[FieldModel]
@@ -803,12 +804,11 @@ package impl {
 
   class ValModelImpl(
       val info: BasicElementInfo,
-      relationships: BasicRelationshipInfo,
       fieldName: String,
       isAbstract: Boolean,
       fields: String,
       val isLazy: Boolean
-  ) extends FieldModelImpl(info, relationships, fieldName, isAbstract, fields)
+  ) extends FieldModelImpl(info, fieldName, isAbstract, fields)
       with ValModel {
 
     protected override def infoDetail = s"${super.infoDetail} lazy=$isLazy"
@@ -817,11 +817,10 @@ package impl {
 
   class VarModelImpl(
       val info: BasicElementInfo,
-      relationships: BasicRelationshipInfo,
       fieldName: String,
       isAbstract: Boolean,
       fields: String
-  ) extends FieldModelImpl(info, relationships, fieldName, isAbstract, fields)
+  ) extends FieldModelImpl(info, fieldName, isAbstract, fields)
       with VarModel {
 
     override def complete(
@@ -845,8 +844,8 @@ package impl {
 
   }
 
-  class SourceModelImpl(val info: BasicElementInfo, relationships: BasicRelationshipInfo)
-      extends ElementModelImpl(info, relationships)
+  class SourceModelImpl(val info: BasicElementInfo)
+      extends ElementModelImpl(info)
       with SourceModel {
 
     def filename: Path = info.source.path

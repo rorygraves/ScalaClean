@@ -1,12 +1,13 @@
 package scalaclean.rules.privatiser
 
 import org.scalaclean.analysis.plugin.VisibilityData
-import scalaclean.model.{ ElementId, ElementScope, Mark, ModelElement }
+import scalaclean.model.impl.{ObjectPathImpl, PackagePathImpl}
+import scalaclean.model.{ClassLike, ElementId, ElementScope, Mark, ModelElement, SourceModel}
 
 private[privatiser] sealed trait PrivatiserLevel extends Mark {
   def reason: String
 
-  def asText(context: ModelElement): Option[String]
+  def asText(context: ModelElement, options: AbstractPrivatiserCommandLine): Option[String]
 
   def widen(level: PrivatiserLevel): PrivatiserLevel
 }
@@ -14,13 +15,13 @@ private[privatiser] sealed trait PrivatiserLevel extends Mark {
 private[privatiser] case class Public(reason: String) extends PrivatiserLevel {
   override def widen(level: PrivatiserLevel): PrivatiserLevel = this
 
-  override def asText(context: ModelElement): Option[String] = None
+  override def asText(context: ModelElement, options: AbstractPrivatiserCommandLine): Option[String] = None
 }
 
 private[privatiser] case class NoChange(reason: String) extends PrivatiserLevel {
   override def widen(level: PrivatiserLevel): PrivatiserLevel = this
 
-  override def asText(context: ModelElement): Option[String] = None
+  override def asText(context: ModelElement, options: AbstractPrivatiserCommandLine): Option[String] = None
 }
 
 private[privatiser] case object Undefined extends PrivatiserLevel {
@@ -29,14 +30,27 @@ private[privatiser] case object Undefined extends PrivatiserLevel {
 
   override def widen(level: PrivatiserLevel): PrivatiserLevel = level
 
-  override def asText(context: ModelElement): Option[String] = None
+  override def asText(context: ModelElement, options: AbstractPrivatiserCommandLine): Option[String] = None
 }
 
 private[privatiser] object AccessScope {
   val None: AccessScope = AccessScope(ElementId.None, Set.empty)
+
+  def apply(elementId: ElementId, reasons: Set[String]): AccessScope = {
+    val scope = elementId.companionObjectOrSelf
+    scope match {
+      case _: ObjectPathImpl | _: PackagePathImpl =>
+        new AccessScope(scope, reasons)
+      case special if special.isNone || special.isThis =>
+        new AccessScope(scope, reasons)
+      case _ =>
+        apply(elementId.parent, reasons)
+    }
+  }
+
 }
 
-private[privatiser] final case class AccessScope(elementId: ElementId, reasons: Set[String]) {
+private[privatiser] final case class AccessScope private (elementId: ElementId, reasons: Set[String]) {
   def print(name: String): String = s"$name $elementId $sortedReasons"
   def sortedReasons: List[String] = reasons.toList.sorted
 
@@ -61,6 +75,8 @@ private[privatiser] final case class Scoped(
     forceProtected: Boolean
 ) extends PrivatiserLevel {
 
+  def isPrivate = !isProtected
+
   def isProtected = {
     def commonParentScope: ElementId =
       if (protectedScope.elementId.isNone) privateScope.elementId
@@ -69,51 +85,96 @@ private[privatiser] final case class Scoped(
     forceProtected || privateScope.elementId.isNone || commonParentScope != privateScope.elementId
   }
 
-  def scope: ElementId = privateScope.elementId
-
-  def scopeOrDefault(default: ElementId): ElementId =
-    if (privateScope.elementId.isNone) default else privateScope.elementId
-
-  def shouldChange(modelElement: ModelElement): Boolean = {
-    val currentVis = modelElement.extensionOfType[VisibilityData]
-    val (existingScope, explicitScope, existingProtected) =
-      currentVis match {
-        case None => (ElementId.Root, false, false)
-        case Some(VisibilityData(_, _, dec, aScope)) =>
-          (aScope.getOrElse(modelElement.modelElementId.parent), aScope.isDefined, dec == "protected")
-      }
-    val tighterScope = ElementScope.hasParentScope(scope, existingScope)
-    val sameScope    = scope == existingScope || scope.companionOrSelf == existingScope
-    val isExplicitAndDoesntNeedToBe = explicitScope &&
-      (existingScope == modelElement.modelElementId.parent || existingScope.companionOrSelf == modelElement.modelElementId.parent)
-    val moveToPrivate = existingProtected && !isProtected
-
-    tighterScope || (sameScope && moveToPrivate) || (isExplicitAndDoesntNeedToBe && isProtected == existingProtected)
+  override def equals(x: Any) = x match {
+    case that: Scoped =>
+      this.isProtected == that.isProtected && this.scope == that.scope
+    case _ => false
   }
 
-  override def asText(context: ModelElement): Option[String] = {
-    if (!shouldChange(context))
+  def scope: ElementId = (if (isProtected) protectedScope.elementId else privateScope.elementId).companionObjectOrSelf
+//
+//  def shouldChange(modelElement: ModelElement, options: AbstractPrivatiserCommandLine): Boolean = {
+//    val currentVis = modelElement.extensionOfType[VisibilityData]
+//    val (existingScope, explicitScope, existingProtected) =
+//      currentVis match {
+//        case None => (ElementId.Root, false, false)
+//        case Some(VisibilityData(_, _, dec, aScope)) =>
+//          (aScope.getOrElse(modelElement.modelElementId.parent), aScope.isDefined, dec == "protected")
+//      }
+//    val tighterScope = ElementScope.hasParentScope(scope, existingScope)
+//    val sameScope    = scope == existingScope || scope.companionObjectOrSelf == existingScope
+//    val isExplicitAndDoesntNeedToBe = explicitScope &&
+//      (existingScope == modelElement.modelElementId.parent || existingScope.companionObjectOrSelf == modelElement.modelElementId.parent)
+//    val moveToPrivate = existingProtected && !isProtected
+//
+//    tighterScope || (sameScope && moveToPrivate) || (isExplicitAndDoesntNeedToBe && isProtected == existingProtected)
+//  }
+
+  override def asText(context: ModelElement, options: AbstractPrivatiserCommandLine): Option[String] = {
+    //private === private[implicitScopeClass]
+    val implicitScopeClass: ClassLike = context match {
+      case classLike: ClassLike if classLike.enclosing.head.isInstanceOf[SourceModel] => classLike
+      case classLike: ClassLike                                                       => classLike.enclosing.head.classOrEnclosing
+      case _                                                                          => context.classOrEnclosing
+    }
+
+    def enclosingScopeInNarrower: Boolean = context.enclosing.head match {
+      case sourceModel: SourceModel => false
+      case _ =>
+        val enclosingLevel = context.enclosing.head.classOrEnclosing.mark.asInstanceOf[PrivatiserLevel]
+        this == this.widen(enclosingLevel)
+    }
+
+    def referencedInSubclass: Boolean = context match {
+      case classLike: ClassLike => !classLike.extendedByClassLike().isEmpty
+      case _                    => !context.overridden.isEmpty
+    }
+    //we dont need to label elements private if the enclosing class is private, or more restrictive
+    //unless things inherit from this
+    val canRemoveScope =         options.reduceDuplicateScopeChanges &&
+      !referencedInSubclass &&
+      this.isPrivate &&
+      enclosingScopeInNarrower
+
+    val implicitScope = implicitScopeClass.modelElementId.companionObjectOrSelf
+
+    val (isDeclaredPublic, existingScope, explicitScope, existingProtected) =
+      context.extensionOfType[VisibilityData] match {
+        case None => (true, ElementId.Root, false, false)
+        case Some(VisibilityData(_, _, dec, aScope)) =>
+          (false, aScope.getOrElse(implicitScope).companionObjectOrSelf, aScope.isDefined, dec == "protected")
+      }
+    val shouldRemoveScope = canRemoveScope && !isDeclaredPublic
+    val tighterScope = !canRemoveScope && ElementScope.hasParentScope(scope, existingScope)
+    val sameScope    = scope == existingScope
+    val isExplicitAndDoesntNeedToBe =
+      (explicitScope && existingScope == implicitScope)
+    val moveToPrivate = existingProtected && !isProtected
+
+    val shouldChange = shouldRemoveScope || tighterScope || (sameScope && moveToPrivate) || (isExplicitAndDoesntNeedToBe && isProtected == existingProtected)
+
+    if (!shouldChange)
       None
     else {
       val name = if (isProtected) "protected" else "private"
-      context.enclosing.headOption match {
-        case Some(enclosing)
-            if scopeOrDefault(enclosing.modelElementId) == enclosing.modelElementId
-              || scopeOrDefault(enclosing.modelElementId) == enclosing.modelElementId.companionOrSelf =>
-          Some(name)
-
-        case _ =>
-          val scope = {
-            val scope = privateScope.elementId
-            if (
-              !scope.isRoot && !scope.isNone && (scope == context.modelElementId || scope.companionOrSelf == context.modelElementId)
-            )
-              scope.parent
-            else scope
-          }
-          if (scope.isRoot) Some(name)
-          else Some(s"$name[${scope.innerScopeString}]")
-      }
+      if (canRemoveScope)
+        Some("")
+      else if (scope == implicitScope) {
+        // is the scope the same as it would be without the access the access qualifier
+        // e.g {{{class X { private[X] def foo} }}} we can remove the "[X]"
+        Some(name)
+        //      } else {
+        //        val scope = {
+        //          val scope = privateScope.elementId
+        //          if (
+        //            !scope.isRoot && !scope.isNone && (scope == context.modelElementId || scope.companionOrSelf == context.modelElementId)
+        //          )
+        //            scope.parent
+        //          else scope
+        //        }
+        //        if (scope.isRoot) Some(name)
+      } else Some(s"$name[${scope.innerScopeString}]")
+//      }
     }
   }
 

@@ -2,9 +2,9 @@ package scalaclean.model
 
 import java.nio.file.Path
 
-import scalaclean.model.impl.PathNodes
+import scalaclean.model.impl.{PathNodes, ThisPathImpl}
+import java.lang.{StringBuilder => JStringBuilder}
 
-import java.lang.{ StringBuilder => JStringBuilder }
 import scala.reflect.ClassTag
 
 object ElementId {
@@ -41,10 +41,31 @@ abstract sealed class ElementId {
   def isNone: Boolean = false
   def isRoot: Boolean = false
   def isLocal: Boolean
+  lazy val dotThis = ThisPathImpl(this)
 
   def parent: ElementId
+  final def hasParent: Boolean = !isNone && !isRoot
 
+  /** For traits and class - the companion object (even if one doesnt exist in the source)
+   * for other types this
+   * useful when you want to consider an object/trait/class  by name
+   */
+  def companionObjectOrSelf: ElementId = this
+  /** For traits and class - the companion object (even if one doesnt exist in the source)
+   *  For object - the companion class/trait (even if one doesnt exist in the source)
+   * for other types this
+   */
   def companionOrSelf: ElementId = this
+  final def equalsOrHasParent(elementId: ElementId): Boolean = {
+    (this eq elementId) || (this.hasParent && parent.equalsOrHasParent(elementId))
+  }
+
+  final def equalsOrHasParentScope(elementId: ElementId): Boolean = {
+    equalsOrHasParentScopeImpl(elementId.companionObjectOrSelf)
+  }
+  private def equalsOrHasParentScopeImpl(elementId: ElementId): Boolean = {
+    (this.companionObjectOrSelf eq elementId) || (this.hasParent && parent.equalsOrHasParentScopeImpl(elementId))
+  }
 
   //implementation detail
   private[model] def canBeParent: Boolean
@@ -411,12 +432,12 @@ package impl {
     override def nodeType                                = ClassPath.nodeType
     override private[model] def isContentGlobal: Boolean = parent.isContentGlobal
 
-    override lazy val companionOrSelf = {
+    override lazy val companionObjectOrSelf = {
       val id = new JStringBuilder(this.id)
       id.setCharAt(id.lastIndexOf("/") + 1, ObjectPath.nodeType)
       PathNodes(id.toString())
     }
-
+    override def companionOrSelf: ElementId = companionObjectOrSelf
   }
 
   final class PackagePathImpl private (parent: ElementId, packageName: String) extends FQPathNode(parent, packageName) {
