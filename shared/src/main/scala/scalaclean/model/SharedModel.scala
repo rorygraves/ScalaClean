@@ -139,7 +139,7 @@ package impl {
             NodeRoot
           else
             PackagePathImpl(parent, encodedName)
-        case _ if sym.isModule =>
+        case _ if sym.isModuleOrModuleClass =>
           ObjectPathImpl(parent, name)
         case _ if sym.isClass || sym.isTrait =>
           ClassPathImpl(parent, name)

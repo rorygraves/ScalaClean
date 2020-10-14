@@ -1,0 +1,9 @@
+
+
+object Foo {
+  def myMethod(): Int = 1/* allOutgoingReferences(O:<empty>.Foo/M:myMethod()) - C:scala.Int :: P:scala */
+}/* allOutgoingReferences(O:<empty>.Foo) - <root> :: C:java.lang.Object :: C:java.lang.Object/M:<init>() :: C:scala.Unit :: P:<empty> :: P:java.lang :: P:scala :: P:scalaT:AnyRef */
+
+class Foo {
+  def myMethod(): Int = 2/* allOutgoingReferences(C:<empty>.Foo/M:myMethod()) - C:scala.Int :: P:scala */
+}/* allOutgoingReferences(C:<empty>.Foo) - <root> :: C:java.lang.Object :: P:<empty> :: P:scala :: P:scalaT:AnyRef */

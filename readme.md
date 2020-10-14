@@ -47,11 +47,10 @@ Manually add the ScalaClean plugin to your project definition(s) - this will be 
 
 ```scala
 settings(
-  addCompilerPlugin("org.scalameta" % "semanticdb-scalac" % "4.3.0" cross CrossVersion.full),
   scalacOptions ++= {
     val srcLocations = (sourceDirectories in Compile).value.mkString(java.io.File.pathSeparator)
     Seq(
-      "-Yrangepos", // from semanticdb instructions
+      "-Yrangepos", 
       "-Xplugin:/workspace/ScalaClean/analysisPlugin/target/scala-2.12/analysisPlugin_2.12.10-0.1.0-SNAPSHOT-assembly.jar",
       s"-P:scalaclean-analysis-plugin:srcdirs:$srcLocations"
     )
@@ -66,8 +65,6 @@ All being well you should now have a number of files in your META-INF directory:
 E.g. for akka-actor in ```/akka-actor/target/classes/META-INF/``` I have:
 
 ```
-./akka-actor/target/classes/META-INF//semanticdb
-./akka-actor/target/classes/META-INF//semanticdb/akka-actor/...lots of semanticdb files
 ./akka-actor/target/classes/META-INF//ScalaClean
 ./akka-actor/target/classes/META-INF//ScalaClean/scalaclean-relationships.csv
 ./akka-actor/target/classes/META-INF//ScalaClean/ScalaClean.properties

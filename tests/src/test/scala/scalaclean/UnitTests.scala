@@ -144,6 +144,11 @@ class UnitTests extends AbstractUnitTests with AssertionsForJUnit {
   }
 
 
+  // test duplicate methods between obj/class, not really testing outgoing references.
+  test("objClass") {
+    runTest("scalaclean/test/objclass/ObjClass.scala", new Test_allOutgoingReferences(_))
+  }
+
   test("allOutgoingReferences") {
     runTest("scalaclean/test/references/allOutgoingReferences/allOutgoingReferences.scala", new Test_allOutgoingReferences(_))
   }
