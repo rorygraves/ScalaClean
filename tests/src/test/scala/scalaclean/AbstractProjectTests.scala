@@ -2,9 +2,7 @@ package scalaclean
 
 import org.scalatest.{ BeforeAndAfterAllConfigMap, ConfigMap }
 import org.scalatest.funsuite.AnyFunSuite
-import scalaclean.cli.{
-  SimpleRunOptions
-}
+import scalaclean.cli.SimpleRunOptions
 
 abstract class AbstractProjectTests extends AnyFunSuite with BeforeAndAfterAllConfigMap {
   private var _overwrite  = false

@@ -41,7 +41,7 @@ private[privatiser] object AccessScope {
     scope match {
       case _: ObjectPathImpl | _: PackagePathImpl =>
         new AccessScope(scope, reasons)
-      case special if special.isNone || special.isThis =>
+      case special if special.isNone || special.isThis|| special.isRoot =>
         new AccessScope(scope, reasons)
       case _ =>
         apply(elementId.parent, reasons)

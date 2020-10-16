@@ -16,9 +16,9 @@ object Private2 extends App {
   new Other.usedAndVisible3a with Other.usedAndVisible3b {}
 }
 
-private[p2] object Other {
+object Other {
 
-  private[p2] def used = {
+  def used = {
     //content should be unaffected inside a def
     //as the values are not visible
     val x = 1
@@ -32,7 +32,7 @@ private[p2] object Other {
     x + y + z
   }
 
-  private[p2] object usedAndVisible1 extends AnyRef {
+  object usedAndVisible1 extends AnyRef {
     //content should be affected inside an object
     //as the values are not visible
     private val x = 1
@@ -46,7 +46,7 @@ private[p2] object Other {
     x + y + z
   }
 
-  private[p2] class usedAndVisible2 extends AnyRef {
+  class usedAndVisible2 extends AnyRef {
     //content should be affected inside a class
     //as the values are not visible
     private val x = 1
@@ -60,7 +60,7 @@ private[p2] object Other {
     x + y + z
   }
 
-  protected[Other] class usedAndVisible2a extends AnyRef {
+  class usedAndVisible2a extends AnyRef {
     //content should be affected inside a class
     //as the values are not visible
     private val x = 1
@@ -74,11 +74,11 @@ private[p2] object Other {
     x + y + z
   }
 
-  protected[this] trait usedAndVisible3 extends AnyRef {
+  trait usedAndVisible3 extends AnyRef {
     //content should be affected inside a trait
     //as the values are not visible
-    private val x = 1
-    private var y = 1
+    private[this] val x = 1
+    private[this] var y = 1
     private def z = 1
 
     private[this] val a = 1
@@ -88,11 +88,11 @@ private[p2] object Other {
     x + y + z
   }
 
-  protected[this] trait usedAndVisible3a extends AnyRef {
+  trait usedAndVisible3a extends AnyRef {
     //content should be affected inside a trait
     //as the values are not visible
-    private val Xx = 1
-    private var Xy = 1
+    private[this] val Xx = 1
+    private[this] var Xy = 1
     private def Xz = 1
 
     private[this] val Xa = 1
@@ -102,11 +102,11 @@ private[p2] object Other {
     Xx + Xy + Xz
   }
 
-  protected[this] trait usedAndVisible3b extends AnyRef {
+  trait usedAndVisible3b extends AnyRef {
     //content should be affected inside a trait
     //as the values are not visible
-    private val Yx = 1
-    private var Yy = 1
+    private[this] val Yx = 1
+    private[this] var Yy = 1
     private def Yz = 1
 
     private[this] val Ya = 1
