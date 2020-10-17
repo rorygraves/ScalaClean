@@ -27,7 +27,6 @@ object Project {
     val elementsFilePath      = props.getProperty(prop_elementsFile).replace(sourceDirSep, File.separator)
     val relationshipsFilePath = props.getProperty(prop_relationshipsFile).replace(sourceDirSep, File.separator)
     val extensionsFilePath    = props.getProperty(prop_extensionsFile).replace(sourceDirSep, File.separator)
-    val src                   = props.getProperty(prop_src).replace(sourceDirSep, File.separator)
     val srcBuildBase          = props.getProperty(prop_srcBuildBase).replace(sourceDirSep, File.separator)
     val srcFiles =
       props.getProperty(prop_srcFiles, "").replace(sourceDirSep, File.separator).split(File.pathSeparatorChar).toSet
@@ -48,7 +47,6 @@ object Project {
       projects,
       classPath,
       outputPath,
-      src,
       srcRoots,
       srcBuildBase,
       elementsFilePath,
@@ -65,7 +63,6 @@ class Project private (
     val projects: ProjectSet,
     val classPath: Classpath,
     val outputPath: String,
-    val src: String,
     val srcRoots: List[AbsolutePath],
     val srcBuildBase: String,
     elementsFilePath: String,
