@@ -1,5 +1,6 @@
 package scalaclean
 
+import org.scalatest.Ignore
 import scalaclean.cli.{AbstractProjectTestRunner, SimpleRunOptions}
 import scalaclean.model.ProjectModel
 import scalaclean.rules.deadcode.{FullDeadCodeCommandLine, FullDeadCodeRemover, SimpleDeadCodeCommandLine, SimpleDeadCodeRemover}
@@ -69,6 +70,10 @@ abstract class BaseDeadCodeTests extends AbstractProjectTests {
 
   test("deadCode11_constants") {
     projectTest("deadCodeProject11_constants")
+  }
+
+  ignore("deadCode13") {
+    projectTest("deadCodeProject13")
   }
 
 }

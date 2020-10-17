@@ -18,7 +18,7 @@ abstract class AbstractRule[T <: ScalaCleanCommandLine] {
   def cmdLine: T
   def apply(options: T, model: ProjectModel): Rule
 
-  def main(args: Array[String]) = {
+  def main(args: Array[String]): Unit  = {
     val options = cmdLine
     parse(options, args)
 
@@ -27,7 +27,7 @@ abstract class AbstractRule[T <: ScalaCleanCommandLine] {
     val projectSet = new ProjectSet(projectProps: _*)
 
     println(s"Running rule: ${getClass.getSimpleName}")
-    val rule = apply(options,projectSet)
+    apply(options,projectSet).run()
 
   }
   def parse(cmdLine: ScalaCleanCommandLine, args: Array[String]): Unit = {

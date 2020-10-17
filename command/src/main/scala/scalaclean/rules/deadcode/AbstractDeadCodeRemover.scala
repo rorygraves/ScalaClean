@@ -2,7 +2,7 @@ package scalaclean.rules.deadcode
 
 import scalaclean.cli.ScalaCleanCommandLine
 import scalaclean.model._
-import scalaclean.rules.{AbstractRule, RuleRun}
+import scalaclean.rules.RuleRun
 import scalaclean.util.ScalaCleanTreePatcher
 import scalafix.v1.SyntacticDocument
 
@@ -89,7 +89,7 @@ abstract class AbstractDeadCodeRemover[T <: AbstractDeadCodeCommandLine] extends
       path: List[ModelElement],
       comment: String,
       current: Usage
-  ) = {
+  ): Unit = {
     if (markIndirectReferences) {
       //all the elements that this refers to
       element.internalOutgoingReferences.foreach { case (ref, _) =>
@@ -137,11 +137,10 @@ abstract class AbstractDeadCodeRemover[T <: AbstractDeadCodeCommandLine] extends
         }
       //not sure if this is needed.
       //is this a ScalaMeta hangover??
-      case trt: TraitModel => {
+      case trt: TraitModel =>
         trt.fields.foreach { fieldsInTrait =>
           markUsed(fieldsInTrait, markEnclosing = false, purpose, element :: path, s"$comment - inside a used trait")
         }
-      }
       case _ =>
     }
   }
@@ -183,7 +182,7 @@ abstract class AbstractDeadCodeRemover[T <: AbstractDeadCodeCommandLine] extends
             // 2. None of the fields are used - remove the whole declaration
             // 3. some of the fields are used - replace the unused fields with `-` and leave a comment
             val decls = fields.fieldsInDeclaration
-            assert(decls.nonEmpty)
+//            assert(decls.nonEmpty)
             val unused = decls.filter {
               _.colour.isUnused
             }
