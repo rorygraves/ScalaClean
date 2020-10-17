@@ -10,7 +10,6 @@ object PropertyNames {
 
   val prop_srcRoots =
     "srcRoots" // Contains source/test roots of what has been compiled.  (Blue/Green folders in Intellij)
-  val prop_src          = "src"
   val prop_srcBuildBase = "srcBuildBase"
   val prop_srcFiles     = "srcFiles"
 

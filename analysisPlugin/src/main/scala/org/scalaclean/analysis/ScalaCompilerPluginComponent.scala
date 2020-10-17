@@ -91,11 +91,9 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
         println("SourceDirs = " + sourceDirs)
       if (sourceDirs.nonEmpty) {
         props.put(prop_srcRoots, sourceDirs.mkString(File.pathSeparator))
-        props.put(prop_src, sourceDirs.head)
       } else {
         val srcPath = workOutCommonSourcePath(basePaths)
         props.put(prop_srcRoots, srcPath)
-        props.put(prop_src, srcPath)
       }
 
       options.foreach(p => props.put(s"$prefix_option.$p", ""))
