@@ -1,8 +1,8 @@
 package scalaclean.rules.finaliser
 
-import scalaclean.cli.RunOptions
+import scalaclean.cli.{RunOptions, ScalaCleanCommandLine}
 import scalaclean.model._
-import scalaclean.rules.AbstractRule
+import scalaclean.rules.{AbstractRule, RuleRun}
 import scalaclean.util.ScalaCleanTreePatcher
 import scalafix.v1.SyntacticDocument
 
@@ -11,7 +11,15 @@ import scala.meta.io.AbsolutePath
 import scala.reflect.internal.Flags
 
 //marks things final and sealed were it can
-class Finaliser(model: ProjectModel, options: RunOptions) extends AbstractRule("Finaliser", model, options) {
+
+object Finaliser extends AbstractRule[FinaliserCommandLine] {
+  override type Rule    = Finaliser
+
+  override def cmdLine = new FinaliserCommandLine
+  override def apply(options: FinaliserCommandLine, model: ProjectModel) = new Rule(options, model)
+}
+
+class Finaliser(override val options: FinaliserCommandLine, override val model: ProjectModel) extends RuleRun[FinaliserCommandLine] {
 
   type Colour = FinaliserLevel
 
@@ -132,14 +140,14 @@ class Finaliser(model: ProjectModel, options: RunOptions) extends AbstractRule("
         Open("")
 
   }
-
-  var elementsObserved = 0
-  var elementsChanged  = 0
-
-  override def printSummary(projectName: String): Unit = println(s"""Elements Observed = $elementsObserved
-                                                                    |Elements Changed  = $elementsChanged
-                                                                    |Effect rate       = ${(elementsChanged.toDouble / elementsObserved.toDouble * 10000).toInt / 100} %"
-                                                                    |""".stripMargin)
+//
+//  var elementsObserved = 0
+//  var elementsChanged  = 0
+//
+//  override def printSummary(projectName: String): Unit = println(s"""Elements Observed = $elementsObserved
+//                                                                    |Elements Changed  = $elementsChanged
+//                                                                    |Effect rate       = ${(elementsChanged.toDouble / elementsObserved.toDouble * 10000).toInt / 100} %"
+//                                                                    |""".stripMargin)
 
   override def fix(targetFile: AbsolutePath, syntacticDocument: () => SyntacticDocument): List[SCPatch] = {
     val targetFileName = targetFile.toString
@@ -189,10 +197,10 @@ class Finaliser(model: ProjectModel, options: RunOptions) extends AbstractRule("
           case fieldModel: FieldModel if fieldModel.declaredIn.nonEmpty      =>
           case accessorModel: AccessorModel if accessorModel.field.isDefined =>
           case _: MethodModel | _: FieldModel | _: FieldsModel =>
-            elementsObserved += 1
+//            elementsObserved += 1
             handleDecl(modelElement)
           case classLike: ClassLike =>
-            elementsObserved += 1
+//            elementsObserved += 1
             handleClass(modelElement)
         }
         true
@@ -201,13 +209,14 @@ class Finaliser(model: ProjectModel, options: RunOptions) extends AbstractRule("
     visitor.visit(sModel)
 
     val result = visitor.result
-    elementsChanged += result.size
-    if (debug) {
-      println("--------NEW----------")
-      result.foreach(println)
-      println("------------------")
-    }
+//    elementsChanged += result.size
+//    if (debug) {
+//      println("--------NEW----------")
+//      result.foreach(println)
+//      println("------------------")
+//      }
     result
   }
 
 }
+class FinaliserCommandLine              extends ScalaCleanCommandLine

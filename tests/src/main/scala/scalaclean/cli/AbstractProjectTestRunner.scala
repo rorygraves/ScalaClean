@@ -1,50 +1,63 @@
 package scalaclean.cli
 
 import java.io.File
-import java.nio.file.Paths
+import java.nio.file.{Files, Path, Paths}
 
 import scalaclean.model.ProjectModel
-import scalaclean.rules.AbstractRule
+import scalaclean.model.impl.ProjectSet
+import scalaclean.rules.RuleRun
 import scalaclean.util.DiffAssertions
 
-abstract class AbstractProjectTestRunner(val projectNames: List[String], runOptions: SimpleRunOptions)
-    extends DiffAssertions {
+import org.scalatest.Assertions
 
-  def taskName: String
+import scala.reflect.{ClassTag, classTag}
 
-  def createModelTaskFn(propsFiles: Seq[File], debug: Boolean): ProjectModel => AbstractRule
+abstract class AbstractProjectTestRunner[Cmd <: ScalaCleanCommandLine: ClassTag, Rule <: RuleRun[Cmd]](val projectNames: List[String], runOptions: SimpleRunOptions)
+    extends DiffAssertions with Assertions{
 
-  def run(): Boolean = {
+  def cmdLine: Cmd = classTag[Cmd].runtimeClass.newInstance().asInstanceOf[Cmd]
+  def rule(cmd: Cmd, model: ProjectModel): Rule
+
+  def customise(options: Cmd): Unit = ()
+
+  def run(): Unit = {
 
     // sbt and intellij have different ideas about the base directory for running tests.
     // so try both options
-    val propsFiles = projectNames.map { projectName =>
+    val propsFiles: List[Path] = projectNames.map { projectName =>
       val srcDir =
         Paths.get(s"../testProjects/$projectName/target/scala-2.12/classes/META-INF/ScalaClean/").toAbsolutePath
-      val f1 = srcDir.resolve(s"ScalaClean.properties").toFile
-      if (f1.exists()) {
+      val f1 = srcDir.resolve(s"ScalaClean.properties")
+      if (Files.exists(f1)) {
         f1
       } else {
         val srcDir =
           Paths.get(s"testProjects/$projectName/target/scala-2.12/classes/META-INF/ScalaClean/").toAbsolutePath
-        val f1 = srcDir.resolve(s"ScalaClean.properties").toFile
+        val f1 = srcDir.resolve(s"ScalaClean.properties")
         f1
       }
 
     }
+    val options = cmdLine
 
-    val options = SCOptions(
-      taskName,
-      debug = runOptions.debug,
-      addComments = runOptions.addComments,
-      validate = true,
-      replace = runOptions.replace,
-      propsFiles
-    )
-    val main = new ScalaCleanMain(options, expectationSuffix, createModelTaskFn(propsFiles, options.debug))
-    !main.run() || options.replace
+    options.debug = runOptions.debug
+    options.addComments = runOptions.addComments
+    options.replace = runOptions.replace
+    options.testOptions.validate = true
+    options.testOptions.expectationSuffix = expectationSuffix
+    import scala.collection.JavaConverters._
+    options._paths = propsFiles.asJava
+
+    customise(options)
+
+    val projectSet = new ProjectSet(propsFiles: _*)
+
+    val ruleToRun = rule(options, projectSet)
+    val result = !ruleToRun.run() || options.replace
+    if (!result)
+      fail(s" Failed for projects $projectNames, options=$options")
   }
 
-  val expectationSuffix: String = ""
+  val expectationSuffix: String
 
 }

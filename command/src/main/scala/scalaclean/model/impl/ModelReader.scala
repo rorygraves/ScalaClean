@@ -180,44 +180,44 @@ object ModelReader {
         val idx = 9
         val ele: ElementModelImpl = typeId match {
           case IoTokens.typeObject =>
-            new ObjectModelImpl(basicInfo, relationships)
+            new ObjectModelImpl(basicInfo)
           case IoTokens.typeTrait =>
-            new TraitModelImpl(basicInfo, relationships)
+            new TraitModelImpl(basicInfo)
           case IoTokens.typeClass =>
-            new ClassModelImpl(basicInfo, relationships)
+            new ClassModelImpl(basicInfo)
           case IoTokens.typeFields =>
             val valName    = tokens(idx).intern()
             val isLazy     = tokens(idx + 1).toBoolean
             val fieldCount = tokens(idx + 2).toInt
-            new FieldsModelImpl(basicInfo, relationships, valName, isLazy, fieldCount)
+            new FieldsModelImpl(basicInfo, valName, isLazy, fieldCount)
           case IoTokens.typeVal =>
             val isAbstract = tokens(idx).toBoolean
             val valName    = tokens(idx + 1).intern()
             val fields     = tokens(idx + 2).intern()
             val isLazy     = tokens(idx + 3).toBoolean
-            new ValModelImpl(basicInfo, relationships, valName, isAbstract, fields, isLazy)
+            new ValModelImpl(basicInfo, valName, isAbstract, fields, isLazy)
           case IoTokens.typeVar =>
             val isAbstract = tokens(idx).toBoolean
             val varName    = tokens(idx + 1).intern()
             val fields     = tokens(idx + 2).intern()
-            new VarModelImpl(basicInfo, relationships, varName, isAbstract, fields)
+            new VarModelImpl(basicInfo, varName, isAbstract, fields)
           case IoTokens.typePlainMethod =>
             val isAbstract      = tokens(idx).toBoolean
             val methodName      = tokens(idx + 1).intern()
             val hasDeclaredType = tokens(idx + 2).toBoolean
-            new PlainMethodModelImpl(basicInfo, relationships, methodName, isAbstract, hasDeclaredType)
+            new PlainMethodModelImpl(basicInfo, methodName, isAbstract, hasDeclaredType)
           case IoTokens.typeGetterMethod =>
             val isAbstract      = tokens(idx).toBoolean
             val methodName      = tokens(idx + 1).intern()
             val hasDeclaredType = tokens(idx + 2).toBoolean
-            new GetterMethodModelImpl(basicInfo, relationships, methodName, isAbstract, hasDeclaredType)
+            new GetterMethodModelImpl(basicInfo, methodName, isAbstract, hasDeclaredType)
           case IoTokens.typeSetterMethod =>
             val isAbstract      = tokens(idx).toBoolean
             val methodName      = tokens(idx + 1).intern()
             val hasDeclaredType = tokens(idx + 2).toBoolean
-            new SetterMethodModelImpl(basicInfo, relationships, methodName, isAbstract, hasDeclaredType)
+            new SetterMethodModelImpl(basicInfo, methodName, isAbstract, hasDeclaredType)
           case IoTokens.typeSource =>
-            new SourceModelImpl(basicInfo, relationships)
+            new SourceModelImpl(basicInfo)
 
           case other =>
             throw new IllegalArgumentException("Unknown token: $other")

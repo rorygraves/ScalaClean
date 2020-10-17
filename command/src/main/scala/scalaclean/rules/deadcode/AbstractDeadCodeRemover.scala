@@ -1,19 +1,15 @@
 package scalaclean.rules.deadcode
 
-import scalaclean.cli.RunOptions
+import scalaclean.cli.ScalaCleanCommandLine
 import scalaclean.model._
-import scalaclean.rules.AbstractRule
+import scalaclean.rules.{AbstractRule, RuleRun}
 import scalaclean.util.ScalaCleanTreePatcher
 import scalafix.v1.SyntacticDocument
 
 import scala.meta.io.AbsolutePath
 
-/**
- * A rule that removes unreferenced classes,
- * needs to be run after Analysis
- */
-class DeadCodeRemover(model: ProjectModel, options: RunOptions)
-    extends AbstractRule("ScalaCleanDeadCodeRemover", model, options) {
+/** A rule that removes unreferenced classes */
+abstract class AbstractDeadCodeRemover[T <: AbstractDeadCodeCommandLine] extends RuleRun[T] {
 
   type Colour = Usage
 
@@ -78,8 +74,9 @@ class DeadCodeRemover(model: ProjectModel, options: RunOptions)
   ): Unit = {
     val current = element.colour
     if (!current.hasPurpose(purpose)) {
-      if (debug)
+      if (debug) {
         println(s"mark $element as used for $purpose due to ${path.mkString("->")} $comment")
+      }
 
       element.colour = current.withPurpose(purpose)
       adjustUsage(element, purpose, path, comment, current)
@@ -203,7 +200,7 @@ class DeadCodeRemover(model: ProjectModel, options: RunOptions)
               addComment(
                 fields,
                 s"consider rewriting pattern as ${unused.size} values are not used",
-                "mutiple fields unused"
+                "multiple fields unused"
               )
 
               unused.foreach(f => replaceFromFocus(f, "_", s"${f.name} unused in patmat"))
@@ -231,7 +228,7 @@ class DeadCodeRemover(model: ProjectModel, options: RunOptions)
       println("------------------")
     }
 
-    result.map(s => SCPatch(s.startPos, s.endPos, s.replacementText))
+    result//.map(s => SCPatch(s.startPos, s.endPos, s.replacementText))
   }
 
   case class Usage(existingPurposes: Int = 0) extends Mark {
@@ -261,3 +258,4 @@ class DeadCodeRemover(model: ProjectModel, options: RunOptions)
   }
 
 }
+class AbstractDeadCodeCommandLine extends ScalaCleanCommandLine

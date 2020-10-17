@@ -17,24 +17,16 @@ object ElementScope {
   }
 
   final def isOrHasParentScope(aChild: ElementId, aParent: ElementId): Boolean = {
-    isOrHasParentScopeImpl(aChild, aParent, aParent.companionOrSelf) || {
-      aChild.companionOrSelf != aChild && isOrHasParentScopeImpl(
-        aChild.companionOrSelf,
-        aParent,
-        aParent.companionOrSelf
-      )
-    }
+    isOrHasParentScopeImpl(aChild.companionObjectOrSelf, aParent.companionObjectOrSelf)
   }
 
   @tailrec private def isOrHasParentScopeImpl(
       aChild: ElementId,
-      aParent: ElementId,
-      parentCompanion: ElementId
+      aParent: ElementId
   ): Boolean = {
-    (aChild eq aParent) || (aChild eq parentCompanion) || (!aChild.isNone && !aChild.isRoot && isOrHasParentScopeImpl(
+    (aChild == aParent) || (!aChild.isNone && !aChild.isRoot && isOrHasParentScopeImpl(
       aChild.parent,
-      aParent,
-      parentCompanion
+      aParent
     ))
   }
 
@@ -55,7 +47,7 @@ object ElementScope {
       findCommonScopeParent(parent(scope1, depth1 - depth2), scope2)
     } else if (depth2 > depth1) {
       findCommonScopeParent(scope1, parent(scope2, depth2 - depth1))
-    } else if (scope1 == scope2 || scope1 == scope2.companionOrSelf) {
+    } else if (scope1.companionObjectOrSelf == scope2.companionObjectOrSelf) {
       if (scope1.isNone || scope1.isRoot) ElementId.Root
       else scope1
     } else findCommonScopeParent(scope1.parent, scope2.parent)

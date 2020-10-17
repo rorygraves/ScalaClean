@@ -83,7 +83,6 @@ lazy val command = project
     moduleName := "command",
     scalaVersion := scala212,
     libraryDependencies += "args4j"            % "args4j"        % "2.33",
-    libraryDependencies += "com.github.scopt" %% "scopt"         % "4.0.0-RC2",
     libraryDependencies += "ch.epfl.scala"    %% "scalafix-core" % scalaFixVersion,
     mainClass in assembly := Some("scalaclean.cli.ScalaCleanMain"),
   )
@@ -216,7 +215,7 @@ lazy val tests = project
     libraryDependencies += "args4j"             % "args4j"        % "2.33",
     libraryDependencies += "ch.epfl.scala"     %% "scalafix-core" % scalaFixVersion,
     libraryDependencies += "junit"              % "junit"         % junitVersion           % Test,
-    libraryDependencies += "org.scalatest"     %% "scalatest"     % scalaTestVersion       % Test,
+    libraryDependencies += "org.scalatest"     %% "scalatest"     % scalaTestVersion       ,
     libraryDependencies += "org.scalatestplus" %% "junit-4-12"    % s"$scalaTestVersion.0" % Test,
     scalaVersion := scala212,
     crossPaths := false,
