@@ -668,8 +668,8 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
               }
           }
 
-        case New(x) =>
-          scopeLog("--  NEW tree" + tree.getClass)
+        case New(tpt) =>
+          scopeLog(s"--  NEW tree ${tpt.symbol} - ${asMSymbol(tpt.symbol)}")
           traverseType(tree.tpe)
           super.traverse(tree)
         case unknown =>

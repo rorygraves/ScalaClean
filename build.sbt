@@ -107,8 +107,8 @@ lazy val unitTestProject = project
     }
   )
 
-// template for dead code projects
-def testInputProject(id: String, projectLocation: String, showTrees: Boolean = false)(
+// template for projects running non unit tests
+def testInputProject(id: String, projectLocation: String, showTrees: Boolean = false, browseTrees: Boolean = false, debug: Boolean = false)(
     dependencies: ClasspathDep[ProjectReference]*
 ) = sbt.Project
   .apply(id, file(projectLocation))
@@ -121,21 +121,16 @@ def testInputProject(id: String, projectLocation: String, showTrees: Boolean = f
       val jar          = (assembly in Compile in analysisPlugin).value
       val srcLocations = (sourceDirectories in Compile).value.mkString(java.io.File.pathSeparator)
       assert(srcLocations.nonEmpty)
-      val extras =
-        if (showTrees)
-          List(
-//        "-P:scalaclean-analysis-plugin:debug:true",
-//        "-Ybrowse:typer",
-            "-Xprint:typer"
-          )
-        else List[String]()
+      val extras = List(
+        if (showTrees) List("-Xprint:typer") else Nil,
+        if (browseTrees) List("-Ybrowse:typer") else Nil,
+        if (debug) List("-P:scalaclean-analysis-plugin:debug:true") else Nil
+      ).flatten
+
       List(
-//      "-Ycompact-trees",
-//      "-Xprint:all",
         "-Yrangepos",
         s"-Xplugin:${jar.getAbsolutePath}",
         s"-Jdummy=${jar.lastModified}", // ensures recompile
-//       "-P:scalaclean-analysis-plugin:debug:true",
         s"-P:scalaclean-analysis-plugin:srcdirs:$srcLocations",
       ) ::: extras
     },
@@ -165,6 +160,9 @@ lazy val deadCodeProject12_isolated =
 
 lazy val deadCodeProject13_case_class =
   testInputProject("deadCodeProject13_case_class", "testProjects/deadCodeProject13_case_class")()
+
+lazy val deadCodeProject14_anon_class =
+  testInputProject("deadCodeProject14_anon_class", "testProjects/deadCodeProject14_anon_class")()
 
 lazy val privatiserProject1 = testInputProject("privatiserProject1", "testProjects/privatiserProject1")()
 lazy val privatiserProject2 = testInputProject("privatiserProject2", "testProjects/privatiserProject2")()
@@ -202,7 +200,8 @@ lazy val deadCodeTests = List(
   deadCodeProject10_vals,
   deadCodeProject11_constants,
   deadCodeProject12_isolated,
-  deadCodeProject13_case_class
+  deadCodeProject13_case_class,
+  deadCodeProject14_anon_class
 )
 
 lazy val finaliserTests = List(finaliserProject1)

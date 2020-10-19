@@ -63,8 +63,6 @@ abstract class AbstractDeadCodeRemover[T <: AbstractDeadCodeCommandLine] extends
     }
   }
 
-  def markIndirectReferences = true
-
   def markUsed(
       element: ModelElement,
       markEnclosing: Boolean,
@@ -90,20 +88,18 @@ abstract class AbstractDeadCodeRemover[T <: AbstractDeadCodeCommandLine] extends
       comment: String,
       current: Usage
   ): Unit = {
-    if (markIndirectReferences) {
-      //all the elements that this refers to
-      element.internalOutgoingReferences.foreach { case (ref, _) =>
-        markUsed(ref, markEnclosing = true, purpose, element :: path, s"$comment -> internalOutgoingReferences")
-      }
-
-      // for the vars, (non lazy) vals and objects - eagerly traverse the RHS, as it is called
-      // and the RHS will be executed
-      // (its reality) even if we later remove the field
-      // we could consider marking at as used differently - a different colour
-      //
-      // don't mark the fields as used though
-      markRhs(element, purpose, element :: path, s"$comment -> markRhs")
+    //all the elements that this refers to
+    element.internalOutgoingReferences.foreach { case (ref, _) =>
+      markUsed(ref, markEnclosing = true, purpose, element :: path, s"$comment -> internalOutgoingReferences")
     }
+
+    // for the vars, (non lazy) vals and objects - eagerly traverse the RHS, as it is called
+    // as the RHS will be executed
+    // (its reality) even if we later remove the field
+    // we could consider marking at as used differently - a different colour
+    //
+    // don't mark the fields as used though
+    markRhs(element, purpose, element :: path, s"$comment -> markRhs")
 
     //enclosing
     element.enclosing.foreach { enclosed =>

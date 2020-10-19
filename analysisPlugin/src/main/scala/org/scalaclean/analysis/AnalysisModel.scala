@@ -204,7 +204,6 @@ sealed trait ModelSymbol extends HasModelCommon {
           Some(t)
       }
     }
-    refersRels = refersRels.filter(_._1.common.isGlobal)
     refersRels = refersRels.filter(_._1.common.elementId != this.common.elementId)
 
   }
