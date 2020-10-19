@@ -72,8 +72,12 @@ abstract class BaseDeadCodeTests extends AbstractProjectTests {
     projectTest("deadCodeProject11_constants")
   }
 
-  test("deadCodeProject13_case_class") {
-    projectTest("deadCodeProject13_case_class",SimpleRunOptions(debug=true))
+  test("deadCode12_isolated") {
+    projectTest("deadCodeProject12_isolated")
+  }
+
+  test("deadCode13_case_class") {
+    projectTest("deadCodeProject13_case_class")
   }
 
 }
