@@ -71,6 +71,11 @@ sealed trait ModelSymbol extends HasModelCommon {
   }
 
   var children: Map[ModelCommon, ModelSymbol] = Map.empty
+  def findChildBySymbol(sym: Global#Symbol): Option[ModelSymbol] = {
+    children.values.collectFirst{
+      case ele if ele.tree.symbol == sym => ele
+    }
+  }
 
   var extendsRels: ListSet[(HasModelCommon, Boolean)]   = ListSet.empty
   var overridesRels: ListSet[(HasModelCommon, Boolean)] = ListSet.empty

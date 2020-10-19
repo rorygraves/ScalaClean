@@ -18,11 +18,24 @@ trait ModelSymbolBuilder {
 
   private val mSymbolCache2 = mutable.Map[global.Symbol, ModelCommon]()
   private val mSymbolCache  = mutable.Map[global.Symbol, ModelCommon]()
+  private val aliases  = mutable.Map[global.Symbol, ModelCommon]()
 
   def externalSymbol(gSym: Global#Symbol): ModelCommon = {
     asMSymbol(gSym.asInstanceOf[global.Symbol])
   }
 
+  def addAlias(alias: global.Symbol, model: ModelSymbol): Unit = {
+    assert(!aliases.contains(alias))
+    assert(!mSymbolCache.contains(alias))
+    assert(model.tree.symbol != alias)
+    aliases(alias) = model.common
+    mSymbolCache(alias) = model.common
+  }
+  def removeAlias(alias: global.Symbol): Unit = {
+    assert(aliases.contains(alias))
+    aliases -= alias
+    mSymbolCache -= alias
+  }
   def asMSymbol(gSym: global.Symbol): ModelCommon = {
     asMSymbolX(gSym, forceField = false)
   }
