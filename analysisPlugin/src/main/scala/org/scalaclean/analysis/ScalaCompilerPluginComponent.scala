@@ -120,10 +120,6 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
       }
     }
 
-    object PlatformPathIO {
-      def workingDirectoryString: String = sys.props("user.dir")
-    }
-
     override def apply(unit: global.CompilationUnit): Unit = {
 
       val srcPath = unit.source.file.toString
@@ -137,6 +133,7 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
       traverser.traverseSource(unit)
       elementsWriter.endUnit()
       relationsWriter.endUnit()
+      extensionWriter.endUnit()
     }
 
   }
@@ -621,10 +618,29 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
           }
 
           currentScope match {
-            case o: ModelObject if defdef.symbol.nameString == "<init>" =>
+            case o: ModelObject if symbol.isConstructor =>
               // we consider the constructor of the object to be part of the object
               // this simplified the model navigation
               super.traverse(tree)
+            case cls: ModelClass if symbol.isConstructor =>
+              // constructor params can also be fields, so we alias them
+              // (ScalaClean is only interested the val, but we need to see usage)
+              // so that the traversal sees the usage of the param as a usage of the field
+              val symbolAliases: List[Symbol] = {
+                for (params <- symbol.paramss;
+                     param <- params;
+                     field = symbol.enclClass.tpe.decl(param.name);
+                //its a value, and the positions overlap
+                     if field.isValue && field.pos.start <= param.pos.`end` && field.pos.`end` >= param.pos.start;
+                     model <- cls.findChildBySymbol(field)) yield {
+                  addAlias(param, model)
+                  param
+                }
+              }
+              enterScope(ModelPlainMethod(defdef, mSymbol, declTypeDefined, symbol.isDeferred)) { method =>
+                traverseMethod(method)
+              }
+              symbolAliases foreach removeAlias
             case _ if symbol.isAccessor && symbol.isGetter =>
               enterScope(ModelGetterMethod(defdef, mSymbol, declTypeDefined, symbol.isDeferred)) { method =>
                 traverseMethod(method)
@@ -643,8 +659,9 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
               }
 
             case _ if symbol.isSynthetic =>
-              traverseType(tree.tpe)
-            // TODO should we super.traverse(tree) ??
+              enterScope(ModelPlainMethod(defdef, mSymbol, declTypeDefined, symbol.isDeferred)) { method =>
+                traverseMethod(method)
+              }
             case _ =>
               enterScope(ModelPlainMethod(defdef, mSymbol, declTypeDefined, symbol.isDeferred)) { method =>
                 traverseMethod(method)
