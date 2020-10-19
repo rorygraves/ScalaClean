@@ -2,11 +2,7 @@ package org.scalaclean.analysis
 
 import java.io.File
 
-class ElementsWriter(file: File) {
-  var logger: ScopeLogging = _
-
-  val writer = new SortedStringWriter(file.toPath)
-
+class ElementsWriter(file: File) extends CommonWriter(file) {
   def commonPrefix(model: ModelSymbol): List[Any] = {
     import model._
     List(
@@ -42,14 +38,6 @@ class ElementsWriter(file: File) {
     if (logger.debug)
       logger.scopeLog(s" -->[ELEMENT] $msg")
 
-  }
-
-  def endUnit(): Unit = {
-    writer.flush()
-  }
-
-  def finish(): Unit = {
-    writer.close()
   }
 
 }

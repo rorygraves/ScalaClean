@@ -2,6 +2,7 @@ package org.scalaclean.analysis
 
 import java.io.File
 
+//TODO use CommonWriter
 class RelationshipsWriter(file: File) {
 
   var logger: ScopeLogging = _
