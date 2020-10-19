@@ -47,7 +47,7 @@ class ScalaCleanCompilerPlugin(override val global: Global) extends Plugin {
         // Filter out source dirs passed in which don't actually exist
         val sourceDirsInArgument = option.substring(8).split(java.io.File.pathSeparatorChar).toList
         val filteredSourceDirs   = sourceDirsInArgument.filter(srcDir => Files.exists(Paths.get(srcDir)))
-        component.sourceDirs = filteredSourceDirs
+        component._sourceDirs = filteredSourceDirs
       } else
         error(s"Option not recognised: $option")
     }

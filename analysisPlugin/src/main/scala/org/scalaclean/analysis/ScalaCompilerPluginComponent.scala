@@ -1,7 +1,7 @@
 package org.scalaclean.analysis
 
 import java.io.File
-import java.nio.file.{ Files, Paths }
+import java.nio.file.{Files, Path, Paths}
 import java.util.Properties
 
 import org.scalaclean.analysis.plugin.ExtensionPlugin
@@ -11,7 +11,7 @@ import scala.collection.immutable.HashSet
 import scala.collection.mutable
 import scala.reflect.internal.Flags
 import scala.tools.nsc.plugins.PluginComponent
-import scala.tools.nsc.{ Global, Phase }
+import scala.tools.nsc.{Global, Phase}
 
 class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent with ModelSymbolBuilder {
   override val phaseName: String = "scalaclean-compiler-plugin-phase"
@@ -19,9 +19,28 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
   override val runsAfter: List[String] = List("typer")
   // a bit ugly, but the options are read after the component is create - so it is updated by the plugin
   var debug                    = false
-  var sourceDirs: List[String] = List.empty
+  var _sourceDirs: List[String] = List.empty
   var extensions               = Set.empty[ExtensionPlugin]
   var options: List[String]    = Nil
+
+
+  override def sourceDirs: List[String] = {
+    if (_sourceDirs.isEmpty) {
+      val dirs = global.currentRun.compiledFiles.toSet.map{p: String => Paths.get(p).getParent}
+
+      val common: Path = dirs.foldLeft(dirs.head) {
+        case (curr, next) =>
+          def commonParent(path: Path): Path = if (next.startsWith(path)) path else commonParent(path.getParent)
+
+          commonParent(curr)
+      }
+      import collection.JavaConverters._
+      val scalaDir = common.iterator().asScala.find(path => path.endsWith("scala") && path.getParent.getParent.endsWith("src"))
+      assert(scalaDir.nonEmpty, s"can't determine root source dir from files ${ global.currentRun.compiledFiles} ")
+      _sourceDirs = scalaDir.toList.map(_.toString)
+    }
+    _sourceDirs
+  }
 
   override def newPhase(prev: Phase): Phase = new StdPhase(prev) {
 
