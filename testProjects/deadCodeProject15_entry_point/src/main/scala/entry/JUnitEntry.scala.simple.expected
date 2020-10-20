@@ -1,0 +1,37 @@
+package junitentry
+
+import org.junit._
+
+class BaseUsed
+class BaseUnused
+
+class UsedChild extends Used1
+
+class Unused extends BaseUnused{
+  def anotherUsed = ???
+}
+
+class Used1 extends BaseUsed{
+  @Test def used = anotherUsed
+  def anotherUsed = ???
+}
+class Used2 extends BaseUsed{
+  @Ignore def used = anotherUsed
+  def anotherUsed = ???
+}
+class Used3 extends BaseUsed{
+  @Before def used = anotherUsed
+  def anotherUsed = ???
+}
+class Used4 extends BaseUsed{
+  @After def used = anotherUsed
+  def anotherUsed = ???
+}
+object Used5 {
+  @BeforeClass def used = anotherUsed
+  def anotherUsed = ???
+}
+object Used6 {
+  @AfterClass def used = anotherUsed
+  def anotherUsed = ???
+}

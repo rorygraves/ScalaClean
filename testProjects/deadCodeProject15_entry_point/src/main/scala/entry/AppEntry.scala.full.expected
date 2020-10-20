@@ -1,0 +1,10 @@
+package appentry
+
+object Entry extends App {
+  new Used()
+}
+
+class Used extends BaseUsed
+
+class BaseUsed
+

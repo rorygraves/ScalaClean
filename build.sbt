@@ -113,6 +113,11 @@ def testInputProject(id: String, projectLocation: String, showTrees: Boolean = f
 ) = sbt.Project
   .apply(id, file(projectLocation))
   .settings(
+    libraryDependencies += "junit"              % "junit"           % junitVersion           ,
+    libraryDependencies += "org.scalatest"     %% "scalatest"       % scalaTestVersion       ,
+    libraryDependencies += "org.scalatestplus" %% "junit-4-12"      % s"$scalaTestVersion.0" ,
+    libraryDependencies += "com.novocode"       % "junit-interface" % "0.11"                 ,
+
     scalacOptions += "-Yrangepos",
     skip in publish := true,
     scalacOptions ++= {
@@ -164,6 +169,9 @@ lazy val deadCodeProject13_case_class =
 lazy val deadCodeProject14_anon_class =
   testInputProject("deadCodeProject14_anon_class", "testProjects/deadCodeProject14_anon_class")()
 
+lazy val deadCodeProject15_entry_point =
+  testInputProject("deadCodeProject15_entry_point", "testProjects/deadCodeProject15_entry_point")()
+
 lazy val privatiserProject1 = testInputProject("privatiserProject1", "testProjects/privatiserProject1")()
 lazy val privatiserProject2 = testInputProject("privatiserProject2", "testProjects/privatiserProject2")()
 lazy val privatiserProject3 = testInputProject("privatiserProject3", "testProjects/privatiserProject3")()
@@ -201,7 +209,8 @@ lazy val deadCodeTests = List(
   deadCodeProject11_constants,
   deadCodeProject12_isolated,
   deadCodeProject13_case_class,
-  deadCodeProject14_anon_class
+  deadCodeProject14_anon_class,
+  deadCodeProject15_entry_point
 )
 
 lazy val finaliserTests = List(finaliserProject1)

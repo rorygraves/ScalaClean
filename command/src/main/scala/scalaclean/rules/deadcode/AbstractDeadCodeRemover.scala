@@ -77,12 +77,13 @@ abstract class AbstractDeadCodeRemover[T <: AbstractDeadCodeCommandLine] extends
       }
 
       element.colour = current.withPurpose(purpose)
-      adjustUsage(element, purpose, path, comment, current)
+      adjustUsage(element, markEnclosing, purpose, path, comment, current)
     }
   }
 
   protected def adjustUsage(
       element: ModelElement,
+      markEnclosing: Boolean,
       purpose: Purpose,
       path: List[ModelElement],
       comment: String,
@@ -101,9 +102,11 @@ abstract class AbstractDeadCodeRemover[T <: AbstractDeadCodeCommandLine] extends
     // don't mark the fields as used though
     markRhs(element, purpose, element :: path, s"$comment -> markRhs")
 
-    //enclosing
-    element.enclosing.foreach { enclosed =>
-      markUsed(enclosed, markEnclosing = true, purpose, element :: path, s"$comment - enclosing")
+    if (markEnclosing) {
+      //enclosing
+      element.enclosing.foreach { enclosed =>
+        markUsed(enclosed, markEnclosing = true, purpose, element :: path, s"$comment - enclosing")
+      }
     }
 
     //overridden
@@ -142,9 +145,26 @@ abstract class AbstractDeadCodeRemover[T <: AbstractDeadCodeCommandLine] extends
   }
 
   override def runRule(): Unit = {
-    allMainEntryPoints.foreach(e => markUsed(e, markEnclosing = true, Main, e :: Nil, ""))
-    allJunitTest.foreach(e => markUsed(e, markEnclosing = true, Test, e :: Nil, ""))
-    allSerialisationEntries.foreach(e => markUsed(e, markEnclosing = false, Main, e :: Nil, "serialisationCode"))
+    runBasicRule()
+    runExtraRules()
+    runSerialisationRule()
+  }
+  def runBasicRule(): Unit = {
+    allMainEntryPoints.foreach(e => markUsed(e, markEnclosing = true, Main, e :: Nil, "app"))
+    allJunitTest.foreach(e => markUsed(e, markEnclosing = true, Test, e :: Nil, "junit test"))
+    allJunitClasses.foreach { testClass =>
+      markUsed(testClass, markEnclosing = true, Test, testClass :: Nil, "junit test class")
+    }
+    allScalaTests.foreach(e => markUsed(e, markEnclosing = true, Test, e :: Nil, "scalatests"))
+  }
+  def runExtraRules(): Unit = {}
+  def runSerialisationRule(): Unit = {
+    allSerialisationEntries.foreach(e =>
+    //we don't really want to mark a class as used just because it had a serialisation method
+    //so we limit it to just those that seem to be in use already
+    //you could also consider that all serialisable classes are live ....
+      if (!e.classOrEnclosing.colour.isUnused)
+        markUsed(e, markEnclosing = false, Main, e :: Nil, "serialisationCode"))
   }
 
   override def fix(targetFile: AbsolutePath, syntacticDocument: () => SyntacticDocument): List[SCPatch] = {

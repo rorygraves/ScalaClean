@@ -77,9 +77,7 @@ class SimpleDeadCodeRemover(override val options: SimpleDeadCodeCommandLine, ove
 
   }
 
-  override def runRule(): Unit = {
-    super.runRule()
-
+  override def runExtraRules(): Unit = {
     //see what we can see is used
     model
       .allOf[ModelElement]
