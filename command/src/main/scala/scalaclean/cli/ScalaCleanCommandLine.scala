@@ -1,26 +1,17 @@
 package scalaclean.cli
 
-import java.io.File
 import java.nio.file.Path
 
-import org.kohsuke.args4j.spi.{ MultiPathOptionHandler, StopOptionHandler }
+import org.kohsuke.args4j.spi.MultiPathOptionHandler
 import org.kohsuke.args4j.{ Option => ArgOption }
 import java.util.{ List => JList }
 
-import scalaclean.rules.RuleRun
-
 import scala.collection.JavaConverters._
-
-trait RunOptions {
-  def addComments: Boolean
-  def debug: Boolean
-}
 
 case class SimpleRunOptions(
     debug: Boolean = false,
     addComments: Boolean = false,
-    replace: Boolean = false,
-) extends RunOptions {
+    replace: Boolean = false) {
 
   def orReplace(replace: Boolean): SimpleRunOptions = {
     if (replace) copy(replace = replace) else this
@@ -28,7 +19,7 @@ case class SimpleRunOptions(
 
 }
 
-abstract class ScalaCleanCommandLine extends RunOptions {
+abstract class ScalaCleanCommandLine {
 
   @ArgOption(
     name = "--files",

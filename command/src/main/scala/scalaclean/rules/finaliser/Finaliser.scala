@@ -1,6 +1,6 @@
 package scalaclean.rules.finaliser
 
-import scalaclean.cli.{RunOptions, ScalaCleanCommandLine}
+import scalaclean.cli.ScalaCleanCommandLine
 import scalaclean.model._
 import scalaclean.rules.{AbstractRule, RuleRun}
 import scalaclean.util.ScalaCleanTreePatcher
