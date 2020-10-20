@@ -80,4 +80,7 @@ abstract class BaseDeadCodeTests extends AbstractProjectTests {
     projectTest("deadCodeProject13_case_class")
   }
 
+  test("deadCode14_anon_class") {
+    projectTest("deadCodeProject14_anon_class")
+  }
 }

@@ -16,10 +16,6 @@ object SimpleDeadCodeRemover extends AbstractRule[SimpleDeadCodeCommandLine] {
 class SimpleDeadCodeRemover(override val options: SimpleDeadCodeCommandLine, override val model: ProjectModel)
     extends AbstractDeadCodeRemover[SimpleDeadCodeCommandLine] {
 
-  override def markIndirectReferences = false
-
-  override def markRhs(element: ModelElement, purpose: Purpose, path: List[ModelElement], comment: String): Unit = ()
-
   //TODO plugin for tweaks
   //e.modelElementId.id.contains("_:=")
   protected def extendedUsedDirectly(e: ModelElement): Boolean = false
