@@ -33,13 +33,15 @@ class SimpleDeadCodeRemover(override val options: SimpleDeadCodeCommandLine, ove
             fieldModel.rawEnd == accessor.rawEnd)
     }
   }
+  object simpleColours {
+    val foundSimpleUsage = makeChange(mainUsage)
+  }
 
   def simpleMarkUsed(subject: ModelElement, accessor: ElementId, comment: String): Unit = {
-    if (debug) {
-      println(s"[SimpleDeadCode] mark ${subject.modelElementId} as used due to ${accessor} $comment")
-    }
+    if (debug)
+      println(s"[SimpleDeadCode] mark ${subject.modelElementId} as used due to $accessor $comment")
     moreMarked = true
-    subject.colour = subject.colour.withPurpose(Main)
+    subject.colour = simpleColours.foundSimpleUsage
   }
   var moreMarked = false
 
@@ -68,7 +70,7 @@ class SimpleDeadCodeRemover(override val options: SimpleDeadCodeCommandLine, ove
       }
     }
     todo += element
-    while (element.colour.isUnused && !todo.isEmpty) {
+    while (element.colour.isInitial && !todo.isEmpty) {
       val next = todo.head
       todo -= next
       tried += next
@@ -82,7 +84,7 @@ class SimpleDeadCodeRemover(override val options: SimpleDeadCodeCommandLine, ove
     model
       .allOf[ModelElement]
       .foreach(e =>
-        if (e.colour.isUnused)// we need to mark thing used that are not in source
+        if (e.colour.isInitial)// we need to mark thing used that are not in source
           checkUsedDirectly(e)
       )
 
@@ -90,8 +92,8 @@ class SimpleDeadCodeRemover(override val options: SimpleDeadCodeCommandLine, ove
     model
       .allOf[ClassLike]
       .foreach(e =>
-        if (e.colour.isUnused && e.existsInSource) {
-          e.extendedByClassLike(false, (_, cls) => !cls.colour.isUnused).take(1).foreach{
+        if (e.colour.isInitial && e.existsInSource) {
+          e.extendedByClassLike(false, (_, cls) => !cls.colour.isInitial).take(1).foreach{
             ele => simpleMarkUsed(e, ele.modelElementId, "extendedBy")
           }
         }
@@ -100,7 +102,7 @@ class SimpleDeadCodeRemover(override val options: SimpleDeadCodeCommandLine, ove
     model
       .allOf[MethodModel]
       .foreach(e =>
-        if (e.colour.isUnused && e.existsInSource) {
+        if (e.colour.isInitial && e.existsInSource) {
           e.allTransitiveOverrides.iterator.collectFirst{
             case (None, id) => id
           }.foreach{ id =>
@@ -125,8 +127,8 @@ class SimpleDeadCodeRemover(override val options: SimpleDeadCodeCommandLine, ove
       model
         .allOf[MethodModel]
         .foreach(e =>
-          if (e.colour.isUnused) {
-            e.internalTransitiveOverriddenBy.iterator.filterNot(_.colour.isUnused).take(1).foreach {
+          if (e.colour.isInitial) {
+            e.internalTransitiveOverriddenBy.iterator.filterNot(_.colour.isInitial).take(1).foreach {
               ele => simpleMarkUsed(e, ele.modelElementId, "overridden by used")
             }
           }
@@ -135,9 +137,9 @@ class SimpleDeadCodeRemover(override val options: SimpleDeadCodeCommandLine, ove
       model
         .allOf[MethodModel]
         .foreach(e =>
-          if (e.colour.isUnused) {
+          if (e.colour.isInitial) {
             e.internalTransitiveOverrides.iterator.collectFirst {
-              case ele if !ele.colour.isUnused => ele
+              case ele if !ele.colour.isInitial => ele
             }.foreach {
               ele => simpleMarkUsed(e, ele.modelElementId, s"overrides internal ")
             }

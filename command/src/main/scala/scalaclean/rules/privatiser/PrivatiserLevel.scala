@@ -1,10 +1,15 @@
 package scalaclean.rules.privatiser
 
 import org.scalaclean.analysis.plugin.VisibilityData
-import scalaclean.model.{ClassLike, ElementId, ElementIdM, ElementScope, Mark, ModelElement, SourceModel}
+import scalaclean.model.{ClassLike, ElementId, ElementIdM, ElementScope, Mark, ModelElement, SomeSpecificColour, SourceModel}
 import ElementIdM.pathNodes.{ObjectPathImpl, PackagePathImpl}
 
-private[privatiser] sealed trait PrivatiserLevel extends Mark {
+private[privatiser] sealed trait PrivatiserLevel extends SomeSpecificColour {
+
+  override type RealType = PrivatiserLevel
+
+  override def merge(other: PrivatiserLevel): PrivatiserLevel = widen(other)
+
   def reason: String
 
   def asText(context: ModelElement, options: AbstractPrivatiserCommandLine): Option[String]
@@ -14,21 +19,6 @@ private[privatiser] sealed trait PrivatiserLevel extends Mark {
 
 private[privatiser] case class Public(reason: String) extends PrivatiserLevel {
   override def widen(level: PrivatiserLevel): PrivatiserLevel = this
-
-  override def asText(context: ModelElement, options: AbstractPrivatiserCommandLine): Option[String] = None
-}
-
-private[privatiser] case class NoChange(reason: String) extends PrivatiserLevel {
-  override def widen(level: PrivatiserLevel): PrivatiserLevel = this
-
-  override def asText(context: ModelElement, options: AbstractPrivatiserCommandLine): Option[String] = None
-}
-
-private[privatiser] case object Undefined extends PrivatiserLevel {
-
-  override def reason = "Initial"
-
-  override def widen(level: PrivatiserLevel): PrivatiserLevel = level
 
   override def asText(context: ModelElement, options: AbstractPrivatiserCommandLine): Option[String] = None
 }
@@ -120,9 +110,11 @@ private[privatiser] final case class Scoped(
 
     def enclosingScopeInNarrower: Boolean = context.enclosing.head match {
       case sourceModel: SourceModel => false
-      case _ =>
-        val enclosingLevel = context.enclosing.head.classOrEnclosing.mark.asInstanceOf[PrivatiserLevel]
-        this == this.widen(enclosingLevel)
+      case enclosing =>
+        enclosing.classOrEnclosing.mark.asInstanceOf[Mark[PrivatiserLevel]].specific match {
+          case Some(level) => this == this.widen(level)
+          case _ => false
+        }
     }
 
     def referencedInSubclass: Boolean = context match {
@@ -188,8 +180,6 @@ private[privatiser] final case class Scoped(
 
   def widen(level: PrivatiserLevel): PrivatiserLevel = level match {
     case p: Public   => p
-    case n: NoChange => n
-    case Undefined   => this
     case other: Scoped =>
       val privateWidened = this.privateScope.widen(other.privateScope)
       if (privateWidened.elementId.isRoot) Public(privateWidened.sortedReasons.toString)

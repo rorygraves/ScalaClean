@@ -25,14 +25,14 @@ class SimplePrivatiser(options: SimplePrivatiserCommandLine, model: ProjectModel
   override def ruleSpecific(): Unit = {
     model.allOf[ModelElement].foreach {
       case e if isOverridden(e) =>
-        e.colour = NoChange(s"It's overridden ${e.internalTransitiveOverriddenBy.head}")
+        e.colour = dontChange(s"It's overridden ${e.internalTransitiveOverriddenBy.head}")
       case e if isOverrides(e) =>
-        e.colour = NoChange(s"It overrides ${e.allTransitiveOverrides.head}")
+        e.colour = dontChange(s"It overrides ${e.allTransitiveOverrides.head}")
       case e => e.colour = localLevel(e)
     }
   }
 
-  override def determineAccess(element: ModelElement, myClassLike: ElementId, incomingReferences: Iterable[Refers]): PrivatiserLevel = {
+  override def determineAccess(element: ModelElement, myClassLike: ElementId, incomingReferences: Iterable[Refers]): Colour = {
     val myId = element.modelElementId
 
     var refFromContainer: ModelElement = null
@@ -51,13 +51,13 @@ class SimplePrivatiser(options: SimplePrivatiserCommandLine, model: ProjectModel
         refFromOutside = from
     }
     if (refFromOutside ne null)
-      NoChange(s"Its accessed by $refFromOutside")
+      dontChange(s"Its accessed by $refFromOutside")
     else if (refFromCompanion ne null)
-      Scoped.Private(myClassLike, s"Its private (assessed by companion - $refFromCompanion)")
+      makeChange(Scoped.Private(myClassLike, s"Its private (assessed by companion - $refFromCompanion)"))
     else if (refFromContainer ne null)
-      Scoped.Private(myClassLike, s"Its private (assessed by enclosing - $refFromContainer)")
+      makeChange(Scoped.Private(myClassLike, s"Its private (assessed by enclosing - $refFromContainer)"))
     else
-      Scoped.Private(myClassLike.dotThis, s"Its private (seems unused)")
+      makeChange(Scoped.Private(myClassLike.dotThis, s"Its private (seems unused)"))
   }
 
 }
