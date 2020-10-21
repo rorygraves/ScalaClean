@@ -22,7 +22,7 @@ abstract class AbstractPrivatiser[T <: AbstractPrivatiserCommandLine](val option
   def markKnown(): Unit = {
     allApp.foreach(e => e.mark = NoChange("It's an app"))
 
-    allJunitTest.foreach(e => e.mark = NoChange("It's a test"))
+    allTestEntryPoints.foreach(e => e.mark = NoChange("It's a test"))
 
     model.allOf[ModelElement].foreach {
       case x if x.colour != Undefined => //already covered

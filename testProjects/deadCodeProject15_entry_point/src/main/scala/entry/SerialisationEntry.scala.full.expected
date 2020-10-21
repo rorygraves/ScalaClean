@@ -1,0 +1,16 @@
+package serentry
+
+object Entry extends App {
+  new Used()
+}
+
+class Used extends BaseUsed {
+  private def readResolve = ???
+  private def writeReplace = ???
+  private def readObject = ???
+  private def writeObject = ???
+  private def readObjectNoData = ???
+}
+
+class BaseUsed extends Serializable
+

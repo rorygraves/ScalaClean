@@ -123,11 +123,12 @@ abstract class RuleRun[T <: ScalaCleanCommandLine]{
     "org.springframework.jmx.export.annotation.ManagedAttribute"
   )
 
-  def allTestEntryPoints: Iterator[MethodModel] = {
-    allJunitTest
+  def allTestEntryPoints: Iterator[ModelElement] = {
+    allJunitTest ++ allJunitClasses ++ allScalaTests
   }
 
   private val junitAnnotationEntryPoints = Set(
+    "org.junit.Ignore",
     "org.junit.Test",
     "org.junit.Before",
     "org.junit.After",
@@ -140,14 +141,26 @@ abstract class RuleRun[T <: ScalaCleanCommandLine]{
       method.annotations.exists(a => junitAnnotationEntryPoints.contains(a.fqName))
     }
   }
+  def allJunitClasses: Iterator[ClassLike] = {
+    allJunitTest.map(_.classOrEnclosing).toSet.flatMap { cls: ClassLike =>
+      cls.extendedByClassLike()  ++  cls.extendsClassLikeCompiled()
+    } iterator
+  }
+
+  def allScalaTests: Iterator[ClassLike] = {
+    val suite = ElementId("C:org.scalatest.Suite")
+    model.allOf[ClassLike].filter { cls: ClassLike =>
+      cls.xtends(suite)
+    }
+  }
 
   def allSerialisationEntries: Iterator[MethodModel] = {
     model.allOf[MethodModel].filter { method =>
-      (method.name == "writeObject" /*        && method.params == objectOutputStream */ ) ||
-      (method.name == "readObject" /*       && method.params == objectInputStream */ ) ||
-      (method.name == "readObjectNoData" /* && method.params == empty */ ) ||
-      (method.name == "writeReplace" /*     && method.params == empty */ ) ||
-      (method.name == "readResolve" /*      && method.params == empty */ )
+      (method.methodName == "writeObject" /*      && method.params == objectOutputStream */ ) ||
+      (method.methodName == "readObject" /*       && method.params == objectInputStream */ ) ||
+      (method.methodName == "readObjectNoData" /* && method.params == empty */ ) ||
+      (method.methodName == "writeReplace" /*     && method.params == empty */ ) ||
+      (method.methodName == "readResolve" /*      && method.params == empty */ )
     }
     // ++
   }
