@@ -7,6 +7,7 @@ import java.util.Properties
 import org.scalaclean.analysis.plugin.ExtensionPlugin
 import scalaclean.model.ElementId
 
+import scala.annotation.tailrec
 import scala.collection.immutable.HashSet
 import scala.collection.mutable
 import scala.reflect.internal.Flags
@@ -24,20 +25,51 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
   var options: List[String]    = Nil
 
 
-  override def sourceDirs: List[String] = {
+
+  def sourceDirs: List[String] = {
+
+    def toSrcDir(input: Path): Path = {
+
+      @tailrec
+      def dropToLanguage(path: Path): Option[Path] = {
+        if (path.endsWith("java") || path.endsWith("scala")  || path.endsWith("scala-2.12") || path.endsWith("src_managed/main")) {
+          Some(path)
+        } else {
+          val parent = path.getParent
+          if (parent == null)
+            None
+          else dropToLanguage(parent)
+        }
+      }
+
+      def checkForSrcFolder(path: Path): Boolean = {
+        if (path.endsWith("src_managed/main"))
+          true
+        else {
+          val parent = path.getParent // test/main
+          if (parent == null) false else {
+            val parentParent = parent.getParent
+            if (parentParent == null) false else
+              parentParent.endsWith("src") || parentParent.endsWith("src_managed")
+          }
+        }
+      }
+      val langFolder = dropToLanguage(input).getOrElse(throw new IllegalStateException(s"Unable to find source folder for $input"))
+
+
+      if(!checkForSrcFolder(langFolder))
+        throw new IllegalArgumentException(s"Path not of the form <src|src_managed>/?/<scala|java>: $langFolder")
+
+      langFolder
+    }
+
+
     if (_sourceDirs.isEmpty) {
       val dirs = global.currentRun.compiledFiles.toSet.map{p: String => Paths.get(p).getParent}
+      val srcDirs = dirs.map(toSrcDir)
 
-      val common: Path = dirs.foldLeft(dirs.head) {
-        case (curr, next) =>
-          def commonParent(path: Path): Path = if (next.startsWith(path)) path else commonParent(path.getParent)
-
-          commonParent(curr)
-      }
-      import collection.JavaConverters._
-      val scalaDir = common.iterator().asScala.find(path => path.endsWith("scala") && path.getParent.getParent.endsWith("src"))
-      assert(scalaDir.nonEmpty, s"can't determine root source dir from files ${ global.currentRun.compiledFiles} ")
-      _sourceDirs = scalaDir.toList.map(_.toString)
+      assert(srcDirs.nonEmpty, s"can't determine root source dir from files XXX ")
+      _sourceDirs = srcDirs.toList.map(_.toString)
     }
     _sourceDirs
   }
