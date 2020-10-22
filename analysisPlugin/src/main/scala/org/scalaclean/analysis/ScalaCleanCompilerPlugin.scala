@@ -18,7 +18,7 @@ class ScalaCleanCompilerPlugin(override val global: Global) extends Plugin {
   component.extensions += ModsPlugin.create(component, "")
   component.extensions += AnnotationPlugin.create(component, "")
 
-  override def processOptions(options: List[String], error: String => Unit): Unit = {
+  override def init(options: List[String], error: String => Unit): Boolean = {
 
     import scala.reflect.runtime.universe
     val runtimeMirror = universe.runtimeMirror(getClass.getClassLoader)
@@ -51,6 +51,7 @@ class ScalaCleanCompilerPlugin(override val global: Global) extends Plugin {
       } else
         error(s"Option not recognised: $option")
     }
+    true
   }
 
   override val optionsHelp: Option[String] = Some(
