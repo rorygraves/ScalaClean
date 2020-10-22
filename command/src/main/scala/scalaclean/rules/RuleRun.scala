@@ -12,13 +12,14 @@ import scalafix.v1.SyntacticDocument
 
 import scala.meta.internal.io.FileIO
 import scala.meta.{AbsolutePath, RelativePath}
+import scala.reflect.{ClassTag, classTag}
 
 abstract class AbstractRule[T <: ScalaCleanCommandLine] {
   type Rule <: RuleRun[T]
   def cmdLine: T
   def apply(options: T, model: ProjectModel): Rule
 
-  def main(args: Array[String]): Unit  = {
+  def main(args: Array[String]): Unit = {
     val options = cmdLine
     parse(options, args)
 
@@ -27,15 +28,16 @@ abstract class AbstractRule[T <: ScalaCleanCommandLine] {
     val projectSet = new ProjectSet(projectProps: _*)
 
     println(s"Running rule: ${getClass.getSimpleName}")
-    apply(options,projectSet).run()
+    apply(options, projectSet).run()
 
   }
+
   def parse(cmdLine: ScalaCleanCommandLine, args: Array[String]): Unit = {
     import org.kohsuke.args4j._
     val parser = new CmdLineParser(cmdLine)
 
     try { // parse the arguments.
-      parser.parseArgument(args :_*)
+      parser.parseArgument(args: _*)
     } catch {
       case e: CmdLineException =>
         System.err.println(e.getMessage)
@@ -48,7 +50,8 @@ abstract class AbstractRule[T <: ScalaCleanCommandLine] {
   }
 
 }
-abstract class RuleRun[T <: ScalaCleanCommandLine]{
+
+abstract class RuleRun[T <: ScalaCleanCommandLine] {
   val options: T
   val model: ProjectModel
   def name = getClass.getSimpleName
@@ -58,7 +61,10 @@ abstract class RuleRun[T <: ScalaCleanCommandLine]{
   def addComments                             = options.addComments
   def printSummary(projectName: String): Unit = patchStats.printSummary(projectName)
 
-  type Colour <: Mark
+  type Colour = Mark[SpecificColour]
+  type SpecificColour <: SomeSpecificColour
+  def dontChange(reason: String)        = Mark.dontChange[SpecificColour](SimpleReason(reason))
+  def makeChange(level: SpecificColour) = Mark.specific[SpecificColour](level)
 
   final def beforeStart(): Unit = {
     if (debug)
@@ -77,14 +83,17 @@ abstract class RuleRun[T <: ScalaCleanCommandLine]{
 
   def debugDump(): Unit = {}
 
-  def markInitial(): Unit
+  def markInitial(): Unit = markAll[ModelElement](Mark.initial[SpecificColour])
 
   def runRule(): Unit
 
   def fix(targetFile: AbsolutePath, syntacticDocument: () => SyntacticDocument): List[SCPatch]
 
-  def markAll[T <: ModelElement: Manifest](colour: => Colour): Unit = {
-    model.allOf[T].foreach(e => e.mark = colour)
+  def markAll[E <: ModelElement: ClassTag](colour: Colour): Unit = {
+    val all = model.allOf[E].toList
+    model.allOf[E].foreach(
+      _.mark = colour
+    )
   }
 
   implicit class Coloured(e: ModelElement) {
@@ -165,7 +174,6 @@ abstract class RuleRun[T <: ScalaCleanCommandLine]{
     // ++
   }
 
-
   def generateHTML(generated: String, original: String): Unit = {
     import scala.io.Source
     val cssText: String = Source.fromResource("default-style.css").mkString
@@ -208,11 +216,11 @@ abstract class RuleRun[T <: ScalaCleanCommandLine]{
   }
 
   def applyRule(
-                 targetFile: AbsolutePath,
-                 syntacticDocument: () => SyntacticDocument,
-                 suppress: Boolean,
-                 source: String,
-               ): String = {
+      targetFile: AbsolutePath,
+      syntacticDocument: () => SyntacticDocument,
+      suppress: Boolean,
+      source: String,
+  ): String = {
 
     // actually run the rule
     val fixes: Seq[SCPatch] = fix(targetFile, syntacticDocument)
@@ -229,23 +237,22 @@ abstract class RuleRun[T <: ScalaCleanCommandLine]{
 
     val projectSet = new ProjectSet(projectProps: _*)
 
-    println(s"Running rule: ${name}")
+    println(s"Running rule: $name")
 
     beforeStart()
 
     var changed = false
-    projectSet.projects.foreach { project =>
-      changed |= runRuleOnProject(project)
-    }
+    projectSet.projects.foreach(project => changed |= runRuleOnProject(project))
     if (options.debug)
       println(s"DEBUG: Changed = $changed")
     changed
   }
 
   object testSupport extends DiffAssertions {
+
     def expectedPathForTarget(srcBase: AbsolutePath, targetFile: RelativePath): AbsolutePath = {
       val targetOutput = RelativePath(targetFile.toString() + options.testOptions.expectationSuffix + ".expected")
-      val outputFile = srcBase.resolve(targetOutput)
+      val outputFile   = srcBase.resolve(targetOutput)
       outputFile
     }
 
@@ -264,22 +271,24 @@ abstract class RuleRun[T <: ScalaCleanCommandLine]{
       } else
         false
     }
+
   }
 
   def writeToFile(path: AbsolutePath, content: String): Unit = {
     writeToFile(path.toNIO, content)
   }
+
   def writeToFile(path: Path, content: String): Unit = {
     Files.write(path, content.getBytes)
   }
 
   /**
-    * @param project The target project
-    * @return True if diffs were seen or files were changed
-    */
+   * @param project The target project
+   * @return True if diffs were seen or files were changed
+   */
   def runRuleOnProject(
-                        project: Project
-                      ): Boolean = {
+      project: Project
+  ): Boolean = {
 
     var changed = false
 
@@ -289,9 +298,9 @@ abstract class RuleRun[T <: ScalaCleanCommandLine]{
     val files: Seq[AbsolutePath] = project.srcFiles.toList.map(AbsolutePath(_))
 
     def findRelativeSrc(
-                         absTargetFile: meta.AbsolutePath,
-                         basePaths: List[AbsolutePath]
-                       ): (AbsolutePath, RelativePath) = {
+        absTargetFile: meta.AbsolutePath,
+        basePaths: List[AbsolutePath]
+    ): (AbsolutePath, RelativePath) = {
 
       val nioTargetFile = absTargetFile.toNIO
       val baseOpt       = basePaths.find(bp => nioTargetFile.startsWith(bp.toNIO))
@@ -339,6 +348,5 @@ abstract class RuleRun[T <: ScalaCleanCommandLine]{
     printSummary("ALL")
     changed
   }
-
 
 }

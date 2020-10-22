@@ -11,7 +11,7 @@ import scala.meta.io.AbsolutePath
 /** A rule that removes unreferenced classes */
 abstract class AbstractDeadCodeRemover[T <: AbstractDeadCodeCommandLine] extends RuleRun[T] {
 
-  type Colour = Usage
+  type SpecificColour = Usage
 
   sealed trait Purpose {
     def id: Int
@@ -22,21 +22,19 @@ abstract class AbstractDeadCodeRemover[T <: AbstractDeadCodeCommandLine] extends
   override def debugDump(): Unit = {
     println("-------------------------------------------------------------")
 
-    val used   = model.allOf[ModelElement].filter(!_.colour.isUnused).toList.map(_.modelElementId.id).sorted
-    val unused = model.allOf[ModelElement].filter(_.colour.isUnused).toList.map(_.modelElementId.id).sorted
+    val used   = model.allOf[ModelElement].filter(_.colour.specific.isDefined).toList.map(_.modelElementId.id).sorted
+    val unused = model.allOf[ModelElement].filter(_.colour.isInitial).toList.map(_.modelElementId.id).sorted
+    val banned = model.allOf[ModelElement].filter(_.colour.changesAreBanned).toList.map(_.modelElementId.id).sorted
 
     println("Used symbols =  " + used.size)
     println("Unused size = " + unused.size)
+    println("Banned size = " + banned.size)
     println("Used Elements: ")
     used.foreach(e => println("  " + e))
     println("Unused Elements: ")
     unused.foreach(e => println("  " + e))
     println("-------------------------------------------------------------")
 
-  }
-
-  override def markInitial(): Unit = {
-    markAll[ModelElement](Usage.unused)
   }
 
   def markRhs(element: ModelElement, purpose: Purpose, path: List[ModelElement], comment: String): Unit = {
@@ -71,13 +69,13 @@ abstract class AbstractDeadCodeRemover[T <: AbstractDeadCodeCommandLine] extends
       comment: String
   ): Unit = {
     val current = element.colour
-    if (!current.hasPurpose(purpose)) {
-      if (debug) {
+    if (!current.changesAreBanned && !current.specific.exists(_.hasPurpose(purpose))) {
+      if (debug)
         println(s"mark $element as used for $purpose due to ${path.mkString("->")} $comment")
-      }
 
-      element.colour = current.withPurpose(purpose)
-      adjustUsage(element, markEnclosing, purpose, path, comment, current)
+      val newSpecificUsage = current.specific.getOrElse(Usage(purpose)).withPurpose(purpose)
+      element.colour = current.withSpecific(newSpecificUsage)
+      adjustUsage(element, markEnclosing, purpose, path, comment)
     }
   }
 
@@ -86,8 +84,7 @@ abstract class AbstractDeadCodeRemover[T <: AbstractDeadCodeCommandLine] extends
       markEnclosing: Boolean,
       purpose: Purpose,
       path: List[ModelElement],
-      comment: String,
-      current: Usage
+      comment: String
   ): Unit = {
     //all the elements that this refers to
     element.internalOutgoingReferences.foreach { case (ref, _) =>
@@ -163,7 +160,7 @@ abstract class AbstractDeadCodeRemover[T <: AbstractDeadCodeCommandLine] extends
     //we don't really want to mark a class as used just because it had a serialisation method
     //so we limit it to just those that seem to be in use already
     //you could also consider that all serialisable classes are live ....
-      if (!e.classOrEnclosing.colour.isUnused)
+      if (!e.classOrEnclosing.colour.isInitial)
         markUsed(e, markEnclosing = false, Main, e :: Nil, "serialisationCode"))
   }
 
@@ -200,7 +197,7 @@ abstract class AbstractDeadCodeRemover[T <: AbstractDeadCodeCommandLine] extends
             val decls = fields.fieldsInDeclaration
 //            assert(decls.nonEmpty)
             val unused = decls.filter {
-              _.colour.isUnused
+              _.colour.isInitial
             }
             if (unused.isEmpty) {
               //case 1 no change
@@ -225,7 +222,7 @@ abstract class AbstractDeadCodeRemover[T <: AbstractDeadCodeCommandLine] extends
           case element =>
             if (debug)
               log(" basic element handling")
-            if (element.colour.isUnused && element.existsInSource) {
+            if (element.colour.isInitial && element.existsInSource) {
               remove(element, s"Simple ${element.name} (${element.getClass} unused")
               false
             } else
@@ -246,17 +243,26 @@ abstract class AbstractDeadCodeRemover[T <: AbstractDeadCodeCommandLine] extends
     result//.map(s => SCPatch(s.startPos, s.endPos, s.replacementText))
   }
 
-  case class Usage(existingPurposes: Int = 0) extends Mark {
+  object Usage {
+    def apply (p: Purpose) = new Usage(p.id)
+  }
+  case class Usage private (existingPurposes: Int) extends SomeSpecificColour {
+    require (existingPurposes != 0)
+    override type RealType = Usage
+
+    override def merge(other: Usage): Usage = {
+      val all = this.existingPurposes | other.existingPurposes
+      if (all == this.existingPurposes) this
+      else if (all == other.existingPurposes) other
+      else Usage(all)
+    }
 
     def withPurpose(addedPurpose: Purpose): Usage = {
-      Usage(existingPurposes | addedPurpose.id)
+      if (hasPurpose(addedPurpose)) this
+      else Usage(existingPurposes | addedPurpose.id)
     }
 
     def hasPurpose(purpose: Purpose): Boolean = 0 != (existingPurposes & purpose.id)
-
-    def isUnused: Boolean = {
-      existingPurposes == 0
-    }
 
   }
 
@@ -267,10 +273,8 @@ abstract class AbstractDeadCodeRemover[T <: AbstractDeadCodeCommandLine] extends
   object Test extends Purpose {
     override def id: Int = 1 << 1
   }
-
-  object Usage {
-    val unused: Usage = new Usage(0)
-  }
+  val mainUsage = Usage(Main)
+  val testUsage = Usage(Test)
 
 }
 class AbstractDeadCodeCommandLine extends ScalaCleanCommandLine

@@ -278,7 +278,7 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
       val sourceFile    = unit.source.file.file.toPath
       val sourceFileStr = sourceFile.toString
       val sourceSymbol =
-        ModelSource(unit.body, ModelCommon(true, elementIdManager(sourceFile), sourceFileStr, -1, -1, -1, "<NA>"))
+        ModelSource(unit.body, ModelCommon(isGlobal = true, elementIdManager(sourceFile), sourceFileStr, -1, -1, -1, "<NA>"))
       enterScope(sourceSymbol)(_ => traverse(unit.body))
 
       if (debug) {
@@ -573,8 +573,8 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
                     ModelGetterMethod(
                       DefDef(getter, new Modifiers(getter.flags, newTermName(""), Nil), global.EmptyTree),
                       getterSym,
-                      false,
-                      false
+                      isTyped = false,
+                      isAbstract = false
                     )
                   ) { method =>
                     method.addGetterFor(field.common)
@@ -680,8 +680,8 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
               val symbolAliases: List[Symbol] = {
                 for (params <- symbol.paramss;
                      param <- params;
-                     field = symbol.enclClass.tpe.decl(param.name);
-                //its a value, and the positions overlap
+                     field = symbol.enclClass.tpe.decl(param.name)
+                     //its a value, and the positions overlap
                      if field.isValue && field.pos.start <= param.pos.`end` && field.pos.`end` >= param.pos.start;
                      model <- cls.findChildBySymbol(field)) yield {
                   addAlias(param, model)
@@ -734,7 +734,7 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
       case clsDirectParent: ClassLike =>
         val classSym = symbol.owner
 
-        val directSymbols: Set[global.Symbol] = clsDirectParent.removeChildOveride(symbol) match {
+        val directSymbols: Set[global.Symbol] = clsDirectParent.removeChildOverride(symbol) match {
           case None => Set()
           case Some(syms) =>
             syms.asInstanceOf[mutable.Set[global.Symbol]].toSet

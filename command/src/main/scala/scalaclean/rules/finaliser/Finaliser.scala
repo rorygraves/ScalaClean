@@ -13,24 +13,43 @@ import scala.reflect.internal.Flags
 //marks things final and sealed were it can
 
 object Finaliser extends AbstractRule[FinaliserCommandLine] {
-  override type Rule    = Finaliser
+  override type Rule = Finaliser
 
-  override def cmdLine = new FinaliserCommandLine
+  override def cmdLine                                                   = new FinaliserCommandLine
   override def apply(options: FinaliserCommandLine, model: ProjectModel) = new Rule(options, model)
 }
 
-class Finaliser(override val options: FinaliserCommandLine, override val model: ProjectModel) extends RuleRun[FinaliserCommandLine] {
+class Finaliser(override val options: FinaliserCommandLine, override val model: ProjectModel)
+    extends RuleRun[FinaliserCommandLine] {
 
-  type Colour = FinaliserLevel
+  type SpecificColour = FinaliserLevel
 
-  override def markInitial(): Unit = {
-    model.allOf[ModelElement].foreach(e => e.colour = Undefined)
+  object dontChangeBecause {
+    val sourceFile            = dontChange("source file")
+    val local                 = dontChange("its local")
+    val noSource              = dontChange("no source")
+    val inMethod              = dontChange("in a method and not visible")
+    val isObject              = dontChange("object is effectively final")
+    val isVar                 = dontChange("var is always final")
+    val isFinal               = dontChange("its already final")
+    val isPrivate             = dontChange("its private so probably not worth the change")
+    val compoundField         = dontChange("part of a compound decl")
+    val ownerIsFinalClass     = dontChange("owner is a final class")
+    val ownerIsObject         = dontChange("owner is a an object")
+    val ownerIsPrivateOrFinal = dontChange("owner is private/final")
+    val ownerWillBeFinal      = dontChange("owner will be a final class")
+  }
+
+  object changeTo {
+    val keepOpen   = makeChange(Open(""))
+    val makeSealed = makeChange(Sealed(""))
+    val makeFinal  = makeChange(Final)
   }
 
   override def runRule(): Unit = {
     model.allOf[ModelElement].foreach {
       case e: SourceModel =>
-        e.colour = NoChange("source")
+        e.colour = dontChangeBecause.sourceFile
       case e => e.colour = localLevel(e)
     }
     if (options.debug)
@@ -47,69 +66,71 @@ class Finaliser(override val options: FinaliserCommandLine, override val model: 
   }
 
   def localLevel(element: ModelElement): Colour = {
-    if (element.colour == Undefined) {
-      val colour = element match {
-        case x if x.modelElementId.isLocal => NoChange("its local")
-        case x if !x.existsInSource        => NoChange("no source")
-        case _: SourceModel                => NoChange("source")
-        case x if inMethod(x)              => NoChange("in a method and not visible")
-        case _: ObjectModel                => NoChange("object is effectively final")
-        case _: VarModel                   => NoChange("var is always final")
-        case _ if (element.isFinal)        => NoChange("its already final")
+    if (element.colour.isInitial) {
+      val newMark: Colour = element match {
+        case x if x.modelElementId.isLocal => dontChangeBecause.local
+        case x if !x.existsInSource        => dontChangeBecause.noSource
+        case _: SourceModel                => dontChangeBecause.sourceFile
+        case x if inMethod(x)              => dontChangeBecause.inMethod
+        case _: ObjectModel                => dontChangeBecause.isObject
+        case _: VarModel                   => dontChangeBecause.isVar
+        case _ if (element.isFinal)        => dontChangeBecause.isFinal
         case _
             if element.isPrivate
-            //fieds are marked private, so exclude them and handle in calcFieldLevel
+            //fields are marked private, so exclude them and handle in calcFieldLevel
               && !element.isInstanceOf[FieldModel] =>
-          NoChange("its private so probably not worth the change")
+          dontChangeBecause.isPrivate
         case fieldsModel: FieldsModel if (fieldsModel.fields.exists(_.isInstanceOf[VarModel])) =>
-          NoChange("vars are always final")
-        case fieldModel: FieldModel if fieldModel.inCompoundFieldDeclaration => NoChange("part of a compound decl")
+          dontChangeBecause.isVar
+        case fieldModel: FieldModel if fieldModel.inCompoundFieldDeclaration =>
+          dontChangeBecause.compoundField
 
         case fieldsModel: FieldsModel => calcFieldsLevel(fieldsModel)
         case methodModel: MethodModel => calcMethodLevel(methodModel)
         case fieldModel: FieldModel   => calcFieldLevel(fieldModel)
         case clsOrTrait: ClassLike    => calcClassLevel(clsOrTrait)
       }
-      element.colour = colour
+      element.mark = newMark
     }
     element.colour
   }
 
   def calcMethodLevel(method: MethodModel): Colour = {
     method.enclosing.head match {
-      case cls: ClassModel if localLevel(cls) == Final => NoChange("owner is a final class")
-      case cls: ObjectModel                            => NoChange("owner is a an object")
+      case cls: ClassModel if localLevel(cls).specific.contains(Final) => dontChangeBecause.ownerIsFinalClass
+      case cls: ObjectModel                            => dontChangeBecause.ownerIsObject
       case cls: ClassLike =>
         val overrides = method.overridden
-        if (overrides isEmpty) Final
-        else Open("")
-      case encl => NoChange(s"enclosed in $encl")
+        if (overrides.isEmpty) changeTo.makeFinal
+        else changeTo.keepOpen
+      case encl => dontChange(s"enclosed in $encl")
     }
 
   }
 
   def calcFieldLevel(field: FieldModel): Colour = {
     field.declaredIn.getOrElse(field).enclosing.head match {
-      case cls: ClassModel if cls.isFinal || cls.isPrivate => NoChange("owner is private/final")
-      case cls: ClassModel if localLevel(cls) == Final     => NoChange("owner will be a final class")
-      case cls: ObjectModel                                => NoChange("owner is a an object (so final)")
+      case cls: ClassModel if cls.isFinal || cls.isPrivate => dontChangeBecause.ownerIsPrivateOrFinal
+      case cls: ClassModel if localLevel(cls).specific.contains(Final)     => dontChangeBecause.ownerWillBeFinal
+      case cls: ObjectModel                                => dontChangeBecause.ownerIsObject
       case cls: ClassLike                                  =>
-        // we need to consider the accessors. The val isn't overidded, but if the accessor is then we cant make it final
+        // we need to consider the accessors. The val isn't overridden, but if the accessor is then we cant make it final
         // in the parent
         val overrides: Iterable[Overrides] = field.overridden ++ field.accessors.flatMap(_.overridden)
-        if (overrides isEmpty)
-          Final
+        if (overrides.isEmpty)
+          changeTo.makeFinal
         else {
           val size = overrides.size
-          NoChange(s"$size overrides - e.g. ${overrides.head.fromElementId}")
+          dontChange(s"$size overrides - e.g. ${overrides.head.fromElementId}")
         }
-      case encl => NoChange(s"enclosed in $encl")
+      case encl => dontChange(s"enclosed in $encl")
     }
   }
 
-  def calcFieldsLevel(fieldsModel: FieldsModel): FinaliserLevel = {
-    fieldsModel.fieldsInDeclaration.foldLeft(Undefined: FinaliserLevel) { case (level, field) =>
-      level.widen(calcFieldLevel(field))
+  def calcFieldsLevel(fieldsModel: FieldsModel): Colour = {
+    fieldsModel.fieldsInDeclaration.foldLeft(calcFieldLevel(fieldsModel.fieldsInDeclaration.head)) {
+      case (colour, field) =>
+        colour.merge(calcFieldLevel(field))
     }
   }
 
@@ -118,28 +139,29 @@ class Finaliser(override val options: FinaliserCommandLine, override val model: 
     case _                        => getSource(element.enclosing.head)
   }
 
-  def calcClassLevel(classLike: ClassLike): FinaliserLevel = classLike match {
+  def calcClassLevel(classLike: ClassLike): Colour = classLike match {
     case model: ClassModel =>
       val ext = model.extendedByClassLike()
-      if (ext isEmpty)
-        Final
+      if (ext.isEmpty)
+        changeTo.makeFinal
       else {
         val mySource = getSource(model)
         if (ext.forall(cls => getSource(cls) == mySource))
-          Sealed("")
+          changeTo.makeSealed
         else
-          Open("")
+          changeTo.keepOpen
       }
-    case model: ObjectModel => NoChange("objects are final")
+    case model: ObjectModel => dontChangeBecause.isObject
     case model: TraitModel =>
       val mySource = getSource(model)
       val ext      = model.extendedByClassLike()
       if (ext.forall(cls => getSource(cls) == mySource))
-        Sealed("")
+        changeTo.makeSealed
       else
-        Open("")
+        changeTo.keepOpen
 
   }
+
 //
 //  var elementsObserved = 0
 //  var elementsChanged  = 0
@@ -163,32 +185,30 @@ class Finaliser(override val options: FinaliserCommandLine, override val model: 
       override def debug: Boolean       = options.debug
       override def addComments: Boolean = options.addComments
 
-      def handleDecl(modelElement: ModelElement) = {
-        modelElement.colour match {
-          case Open(reason)     =>
-          case NoChange(reason) =>
-          case Undefined        => ???
-          case Sealed(reason)   =>
-          case Final =>
+      def handleDecl(modelElement: ModelElement): Unit = {
+        modelElement.colour.specific match {
+          case None                 =>
+          case Some(Open(reason))   =>
+          case Some(Sealed(reason)) =>
+          case Some(Final) =>
             if ((Flags.FINAL & modelElement.flags) == 0)
               collect(SCPatch(modelElement.rawStart, modelElement.rawStart, "final ", ""))
         }
       }
-      def handleClass(modelElement: ModelElement) = {
-        modelElement.colour match {
-          case Open(reason)     =>
-          case NoChange(reason) =>
-          case Undefined        => ???
-          case Sealed(reason) =>
+      def handleClass(modelElement: ModelElement): Unit = {
+        modelElement.colour.specific match {
+          case Some(Sealed(reason)) =>
             val isSealed = (Flags.SEALED & modelElement.flags) != 0
             if (!isSealed)
               collect(SCPatch(modelElement.rawStart, modelElement.rawStart, "sealed ", ""))
-          case Final =>
+          case Some(Final) =>
             val isFinal  = (Flags.FINAL & modelElement.flags) != 0
             val isSealed = (Flags.SEALED & modelElement.flags) != 0
             //TODO cope with sealed -> final
             if (!isFinal && !isSealed)
               collect(SCPatch(modelElement.rawStart, modelElement.rawStart, "final ", ""))
+          case Some(Open(reason)) =>
+          case None               =>
         }
       }
 
@@ -196,7 +216,7 @@ class Finaliser(override val options: FinaliserCommandLine, override val model: 
         modelElement match {
           case fieldModel: FieldModel if fieldModel.declaredIn.nonEmpty      =>
           case accessorModel: AccessorModel if accessorModel.field.isDefined =>
-          case _: MethodModel | _: FieldModel | _: FieldsModel =>
+          case _: MethodModel | _: FieldModel | _: FieldsModel               =>
 //            elementsObserved += 1
             handleDecl(modelElement)
           case classLike: ClassLike =>
@@ -219,4 +239,5 @@ class Finaliser(override val options: FinaliserCommandLine, override val model: 
   }
 
 }
-class FinaliserCommandLine              extends ScalaCleanCommandLine
+
+class FinaliserCommandLine extends ScalaCleanCommandLine

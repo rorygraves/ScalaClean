@@ -227,7 +227,7 @@ sealed trait ClassLike extends ModelSymbol {
    */
   val remainingChildOverrides: mutable.Map[Global#Symbol, mutable.Set[Global#Symbol]] = new mutable.HashMap
 
-  def removeChildOveride(child: Global#Symbol) = {
+  def removeChildOverride(child: Global#Symbol): Option[mutable.Set[Global#Symbol]] = {
     remainingChildOverrides.remove(child)
   }
 

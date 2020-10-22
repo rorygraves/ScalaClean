@@ -13,32 +13,41 @@ import scala.meta.tokens.Token
 abstract class AbstractPrivatiser[T <: AbstractPrivatiserCommandLine](val options: T, val model: ProjectModel)
     extends RuleRun[T] {
 
-  type Colour = PrivatiserLevel
+  type SpecificColour = PrivatiserLevel
 
-  override def markInitial(): Unit = {
-    model.allOf[ModelElement].foreach(e => e.colour = Undefined)
+  object dontChangeBecause {
+    val itsAnApp             = dontChange("It's an app")
+    val itsATest             = dontChange("It's a test")
+    val itsARuleOrAnnotation = dontChange("rule/annotation")
+    val itsLocal             = dontChange("its local")
+    val itsNotInSource       = dontChange("no source")
+    val itsASourceFile       = dontChange("source file")
+    val itsInAMethod         = dontChange("in a method and not visible")
+    val itsInACompoundField  = dontChange("in a compound field declaration")
+    val notInClassLike       = dontChange(s"Its not in a classLike so private already")
+    val inheritsFromExternal = dontChange("inherits from external")
   }
 
   def markKnown(): Unit = {
-    allApp.foreach(e => e.mark = NoChange("It's an app"))
+    allApp.foreach(e => e.mark = dontChangeBecause.itsAnApp)
 
-    allTestEntryPoints.foreach(e => e.mark = NoChange("It's a test"))
+    allTestEntryPoints.foreach(e => e.mark = dontChangeBecause.itsATest)
 
     model.allOf[ModelElement].foreach {
-      case x if x.colour != Undefined => //already covered
+      case x if !x.colour.isInitial => //already covered
 
       case e if isPublic(e) =>
-        e.colour = NoChange("rule/annotation")
+        e.colour = dontChangeBecause.itsARuleOrAnnotation
       case e if e.modelElementId.isLocal =>
-        e.colour = NoChange("its local")
+        e.colour = dontChangeBecause.itsLocal
       case e if !e.existsInSource =>
-        e.colour = NoChange("no source")
+        e.colour = dontChangeBecause.itsNotInSource
       case e: SourceModel =>
-        e.colour = NoChange("source")
+        e.colour = dontChangeBecause.itsASourceFile
       case e if inMethod(e) =>
-        e.colour = NoChange("in a method and not visible")
+        e.colour = dontChangeBecause.itsInAMethod
       case fieldModel: FieldModel if fieldModel.inCompoundFieldDeclaration =>
-        fieldModel.colour = NoChange("in a compound field declaration")
+        fieldModel.colour = dontChangeBecause.itsInACompoundField
 
       case _ => //do nothing
     }
@@ -50,7 +59,7 @@ abstract class AbstractPrivatiser[T <: AbstractPrivatiserCommandLine](val option
   }
 
   def ruleSpecific(): Unit = {
-    model.allOf[ModelElement].foreach { case e => e.colour = localLevel(e) }
+    model.allOf[ModelElement].foreach(e => e.colour = localLevel(e))
   }
 
   override def runRule(): Unit = {
@@ -69,9 +78,9 @@ abstract class AbstractPrivatiser[T <: AbstractPrivatiserCommandLine](val option
     element.enclosing.exists(isOrInMethod)
   }
 
-  def localLevel(element: ModelElement): PrivatiserLevel = {
+  def localLevel(element: ModelElement): Colour = {
     element match {
-      case _ if element.colour != Undefined => element.colour
+      case _ if !element.colour.isInitial => element.colour
       case _ if element.enclosing.size == 1 =>
         element.enclosing.head match {
           case sourceFile: SourceModel if element.isInstanceOf[ClassLike] =>
@@ -81,12 +90,12 @@ abstract class AbstractPrivatiser[T <: AbstractPrivatiserCommandLine](val option
             determineIfPrivate(element, classLike.modelElementId)
 
           case _ =>
-            NoChange(s"Its not in a classLike so private already")
+            dontChangeBecause.notInClassLike
         }
     }
   }
 
-  def determineIfPrivate(element: ModelElement, myClassLike: ElementId): PrivatiserLevel = {
+  def determineIfPrivate(element: ModelElement, myClassLike: ElementId): Colour = {
     element match {
       case fieldModel: FieldModel =>
         determineAccess(element, myClassLike, incomingReferences(fieldModel))
@@ -101,7 +110,7 @@ abstract class AbstractPrivatiser[T <: AbstractPrivatiserCommandLine](val option
     //all of the direct references + all of the references in from the getters/setters that are compiler generated ( not in source)
     //and filter out the internal accesses from the accessors
     val generatedAccessors = fieldModel.accessors.filter(!_.existsInSource).toList
-    (fieldModel.incomingReferences.filterNot { case refers: Refers =>
+    (fieldModel.incomingReferences.filterNot { refers: Refers =>
       generatedAccessors.contains(refers.fromElement)
     }) ++ generatedAccessors.flatMap(_.incomingReferences)
   }
@@ -110,40 +119,42 @@ abstract class AbstractPrivatiser[T <: AbstractPrivatiserCommandLine](val option
       element: ModelElement,
       myClassLike: ElementId,
       incomingReferences: Iterable[Refers]
-  ): PrivatiserLevel = {
+  ): Colour = {
 
-    var res: PrivatiserLevel = Undefined
+    var res: Colour = Mark.initial[PrivatiserLevel]
 
-    incomingReferences.foreach { case refers: Refers =>
+    incomingReferences.foreach { refers: Refers =>
       val ref         = refers.fromElement
       val isFromChild = ref.classOrEnclosing.xtends(myClassLike)
-      val access =
+      val access: Colour =
         if (isFromChild)
-          Scoped.Protected(ref.modelElementId, s"accessed from $ref", forceProtected = false)
+          makeChange(Scoped.Protected(ref.modelElementId, s"accessed from $ref", forceProtected = false))
         else
-          Scoped.Private(ref.modelElementId, s"accessed from $ref")
-      res = res.widen(access)
+          makeChange(Scoped.Private(ref.modelElementId, s"accessed from $ref"))
+      res = res.merge(access)
     }
     //we must be visible to anything that overrides us
     element.internalDirectOverriddenBy.foreach { overriddenBy =>
-      res = res.widen(
-        Scoped.Protected(overriddenBy.modelElementId, s"overridden in from $overriddenBy", forceProtected = false)
+      res = res.merge(
+        makeChange(
+          Scoped.Protected(overriddenBy.modelElementId, s"overridden in from $overriddenBy", forceProtected = false)
+        )
       )
     }
 
     //We must be at least as visible as anything that we override
     element.allDirectOverrides.foreach {
       case (Some(overriddenModel), _) =>
-        val overriddenVisibility = localLevel(overriddenModel) match {
-          case s: Scoped if s.isProtected => s.copy(forceProtected = true)
-          case other                      => other
+        val overriddenVisibility = localLevel(overriddenModel).specific match {
+          case Some(s: Scoped) if s.isProtected => makeChange(s.copy(forceProtected = true))
+          case other                            => localLevel(overriddenModel)
         }
-        res = res.widen(overriddenVisibility)
+        res = res.merge(overriddenVisibility)
       case (None, _) =>
         //if it is not in the model, then we will leave this as is
-        res = res.widen(NoChange("inherits from external"))
+        res = dontChangeBecause.inheritsFromExternal
     }
-    res = res.widen(Scoped.Private(ElementIdM.childThis(myClassLike), s"at least self"))
+    res = res.merge(makeChange(Scoped.Private(ElementIdM.childThis(myClassLike), s"at least self")))
     res
   }
 
@@ -293,7 +304,7 @@ abstract class AbstractPrivatiser[T <: AbstractPrivatiserCommandLine](val option
           case fieldModel: FieldModel if fieldModel.declaredIn.nonEmpty      =>
           case accessorModel: AccessorModel if accessorModel.field.isDefined =>
           case _ =>
-            modelElement.colour.asText(modelElement, options).foreach(v => changeVisibility(v))
+            modelElement.colour.specific.foreach(_.asText(modelElement, options).foreach(v => changeVisibility(v)))
         }
       }
 

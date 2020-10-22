@@ -15,7 +15,16 @@ sealed trait ModelElement extends Ordered[ModelElement] {
 
   def modelElementId: ElementId
 
-  var mark: Mark = _
+  var _mark: Mark[_] = null
+  def mark = _mark
+  def mark_=[T <: SomeSpecificColour](newMark: Mark[T]): Unit = {
+    if (_mark eq null)
+      _mark = newMark
+    else {
+      assert (!newMark.isInitial)
+      _mark = _mark.asInstanceOf[Mark[T]].merge(newMark)
+    }
+  }
 
   def name: String
 
@@ -341,7 +350,7 @@ private[model] object InternalFilters {
     override def apply(direct: Boolean, clazz: ClassLike): Boolean                                 = true
   }
 
-  object OnlyDirect extends Function1[Extends, Boolean] {
+  object OnlyDirect extends ((Extends) => Boolean) {
     override def apply(ex: Extends): Boolean = ex.isDirect
   }
 
