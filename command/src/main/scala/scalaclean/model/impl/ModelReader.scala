@@ -4,7 +4,7 @@ import java.nio.file.{Files, Paths}
 
 import org.scalaclean.analysis.plugin.{ModData, VisibilityData}
 import org.scalaclean.analysis.{AnnotationData, ExtensionData, ExtensionDescriptor, IoTokens}
-import scalaclean.model.{ElementId, ElementIdM}
+import scalaclean.model.{ElementId, ElementIds}
 
 import scala.collection.mutable
 
@@ -71,7 +71,7 @@ object ModelReader {
 //          }
 //        })
       val extBuilder         = builder(fqn)
-      val ext: ExtensionData = extBuilder.fromCsv(ElementIdM, rest)
+      val ext: ExtensionData = extBuilder.fromCsv(ElementIds, rest)
 
       val elementValues2 = mapByElementId.get(newId) match {
         case None =>
@@ -103,9 +103,9 @@ object ModelReader {
       try {
         val tokens = line.split(",")
 
-        val from    = ElementIdM(tokens(0))
+        val from    = ElementIds(tokens(0))
         val relType = tokens(1)
-        val to      = ElementIdM(tokens(2))
+        val to      = ElementIds(tokens(2))
 
         val offset = 3
         relType match {
@@ -166,7 +166,7 @@ object ModelReader {
         } else line.split(",")
 
         val typeId    = tokens(0)
-        val elementId = ElementIdM(tokens(2))
+        val elementId = ElementIds(tokens(2))
         val flags     = java.lang.Long.parseLong(tokens(3), 16)
         val src       = project.source(tokens(4).replace(sourceDirSep, java.io.File.separator))
         val start     = tokens(5).toInt

@@ -187,7 +187,7 @@ abstract class RuleRun[T <: ScalaCleanCommandLine] {
   }
 
   def allScalaTests: Iterator[ClassLike] = {
-    val suite = ElementIdM("C:org.scalatest.Suite")
+    val suite = ElementIds("C:org.scalatest.Suite")
     model.allOf[ClassLike].filter { cls: ClassLike => cls.xtends(suite) }
   }
 

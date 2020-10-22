@@ -1,6 +1,6 @@
 package org.scalaclean.analysis
 
-import scalaclean.model.ElementIdManager
+import scalaclean.model.{ElementIdManager, FieldPath}
 
 import scala.annotation.tailrec
 import scala.collection.mutable
@@ -12,7 +12,7 @@ trait ModelSymbolBuilder {
 
   def debug: Boolean
   def sourceDirs: List[String]
-  object elementIdManager extends ElementIdManager
+  val elementIds = new ElementIdManager
 
   private val mSymbolCache2 = mutable.Map[global.Symbol, ModelCommon]()
   private val mSymbolCache  = mutable.Map[global.Symbol, ModelCommon]()
@@ -40,7 +40,7 @@ trait ModelSymbolBuilder {
 
   def asMSymbolForceField(gSym: global.Symbol): ModelCommon = {
     val unforced = asMSymbolX(gSym, forceField = false)
-    if (unforced.elementId.isInstanceOf[elementIdManager.pathNodes.FieldPathImpl]) unforced
+    if (unforced.elementId.pathType == FieldPath) unforced
     else asMSymbolX(gSym, forceField = true)
   }
 
@@ -84,7 +84,7 @@ trait ModelSymbolBuilder {
             "-"
 
         val newName =
-          if (forceField) elementIdManager.applyAndForceField(gSym) else elementIdManager(gSym) //getNewName(gSym) + specialSuffix
+          if (forceField) elementIds.applyAndForceField(gSym) else elementIds(gSym) //getNewName(gSym) + specialSuffix
 
         ModelCommon(isGlobal, newName, sourceFile, startPos, endPos, focusPos, gSym.nameString)
 

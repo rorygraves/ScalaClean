@@ -32,7 +32,7 @@ class ProjectSet(projectPropertyPaths: Path*) extends ProjectModel {
     val relsTo   = relsFrom.byTo.sortValues
 
     relsFrom.complete(modelElements)
-    modelElements.values.foreach(_.complete(ElementIdM, modelElements, relsFrom = relsFrom, relsTo = relsTo))
+    modelElements.values.foreach(_.complete(ElementIds, modelElements, relsFrom = relsFrom, relsTo = relsTo))
 
     ModelReader.finished()
     modelElements
