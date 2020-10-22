@@ -278,7 +278,7 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
       val sourceFile    = unit.source.file.file.toPath
       val sourceFileStr = sourceFile.toString
       val sourceSymbol =
-        ModelSource(unit.body, ModelCommon(true, ElementId(sourceFile), sourceFileStr, -1, -1, -1, "<NA>"))
+        ModelSource(unit.body, ModelCommon(true, elementIdManager(sourceFile), sourceFileStr, -1, -1, -1, "<NA>"))
       enterScope(sourceSymbol)(_ => traverse(unit.body))
 
       if (debug) {

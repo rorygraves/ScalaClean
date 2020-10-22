@@ -519,6 +519,7 @@ package impl {
     }
 
     def complete(
+        elementIdManager: ElementIdManager,
         modelElements: Map[ElementId, ElementModelImpl],
         relsFrom: BasicRelationshipInfo,
         relsTo: BasicRelationshipInfo
@@ -634,11 +635,12 @@ package impl {
     private var _extendedBy: List[Extends] = _
 
     override def complete(
+        elementIdManager: ElementIdManager,
         modelElements: Map[ElementId, ElementModelImpl],
         relsFrom: BasicRelationshipInfo,
         relsTo: BasicRelationshipInfo
     ): Unit = {
-      super.complete(modelElements, relsFrom, relsTo)
+      super.complete(elementIdManager, modelElements, relsFrom, relsTo)
       _extnds = relsFrom.extnds.getOrElse(modelElementId, Nil)
       _extendedBy = relsTo.extnds.getOrElse(modelElementId, Nil)
 
@@ -674,11 +676,12 @@ package impl {
       (declaredIn.map(_.fieldsInDeclaration)).getOrElse(Nil).asInstanceOf[List[fieldType]]
 
     override def complete(
+        elementIdManager: ElementIdManager,
         modelElements: Map[ElementId, ElementModelImpl],
         relsFrom: BasicRelationshipInfo,
         relsTo: BasicRelationshipInfo
     ): Unit = {
-      super.complete(modelElements, relsFrom, relsTo)
+      super.complete(elementIdManager, modelElements, relsFrom, relsTo)
 
       relsTo.getter.get(info.elementId) match {
         case None           => getter_ = None
@@ -688,7 +691,7 @@ package impl {
       val fieldImpl = fields_ match {
         case "" => None
         case f: String =>
-          Some(modelElements(ElementId(f)).asInstanceOf[FieldsModelImpl])
+          Some(modelElements(elementIdManager(f)).asInstanceOf[FieldsModelImpl])
         case _ => ???
       }
       fieldImpl.foreach(_.addField(this))
@@ -740,11 +743,12 @@ package impl {
       with GetterMethodModel {
 
     override def complete(
+        elementIdManager: ElementIdManager,
         modelElements: Map[ElementId, ElementModelImpl],
         relsFrom: BasicRelationshipInfo,
         relsTo: BasicRelationshipInfo
     ): Unit = {
-      super.complete(modelElements, relsFrom, relsTo)
+      super.complete(elementIdManager, modelElements, relsFrom, relsTo)
       relsFrom.getter.get(info.elementId) match {
         case None => field_ = None
         case Some(f :: Nil) =>
@@ -767,11 +771,12 @@ package impl {
       with SetterMethodModel {
 
     override def complete(
+        elementIdManager: ElementIdManager,
         modelElements: Map[ElementId, ElementModelImpl],
         relsFrom: BasicRelationshipInfo,
         relsTo: BasicRelationshipInfo
     ): Unit = {
-      super.complete(modelElements, relsFrom, relsTo)
+      super.complete(elementIdManager, modelElements, relsFrom, relsTo)
       relsFrom.setter.get(info.elementId) match {
         case None => field_ = None
         case Some(f :: Nil) =>
@@ -824,11 +829,12 @@ package impl {
       with VarModel {
 
     override def complete(
+        elementIdManager: ElementIdManager,
         modelElements: Map[ElementId, ElementModelImpl],
         relsFrom: BasicRelationshipInfo,
         relsTo: BasicRelationshipInfo
     ): Unit = {
-      super.complete(modelElements, relsFrom, relsTo)
+      super.complete(elementIdManager, modelElements, relsFrom, relsTo)
       relsTo.setter.get(info.elementId) match {
         case None => setter_ = None
         case Some(f :: Nil) =>
