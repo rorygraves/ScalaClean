@@ -1,6 +1,6 @@
 package scalaclean.cli
 
-import java.nio.file.Path
+import java.nio.file.{Files, Path}
 
 import org.kohsuke.args4j.spi.MultiPathOptionHandler
 import org.kohsuke.args4j.{Option => ArgOption}
@@ -27,13 +27,31 @@ abstract class ScalaCleanCommandLine {
   @ArgOption(
     name = "--files",
     usage = "<file>...",
-    required = true,
+    required = false,
     hidden = false,
+    forbids = Array("--filesRoot"),
     handler = classOf[MultiPathOptionHandler]
   )
   var _paths: JList[Path] = null
+  @ArgOption(
+    name = "--filesRoot",
+    usage = "<dir> with the scala clean property files in child directories",
+    required = false,
+    hidden = false,
+    forbids = Array("--files"),
+    handler = classOf[MultiPathOptionHandler]
+  )
+  var _root: Path = null
 
-  def files: Seq[Path] = _paths.asScala.toList
+  def files: Seq[Path] = {
+    if (_root == null && _paths == null)
+      throw new IllegalArgumentException("one of '--files' or '--fileRoot' must be specified")
+
+    if (_root != null)
+      Files.find(_root, 2, (path, _) => path.endsWith("ScalaClean.properties")).iterator().asScala.toList
+    else
+      _paths.asScala.toList
+  }
 
   @ArgOption(
     name = "--addComments",

@@ -2,7 +2,9 @@ package org.scalaclean.analysis
 
 import java.io.File
 import java.nio.file.{Files, Path, Paths}
-import java.util.Properties
+import java.text.{DateFormat, SimpleDateFormat}
+import java.time.format.DateTimeFormatter
+import java.util.{Date, Properties, UUID}
 
 import org.scalaclean.analysis.plugin.ExtensionPlugin
 import scalaclean.model.ElementId
@@ -19,60 +21,13 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
 
   override val runsAfter: List[String] = List("typer")
   // a bit ugly, but the options are read after the component is create - so it is updated by the plugin
-  var debug                    = false
-  var _sourceDirs: List[String] = List.empty
-  var extensions               = Set.empty[ExtensionPlugin]
-  var options: List[String]    = Nil
+  var debug                      = false
+  var extensions                 = Set.empty[ExtensionPlugin]
+  var options: List[String]      = Nil
+  var outputParent: Option[Path] = None
+  var sourcesRoot: List[Path]    = Nil
 
-
-
-  def sourceDirs: List[String] = {
-
-    def toSrcDir(input: Path): Path = {
-
-      @tailrec
-      def dropToLanguage(path: Path): Option[Path] = {
-        if (path.endsWith("java") || path.endsWith("scala")  || path.endsWith("scala-2.12") || path.endsWith("src_managed/main")) {
-          Some(path)
-        } else {
-          val parent = path.getParent
-          if (parent == null)
-            None
-          else dropToLanguage(parent)
-        }
-      }
-
-      def checkForSrcFolder(path: Path): Boolean = {
-        if (path.endsWith("src_managed/main"))
-          true
-        else {
-          val parent = path.getParent // test/main
-          if (parent == null) false else {
-            val parentParent = parent.getParent
-            if (parentParent == null) false else
-              parentParent.endsWith("src") || parentParent.endsWith("src_managed")
-          }
-        }
-      }
-      val langFolder = dropToLanguage(input).getOrElse(throw new IllegalStateException(s"Unable to find source folder for $input"))
-
-
-      if(!checkForSrcFolder(langFolder))
-        throw new IllegalArgumentException(s"Path not of the form <src|src_managed>/?/<scala|java>: $langFolder")
-
-      langFolder
-    }
-
-
-    if (_sourceDirs.isEmpty) {
-      val dirs = global.currentRun.compiledFiles.toSet.map{p: String => Paths.get(p).getParent}
-      val srcDirs = dirs.map(toSrcDir)
-
-      assert(srcDirs.nonEmpty, s"can't determine root source dir from files XXX ")
-      _sourceDirs = srcDirs.toList.map(_.toString)
-    }
-    _sourceDirs
-  }
+  def sourceDirs: List[Path] = sourcesRoot
 
   override def newPhase(prev: Phase): Phase = new StdPhase(prev) {
 
@@ -82,30 +37,24 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
     var traverser: SCUnitTraverser           = _
     var files: Set[String]                   = Set.empty
 
-    var basePaths: Set[String] = Set.empty
-
-    // TODO THis is a complete hack
-    def workOutCommonSourcePath(files: Set[String]): String = {
-      if (files.isEmpty)
-        throw new IllegalStateException("No files")
-      else if (files.size > 1) {
-        throw new IllegalStateException(s"Multiple Source roots unsupported: $files")
-      } else
-        files.head
-    }
-
     override def run(): Unit = {
       if (debug)
         global.reporter.echo("Before Analysis Phase")
 
-      val outputPathBase: java.nio.file.Path =
-        global.settings.outputDirs.getSingleOutput match {
-          case Some(so) => so.file.toPath.toAbsolutePath
-          case None     => Paths.get(global.settings.d.value)
-        }
-
-      val outputPath = outputPathBase.resolve("META-INF/ScalaClean/")
-      outputPath.toFile.mkdirs()
+      val outputPath: java.nio.file.Path = outputParent match {
+        case Some(root) =>
+          val prefix = new SimpleDateFormat("yyyy_MM_dd-").format(new Date())
+          val dir = root.resolve(s"$prefix${UUID.randomUUID()}")
+          Files.createDirectory(dir)
+          dir
+        case None =>
+          val base = global.settings.outputDirs.getSingleOutput match {
+            case Some(so) => so.file.toPath.toAbsolutePath
+            case None => Paths.get(global.settings.d.value)
+          }
+          base.resolve("META-INF/ScalaClean/")
+      }
+      Files.createDirectories(outputPath)
 
       val elementsFile = new File(outputPath.toFile, "scalaclean-elements.csv")
       if (debug)
@@ -134,22 +83,19 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
       props.put(prop_sourceOsPathSeparator, java.io.File.pathSeparator)
       props.put(prop_sourceOsDirSeparator, java.io.File.separator)
       props.put(prop_classpath, global.settings.classpath.value)
-      props.put(prop_outputDir, outputPathBase.toString)
+      props.put(prop_outputDir, outputPath.toString)
       props.put(prop_elementsFile, elementsFile.toString)
       props.put(prop_relationshipsFile, relationsFile.toString)
       props.put(prop_extensionsFile, extensionFile.toString)
-      if (debug)
+      if (debug) {
         println("SourceDirs = " + sourceDirs)
+        println("Output parent = " + outputPath)
+      }
       if (sourceDirs.nonEmpty) {
         props.put(prop_srcRoots, sourceDirs.mkString(File.pathSeparator))
       } else {
-        val srcPath = workOutCommonSourcePath(basePaths)
-        props.put(prop_srcRoots, srcPath)
+        props.put(prop_srcRoots, "/")
       }
-
-      options.foreach(p => props.put(s"$prefix_option.$p", ""))
-
-      //      assert(sourceDirs.nonEmpty)
 
       val currentRelativePath = Paths.get("")
       val srcBuildBase        = currentRelativePath.toAbsolutePath.toString
@@ -173,12 +119,11 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
 
     override def apply(unit: global.CompilationUnit): Unit = {
 
-      val srcPath = unit.source.file.toString
+      val srcPath = unit.source.file.file.toPath.toAbsolutePath.toString
 
       files += srcPath
 
-      val sourceFile = mungeUnitPath(unit.source.file.toString)
-      basePaths += srcPath.substring(0, srcPath.indexOf(sourceFile))
+      val sourceFile = mungeUnitPath(unit.source.file.file.toPath)
       if (debug)
         global.reporter.echo(s"Executing for unit: $sourceFile")
       traverser.traverseSource(unit)
