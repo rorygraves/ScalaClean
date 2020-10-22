@@ -36,7 +36,7 @@ class ModsPlugin(val sc: ScalaCompilerPluginComponent) extends ExtensionPlugin {
       if (symbol.hasFlag(Flags.PROTECTED | Flags.PRIVATE) || symbol.hasAccessBoundary) {
         val within =
           if (symbol.hasAccessBoundary) Some(sc.externalSymbol(symbol.privateWithin).elementId)
-          else if (symbol.hasFlag(Flags.LOCAL)) Some(sc.elementIdManager.childThis(enclosingModel.head.common.elementId))
+          else if (symbol.hasFlag(Flags.LOCAL)) Some(sc.elementIds.childThis(enclosingModel.head.common.elementId))
           else None
         val group = if (symbol.hasFlag(Flags.PROTECTED)) "protected" else "private"
         symbol.sourceFile

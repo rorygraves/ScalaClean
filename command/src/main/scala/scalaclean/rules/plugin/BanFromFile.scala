@@ -2,7 +2,7 @@ package scalaclean.rules.plugin
 
 import java.nio.file.{Files, Path, Paths}
 
-import scalaclean.model.{ElementIdM, Mark, ModelElement, SimpleReason}
+import scalaclean.model.{ElementIds, Mark, ModelElement, SimpleReason}
 import scalaclean.rules.RuleRun
 
 import scala.util.matching.Regex
@@ -20,7 +20,7 @@ class BanFromFile(filename: Path) extends RulePlugin {
       reader.lines().forEach(s =>
         s.split(",",3) match {
           case Array("single", element, comment) =>
-            mainRule.model.getElement[ModelElement](ElementIdM(element)) match {
+            mainRule.model.getElement[ModelElement](ElementIds(element)) match {
               case Some(e) => e.mark = Mark.dontChange[mainRule.SpecificColour](SimpleReason(s"BanFromFile - $comment"))
               case None =>
             }

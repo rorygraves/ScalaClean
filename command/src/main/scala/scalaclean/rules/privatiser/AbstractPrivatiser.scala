@@ -154,7 +154,7 @@ abstract class AbstractPrivatiser[T <: AbstractPrivatiserCommandLine](val option
         //if it is not in the model, then we will leave this as is
         res = dontChangeBecause.inheritsFromExternal
     }
-    res = res.merge(makeChange(Scoped.Private(ElementIdM.childThis(myClassLike), s"at least self")))
+    res = res.merge(makeChange(Scoped.Private(ElementIds.childThis(myClassLike), s"at least self")))
     res
   }
 
