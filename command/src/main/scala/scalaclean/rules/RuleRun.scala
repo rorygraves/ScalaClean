@@ -1,18 +1,18 @@
 package scalaclean.rules
 
-import java.io.{PrintWriter, StringWriter}
+import java.io.{ PrintWriter, StringWriter }
 import java.nio.charset.StandardCharsets
-import java.nio.file.{Files, Path, Paths}
+import java.nio.file.{ Files, Path, Paths }
 
-import scalaclean.cli.{SCPatchUtil, ScalaCleanCommandLine}
+import scalaclean.cli.{ SCPatchUtil, ScalaCleanCommandLine }
 import scalaclean.model._
-import scalaclean.model.impl.{Project, ProjectSet}
-import scalaclean.util.{DiffAssertions, DocHelper, PatchStats}
+import scalaclean.model.impl.{ Project, ProjectSet }
+import scalaclean.util.{ DiffAssertions, DocHelper, PatchStats }
 import scalafix.v1.SyntacticDocument
 
 import scala.meta.internal.io.FileIO
-import scala.meta.{AbsolutePath, RelativePath}
-import scala.reflect.{ClassTag, classTag}
+import scala.meta.{ AbsolutePath, RelativePath }
+import scala.reflect.ClassTag
 
 abstract class AbstractRule[T <: ScalaCleanCommandLine] {
   type Rule <: RuleRun[T]
@@ -72,13 +72,39 @@ abstract class RuleRun[T <: ScalaCleanCommandLine] {
 
     markInitial()
 
+    beforeRule()
+
+    if (debug)
+      println(s"$name running rule")
+
     runRule()
+    afterRule()
 
     if (debug)
       debugDump()
 
     if (debug)
       println(s"$name analysis complete")
+  }
+
+  def beforeRule() = {
+    if (debug)
+      println(s"$name running ${options.rulePlugins} rule plugins before rule")
+    options.rulePlugins.foreach { rule =>
+      if (debug)
+        println(s"$name running rule ${rule.name}  before main rule")
+      rule.beforeMainRule(this)
+    }
+  }
+
+  def afterRule() = {
+    if (debug)
+      println(s"$name running ${options.rulePlugins} rule plugins after rule")
+    options.rulePlugins.foreach { rule =>
+      if (debug)
+        println(s"$name running rule ${rule.name}  before main rule")
+      rule.afterMainRule(this)
+    }
   }
 
   def debugDump(): Unit = {}
@@ -91,9 +117,11 @@ abstract class RuleRun[T <: ScalaCleanCommandLine] {
 
   def markAll[E <: ModelElement: ClassTag](colour: Colour): Unit = {
     val all = model.allOf[E].toList
-    model.allOf[E].foreach(
-      _.mark = colour
-    )
+    model
+      .allOf[E]
+      .foreach(
+        _.mark = colour
+      )
   }
 
   implicit class Coloured(e: ModelElement) {
@@ -150,17 +178,17 @@ abstract class RuleRun[T <: ScalaCleanCommandLine] {
       method.annotations.exists(a => junitAnnotationEntryPoints.contains(a.fqName))
     }
   }
+
   def allJunitClasses: Iterator[ClassLike] = {
-    allJunitTest.map(_.classOrEnclosing).toSet.flatMap { cls: ClassLike =>
-      cls.extendedByClassLike()  ++  cls.extendsClassLikeCompiled()
-    } iterator
+    allJunitTest
+      .map(_.classOrEnclosing)
+      .toSet
+      .flatMap { cls: ClassLike => cls.extendedByClassLike() ++ cls.extendsClassLikeCompiled() } iterator
   }
 
   def allScalaTests: Iterator[ClassLike] = {
     val suite = ElementIdM("C:org.scalatest.Suite")
-    model.allOf[ClassLike].filter { cls: ClassLike =>
-      cls.xtends(suite)
-    }
+    model.allOf[ClassLike].filter { cls: ClassLike => cls.xtends(suite) }
   }
 
   def allSerialisationEntries: Iterator[MethodModel] = {

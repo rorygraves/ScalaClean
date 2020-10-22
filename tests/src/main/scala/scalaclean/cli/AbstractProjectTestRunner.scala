@@ -11,6 +11,7 @@ import scalaclean.util.DiffAssertions
 import org.scalatest.Assertions
 
 import scala.reflect.{ClassTag, classTag}
+import scala.collection.JavaConverters._
 
 abstract class AbstractProjectTestRunner[Cmd <: ScalaCleanCommandLine: ClassTag, Rule <: RuleRun[Cmd]](val projectNames: List[String], runOptions: SimpleRunOptions)
     extends DiffAssertions with Assertions{
@@ -43,6 +44,7 @@ abstract class AbstractProjectTestRunner[Cmd <: ScalaCleanCommandLine: ClassTag,
     options.debug = runOptions.debug
     options.addComments = runOptions.addComments
     options.replace = runOptions.replace
+    options._rulePlugins = runOptions.rulePluginText.asJava
     options.testOptions.validate = true
     options.testOptions.expectationSuffix = expectationSuffix
     import scala.collection.JavaConverters._
