@@ -1,5 +1,7 @@
 package org.scalaclean.analysis
 
+import java.nio.file.Path
+
 import scalaclean.model.{ElementIdManager, FieldPath}
 
 import scala.annotation.tailrec
@@ -11,7 +13,7 @@ trait ModelSymbolBuilder {
   val global: scala.tools.nsc.Global
 
   def debug: Boolean
-  def sourceDirs: List[String]
+  def sourceDirs: List[Path]
   val elementIds = new ElementIdManager
 
   private val mSymbolCache2 = mutable.Map[global.Symbol, ModelCommon]()
@@ -79,7 +81,7 @@ trait ModelSymbolBuilder {
           if (gSym.pos == NoPosition) (-1, -1, -1) else (gSym.pos.start, gSym.pos.end, gSym.pos.focus.start)
         val sourceFile =
           if (gSym.sourceFile != null)
-            mungeUnitPath(gSym.sourceFile.toString)
+            mungeUnitPath(gSym.sourceFile.file.toPath)
           else
             "-"
 
@@ -92,12 +94,12 @@ trait ModelSymbolBuilder {
     )
   }
 
-  // TODO this is a total hack - need to discover the source root of the compilation unit and remove
-  def mungeUnitPath(input: String): String = {
-    val sourceDirForInput =
-      sourceDirs.find(input.startsWith).getOrElse(throw new IllegalArgumentException(s"Missing src dir for $input"))
-    val idx = input.indexOf(sourceDirForInput) + sourceDirForInput.length + 1
-    input.substring(idx)
+  def mungeUnitPath(input: Path): String = {
+    val abs = input.toAbsolutePath
+    if (sourceDirs.isEmpty) abs.toString
+    else sourceDirs.collectFirst{
+      case root if input.startsWith(root) => root.relativize(abs).toString
+    } .getOrElse(throw new IllegalArgumentException(s"Missing src dir for $input"))
   }
 
 }

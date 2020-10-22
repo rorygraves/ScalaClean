@@ -1,11 +1,11 @@
 package org.scalaclean.analysis
 
-import java.nio.file.{ Files, Paths }
+import java.nio.file.{Files, Path, Paths}
 
-import org.scalaclean.analysis.plugin.{ AnnotationPlugin, ExtensionPluginFactory, ModsPlugin }
+import org.scalaclean.analysis.plugin.{AnnotationPlugin, ExtensionPluginFactory, ModsPlugin}
 
 import scala.tools.nsc.Global
-import scala.tools.nsc.plugins.{ Plugin, PluginComponent }
+import scala.tools.nsc.plugins.{Plugin, PluginComponent}
 
 class ScalaCleanCompilerPlugin(override val global: Global) extends Plugin {
 
@@ -25,6 +25,8 @@ class ScalaCleanCompilerPlugin(override val global: Global) extends Plugin {
 
     val realOptions = options.distinct
     component.options = realOptions
+    var sourcesPath = Option.empty[List[Path]]
+
     for (option <- realOptions) {
       if (option == "debug:true") {
         component.debug = true
@@ -44,20 +46,35 @@ class ScalaCleanCompilerPlugin(override val global: Global) extends Plugin {
             )
         }
       } else if (option.startsWith("srcdirs:")) {
+        assert (sourcesPath.isEmpty, s"exactly one of specify srcdirs and outputparent should be defined in params $options")
         // Filter out source dirs passed in which don't actually exist
         val sourceDirsInArgument = option.substring(8).split(java.io.File.pathSeparatorChar).toList
-        val filteredSourceDirs   = sourceDirsInArgument.filter(srcDir => Files.exists(Paths.get(srcDir)))
-        component._sourceDirs = filteredSourceDirs
+        val filteredSourceDirs   = sourceDirsInArgument.collect{
+          case srcDir if Files.exists(Paths.get(srcDir)) => Paths.get(srcDir)
+        }
+        assert (filteredSourceDirs.nonEmpty, s"no directories exist! $sourceDirsInArgument")
+        sourcesPath = Some(filteredSourceDirs)
+      } else if (option.startsWith("outputparent:")) {
+        assert (sourcesPath.isEmpty, s"exactly one of specify srcdirs and outputparent should be defined in params $options")
+        val parentDir = Paths.get(option.substring(13))
+        Files.createDirectories(parentDir)
+        sourcesPath = Some(List())
+        component.outputParent = Some(parentDir)
       } else
         error(s"Option not recognised: $option")
     }
+    require (sourcesPath.isDefined, s"must specify one of srcdirs and outputparent in params $options")
+    component.sourcesRoot = sourcesPath.get
+
     true
   }
 
   override val optionsHelp: Option[String] = Some(
     s"""-P:$name:debug:true        Set debugging on the ScalaClean analysis plugin
        |-P:$name:srcdirs           The path of sources, separated by ${java.io.File.pathSeparatorChar}
+       |-P:$name:outputparent      The path to outputs parent directory
        |-P:$name:extension:<fqn>   Add an extension dataset. FQN is the fully qualified name of the appropriate ExtensionDescriptor object
+       |                Exactly one of outputparent and srcdirs muct be specified
        |""".stripMargin
   )
 
