@@ -2,7 +2,7 @@ package scalaclean
 
 import java.io.{File, FileOutputStream}
 import java.nio.charset.StandardCharsets
-import java.nio.file.Paths
+import java.nio.file.{Files, Paths}
 
 import org.scalatest.funsuite.AnyFunSuite
 import org.scalatest.{BeforeAndAfterAllConfigMap, ConfigMap}
@@ -160,4 +160,18 @@ class UnitTests extends AbstractUnitTests with AssertionsForJUnit {
   test("annotations") {
     runTest("scalaclean/test/annotation/Annotated.scala",new TestExtensions(_))
   }
+}
+class PlugUnitTests extends AbstractUnitTests with AssertionsForJUnit {
+  val file = File.createTempFile("banFromFile", "txt")
+  val writer = Files.newBufferedWriter(file.toPath)
+  writer.write("single,C:scalaclean.test.plugin.banFromFile.Class1,ban class 1,and,some text:::")
+  writer.newLine()
+  writer.write("pattern,.:scalaclean.test.plugin.banFromFile.Class2.*,ban class 2,and,some text:::")
+  writer.newLine()
+  writer.close
+
+  test("banFromFile") {
+    runTest("scalaclean/test/plugin/banFromFile/banFromFile.scala", new ShowColour(_, List(s"scalaclean.rules.plugin.BanFromFile:${file.getAbsolutePath}")))
+  }
+
 }

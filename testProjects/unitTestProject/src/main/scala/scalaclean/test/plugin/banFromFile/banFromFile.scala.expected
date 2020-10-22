@@ -1,0 +1,80 @@
+package scalaclean.test.plugin.banFromFile
+
+class Class1 {
+  val x = 1
+  def y = 2
+  var z = 3
+  val (a,b,c) = (1,2,3)
+  class InnerClass {
+    val x = 1
+    def y = 2
+    var z = 3
+    val (a,b,c) = (1,2,3)
+
+  }
+  trait InnerTrait {
+    val x = 1
+    def y = 2
+    var z = 3
+    val (a,b,c) = (1,2,3)
+
+  }
+  class InnerObject {
+    val x = 1
+    def y = 2
+    var z = 3
+    val (a,b,c) = (1,2,3)
+  }
+}/* Banned - Set(SimpleReason(BanFromFile - ban class 1,and,some text:::)) */
+class Class2 {
+  val x = 1/* Banned - Set(SimpleReason(BanFromFile - ban class 2,and,some text:::)) */
+  def y = 2/* Banned - Set(SimpleReason(BanFromFile - ban class 2,and,some text:::)) */
+  var z = 3/* Banned - Set(SimpleReason(BanFromFile - ban class 2,and,some text:::)) */
+  val (a/* Banned - Set(SimpleReason(BanFromFile - ban class 2,and,some text:::)) */,b/* Banned - Set(SimpleReason(BanFromFile - ban class 2,and,some text:::)) */,c/* Banned - Set(SimpleReason(BanFromFile - ban class 2,and,some text:::)) */) = (1,2,3)/* Banned - Set(SimpleReason(BanFromFile - ban class 2,and,some text:::)) */
+  class InnerClass {
+    val x = 1/* Banned - Set(SimpleReason(BanFromFile - ban class 2,and,some text:::)) */
+    def y = 2/* Banned - Set(SimpleReason(BanFromFile - ban class 2,and,some text:::)) */
+    var z = 3/* Banned - Set(SimpleReason(BanFromFile - ban class 2,and,some text:::)) */
+    val (a/* Banned - Set(SimpleReason(BanFromFile - ban class 2,and,some text:::)) */,b/* Banned - Set(SimpleReason(BanFromFile - ban class 2,and,some text:::)) */,c/* Banned - Set(SimpleReason(BanFromFile - ban class 2,and,some text:::)) */) = (1,2,3)/* Banned - Set(SimpleReason(BanFromFile - ban class 2,and,some text:::)) */
+
+  }/* Banned - Set(SimpleReason(BanFromFile - ban class 2,and,some text:::)) */
+  trait InnerTrait {
+    val x = 1/* Banned - Set(SimpleReason(BanFromFile - ban class 2,and,some text:::)) *//* Banned - Set(SimpleReason(BanFromFile - ban class 2,and,some text:::)) */
+    def y = 2/* Banned - Set(SimpleReason(BanFromFile - ban class 2,and,some text:::)) */
+    var z = 3/* Banned - Set(SimpleReason(BanFromFile - ban class 2,and,some text:::)) *//* Banned - Set(SimpleReason(BanFromFile - ban class 2,and,some text:::)) */
+    val (a/* Banned - Set(SimpleReason(BanFromFile - ban class 2,and,some text:::)) *//* Banned - Set(SimpleReason(BanFromFile - ban class 2,and,some text:::)) */,b/* Banned - Set(SimpleReason(BanFromFile - ban class 2,and,some text:::)) *//* Banned - Set(SimpleReason(BanFromFile - ban class 2,and,some text:::)) */,c/* Banned - Set(SimpleReason(BanFromFile - ban class 2,and,some text:::)) *//* Banned - Set(SimpleReason(BanFromFile - ban class 2,and,some text:::)) */) = (1,2,3)/* Banned - Set(SimpleReason(BanFromFile - ban class 2,and,some text:::)) */
+
+  }/* Banned - Set(SimpleReason(BanFromFile - ban class 2,and,some text:::)) */
+  class InnerObject {
+    val x = 1/* Banned - Set(SimpleReason(BanFromFile - ban class 2,and,some text:::)) */
+    def y = 2/* Banned - Set(SimpleReason(BanFromFile - ban class 2,and,some text:::)) */
+    var z = 3/* Banned - Set(SimpleReason(BanFromFile - ban class 2,and,some text:::)) */
+    val (a/* Banned - Set(SimpleReason(BanFromFile - ban class 2,and,some text:::)) */,b/* Banned - Set(SimpleReason(BanFromFile - ban class 2,and,some text:::)) */,c/* Banned - Set(SimpleReason(BanFromFile - ban class 2,and,some text:::)) */) = (1,2,3)/* Banned - Set(SimpleReason(BanFromFile - ban class 2,and,some text:::)) */
+  }/* Banned - Set(SimpleReason(BanFromFile - ban class 2,and,some text:::)) */
+}/* Banned - Set(SimpleReason(BanFromFile - ban class 2,and,some text:::)) */
+class Class3 {
+  val x = 1
+  def y = 2
+  var z = 3
+  val (a,b,c) = (1,2,3)
+  class InnerClass {
+    val x = 1
+    def y = 2
+    var z = 3
+    val (a,b,c) = (1,2,3)
+
+  }
+  trait InnerTrait {
+    val x = 1
+    def y = 2
+    var z = 3
+    val (a,b,c) = (1,2,3)
+
+  }
+  class InnerObject {
+    val x = 1
+    def y = 2
+    var z = 3
+    val (a,b,c) = (1,2,3)
+  }
+}
