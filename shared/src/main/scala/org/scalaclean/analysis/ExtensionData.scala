@@ -2,6 +2,8 @@ package org.scalaclean.analysis
 
 import java.util.concurrent.ConcurrentHashMap
 
+import scalaclean.model.ElementIdManager
+
 /**
  * should generally be the companion of the [[ExtensionData]] case class
  *
@@ -12,11 +14,11 @@ abstract class ExtensionDescriptor[T <: ExtensionData] {
 
   private val interner = new ConcurrentHashMap[String, T]()
 
-  def fromCsv(s: String): T = {
-    interner.computeIfAbsent(s, build)
+  def fromCsv(e: ElementIdManager, s: String): T = {
+    interner.computeIfAbsent(s, build(e, _))
   }
 
-  protected def build(s: String): T
+  protected def build(e: ElementIdManager, s: String): T
 
 }
 
@@ -31,20 +33,20 @@ trait ExtensionData extends Product with Ordered[ExtensionData] {
 }
 
 abstract class StandardExtensionDescriptor[T <: ExtensionData] extends ExtensionDescriptor[T] {
-  protected def buildImpl(posOffsetStart: Int, posOffsetEnd: Int, otherParams: String*): T
+  protected def buildImpl(e: ElementIdManager, posOffsetStart: Int, posOffsetEnd: Int, otherParams: String*): T
 
   private def parsePos(str: String) = {
     if (str.isEmpty) Int.MinValue else str.toInt
   }
 
-  final override protected def build(s: String): T = {
+  final override protected def build(e: ElementIdManager, s: String): T = {
     val params: Array[String] = {
       val raw = s.split(",")
       if (s.endsWith(",")) raw.padTo(raw.size + 1, "") else raw
     }
     val start = parsePos(params(0))
     val end   = parsePos(params(1))
-    buildImpl(start, end, params.drop(2).map(_.intern): _*)
+    buildImpl(e: ElementIdManager, start, end, params.drop(2).map(_.intern): _*)
   }
 
 }

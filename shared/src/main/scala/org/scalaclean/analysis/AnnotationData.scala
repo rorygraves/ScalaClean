@@ -1,8 +1,10 @@
 package org.scalaclean.analysis
 
+import scalaclean.model.ElementIdManager
+
 object AnnotationData extends StandardExtensionDescriptor[AnnotationData] {
 
-  override protected def buildImpl(posOffsetStart: Int, posOffsetEnd: Int, otherParams: String*): AnnotationData = {
+  override protected def buildImpl(e: ElementIdManager, posOffsetStart: Int, posOffsetEnd: Int, otherParams: String*): AnnotationData = {
     val map: Map[String, String] = otherParams.toList
       .drop(1)
       .grouped(2)

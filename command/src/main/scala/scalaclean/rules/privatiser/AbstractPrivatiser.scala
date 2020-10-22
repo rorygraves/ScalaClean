@@ -143,7 +143,7 @@ abstract class AbstractPrivatiser[T <: AbstractPrivatiserCommandLine](val option
         //if it is not in the model, then we will leave this as is
         res = res.widen(NoChange("inherits from external"))
     }
-    res = res.widen(Scoped.Private(ElementId.childThis(myClassLike), s"at least self"))
+    res = res.widen(Scoped.Private(ElementIdM.childThis(myClassLike), s"at least self"))
     res
   }
 

@@ -1,11 +1,11 @@
 package org.scalaclean.analysis.plugin
 
-import org.scalaclean.analysis.{ FlagHelper, StandardExtensionData, StandardExtensionDescriptor }
-import scalaclean.model.ElementId
+import org.scalaclean.analysis.{FlagHelper, StandardExtensionData, StandardExtensionDescriptor}
+import scalaclean.model.{ElementId, ElementIdManager}
 
 object ModData extends StandardExtensionDescriptor[ModData] {
 
-  override protected def buildImpl(posOffsetStart: Int, posOffsetEnd: Int, otherParams: String*): ModData = {
+  override protected def buildImpl(e: ElementIdManager, posOffsetStart: Int, posOffsetEnd: Int, otherParams: String*): ModData = {
     assert(otherParams.length == 1, s"${otherParams.length} - ${otherParams.mkString("[", ",", "]")}")
     new ModData(posOffsetStart, posOffsetEnd, java.lang.Long.parseLong(otherParams(0), 16))
   }
@@ -28,9 +28,9 @@ case class ModData(posOffsetStart: Int, posOffsetEnd: Int, flagBit: Long) extend
 
 object VisibilityData extends StandardExtensionDescriptor[VisibilityData] {
 
-  override protected def buildImpl(posOffsetStart: Int, posOffsetEnd: Int, otherParams: String*): VisibilityData = {
+  override protected def buildImpl(e: ElementIdManager, posOffsetStart: Int, posOffsetEnd: Int, otherParams: String*): VisibilityData = {
     assert(otherParams.length == 2)
-    val id = ElementId.option(otherParams(1))
+    val id = e.option(otherParams(1))
     new VisibilityData(posOffsetStart, posOffsetEnd, otherParams(0), id)
   }
 
