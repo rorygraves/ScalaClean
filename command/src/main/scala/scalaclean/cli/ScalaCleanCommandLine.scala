@@ -2,7 +2,7 @@ package scalaclean.cli
 
 import java.nio.file.{Files, Path}
 
-import org.kohsuke.args4j.spi.MultiPathOptionHandler
+import org.kohsuke.args4j.spi.{MultiPathOptionHandler, PathOptionHandler}
 import org.kohsuke.args4j.{Option => ArgOption}
 import java.util.{List => JList}
 
@@ -39,7 +39,7 @@ abstract class ScalaCleanCommandLine {
     required = false,
     hidden = false,
     forbids = Array("--files"),
-    handler = classOf[MultiPathOptionHandler]
+    handler = classOf[PathOptionHandler]
   )
   var _root: Path = null
 
@@ -88,13 +88,15 @@ abstract class ScalaCleanCommandLine {
   )
   var _rulePlugins: JList[String] = null
 
-  def rulePlugins: Seq[RulePlugin] = _rulePlugins.asScala.map { objectNameAndParams =>
-    try {
-      RulePluginFactory(objectNameAndParams)
-    } catch {
-      case e: Exception => throw new Exception(s"failed to parse parameter '$objectNameAndParams'", e)
-    }
-  }.toList
+  def rulePlugins: Seq[RulePlugin] =
+    if (_rulePlugins eq null) Nil
+    else _rulePlugins.asScala.map { objectNameAndParams =>
+      try {
+        RulePluginFactory(objectNameAndParams)
+      } catch {
+        case e: Exception => throw new Exception(s"failed to parse parameter '$objectNameAndParams'", e)
+      }
+    }.toList
 
   //test specific options, so no API interface
   object testOptions {
