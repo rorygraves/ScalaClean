@@ -66,6 +66,16 @@ class RelationshipsWriter(file: File) {
       s"${IoTokens.relSetter} ${field.legacyCsvIDString}"
     )
   }
+  def recordDuplicate(symbol: ModelSymbol) = {
+    val msg = s"${symbol.idWithDeDuplicationSuffix},${IoTokens.duplicateOf},${symbol.newCsvString}"
+    assert (writer.writeLine(msg))
+
+    if (logger.debug)
+      logger.scopeLog(s" -->[RELATIONSHIP] $msg")
+    //always log duplicates
+    logger.scopeLog(s" -->[SUMMARY] DUPLICATE!!! $msg")
+  }
+
 
   def endUnit(): Unit = {
     writer.flush()
