@@ -124,6 +124,8 @@ object ModelReader {
             getterB += new GetterImpl(from, to)
           case IoTokens.relSetter =>
             setterB += new SetterImpl(from, to)
+          case IoTokens.duplicateOf =>
+            //ignore
 
         }
       } catch {

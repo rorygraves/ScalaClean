@@ -1,5 +1,7 @@
 package org.scalaclean.analysis
 
+import java.util.concurrent.atomic.AtomicInteger
+
 import scalaclean.model.ElementId
 
 import scala.collection.immutable.ListSet
@@ -190,6 +192,8 @@ sealed trait ModelSymbol extends HasModelCommon {
 
     settersFor.foreach(setterTarget => relWriter.setterFor(this.common, setterTarget))
 
+    if (suffix != -1) relWriter.recordDuplicate(this)
+
     children.values.foreach(child => child.outputStructure(eleWriter, relWriter, extensionWriter))
   }
 
@@ -204,9 +208,37 @@ sealed trait ModelSymbol extends HasModelCommon {
           Some(t)
       }
     }
+    val duplicateGroups = children.values.groupBy(_.common.elementId).filter(_._2.size > 1)
+    val suffix = new AtomicInteger
+    for (duplicate: Iterable[ModelSymbol] <- duplicateGroups.values.toList) {
+      suffix.set(0)
+      def keep(symToKeep: ModelSymbol): Unit = {
+        duplicate filter (_ ne symToKeep) foreach (_.markDuplicateOf(symToKeep, suffix.incrementAndGet()))
+      }
+      val preferred = duplicate filter (!_.tree.symbol.isSynthetic)
+      preferred.size match {
+        case 1 =>
+          println(s"flatten - found preferred - $newCsvString, ${duplicate.size}")
+          keep(preferred.head)
+        case 0 =>
+          println(s"flatten - cant find any preferred - $newCsvString, ${duplicate.size}")
+          keep (duplicate.head)
+        case n =>
+          //try harder ??
+          println(s"flatten - cant find single preferred - $newCsvString, ${duplicate.size}")
+          keep (duplicate.head)
+      }
+    }
     refersRels = refersRels.filter(_._1.common.elementId != this.common.elementId)
 
   }
+  // -1 means no duplicate
+  var suffix: Int = -1
+  def markDuplicateOf(mainDeDup: ModelSymbol, suffix: Int): Unit = {
+    this.suffix = suffix
+  }
+  def idWithDeDuplicationSuffix = if (suffix == -1) newCsvString else s"${newCsvString}--$suffix"
+
 
 }
 

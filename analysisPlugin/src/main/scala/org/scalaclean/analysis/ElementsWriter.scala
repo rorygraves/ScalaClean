@@ -3,12 +3,12 @@ package org.scalaclean.analysis
 import java.io.File
 
 class ElementsWriter(file: File) extends CommonWriter(file) {
-  def commonPrefix(model: ModelSymbol): List[Any] = {
+  private def commonPrefix(model: ModelSymbol): List[Any] = {
     import model._
     List(
       ioToken,
       legacyCsvIDString,
-      newCsvString,
+      idWithDeDuplicationSuffix,
       tree.symbol.flags.toHexString,
       sourceFile,
       posStart,
