@@ -171,15 +171,7 @@ class Finaliser(override val options: FinaliserCommandLine, override val model: 
 //                                                                    |Effect rate       = ${(elementsChanged.toDouble / elementsObserved.toDouble * 10000).toInt / 100} %"
 //                                                                    |""".stripMargin)
 
-  override def fix(targetFile: AbsolutePath, syntacticDocument: () => SyntacticDocument): List[SCPatch] = {
-    val targetFileName = targetFile.toString
-    // find source model
-    val sModel = model
-      .allOf[SourceModel]
-      .filter(_.toString.contains(targetFileName))
-      .toList
-      .headOption
-      .getOrElse(throw new IllegalStateException(s"Unable to find source model for $targetFileName"))
+  override def fix(sModel: SourceModel, syntacticDocument: () => SyntacticDocument): List[SCPatch] = {
 
     object visitor extends ScalaCleanTreePatcher(patchStats, syntacticDocument) {
       override def debug: Boolean       = options.debug

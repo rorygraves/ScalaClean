@@ -1,11 +1,12 @@
 package scalaclean.model
 
-import org.scalaclean.analysis.{ AnnotationData, ExtensionData }
+import java.nio.file.Path
+
+import org.scalaclean.analysis.{AnnotationData, ExtensionData}
 import scalaclean.model.impl.ElementModelImpl
 
 import scala.reflect.ClassTag
 import scala.tools.nsc.symtab.Flags
-
 import Filters._
 import InternalFilters._
 
@@ -297,6 +298,8 @@ sealed trait VarModel extends FieldModel {
 
 sealed trait SourceModel extends ModelElement {
   type fieldType = SourceModel
+
+  def filename: Path
 }
 
 trait ProjectModel {
@@ -943,7 +946,7 @@ package impl {
       extends ElementModelImpl(info)
       with SourceModel {
 
-    def filename: Path = info.source.path
+    override def filename: Path = info.source.path
 
   }
 

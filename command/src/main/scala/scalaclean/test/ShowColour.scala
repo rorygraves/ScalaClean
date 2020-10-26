@@ -35,7 +35,7 @@ class ShowColour(theModel: ProjectModel, pluginParams: List[String]) extends Tes
 
     override def runRule(): Unit = ???
 
-    override def fix(targetFile: AbsolutePath, syntacticDocument: () => SyntacticDocument): List[SCPatch] = Nil
+    override def fix(sModel: SourceModel, syntacticDocument: () => SyntacticDocument): List[SCPatch] = Nil
   }
   class ASpecificColour extends SomeSpecificColour {
     override type RealType = ASpecificColour

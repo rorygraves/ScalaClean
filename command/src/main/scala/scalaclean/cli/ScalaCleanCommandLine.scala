@@ -89,6 +89,14 @@ abstract class ScalaCleanCommandLine {
   )
   var _rulePlugins: JList[String] = Collections.emptyList()
 
+  @ArgOption(
+    name = "--skipNonexistentFiles",
+    usage = "skip files that are not found",
+    required = false,
+    hidden = false
+  )
+  var skipNonexistentFiles: Boolean = false
+
   def rulePlugins: Seq[RulePlugin] =
     _rulePlugins.asScala.map { objectNameAndParams =>
       try {
