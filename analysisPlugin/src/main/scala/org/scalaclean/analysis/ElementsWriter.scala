@@ -7,7 +7,6 @@ class ElementsWriter(file: File) extends CommonWriter(file) {
     import model._
     List(
       ioToken,
-      legacyCsvIDString,
       idWithDeDuplicationSuffix,
       tree.symbol.flags.toHexString,
       sourceFile,
@@ -18,16 +17,24 @@ class ElementsWriter(file: File) extends CommonWriter(file) {
     )
   }
 
+
   def write(modelSymbol: ModelSymbol): Unit = {
+    def fieldCommon(x: ModelField) = {
+      List(
+        x.isAbstract, //
+        x.sourceName, //
+        x.fields.fold("")(_.newCsvString) //
+      )
+    }
+
     val fields = modelSymbol match {
       case x: ModelMethod => commonPrefix(x) ::: List(x.isAbstract, x.sourceName, x.isTyped)
       case x: ModelClass  => commonPrefix(x)
       case x: ModelTrait  => commonPrefix(x)
       case x: ModelObject => commonPrefix(x)
       case x: ModelFields => commonPrefix(x) ::: List(x.syntheticName, x.isLazy, x.fieldCount)
-      case x: ModelVal =>
-        commonPrefix(x) ::: List(x.isAbstract, x.sourceName, x.fields.fold("")(_.newCsvString), x.isLazy)
-      case x: ModelVar    => commonPrefix(x) ::: List(x.isAbstract, x.sourceName, x.fields.fold("")(_.newCsvString))
+      case x: ModelVal    => commonPrefix(x) ::: fieldCommon(x) ::: List(x.isLazy)
+      case x: ModelVar    => commonPrefix(x) ::: fieldCommon(x)
       case x: ModelSource => commonPrefix(x)
     }
     val msg = fields.mkString(",")

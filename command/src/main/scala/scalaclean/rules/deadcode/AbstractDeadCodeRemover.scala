@@ -153,6 +153,17 @@ abstract class AbstractDeadCodeRemover[T <: AbstractDeadCodeCommandLine] extends
       markUsed(testClass, markEnclosing = true, Test, testClass :: Nil, "junit test class")
     }
     allScalaTests.foreach(e => markUsed(e, markEnclosing = true, Test, e :: Nil, "scalatests"))
+    //we dont really want to do this but we don't successfully remove parameters,
+    // and classes parameters overlap with the val
+    model.allOf[FieldModel].filter(_.isParameter) foreach { e=>
+      e.mark = Mark.dontChange(SimpleReason("parameter") )
+    }
+    model.allOf[FieldModel].filter(_.associatedConstructorParameter.isDefined) foreach { e=>
+      e.mark = Mark.dontChange(SimpleReason("has ctor val") )
+    }
+    model.allOf[PlainMethodModel].filter(_.defaultAccessorFor.isDefined) foreach { e=>
+      e.mark = Mark.dontChange(SimpleReason("default accessor methods") )
+    }
   }
   def runExtraRules(): Unit = {}
   def runSerialisationRule(): Unit = {

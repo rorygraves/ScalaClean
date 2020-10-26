@@ -65,7 +65,8 @@ abstract class ScalaCleanTreePatcher(stats: PatchStats, _syntacticDocument: () =
       log(s" $actionName(${element.name},'$text')")
 
     val start =
-      element.annotations.map(a => element.rawStart + a.posOffsetStart - 1).headOption.getOrElse(element.rawStart)
+      if (element.annotations.isEmpty) element.rawStart
+    else element.annotations.minBy(_.posOffsetStart).posOffsetStart - 1 + element.rawStart
     val candidateBeginToken = tokens.find(t => t.start >= start && t.start <= t.end).head
     val newBeingToken       = TokenHelper.whitespaceOrCommentsBefore(candidateBeginToken, syntacticDocument.tokens)
     val newStartPos         = newBeingToken.headOption.map(_.start).getOrElse(start)

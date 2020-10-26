@@ -52,6 +52,8 @@ sealed trait ModelElement extends Ordered[ModelElement] {
   def extensionOfType[T <: ExtensionData: ClassTag]: Option[T] = {
     extensions.collectFirst { case a: T => a }
   }
+  def duplicateOf: Option[ModelElement]
+  def duplicates: Set[_ <: ModelElement]
 
   //start target APIs
   // def outgoingReferences: Iterable[Refers] = allOutgoingReferences map (_._2)
@@ -229,6 +231,9 @@ sealed trait ObjectModel extends ClassLike with FieldModel {
   override final def accessors: Iterable[AccessorModel] = Nil
   override final def declaredIn: Option[FieldsModel]    = None
   override final def fieldsInSameDeclaration            = Nil
+  override final def isParameter: Boolean = false
+  override final def associatedConstructorParameter: Option[FieldModel] = None
+  override final def associatedClassLikeField: Option[FieldModel] = None
 
   final type fieldType = ObjectModel
 }
@@ -243,7 +248,9 @@ sealed trait AccessorModel extends MethodModel with FieldOrAccessorModel {
   def field: Option[FieldModel]
 }
 
-sealed trait PlainMethodModel extends MethodModel
+sealed trait PlainMethodModel extends MethodModel {
+  def defaultAccessorFor: Option[FieldModel]
+}
 
 sealed trait GetterMethodModel extends AccessorModel {
   def field: Option[FieldModel]
@@ -256,6 +263,7 @@ sealed trait SetterMethodModel extends AccessorModel {
 sealed trait FieldOrAccessorModel extends ModelElement
 
 sealed trait FieldModel extends FieldOrAccessorModel {
+
   type fieldType <: FieldModel
 
   def getter: Option[GetterMethodModel]
@@ -265,6 +273,10 @@ sealed trait FieldModel extends FieldOrAccessorModel {
   def declaredIn: Option[FieldsModel]
 
   def fieldsInSameDeclaration: List[fieldType]
+
+  def isParameter: Boolean
+  def associatedConstructorParameter: Option[FieldModel]
+  def associatedClassLikeField: Option[FieldModel]
 }
 
 sealed trait FieldsModel extends ModelElement {
@@ -385,7 +397,10 @@ package impl {
       overrides: Map[ElementId, List[OverridesImpl]],
       within: Map[ElementId, List[WithinImpl]],
       getter: Map[ElementId, List[GetterImpl]],
-      setter: Map[ElementId, List[SetterImpl]]
+      setter: Map[ElementId, List[SetterImpl]],
+      duplicate: Map[ElementId, List[DuplicateImpl]],
+      ctorParam: Map[ElementId, List[ConstructorParamImpl]],
+      defaultGetters: Map[ElementId, List[DefaultGetterImpl]]
   ) {
 
     def sortValues: BasicRelationshipInfo = {
@@ -395,7 +410,10 @@ package impl {
         overrides = overrides.transform { case (k, v) => v.sortBy(v => (v.fromElementId.id, v.toElementId.id)) },
         within = within.transform { case (k, v) => v.sortBy(v => (v.fromElementId.id, v.toElementId.id)) },
         getter = getter.transform { case (k, v) => v.sortBy(v => (v.fromElementId.id, v.toElementId.id)) },
-        setter = setter.transform { case (k, v) => v.sortBy(v => (v.fromElementId.id, v.toElementId.id)) }
+        setter = setter.transform { case (k, v) => v.sortBy(v => (v.fromElementId.id, v.toElementId.id)) },
+        duplicate = duplicate.transform { case (k, v) => v.sortBy(v => (v.fromElementId.id, v.toElementId.id)) },
+        ctorParam = ctorParam.transform { case (k, v) => v.sortBy(v => (v.fromElementId.id, v.toElementId.id)) },
+        defaultGetters = defaultGetters.transform { case (k, v) => v.sortBy(v => (v.fromElementId.id, v.toElementId.id)) }
       )
     }
 
@@ -406,6 +424,9 @@ package impl {
       within.values.foreach(_.foreach(_.complete(modelElements)))
       getter.values.foreach(_.foreach(_.complete(modelElements)))
       setter.values.foreach(_.foreach(_.complete(modelElements)))
+      duplicate.values.foreach(_.foreach(_.complete(modelElements)))
+      ctorParam.values.foreach(_.foreach(_.complete(modelElements)))
+      defaultGetters.values.foreach(_.foreach(_.complete(modelElements)))
     }
 
     def byTo: BasicRelationshipInfo = {
@@ -414,39 +435,45 @@ package impl {
       }
 
       BasicRelationshipInfo(
-        byToSymbol(refers),
-        byToSymbol(extnds),
-        byToSymbol(overrides),
-        byToSymbol(within),
-        byToSymbol(getter),
-        byToSymbol(setter)
+        refers = byToSymbol(refers),
+        extnds = byToSymbol(extnds),
+        overrides = byToSymbol(overrides),
+        within = byToSymbol(within),
+        getter = byToSymbol(getter),
+        setter = byToSymbol(setter),
+        duplicate = byToSymbol(duplicate),
+        ctorParam = byToSymbol(ctorParam),
+        defaultGetters = byToSymbol(defaultGetters)
       )
 
     }
 
     def +(that: BasicRelationshipInfo): BasicRelationshipInfo = {
       val res = BasicRelationshipInfo(
-        this.refers ++ that.refers,
-        this.extnds ++ that.extnds,
-        this.overrides ++ that.overrides,
-        this.within ++ that.within,
-        this.getter ++ that.getter,
-        this.setter ++ that.setter
+        refers = this.refers ++ that.refers,
+        extnds = this.extnds ++ that.extnds,
+        overrides = this.overrides ++ that.overrides,
+        within = this.within ++ that.within,
+        getter = this.getter ++ that.getter,
+        setter = this.setter ++ that.setter,
+        duplicate = this.duplicate ++ that.duplicate,
+        ctorParam = this.ctorParam ++ that.ctorParam,
+        defaultGetters = this.defaultGetters ++ that.defaultGetters
       )
       //there should be no overlaps
-//      assert(res.refers.size == this.refers.size + that.refers.size)
-//      assert(res.extnds.size == this.extnds.size + that.extnds.size)
-//      if(res.overrides.size != this.overrides.size + that.overrides.size) {
-//        val m1 = res.overrides.keySet
-//        val m2 = this.overrides.keySet ++ that.overrides.keySet
-//        val diff = (m1 -- m2) ++ (m2 -- m1)
-//        println(diff)
-//        //assert(res.overrides.size == this.overrides.size + that.overrides.size)
-//      }
-//      assert(res.overrides.size == this.overrides.size + that.overrides.size)
-//      assert(res.within.size == this.within.size + that.within.size)
-//      assert(res.getter.size == this.getter.size + that.getter.size)
-//      assert(res.setter.size == this.setter.size + that.setter.size)
+      //      assert(res.refers.size == this.refers.size + that.refers.size)
+      //      assert(res.extnds.size == this.extnds.size + that.extnds.size)
+      //      if(res.overrides.size != this.overrides.size + that.overrides.size) {
+      //        val m1 = res.overrides.keySet
+      //        val m2 = this.overrides.keySet ++ that.overrides.keySet
+      //        val diff = (m1 -- m2) ++ (m2 -- m1)
+      //        println(diff)
+      //        //assert(res.overrides.size == this.overrides.size + that.overrides.size)
+      //      }
+      //      assert(res.overrides.size == this.overrides.size + that.overrides.size)
+      //      assert(res.within.size == this.within.size + that.within.size)
+      //      assert(res.getter.size == this.getter.size + that.getter.size)
+      //      assert(res.setter.size == this.setter.size + that.setter.size)
 
       res
     }
@@ -551,6 +578,16 @@ package impl {
       _refersFrom = relsTo.refers.getOrElse(modelElementId, Nil)
       _overrides = relsFrom.overrides.getOrElse(modelElementId, Nil)
       _overridden = relsTo.overrides.getOrElse(modelElementId, Nil)
+
+      relsFrom.duplicate.get(modelElementId) match {
+        case None =>
+        case Some(List(value)) => _duplicateOf = value.toElement
+        case _ =>
+      }
+      relsTo.duplicate.get(modelElementId) match {
+        case None =>
+        case Some(values) => _duplicates = values.map(_.fromElement).toSet
+      }
     }
 
     override def extensions: Iterable[ExtensionData] = info.extensions
@@ -576,6 +613,9 @@ package impl {
 
     private var _overrides: List[Overrides]  = _
     private var _overridden: List[Overrides] = _
+
+    private var _duplicateOf = Option.empty[ElementModelImpl]
+    private var _duplicates = Set.empty[ElementModelImpl]
     //end set by `complete`
 
     override def overrides: List[Overrides]  = _overrides
@@ -584,6 +624,9 @@ package impl {
     override def enclosing: List[ElementModelImpl] = _within
 
     override def classOrEnclosing: ClassLike = enclosing.head.classOrEnclosing
+
+    override def duplicateOf: Option[ModelElement] = _duplicateOf
+    override def duplicates: Set[_ <: ModelElement] = _duplicates
 
     // sorting in complete()  to make debugging easier
     override def allChildren: List[ElementModelImpl] = _children
@@ -705,6 +748,31 @@ package impl {
       }
       fieldImpl.foreach(_.addField(this))
       fields_ = fieldImpl
+
+      relsFrom.ctorParam.get(info.elementId) match {
+        case Some(ctor:: Nil) =>
+          ctor.toElement match  {
+            case Some(ctorParam) =>
+              ctorParam._classField = Some(this)
+              this._ctorParam = Some(ctorParam)
+            case None =>
+          }
+
+        case None =>
+        case Some(error) => throw new IllegalStateException(s"duplicate ctor params $error")
+      }
+      relsFrom.defaultGetters.get(info.elementId) match {
+        case Some(ctor:: Nil) =>
+          ctor.toElement match  {
+            case Some(ctorParam) =>
+              ctorParam._defaultAccessorFor = Some(this)
+              this._defaultAccessor = Some(ctorParam)
+            case None =>
+          }
+
+        case None =>
+        case Some(error) => throw new IllegalStateException(s"duplicate ctor params $error")
+      }
     }
 
     /**
@@ -721,6 +789,14 @@ package impl {
     def getter                             = getter_
     def accessors: Iterable[AccessorModel] = getter
 
+    override final def isParameter: Boolean = (info.flags & Flags.PARAM) != 0
+    private var _classField = Option.empty[FieldModelImpl]
+    private var _ctorParam = Option.empty[FieldModelImpl]
+    private var _defaultAccessor = Option.empty[PlainMethodModel]
+
+    override final def associatedConstructorParameter: Option[FieldModel] = _ctorParam
+
+    override final def associatedClassLikeField: Option[FieldModel] = _classField
   }
 
   class ClassModelImpl(info: BasicElementInfo)
@@ -741,7 +817,11 @@ package impl {
       override val isAbstract: Boolean,
       val hasDeclaredType: Boolean
   ) extends ElementModelImpl(info)
-      with PlainMethodModel
+      with PlainMethodModel {
+    var _defaultAccessorFor = Option.empty[FieldModelImpl]
+    def defaultAccessorFor = _defaultAccessorFor
+
+  }
 
   class GetterMethodModelImpl(
       info: BasicElementInfo,

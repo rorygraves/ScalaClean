@@ -47,7 +47,6 @@ object ModelReader {
 
   private def readExt(extensionFilePath: String): Map[String, Seq[ExtensionData]] = {
 
-    var mapByLegacyElementId = Map.empty[String, mutable.Builder[ExtensionData, List[ExtensionData]]]
     var mapByElementId       = Map.empty[String, mutable.Builder[ExtensionData, List[ExtensionData]]]
 
     val path = Paths.get(extensionFilePath)
@@ -55,7 +54,7 @@ object ModelReader {
 
     Files.lines(path).forEach { line: String =>
 //        println(line)
-      val Array(id, newId, fqn, rest) = line.split(",", 4)
+      val Array(newId, fqn, rest) = line.split(",", 3)
 //        val extBuilder = lookup.getOrElseUpdate(fqn, {
 ////          println(s"looking up extension $fqn")
 //          val module = try {
@@ -89,12 +88,15 @@ object ModelReader {
   }
 
   private def readRels(relationshipsFilePath: String) = {
-    val refersToB  = List.newBuilder[RefersImpl]
-    val extendsB   = List.newBuilder[ExtendsImpl]
-    val overridesB = List.newBuilder[OverridesImpl]
-    val withinB    = List.newBuilder[WithinImpl]
-    val getterB    = List.newBuilder[GetterImpl]
-    val setterB    = List.newBuilder[SetterImpl]
+    val refersToB      = List.newBuilder[RefersImpl]
+    val extendsB       = List.newBuilder[ExtendsImpl]
+    val overridesB     = List.newBuilder[OverridesImpl]
+    val withinB        = List.newBuilder[WithinImpl]
+    val getterB        = List.newBuilder[GetterImpl]
+    val setterB        = List.newBuilder[SetterImpl]
+    val duplicateB     = List.newBuilder[DuplicateImpl]
+    val ctorParamB     = List.newBuilder[ConstructorParamImpl]
+    val defaultGetterB = List.newBuilder[DefaultGetterImpl]
 
     val path = Paths.get(relationshipsFilePath)
     println(s"reading relationships from $path")
@@ -125,7 +127,11 @@ object ModelReader {
           case IoTokens.relSetter =>
             setterB += new SetterImpl(from, to)
           case IoTokens.duplicateOf =>
-            //ignore
+            duplicateB += new DuplicateImpl(from, to)
+          case IoTokens.ctorParam =>
+            ctorParamB += new ConstructorParamImpl(from, to)
+          case IoTokens.defaultGetter =>
+            defaultGetterB += new DefaultGetterImpl(from, to)
 
         }
       } catch {
@@ -133,12 +139,15 @@ object ModelReader {
           throw new IllegalStateException(s"Failed to parse line $line", t)
       }
     }
-    val refersTo  = refersToB.result().groupBy(_.fromElementId)
-    val extends_  = extendsB.result().groupBy(_.fromElementId)
-    val overrides = overridesB.result().groupBy(_.fromElementId)
-    val within    = withinB.result().groupBy(_.fromElementId)
-    val getter    = getterB.result().groupBy(_.fromElementId)
-    val setter    = setterB.result().groupBy(_.fromElementId)
+    val refersTo      = refersToB.result().groupBy(_.fromElementId)
+    val extends_      = extendsB.result().groupBy(_.fromElementId)
+    val overrides     = overridesB.result().groupBy(_.fromElementId)
+    val within        = withinB.result().groupBy(_.fromElementId)
+    val getter        = getterB.result().groupBy(_.fromElementId)
+    val setter        = setterB.result().groupBy(_.fromElementId)
+    val duplicate     = duplicateB.result().groupBy(_.fromElementId)
+    val ctorParam     = ctorParamB.result().groupBy(_.fromElementId)
+    val defaultGetter = defaultGetterB.result().groupBy(_.fromElementId)
 
     BasicRelationshipInfo(
       refersTo,
@@ -146,7 +155,10 @@ object ModelReader {
       overrides,
       within,
       getter,
-      setter
+      setter,
+      duplicate,
+      ctorParam,
+      defaultGetter
     )
   }
 
@@ -168,18 +180,18 @@ object ModelReader {
         } else line.split(",")
 
         val typeId    = tokens(0)
-        val elementId = ElementIds(tokens(2))
-        val flags     = java.lang.Long.parseLong(tokens(3), 16)
-        val src       = project.source(tokens(4).replace(sourceDirSep, java.io.File.separator))
-        val start     = tokens(5).toInt
-        val end       = tokens(6).toInt
-        val focus     = tokens(7).toInt
-        val traversal = tokens(8).toInt
+        val elementId = ElementIds(tokens(1))
+        val flags     = java.lang.Long.parseLong(tokens(2), 16)
+        val src       = project.source(tokens(3).replace(sourceDirSep, java.io.File.separator))
+        val start     = tokens(4).toInt
+        val end       = tokens(5).toInt
+        val focus     = tokens(6).toInt
+        val traversal = tokens(7).toInt
 
         val basicInfo =
-          BasicElementInfo(elementId, src, start, end, focus, flags, byId.getOrElse(tokens(2), Nil), traversal)
+          BasicElementInfo(elementId, src, start, end, focus, flags, byId.getOrElse(tokens(1), Nil), traversal)
 
-        val idx = 9
+        val idx = 8
         val ele: ElementModelImpl = typeId match {
           case IoTokens.typeObject =>
             new ObjectModelImpl(basicInfo)
