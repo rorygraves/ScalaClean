@@ -11,6 +11,8 @@ object IoTokens {
   val relGetter      = "getterFor"
   val relSetter      = "setterFor"
   val duplicateOf    = "duplicateOf"
+  val ctorParam      = "ctorParam"
+  val defaultGetter  = "defaultGetter"
 
   val typeObject       = "object"
   val typeClass        = "class"

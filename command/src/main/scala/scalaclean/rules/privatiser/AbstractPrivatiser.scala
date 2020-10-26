@@ -51,6 +51,16 @@ abstract class AbstractPrivatiser[T <: AbstractPrivatiserCommandLine](val option
 
       case _ => //do nothing
     }
+    //we dont really want to do this but we don't successfully handle parameters,
+    // and classes parameters overlap with the val
+    model.allOf[FieldModel].filter(_.isParameter) foreach { e=>
+      e.mark = Mark.dontChange(SimpleReason("parameter") )
+    }
+    // defaul accessors are internal to the compiler model
+    model.allOf[PlainMethodModel].filter(_.defaultAccessorFor.isDefined) foreach { e=>
+      e.mark = Mark.dontChange(SimpleReason("default accessor methods") )
+    }
+
   }
 
   def isPublic(e: ModelElement): Boolean = {

@@ -172,6 +172,9 @@ lazy val deadCodeProject14_anon_class =
 lazy val deadCodeProject15_entry_point =
   testInputProject("deadCodeProject15_entry_point", "testProjects/deadCodeProject15_entry_point")()
 
+lazy val deadCodeProject16_params =
+  testInputProject("deadCodeProject16_params", "testProjects/deadCodeProject16_params")()
+
 lazy val privatiserProject1 = testInputProject("privatiserProject1", "testProjects/privatiserProject1")()
 lazy val privatiserProject2 = testInputProject("privatiserProject2", "testProjects/privatiserProject2")()
 lazy val privatiserProject3 = testInputProject("privatiserProject3", "testProjects/privatiserProject3")()
@@ -210,7 +213,8 @@ lazy val deadCodeTests = List(
   deadCodeProject12_isolated,
   deadCodeProject13_case_class,
   deadCodeProject14_anon_class,
-  deadCodeProject15_entry_point
+  deadCodeProject15_entry_point,
+  deadCodeProject16_params
 )
 
 lazy val finaliserTests = List(finaliserProject1)

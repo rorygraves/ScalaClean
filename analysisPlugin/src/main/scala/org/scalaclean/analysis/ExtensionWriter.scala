@@ -7,7 +7,7 @@ class ExtensionWriter(file: File) extends CommonWriter(file){
   def writeExtensions(mSymbol: ModelSymbol): Unit = {
     val data = mSymbol.extensionData
     if (data.nonEmpty) {
-      val prefix = s"${mSymbol.legacyCsvIDString},${mSymbol.newCsvString},"
+      val prefix = s"${mSymbol.newCsvString},"
       data.foreach(d => writeLine(s"$prefix${d.getClass.getName},${d.toCsv}", d))
     }
   }

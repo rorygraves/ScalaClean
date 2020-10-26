@@ -1,5 +1,7 @@
 package scalaclean.model
 
+import scalaclean.model.impl._
+
 sealed trait Reference {
   def fromElementId: ElementId
 
@@ -10,10 +12,15 @@ sealed trait Reference {
   def toElement: Option[ModelElement]
 
   final protected def refType: String = this match {
-    case _: Refers    => "Refers"
-    case _: Extends   => "Extends"
+    case _: Refers => "Refers"
+    case _: Extends => "Extends"
     case _: Overrides => "Overrides"
-    case _: Within    => "Within"
+    case _: Within => "Within"
+    case _: GetterImpl => "Getter"
+    case _: SetterImpl => "Setter"
+    case _: DuplicateImpl => "Duplicates"
+    case _: ConstructorParamImpl => "ConstructorParam"
+    case _: DefaultGetterImpl => "DefaultParameterGetter"
   }
 }
 
@@ -91,15 +98,11 @@ package impl {
 
   final class GetterImpl(from: ElementId, to: ElementId)
       extends ReferenceImpl[GetterMethodModel, FieldModel](from, to)
-      with Overrides {
-    override def isDirect: Boolean = true
-  }
+      with Reference
 
   final class SetterImpl(from: ElementId, to: ElementId)
       extends ReferenceImpl[SetterMethodModel, VarModel](from, to)
-      with Overrides {
-    override def isDirect: Boolean = true
-  }
+      with Reference
 
   final class WithinImpl(from: ElementId, to: ElementId) extends ReferenceImpl(from, to) with Within {
 
@@ -110,5 +113,14 @@ package impl {
     }
 
   }
+  final class DuplicateImpl(from: ElementId, to: ElementId)
+    extends ReferenceImpl[ElementModelImpl, ElementModelImpl](from, to)
+    with Reference
+  final class ConstructorParamImpl(from: ElementId, to: ElementId)
+    extends ReferenceImpl[FieldModelImpl, FieldModelImpl](from, to)
+      with Reference
+  final class DefaultGetterImpl(from: ElementId, to: ElementId)
+    extends ReferenceImpl[FieldModelImpl, PlainMethodModelImpl](from, to)
+      with Reference
 
 }

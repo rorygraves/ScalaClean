@@ -1,3 +1,4 @@
 package scalaclean.test.deadcode1.annot
+import java.lang.annotation.Inherited
 
 object AnnotApp1 extends App {}

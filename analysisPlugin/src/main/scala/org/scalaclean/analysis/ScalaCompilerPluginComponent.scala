@@ -163,7 +163,7 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
         println(s"$indentString${mSymbol.debugName}")
       scopeStack = mSymbol :: scopeStack
       depth += 1
-      scopeLog(s"-symbol: ${mSymbol.legacyCsvIDString}")
+      scopeLog(s"-symbol: ${mSymbol.common.elementId}")
       val oldVisited = newVisited()
       outer.foreach(o => mSymbol.addWithin(o))
       extensions.foreach { e =>
@@ -342,6 +342,23 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
 
     def postProcess(model: ClassLike): Unit = {
       model.postProcess()
+      model match {
+        case cls: ModelClass =>
+          //cope with constructor vals
+          val ctorSym = model.tree.symbol.asClass.primaryConstructor
+          val ctorParams = ctorSym.paramss.flatten.groupBy(_.nameString)
+
+          model.children.values foreach {
+            case field: ModelField =>
+              //we have to trim because the compiler has trailing spaces
+              ctorParams.get(field.tree.symbol.nameString.trim) match {
+              case Some(ctorParam) => field.addConstructorParam(asMSymbol(ctorParam.head.asInstanceOf[global.Symbol]))
+              case None =>
+            }
+            case _ =>
+          }
+        case _ =>
+      }
       if (model.remainingChildOverrides.nonEmpty) {
         scopeLog(s"add additional overrides in class but not in tree")
         model.remainingChildOverrides.foreach { case (l, parents) =>
@@ -376,7 +393,7 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
           }
         case treeSelect: Select =>
           enterTransScope("Select") {
-            scopeLog("-symbol: " + asMSymbol(treeSelect.symbol).legacyCsvIDString)
+            scopeLog("-symbol: " + asMSymbol(treeSelect.symbol).common.elementId)
             // avoids an issue with packages which we ScalaClean doesn't currently understand
             if (hasCurrentGlobalScope) {
               currentScope.addRefers(asMSymbol(treeSelect.symbol), isSynthetic = false)
@@ -610,6 +627,16 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
             }
 
             super.traverse(tree)
+            for (params <- defdef.vparamss;
+                 param <- params) {
+              if (param.symbol.hasFlag(Flags.DEFAULTPARAM)) {
+                method.children.collectFirst{
+                  case (common, field: ModelField) if field.tree.symbol == param.symbol => field
+                }.foreach { field =>
+                  field.addDefaultGetter(asMSymbol(global.analyzer.defaultGetter(param.symbol, global.analyzer.NoContext)))
+                }
+              }
+            }
 
           }
 
@@ -619,24 +646,25 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
               // this simplified the model navigation
               super.traverse(tree)
             case cls: ModelClass if symbol.isConstructor =>
-              // constructor params can also be fields, so we alias them
-              // (ScalaClean is only interested the val, but we need to see usage)
-              // so that the traversal sees the usage of the param as a usage of the field
-              val symbolAliases: List[Symbol] = {
-                for (params <- symbol.paramss;
-                     param <- params;
-                     field = symbol.enclClass.tpe.decl(param.name)
-                     //its a value, and the positions overlap
-                     if field.isValue && field.pos.start <= param.pos.`end` && field.pos.`end` >= param.pos.start;
-                     model <- cls.findChildBySymbol(field)) yield {
-                  addAlias(param, model)
-                  param
-                }
-              }
+//              // constructor params can also be fields, so we alias them
+//              // ScalaClean is interested the val, but we need to see usage, so retain both symbols, but keep a
+//              // relationship between them, and the rules need to check for that relationship - e.g. a val on a ctor and
+//              // the class val share the same source position, so any rewrites affect both
+//              val symbolAliases: List[Symbol] = {
+//                for (params <- symbol.paramss;
+//                     param <- params;
+//                     field = symbol.enclClass.tpe.decl(param.name)
+//                     //its a value, and the positions overlap
+//                     if field.isValue && field.pos.start <= param.pos.`end` && field.pos.`end` >= param.pos.start;
+//                     modelField <- cls.findChildBySymbol[ModelField](field)) yield {
+//                  modelField.addCtorSymbol(param)
+//                  param
+//                }
+//              }
               enterScope(ModelPlainMethod(defdef, mSymbol, declTypeDefined, symbol.isDeferred)) { method =>
                 traverseMethod(method)
               }
-              symbolAliases foreach removeAlias
+//              symbolAliases foreach removeAlias
             case _ if symbol.isAccessor && symbol.isGetter =>
               enterScope(ModelGetterMethod(defdef, mSymbol, declTypeDefined, symbol.isDeferred)) { method =>
                 traverseMethod(method)

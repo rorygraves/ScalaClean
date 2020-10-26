@@ -5,20 +5,20 @@ class Parent {
 }/* allOutgoingReferences(C:scalaclean.test.references.allOutgoingReferences.Parent) - <root> :: C:java.lang.Object :: P:scala :: P:scalaT:AnyRef :: P:scalaclean.test.references.allOutgoingReferences */
 
 class Child extends Parent {
-  def bar(x: Any): Unit = ()/* allOutgoingReferences(C:scalaclean.test.references.allOutgoingReferences.Child/M:bar(scala.Any)) - C:scala.Any :: C:scala.Unit :: P:scala */
+  def bar(x: Any/* allOutgoingReferences(C:scalaclean.test.references.allOutgoingReferences.Child/M:bar(scala.Any)/V:x##1) - C:scala.Any :: P:scala */): Unit = ()/* allOutgoingReferences(C:scalaclean.test.references.allOutgoingReferences.Child/M:bar(scala.Any)) - C:scala.Any :: C:scala.Unit :: P:scala */
 }/* allOutgoingReferences(C:scalaclean.test.references.allOutgoingReferences.Child) - C:scalaclean.test.references.allOutgoingReferences.Parent :: P:scalaclean.test.references.allOutgoingReferences */
 
 object Special {
   def myVar1           = 1/* allOutgoingReferences(O:scalaclean.test.references.allOutgoingReferences.Special/M:myVar1()) - C:scala.Int :: P:scala */
-  def myVar1_=(i: Int) = ()/* allOutgoingReferences(O:scalaclean.test.references.allOutgoingReferences.Special/M:myVar1_$eq(scala.Int)) - C:scala.Int :: C:scala.Unit :: P:scala */
+  def myVar1_=(i: Int/* allOutgoingReferences(O:scalaclean.test.references.allOutgoingReferences.Special/M:myVar1_$eq(scala.Int)/V:i##1) - C:scala.Int :: P:scala */) = ()/* allOutgoingReferences(O:scalaclean.test.references.allOutgoingReferences.Special/M:myVar1_$eq(scala.Int)) - C:scala.Int :: C:scala.Unit :: P:scala */
 
   def myVar2           = 1/* allOutgoingReferences(O:scalaclean.test.references.allOutgoingReferences.Special/M:myVar2()) - C:scala.Int :: P:scala */
-  def myVar2_=(i: Int) = ()/* allOutgoingReferences(O:scalaclean.test.references.allOutgoingReferences.Special/M:myVar2_$eq(scala.Int)) - C:scala.Int :: C:scala.Unit :: P:scala */
+  def myVar2_=(i: Int/* allOutgoingReferences(O:scalaclean.test.references.allOutgoingReferences.Special/M:myVar2_$eq(scala.Int)/V:i##1) - C:scala.Int :: P:scala */) = ()/* allOutgoingReferences(O:scalaclean.test.references.allOutgoingReferences.Special/M:myVar2_$eq(scala.Int)) - C:scala.Int :: C:scala.Unit :: P:scala */
 
   def apply()         = 7/* allOutgoingReferences(O:scalaclean.test.references.allOutgoingReferences.Special/M:apply()) - C:scala.Int :: P:scala */
-  def unapply(a: Any) = Some(1, 2)/* allOutgoingReferences(O:scalaclean.test.references.allOutgoingReferences.Special/M:unapply(scala.Any)) - <root> :: C:scala.Any :: C:scala.Int :: C:scala.Nothing :: C:scala.Some :: C:scala.Tuple2 :: O:scala.Some :: O:scala.Some :: O:scala.Some/M:apply[<none>](scala.Some.A) :: O:scala.Some/M:apply[<none>](scala.Some.A) :: O:scala.Some/M:apply[<none>](scala.Some.A)T:A## :: O:scala.Tuple2 :: O:scala.Tuple2 :: O:scala.Tuple2/M:apply[<none>;<none>](scala.Tuple2.T1;scala.Tuple2.T2) :: O:scala.Tuple2/M:apply[<none>;<none>](scala.Tuple2.T1;scala.Tuple2.T2) :: O:scala.Tuple2/M:apply[<none>;<none>](scala.Tuple2.T1;scala.Tuple2.T2)T:T1## :: O:scala.Tuple2/M:apply[<none>;<none>](scala.Tuple2.T1;scala.Tuple2.T2)T:T2## :: P:scala */
+  def unapply(a: Any/* allOutgoingReferences(O:scalaclean.test.references.allOutgoingReferences.Special/M:unapply(scala.Any)/V:a##1) - C:scala.Any :: P:scala */) = Some(1, 2)/* allOutgoingReferences(O:scalaclean.test.references.allOutgoingReferences.Special/M:unapply(scala.Any)) - <root> :: C:scala.Any :: C:scala.Int :: C:scala.Nothing :: C:scala.Some :: C:scala.Tuple2 :: O:scala.Some :: O:scala.Some :: O:scala.Some/M:apply[<none>](scala.Some.A) :: O:scala.Some/M:apply[<none>](scala.Some.A) :: O:scala.Some/M:apply[<none>](scala.Some.A)T:A## :: O:scala.Tuple2 :: O:scala.Tuple2 :: O:scala.Tuple2/M:apply[<none>;<none>](scala.Tuple2.T1;scala.Tuple2.T2) :: O:scala.Tuple2/M:apply[<none>;<none>](scala.Tuple2.T1;scala.Tuple2.T2) :: O:scala.Tuple2/M:apply[<none>;<none>](scala.Tuple2.T1;scala.Tuple2.T2)T:T1## :: O:scala.Tuple2/M:apply[<none>;<none>](scala.Tuple2.T1;scala.Tuple2.T2)T:T2## :: P:scala */
 
-  def update(i: Int, j: Int) = ()/* allOutgoingReferences(O:scalaclean.test.references.allOutgoingReferences.Special/M:update(scala.Int;scala.Int)) - C:scala.Int :: C:scala.Unit :: P:scala */
+  def update(i: Int/* allOutgoingReferences(O:scalaclean.test.references.allOutgoingReferences.Special/M:update(scala.Int;scala.Int)/V:i##1) - C:scala.Int :: P:scala */, j: Int/* allOutgoingReferences(O:scalaclean.test.references.allOutgoingReferences.Special/M:update(scala.Int;scala.Int)/V:j##2) - C:scala.Int :: P:scala */) = ()/* allOutgoingReferences(O:scalaclean.test.references.allOutgoingReferences.Special/M:update(scala.Int;scala.Int)) - C:scala.Int :: C:scala.Unit :: P:scala */
 
 }/* allOutgoingReferences(O:scalaclean.test.references.allOutgoingReferences.Special) - <root> :: C:java.lang.Object :: C:java.lang.Object/M:<init>() :: C:scala.Unit :: P:java.lang :: P:scala :: P:scalaT:AnyRef :: P:scalaclean.test.references.allOutgoingReferences */
 

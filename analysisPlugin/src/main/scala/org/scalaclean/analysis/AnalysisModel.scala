@@ -6,12 +6,11 @@ import scalaclean.model.ElementId
 
 import scala.collection.immutable.ListSet
 import scala.collection.mutable
+import scala.reflect.ClassTag
 import scala.tools.nsc.Global
 
 trait HasModelCommon {
   def common: ModelCommon
-
-  def legacyCsvIDString: String = common.legacyCsvIDString
 
   def newCsvString: String = common.newCsvString
 }
@@ -73,9 +72,10 @@ sealed trait ModelSymbol extends HasModelCommon {
   }
 
   var children: Map[ModelCommon, ModelSymbol] = Map.empty
-  def findChildBySymbol(sym: Global#Symbol): Option[ModelSymbol] = {
+  def findChildBySymbol[T <: ModelSymbol : ClassTag](sym: Global#Symbol): Option[T] = {
     children.values.collectFirst{
-      case ele if ele.tree.symbol == sym => ele
+      case ele if ele.tree.symbol == sym =>
+        ele.asInstanceOf[T]
     }
   }
 
@@ -123,7 +123,7 @@ sealed trait ModelSymbol extends HasModelCommon {
       print("  " * (depth - 1))
       print("+-")
     }
-    println(newCsvString + " isLocal = " + !isGlobal + ", isParameter= " + isParameter)
+    println(idWithDeDuplicationSuffix + " isLocal = " + !isGlobal + ", isParameter= " + isParameter)
 
     def printRelStart(): Unit = {
       if (depth > 0) {
@@ -162,6 +162,23 @@ sealed trait ModelSymbol extends HasModelCommon {
       println(s"setterFor: ${setterTarget.newCsvString}")
     }
 
+    if (suffix != -1) {
+      printRelStart()
+      println(s"duplicate of : $newCsvString")
+    }
+    this match {
+      case f : ModelField =>
+        f.constructorParam.foreach{ p =>
+          printRelStart()
+          println(s"has associated constructor param  of : $p")
+        }
+        f.defaultGetter.foreach{ p =>
+          printRelStart()
+          println(s"has associated defaultGetter  of : $p")
+        }
+      case _ =>
+    }
+
     children.values.foreach(child => child.printStructureInt(depth + 1))
   }
 
@@ -194,6 +211,13 @@ sealed trait ModelSymbol extends HasModelCommon {
 
     if (suffix != -1) relWriter.recordDuplicate(this)
 
+    this match {
+      case f : ModelField =>
+        f.constructorParam.foreach(param => relWriter.relatedCtorParam(f, param))
+        f.defaultGetter.foreach(getter => relWriter.defaultGetterMethod(f, getter))
+      case _ =>
+    }
+
     children.values.foreach(child => child.outputStructure(eleWriter, relWriter, extensionWriter))
   }
 
@@ -201,6 +225,16 @@ sealed trait ModelSymbol extends HasModelCommon {
     children = children.flatMap { case t @ (common, child) =>
       child.flatten()
       child match {
+        //TODO move params of a global method to be global
+        //its a parameter of a method
+        case mf: ModelField
+          if mf.isParameter &&
+            mf.tree.symbol.owner == this.tree.symbol &&
+            this.common.isGlobal && this.isInstanceOf[ModelMethod]
+        =>
+          //probably not in the long term
+          this.refersRels ++= mf.refersRels
+          Some(t)
         case mf: ModelField if mf.isParameter || !mf.isGlobal =>
           this.refersRels ++= mf.refersRels
           None
@@ -266,8 +300,27 @@ sealed trait ClassLike extends ModelSymbol {
 }
 
 sealed abstract class ModelField extends ModelSymbol {
+
   val fields: Option[ModelFields]
   val tree: Global#ValDef
+  val isAbstract: Boolean
+
+  //for a class val, this is the associated ctor field if it exists
+  var constructorParam = Option.empty[ModelCommon]
+  def addConstructorParam(constructorParam:ModelCommon) = {
+    assert (this.constructorParam.isEmpty)
+    assert (constructorParam != null)
+    this.constructorParam = Some(constructorParam)
+  }
+  //for a method param val, this is the associated default accessor if it exists
+  var defaultGetter = Option.empty[ModelCommon]
+  def addDefaultGetter(defaultGetter: ModelCommon) = {
+    assert (this.defaultGetter.isEmpty)
+    assert (defaultGetter != null)
+    assert (defaultGetter != null)
+    this.defaultGetter = Some(defaultGetter)
+  }
+
 }
 
 case class ModelCommon(
@@ -282,10 +335,6 @@ case class ModelCommon(
   override def common: ModelCommon = this
 
   //TODO remove isGlobal and sourceName as they should come from newId
-  // TODO Remove this and wire through the reader/writer
-  override def legacyCsvIDString: String = {
-    "UNUSED"
-  }
 
   override def newCsvString: String = elementId.id
 }

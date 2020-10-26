@@ -17,7 +17,7 @@ class RelationshipsWriter(file: File) {
       overrider,
       overridden,
       s"${commonOutput(overrider, IoTokens.relOverrides, overridden)},$isDirect",
-      s"${IoTokens.relOverrides} ${overridden.legacyCsvIDString}) Direct:$isDirect"
+      s"${IoTokens.relOverrides}) Direct:$isDirect"
     )
   }
 
@@ -26,7 +26,7 @@ class RelationshipsWriter(file: File) {
       container,
       target,
       s"${commonOutput(container, IoTokens.relRefers, target)},$isSynthetic",
-      s"${IoTokens.relRefers} ${target.legacyCsvIDString}) Synthetic:$isSynthetic"
+      s"${IoTokens.relRefers}) Synthetic:$isSynthetic"
     )
   }
 
@@ -35,7 +35,7 @@ class RelationshipsWriter(file: File) {
       parentSym,
       childSym,
       s"${commonOutput(childSym, IoTokens.relExtends, parentSym)},$direct",
-      s"${IoTokens.relExtends} ${parentSym.legacyCsvIDString} Direct:$direct"
+      s"${IoTokens.relExtends} Direct:$direct"
     )
   }
 
@@ -44,7 +44,7 @@ class RelationshipsWriter(file: File) {
       outerSym,
       innerSym,
       s"${commonOutput(innerSym, IoTokens.relWithin, outerSym)}",
-      s"${IoTokens.relWithin} ${outerSym.legacyCsvIDString}"
+      s"${IoTokens.relWithin}"
     )
 
   }
@@ -54,7 +54,7 @@ class RelationshipsWriter(file: File) {
       method,
       field,
       s"${commonOutput(method, IoTokens.relGetter, field)}",
-      s"${IoTokens.relGetter} ${field.legacyCsvIDString}"
+      s"${IoTokens.relGetter} $method $field"
     )
   }
 
@@ -63,9 +63,27 @@ class RelationshipsWriter(file: File) {
       method,
       field,
       s"${commonOutput(method, IoTokens.relSetter, field)}",
-      s"${IoTokens.relSetter} ${field.legacyCsvIDString}"
+      s"${IoTokens.relSetter} $method $field"
     )
   }
+  def relatedCtorParam(field: ModelField, param: ModelCommon): Unit = {
+    writeLine(
+      field,
+      param,
+      s"${commonOutput(field, IoTokens.ctorParam, param)}",
+      s"${IoTokens.ctorParam} $field $param"
+    )
+  }
+  def defaultGetterMethod(field: ModelField, defaultGetter: ModelCommon): Unit = {
+    writeLine(
+      field,
+      defaultGetter,
+      s"${commonOutput(field, IoTokens.defaultGetter, defaultGetter)}",
+      s"${IoTokens.defaultGetter} $field $defaultGetter"
+    )
+  }
+
+
   def recordDuplicate(symbol: ModelSymbol) = {
     val msg = s"${symbol.idWithDeDuplicationSuffix},${IoTokens.duplicateOf},${symbol.newCsvString}"
     assert (writer.writeLine(msg))
