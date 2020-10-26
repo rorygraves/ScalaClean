@@ -1,17 +1,17 @@
 package scalaclean.rules
 
-import java.io.{ PrintWriter, StringWriter }
+import java.io.{PrintWriter, StringWriter}
 import java.nio.charset.StandardCharsets
-import java.nio.file.{ Files, Path, Paths }
+import java.nio.file.{Files, Path, Paths}
 
-import scalaclean.cli.{ SCPatchUtil, ScalaCleanCommandLine }
+import scalaclean.cli.{SCPatchUtil, ScalaCleanCommandLine}
 import scalaclean.model._
-import scalaclean.model.impl.{ Project, ProjectSet }
-import scalaclean.util.{ DiffAssertions, DocHelper, PatchStats }
+import scalaclean.model.impl.{Project, ProjectSet}
+import scalaclean.util.{DiffAssertions, DocHelper, PatchStats}
 import scalafix.v1.SyntacticDocument
 
 import scala.meta.internal.io.FileIO
-import scala.meta.{ AbsolutePath, RelativePath }
+import scala.meta.{AbsolutePath}
 import scala.reflect.ClassTag
 
 abstract class AbstractRule[T <: ScalaCleanCommandLine] {
@@ -113,7 +113,7 @@ abstract class RuleRun[T <: ScalaCleanCommandLine] {
 
   def runRule(): Unit
 
-  def fix(targetFile: AbsolutePath, syntacticDocument: () => SyntacticDocument): List[SCPatch]
+  def fix(targetFile: SourceModel, syntacticDocument: () => SyntacticDocument): List[SCPatch]
 
   def markAll[E <: ModelElement: ClassTag](colour: Colour): Unit = {
     val all = model.allOf[E].toList
@@ -244,7 +244,7 @@ abstract class RuleRun[T <: ScalaCleanCommandLine] {
   }
 
   def applyRule(
-      targetFile: AbsolutePath,
+      targetFile: SourceModel,
       syntacticDocument: () => SyntacticDocument,
       suppress: Boolean,
       source: String,
@@ -278,14 +278,11 @@ abstract class RuleRun[T <: ScalaCleanCommandLine] {
 
   object testSupport extends DiffAssertions {
 
-    def expectedPathForTarget(srcBase: AbsolutePath, targetFile: RelativePath): AbsolutePath = {
-      val targetOutput = RelativePath(targetFile.toString() + options.testOptions.expectationSuffix + ".expected")
-      val outputFile   = srcBase.resolve(targetOutput)
-      outputFile
+    def expectedPathForTarget(src: SourceModel): Path = {
+      src.filename.resolveSibling(src.filename.getFileName + options.testOptions.expectationSuffix + ".expected")
     }
 
-    def compareAgainstFile(existingFile: AbsolutePath, obtained: String): Boolean = {
-      val expected = FileIO.slurp(existingFile, StandardCharsets.UTF_8)
+    def compareAgainstFile(expected: String, obtained: String): Boolean = {
 
       val diff = DiffAssertions.compareContents(obtained, expected)
       if (diff.nonEmpty) {
@@ -323,53 +320,48 @@ abstract class RuleRun[T <: ScalaCleanCommandLine] {
     if (debug)
       println("---------------------------------------------------------------------------------------------------")
 
-    val files: Seq[AbsolutePath] = project.srcFiles.toList.map(AbsolutePath(_))
+    val files = model.allOf[SourceModel]
 
-    def findRelativeSrc(
-        absTargetFile: meta.AbsolutePath,
-        basePaths: List[AbsolutePath]
-    ): (AbsolutePath, RelativePath) = {
+    files.foreach { file =>
 
-      val nioTargetFile = absTargetFile.toNIO
-      val baseOpt       = basePaths.find(bp => nioTargetFile.startsWith(bp.toNIO))
-      baseOpt
-        .map(bp => (bp, absTargetFile.toRelative(bp)))
-        .getOrElse(throw new IllegalStateException(s"Unable to resolve source root for $absTargetFile"))
-    }
-
-    files.foreach { absTargetFile =>
-      val (relBase, targetFile) = findRelativeSrc(absTargetFile, project.srcRoots)
-
-      val existingFilePath = relBase.resolve(targetFile)
-      val existingFile     = FileIO.slurp(existingFilePath, StandardCharsets.UTF_8)
-
-      val syntacticDocument = () => DocHelper.readSyntacticDoc(absTargetFile, targetFile)
-
-      val obtained = applyRule(absTargetFile, syntacticDocument, suppress = false, existingFile)
-
-      if (options.testOptions.validate) {
-        val expectedFile = testSupport.expectedPathForTarget(relBase, targetFile)
-
-        changed |= testSupport.compareAgainstFile(expectedFile, obtained)
-        if (options.replace) {
-          // overwrite the '.expected' file
-          writeToFile(expectedFile, obtained)
-        }
+      if (!Files.exists(file.filename)) {
+        if (options.skipNonexistentFiles)
+          patchStats.skippedFile(file.filename)
+        else
+          throw new IllegalStateException(s"cant find file $file")
       } else {
-        if (options.replace) {
-          // overwrite the base file
-          val overwritePath = absTargetFile
-          if (debug)
-            println(s"DEBUG: Overwriting existing file: $overwritePath")
-          writeToFile(overwritePath, obtained)
+
+        val content = new String(Files.readAllBytes(file.filename), StandardCharsets.UTF_8)
+
+        val syntacticDocument = () => DocHelper.readSyntacticDoc(file, content)
+
+        val obtained = applyRule(file, syntacticDocument, suppress = false, content)
+
+        val expectedFile = testSupport.expectedPathForTarget(file)
+
+        def expectedContent = new String(Files.readAllBytes(expectedFile), StandardCharsets.UTF_8)
+
+        if (options.testOptions.validate) {
+
+          changed |= testSupport.compareAgainstFile(expectedContent, obtained)
+          if (options.replace) {
+            // overwrite the '.expected' file
+            writeToFile(expectedFile, obtained)
+          }
         } else {
-          val expectedFile = relBase.resolve(targetFile)
+          if (options.replace) {
+            // overwrite the base file
+            if (debug)
+              println(s"DEBUG: Overwriting existing file: $expectedFile")
+            writeToFile(expectedFile, obtained)
+          } else {
 
-          if (debug)
-            println("DEBUG Comparing obtained vs " + expectedFile)
+            if (debug)
+              println("DEBUG Comparing obtained vs " + expectedFile)
 
-          // diff against original file
-          changed |= testSupport.compareAgainstFile(expectedFile, obtained)
+            // diff against original file
+            changed |= testSupport.compareAgainstFile(expectedContent, obtained)
+          }
         }
       }
     }
