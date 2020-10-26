@@ -39,7 +39,7 @@ This will create a jar for the compiler plugin.
 
 You will need to find the full path for the file e.g. 
 
-```/workspace/ScalaClean/analysisPlugin/target/scala-2.12/analysisPlugin_2.12.10-0.1.0-SNAPSHOT-assembly.jar```
+```/workspace/ScalaClean/analysisPlugin/target/scala-2.12/analysisPlugin_2.12.12-0.1.0-SNAPSHOT-assembly.jar```
 
 ### 3. Update your build to pull in semanticDB and the ScalaClean plugin.
 
@@ -51,7 +51,7 @@ settings(
     val srcLocations = (sourceDirectories in Compile).value.mkString(java.io.File.pathSeparator)
     Seq(
       "-Yrangepos", 
-      "-Xplugin:/workspace/ScalaClean/analysisPlugin/target/scala-2.12/analysisPlugin_2.12.10-0.1.0-SNAPSHOT-assembly.jar",
+      "-Xplugin:/workspace/ScalaClean/analysisPlugin/target/scala-2.12/analysisPlugin_2.12.12-0.1.0-SNAPSHOT-assembly.jar",
       s"-P:scalaclean-analysis-plugin:srcdirs:$srcLocations"
     )
   }
@@ -79,7 +79,9 @@ Creates: ```/workspace/ScalaClean/command/target/scala-2.12/command-assembly-0.1
 
 Now you can run ScalaClean using this jar.  Point ScalaClean at your projects ```ScalaClean.properties``` files e.g.:
 
-```java -jar $SCALACLEAN_JAR deadcode `find myproject -name "ScalaClean.properties"```
+```bash
+java -cp $SCALACLEAN_JAR scalaclean.rules.deadcode.FullDeadCodeRemover --filesRoot ./akka-actor/target/classes/META-INF
+```
 
 By default it will print out the diff that it computes.  To apply the changes directly add ```--replace``` to the command
 before the list of files.  *BEWARE* - This is destructive - do not run it on code you care about that you

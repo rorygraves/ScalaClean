@@ -1,10 +1,10 @@
 package scalaclean.cli
 
-import java.nio.file.{Files, Path}
+import java.nio.file.{Files, Path, Paths}
 
 import org.kohsuke.args4j.spi.{MultiPathOptionHandler, PathOptionHandler}
 import org.kohsuke.args4j.{Option => ArgOption}
-import java.util.{List => JList}
+import java.util.{Collections, List => JList}
 
 import scalaclean.rules.plugin.{RulePlugin, RulePluginFactory}
 
@@ -32,7 +32,8 @@ abstract class ScalaCleanCommandLine {
     forbids = Array("--filesRoot"),
     handler = classOf[MultiPathOptionHandler]
   )
-  var _paths: JList[Path] = null
+  var _paths: JList[Path] = Collections.emptyList()
+
   @ArgOption(
     name = "--filesRoot",
     usage = "<dir> with the scala clean property files in child directories",
@@ -41,13 +42,13 @@ abstract class ScalaCleanCommandLine {
     forbids = Array("--files"),
     handler = classOf[PathOptionHandler]
   )
-  var _root: Path = null
+  var _root: Path = Paths.get("<none>")
 
   def files: Seq[Path] = {
-    if (_root == null && _paths == null)
+    if (_root.toString == "<none>" && _paths.isEmpty)
       throw new IllegalArgumentException("one of '--files' or '--fileRoot' must be specified")
 
-    if (_root != null)
+    if (_root.toString != "<none>")
       Files.find(_root, 2, (path, _) => path.endsWith("ScalaClean.properties")).iterator().asScala.toList
     else
       _paths.asScala.toList
@@ -80,17 +81,16 @@ abstract class ScalaCleanCommandLine {
   @ArgOption(
     name = "--rulePlugins",
     usage = "additional rules typically to ban changes. " +
-      "This takes multiple args in the form --banningPlugins <objectname>:params [<objectname>:params ]*. " +
+      "This takes multiple args in the form --rulePlugins <objectname>:params [<objectname>:params ]*. " +
       "objectname should be the name of a scala object extending scalaclean.rules.plugin.RulePluginFactory",
     required = false,
     handler = classOf[MultiPathOptionHandler],
     hidden = false
   )
-  var _rulePlugins: JList[String] = null
+  var _rulePlugins: JList[String] = Collections.emptyList()
 
   def rulePlugins: Seq[RulePlugin] =
-    if (_rulePlugins eq null) Nil
-    else _rulePlugins.asScala.map { objectNameAndParams =>
+    _rulePlugins.asScala.map { objectNameAndParams =>
       try {
         RulePluginFactory(objectNameAndParams)
       } catch {

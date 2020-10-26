@@ -22,14 +22,7 @@ abstract class AbstractRule[T <: ScalaCleanCommandLine] {
   def main(args: Array[String]): Unit = {
     val options = cmdLine
     parse(options, args)
-
-    val projectProps = options.files.map(f => Paths.get(f.toString))
-
-    val projectSet = new ProjectSet(projectProps: _*)
-
-    println(s"Running rule: ${getClass.getSimpleName}")
-    apply(options, projectSet).run()
-
+    apply(options, new ProjectSet(options.files: _*)).run()
   }
 
   def parse(cmdLine: ScalaCleanCommandLine, args: Array[String]): Unit = {
@@ -44,8 +37,7 @@ abstract class AbstractRule[T <: ScalaCleanCommandLine] {
         System.err.println(s"java ${getClass.getName} [options...] arguments...")
         parser.printUsage(System.err)
         System.err.println()
-        System.exit(1)
-        ???
+        sys.exit(1)
     }
   }
 
@@ -260,11 +252,10 @@ abstract class RuleRun[T <: ScalaCleanCommandLine] {
   }
 
   def run(): Boolean = {
-
-    val projectProps = options.files.map(f => Paths.get(f.toString))
-
-    val projectSet = new ProjectSet(projectProps: _*)
-
+    val projectSet = model match {
+      case projectSet: ProjectSet => projectSet
+      case _                      => new ProjectSet(options.files: _*)
+    }
     println(s"Running rule: $name")
 
     beforeStart()
