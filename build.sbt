@@ -84,7 +84,8 @@ lazy val command = project
     scalaVersion := scala212,
     libraryDependencies += "args4j"            % "args4j"        % "2.33",
     libraryDependencies += "ch.epfl.scala"    %% "scalafix-core" % scalaFixVersion,
-    mainClass in assembly := Some("scalaclean.cli.ScalaCleanMain"),
+    fork := true,
+    javaOptions ++= Seq("-Xmx32G", "-Xss10M", "-XX:-UseCompressedOops", "-XX:-UseCompressedClassPointers")
   )
 
 lazy val unitTestProject = project
