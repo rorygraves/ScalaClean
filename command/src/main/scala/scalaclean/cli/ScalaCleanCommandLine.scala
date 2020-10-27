@@ -2,8 +2,8 @@ package scalaclean.cli
 
 import java.nio.file.{Files, Path, Paths}
 
-import org.kohsuke.args4j.spi.{MultiPathOptionHandler, PathOptionHandler}
-import org.kohsuke.args4j.{Option => ArgOption}
+import org.kohsuke.args4j.spi.{MultiPathOptionHandler, OneArgumentOptionHandler, Setter}
+import org.kohsuke.args4j.{CmdLineParser, OptionDef, Option => ArgOption}
 import java.util.{Collections, List => JList}
 
 import scalaclean.rules.plugin.{RulePlugin, RulePluginFactory}
@@ -30,9 +30,9 @@ abstract class ScalaCleanCommandLine {
     required = false,
     hidden = false,
     forbids = Array("--filesRoot"),
-    handler = classOf[MultiPathOptionHandler]
+    handler = classOf[OptionMultiPathOptionHandler]
   )
-  var _paths: JList[Path] = Collections.emptyList()
+  var _paths = Option.empty[List[Path]]
 
   @ArgOption(
     name = "--filesRoot",
@@ -40,18 +40,21 @@ abstract class ScalaCleanCommandLine {
     required = false,
     hidden = false,
     forbids = Array("--files"),
-    handler = classOf[PathOptionHandler]
+    handler = classOf[OptionPathOptionHandler]
   )
-  var _root: Path = Paths.get("<none>")
+  var _root = Option.empty[Path]
 
   def files: Seq[Path] = {
-    if (_root.toString == "<none>" && _paths.isEmpty)
-      throw new IllegalArgumentException("one of '--files' or '--fileRoot' must be specified")
-
-    if (_root.toString != "<none>")
-      Files.find(_root, 2, (path, _) => path.endsWith("ScalaClean.properties")).iterator().asScala.toList
-    else
-      _paths.asScala.toList
+    (_root, _paths) match {
+      case (None, None) =>
+        throw new IllegalArgumentException("either '--files' or '--fileRoot' must be specified")
+      case (_: Some[_], _: Some[_]) =>
+        throw new IllegalArgumentException("only one of '--files' or '--fileRoot' must be specified")
+      case (Some(root), _) =>
+        Files.find(root, 2, (path, _) => path.endsWith("ScalaClean.properties")).iterator().asScala.toList
+      case (_, Some(paths)) =>
+        paths
+    }
   }
 
   @ArgOption(
@@ -89,14 +92,6 @@ abstract class ScalaCleanCommandLine {
   )
   var _rulePlugins: JList[String] = Collections.emptyList()
 
-  @ArgOption(
-    name = "--skipNonexistentFiles",
-    usage = "skip files that are not found",
-    required = false,
-    hidden = false
-  )
-  var skipNonexistentFiles: Boolean = false
-
   def rulePlugins: Seq[RulePlugin] =
     _rulePlugins.asScala.map { objectNameAndParams =>
       try {
@@ -106,6 +101,14 @@ abstract class ScalaCleanCommandLine {
       }
     }.toList
 
+
+  @ArgOption(
+    name = "--skipNonexistentFiles",
+    usage = "skip files that are not found",
+    required = false,
+    hidden = false
+  )
+  var skipNonexistentFiles: Boolean = false
   //test specific options, so no API interface
   object testOptions {
     /**
@@ -120,3 +123,16 @@ abstract class ScalaCleanCommandLine {
   }
 
 }
+class OptionPathOptionHandler(parser: CmdLineParser, option: OptionDef, setter: Setter[_ >: Some[Path]])
+  extends OneArgumentOptionHandler[Some[Path]] (parser, option, setter) {
+  override def parse(argument: String): Some[Path] = Some(Paths.get(argument))
+}
+class OptionMultiPathOptionHandler(parser: CmdLineParser, option: OptionDef, setter: Setter[_ >: Some[List[Path]]])
+  extends OneArgumentOptionHandler[Some[List[Path]]] (parser, option, setter) {
+  private def sysPathSeperator: String = System.getProperty("path.separator")
+  override def parse(argument: String): Some[List[Path]] = {
+    val params = argument.split(sysPathSeperator).toList
+    Some(params.map(Paths.get(_)))
+  }
+}
+

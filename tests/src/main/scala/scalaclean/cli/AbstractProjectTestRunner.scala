@@ -47,8 +47,7 @@ abstract class AbstractProjectTestRunner[Cmd <: ScalaCleanCommandLine: ClassTag,
     options._rulePlugins = runOptions.rulePluginText.asJava
     options.testOptions.validate = true
     options.testOptions.expectationSuffix = expectationSuffix
-    import scala.collection.JavaConverters._
-    options._paths = propsFiles.asJava
+    options._paths = Some(propsFiles)
 
     customise(options)
 
