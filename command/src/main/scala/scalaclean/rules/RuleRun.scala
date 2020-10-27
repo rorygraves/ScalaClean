@@ -343,8 +343,8 @@ abstract class RuleRun[T <: ScalaCleanCommandLine] {
           if (options.replace) {
             // overwrite the base file
             if (debug)
-              println(s"DEBUG: Overwriting existing file: $expectedFile")
-            writeToFile(expectedFile, obtained)
+              println(s"DEBUG: Overwriting existing file: ${file.filename}")
+            writeToFile(file.filename, obtained)
           } else {
 
             if (debug)
