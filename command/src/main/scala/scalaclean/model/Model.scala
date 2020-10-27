@@ -407,16 +407,29 @@ package impl {
   ) {
 
     def sortValues: BasicRelationshipInfo = {
+      import scala.concurrent.ExecutionContext.Implicits._
+      import scala.concurrent.{Await, Future}
+      import scala.concurrent.duration.Duration
+     val refersF = Future(refers.transform { case (k, v) => v.sortBy(v => (v.fromElementId.id, v.toElementId.id)) })
+     val extndsF = Future(extnds.transform { case (k, v) => v.sortBy(v => (v.fromElementId.id, v.toElementId.id)) })
+     val overridesF = Future(overrides.transform { case (k, v) => v.sortBy(v => (v.fromElementId.id, v.toElementId.id)) })
+     val withinF = Future(within.transform { case (k, v) => v.sortBy(v => (v.fromElementId.id, v.toElementId.id)) })
+     val getterF = Future(getter.transform { case (k, v) => v.sortBy(v => (v.fromElementId.id, v.toElementId.id)) })
+     val setterF = Future(setter.transform { case (k, v) => v.sortBy(v => (v.fromElementId.id, v.toElementId.id)) })
+     val duplicateF = Future(duplicate.transform { case (k, v) => v.sortBy(v => (v.fromElementId.id, v.toElementId.id)) })
+     val ctorParamF = Future(ctorParam.transform { case (k, v) => v.sortBy(v => (v.fromElementId.id, v.toElementId.id)) })
+     val defaultGettersF = Future(defaultGetters.transform { case (k, v) => v.sortBy(v => (v.fromElementId.id, v.toElementId.id)) })
+
       BasicRelationshipInfo(
-        refers = refers.transform { case (k, v) => v.sortBy(v => (v.fromElementId.id, v.toElementId.id)) },
-        extnds = extnds.transform { case (k, v) => v.sortBy(v => (v.fromElementId.id, v.toElementId.id)) },
-        overrides = overrides.transform { case (k, v) => v.sortBy(v => (v.fromElementId.id, v.toElementId.id)) },
-        within = within.transform { case (k, v) => v.sortBy(v => (v.fromElementId.id, v.toElementId.id)) },
-        getter = getter.transform { case (k, v) => v.sortBy(v => (v.fromElementId.id, v.toElementId.id)) },
-        setter = setter.transform { case (k, v) => v.sortBy(v => (v.fromElementId.id, v.toElementId.id)) },
-        duplicate = duplicate.transform { case (k, v) => v.sortBy(v => (v.fromElementId.id, v.toElementId.id)) },
-        ctorParam = ctorParam.transform { case (k, v) => v.sortBy(v => (v.fromElementId.id, v.toElementId.id)) },
-        defaultGetters = defaultGetters.transform { case (k, v) => v.sortBy(v => (v.fromElementId.id, v.toElementId.id)) }
+        refers = Await.result(refersF, Duration.Inf),
+        extnds = Await.result(extndsF, Duration.Inf),
+        overrides = Await.result(overridesF, Duration.Inf),
+        within = Await.result(withinF, Duration.Inf),
+        getter = Await.result(getterF, Duration.Inf),
+        setter = Await.result(setterF, Duration.Inf),
+        duplicate = Await.result(duplicateF, Duration.Inf),
+        ctorParam = Await.result(ctorParamF, Duration.Inf),
+        defaultGetters = Await.result(defaultGettersF, Duration.Inf)
       )
     }
 
