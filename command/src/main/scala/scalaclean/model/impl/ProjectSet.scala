@@ -27,12 +27,21 @@ class ProjectSet(projectPropertyPaths: Path*) extends ProjectModel {
 
       throw new IllegalStateException("Duplicate elements found")
     }
+ {
+   import scala.concurrent.ExecutionContext.Implicits._
+   import scala.concurrent.{Await, Future}
+   import scala.concurrent.duration.Duration
+    val basicRels = rels.par.reduce(_ + _)
+    val relsFromF = Future(basicRels.sortValues)
+    val relsToF   = Future(basicRels.byTo.sortValues)
 
-    val relsFrom = rels.reduce(_ + _).sortValues
-    val relsTo   = relsFrom.byTo.sortValues
+    basicRels.complete(modelElements)
+    val relsFrom = Await.result(relsFromF, Duration.Inf)
+    val relsTo   = Await.result(relsToF, Duration.Inf)
 
-    relsFrom.complete(modelElements)
+   //we cant complete in parallel - there are linkages
     modelElements.values.foreach(_.complete(ElementIds, modelElements, relsFrom = relsFrom, relsTo = relsTo))
+ }
 
     ModelReader.finished()
     modelElements
