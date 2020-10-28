@@ -1,5 +1,7 @@
 package scalaclean.test
 
+import java.nio.file.Path
+
 import scalaclean.model._
 import scalaclean.util._
 
@@ -17,7 +19,7 @@ abstract class TestBase(val name: String, model: ProjectModel) {
 
   def elementInfo(modelElement: ModelElement): String
 
-  def run(targetFile: String): List[SCPatch] = {
+  def run(targetFile: Path): List[SCPatch] = {
     object visitor extends ScalaCleanTreePatcher(new PatchStats, () => ???) {
       override def debug: Boolean       = false
       override def addComments: Boolean = false
@@ -36,13 +38,13 @@ abstract class TestBase(val name: String, model: ProjectModel) {
         true
       }
     }
+    val absPath = targetFile.toAbsolutePath.toRealPath()
 
     val sModel = model
       .allOf[SourceModel]
-      .filter(_.toString.contains(targetFile))
-      .toList
-      .headOption
-      .getOrElse(throw new IllegalStateException(s"Unable to find source model for $targetFile"))
+      .find{ _.filename == absPath }
+      .getOrElse(throw new IllegalStateException(s"Unable to find source model for $targetFile ($absPath)\n${model
+        .allOf[SourceModel].map(_.filename).mkString("\n")}"))
 
     visitor.visit(sModel)
     visitor.result

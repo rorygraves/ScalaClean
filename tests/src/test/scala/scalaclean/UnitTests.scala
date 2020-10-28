@@ -2,7 +2,7 @@ package scalaclean
 
 import java.io.{File, FileOutputStream}
 import java.nio.charset.StandardCharsets
-import java.nio.file.{Files, Paths}
+import java.nio.file.{Files, Path, Paths}
 
 import org.scalatest.funsuite.AnyFunSuite
 import org.scalatest.{BeforeAndAfterAllConfigMap, ConfigMap}
@@ -41,12 +41,12 @@ trait AbstractUnitTests extends AnyFunSuite with AssertionsForJUnit with DiffAss
 
     def applyRule(
                    rule: TestCommon,
-                   filename: String,
+                   file: Path,
                    origDocContents: String
                  ): String = {
 
       rule.beforeStart()
-      val patches = rule.run(filename)
+      val patches = rule.run(file)
       SCPatchUtil.applyFixes(origDocContents, patches)
     }
 
@@ -71,7 +71,7 @@ trait AbstractUnitTests extends AnyFunSuite with AssertionsForJUnit with DiffAss
       targetFiles.foreach { targetFile =>
         val absFile = inputSourceDirectories.head.resolve(targetFile)
         val origFile = FileIO.slurp(absFile, StandardCharsets.UTF_8)
-        val obtained = stripLocalIds(applyRule(rule, targetFile.toString(), origFile))
+        val obtained = stripLocalIds(applyRule(rule, absFile.toNIO, origFile))
 
         val targetOutput = RelativePath(targetFile.toString() + expectationSuffix + ".expected")
         val outputFile = inputSourceDirectories.head.resolve(targetOutput)

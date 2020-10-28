@@ -2,6 +2,7 @@ package scalaclean.test.deadcode5
 
 object App1 extends App {
   Outer.Inner
+  Other.usedVar
   ()
 }
 
@@ -55,4 +56,8 @@ object Outer {
   object referred4
   object referred5
   object referred6
+}
+object Other {
+  var usedVar: Int = _
+  var unUsedVar: Int = _
 }
