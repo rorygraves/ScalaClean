@@ -13,6 +13,7 @@ import scala.annotation.tailrec
 import scala.collection.immutable.HashSet
 import scala.collection.mutable
 import scala.reflect.internal.Flags
+import scala.reflect.internal.util.RangePosition
 import scala.tools.nsc.plugins.PluginComponent
 import scala.tools.nsc.{Global, Phase}
 
@@ -35,7 +36,7 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
     var relationsWriter: RelationshipsWriter = _
     var extensionWriter: ExtensionWriter     = _
     var traverser: SCUnitTraverser           = _
-    var files: Set[String]                   = Set.empty
+    var files: Set[Path]                     = Set.empty
 
     override def run(): Unit = {
       if (debug)
@@ -119,11 +120,10 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
 
     override def apply(unit: global.CompilationUnit): Unit = {
 
-      val srcPath = unit.source.file.file.toPath.toAbsolutePath.toString
+      val sourceFile = unit.source.file.file.toPath.toAbsolutePath.toRealPath()
 
-      files += srcPath
+      files += sourceFile
 
-      val sourceFile = mungeUnitPath(unit.source.file.file.toPath)
       if (debug)
         global.reporter.echo(s"Executing for unit: $sourceFile")
       traverser.traverseSource(unit)
@@ -220,10 +220,10 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
     val logTransScope = true
 
     def traverseSource(unit: CompilationUnit): Unit = {
-      val sourceFile    = unit.source.file.file.toPath
+      val sourceFile    = unit.source.file.file.toPath.toAbsolutePath.toRealPath()
       val sourceFileStr = sourceFile.toString
       val sourceSymbol =
-        ModelSource(unit.body, ModelCommon(isGlobal = true, elementIds(sourceFile), sourceFileStr, -1, -1, -1, "<NA>"))
+        ModelSource(unit.body, ModelCommon(isGlobal = true, elementIds(sourceFile), sourceFile, -1, -1, -1, "<NA>"))
       enterScope(sourceSymbol)(_ => traverse(unit.body))
 
       if (debug) {
@@ -498,12 +498,32 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
 
         // *********************************************************************************************************
         case valDef: ValDef =>
-          val symbol = valDef.symbol
+          //its only a var due to for https://github.com/scala/bug/issues/12213 -- see below
+          var symbol = valDef.symbol
           val isVar  = symbol.isVar
           val fields: Option[ModelFields] = valDef.rhs match {
             case Select(qualifier, name) =>
               Option(qualifier.symbol).flatMap(_.attachments.get[ModelFields])
             case _ => None
+          }
+          //workaround for https://github.com/scala/bug/issues/12213
+          if (isVar && valDef.rhs.isEmpty) {
+            val scanner = newUnitScanner(new CompilationUnit(valDef.pos.source))
+            scanner.ch = ' '
+            scanner.lastOffset = valDef.pos.`end`
+            scanner.offset = scanner.lastOffset + 1
+            scanner.charOffset = scanner.offset
+
+            scanner.nextToken
+            if (scanner.token == scala.tools.nsc.ast.parser.Tokens.EQUALS) {
+              scanner.nextToken
+              if (scanner.token == scala.tools.nsc.ast.parser.Tokens.USCORE) {
+                val realEnd = scanner.offset + 1
+                val oldPos = symbol.pos
+                symbol = symbol.cloneSymbol(symbol.owner)
+                symbol.pos = new RangePosition(oldPos.source, oldPos.start, oldPos.point, realEnd)
+              }
+            }
           }
 
           val field = currentScope match {

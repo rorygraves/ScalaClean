@@ -1,6 +1,6 @@
 package org.scalaclean.analysis
 
-import java.nio.file.Path
+import java.nio.file.{Path, Paths}
 
 import scalaclean.model.{ElementIdManager, FieldPath}
 
@@ -82,9 +82,9 @@ trait ModelSymbolBuilder {
           if (gSym.pos == NoPosition) (-1, -1, -1) else (gSym.pos.start, gSym.pos.end, gSym.pos.focus.start)
         val sourceFile =
           if (gSym.sourceFile != null)
-            mungeUnitPath(gSym.sourceFile.file.toPath)
+            gSym.sourceFile.file.toPath.toAbsolutePath.toRealPath()
           else
-            "-"
+            Paths.get("-")
 
         val newName =
           if (forceField) elementIds.applyAndForceField(gSym) else elementIds(gSym) //getNewName(gSym) + specialSuffix
@@ -94,13 +94,13 @@ trait ModelSymbolBuilder {
       }
     )
   }
-
-  def mungeUnitPath(input: Path): String = {
-    val abs = input.toAbsolutePath
-    if (sourceDirs.isEmpty) abs.toString
-    else sourceDirs.collectFirst{
-      case root if input.startsWith(root) => root.relativize(abs).toString
-    } .getOrElse(throw new IllegalArgumentException(s"Missing src dir for $input"))
-  }
+//
+//  def mungeUnitPath(input: Path): String = {
+//    val abs = input.toAbsolutePath
+//    if (sourceDirs.isEmpty) abs.toString
+//    else sourceDirs.collectFirst{
+//      case root if input.startsWith(root) => root.relativize(abs).toString
+//    } .getOrElse(throw new IllegalArgumentException(s"Missing src dir for $input"))
+//  }
 
 }

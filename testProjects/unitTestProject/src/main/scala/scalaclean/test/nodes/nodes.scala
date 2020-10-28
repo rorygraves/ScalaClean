@@ -5,7 +5,12 @@ trait GrandParentTrait {
   def d2(a: Int): Int
   def d2a(a: Int)(b: Int): Int
   def d3()(): Int
-
+  val x1: Int = 1
+  val x2: Int
+  var y1: Int = 1
+  var y2: Int = _
+  var y3: Int
+  var y4: Int
 }
 
 trait ParentTrait extends GrandParentTrait {
@@ -56,6 +61,11 @@ class Class_ChildTrait extends ParentTrait {
   override def d2a(a: Int)(b: Int): Int = ???
 
   override def d3()(): Int = ???
+
+  override val x2: Int = 10
+  override var y3: Int = 10
+  override var y4: Int = _
+
 }
 
 object Object_ChildTrait extends ParentTrait {
@@ -76,22 +86,36 @@ object Object_ChildTrait extends ParentTrait {
   override def d2a(a: Int)(b: Int): Int = ???
 
   override def d3()(): Int = ???
+
+  override val x2: Int = 10
+  override var y3: Int = 10
+  override var y4: Int = _
 }
 
-//class GrandParentClass {
-//
-//  def foo: Unit = ()
-//}
-//class ParentClass extends GrandParentClass {
-//}
-//class ChildClass extends ParentClass{
-//  def bar(x:Any): Unit = ()
-//}
-//
-//object ClildObject extends ChildClass {
-//  new Child().foo
-//  new Child().bar(1)
-//}
+abstract class GrandParentClass {
+
+  def foo: Unit = ()
+  val x1: Int   = 1
+  val x2: Int
+  var y1: Int = 1
+  var y2: Int = _
+  var y3: Int
+
+}
+
+class ParentClass extends GrandParentClass {
+  override val x2: Int = 9
+  override var y3: Int = 9
+}
+
+class ChildClass extends ParentClass {
+  def bar(x: Any): Unit = ()
+}
+
+object ChildObject extends ChildClass {
+  new ChildClass().foo
+  new ChildClass().bar(1)
+}
 
 object TestVarVal {
   val x1: Int      = 5

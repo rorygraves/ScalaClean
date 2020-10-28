@@ -1,5 +1,6 @@
 package org.scalaclean.analysis
 
+import java.nio.file.Path
 import java.util.concurrent.atomic.AtomicInteger
 
 import scalaclean.model.ElementId
@@ -35,7 +36,7 @@ sealed trait ModelSymbol extends HasModelCommon {
 
   def isGlobal: Boolean = common.isGlobal
 
-  def sourceFile: String = common.sourceFile
+  def sourceFile: Path = common.sourceFile
 
   def posStart: Int = common.posStart
 
@@ -326,7 +327,7 @@ sealed abstract class ModelField extends ModelSymbol {
 case class ModelCommon(
     isGlobal: Boolean,
     elementId: ElementId,
-    sourceFile: String,
+    sourceFile: Path,
     posStart: Int,
     posEnd: Int,
     posFocus: Int,

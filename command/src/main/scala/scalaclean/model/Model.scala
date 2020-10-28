@@ -10,6 +10,8 @@ import scala.tools.nsc.symtab.Flags
 import Filters._
 import InternalFilters._
 
+import scala.reflect.internal.HasFlags
+
 sealed trait ModelElement extends Ordered[ModelElement] {
 
   override def compare(that: ModelElement): Int = modelElementId.id.compare(that.modelElementId.id)
@@ -146,7 +148,17 @@ sealed trait ModelElement extends Ordered[ModelElement] {
 
   protected def infoName: String = modelElementId.id
 
-  override def toString: String = s"$infoTypeName $infoName [$infoPosString] $infoDetail [[$modelElementId]]"
+  def flagsDebug = {
+    //consider extending HasFlags
+
+    type flag = {
+      def flagsToString(value:Long): String
+    }
+    val f = Flags.asInstanceOf[flag]
+    f.flagsToString(flags)
+  }
+
+  override def toString: String = s"$infoTypeName $infoName [$infoPosString] $flagsDebug $infoDetail [[$modelElementId]]"
 }
 
 sealed trait ClassLike extends ModelElement {
