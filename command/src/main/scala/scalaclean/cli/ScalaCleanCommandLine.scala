@@ -44,6 +44,16 @@ abstract class ScalaCleanCommandLine {
   )
   var _root = Option.empty[Path]
 
+  @ArgOption(
+    name = "--filesRootDepth",
+    usage = "how deep to scan --fileRoot for files. Default Int.MaxValue",
+    required = false,
+    hidden = false,
+    depends = Array("--filesRoot"),
+    forbids = Array("--files")
+  )
+  var filesRootDepth = Int.MaxValue
+
   def files: Seq[Path] = {
     (_root, _paths) match {
       case (None, None) =>
@@ -51,7 +61,7 @@ abstract class ScalaCleanCommandLine {
       case (_: Some[_], _: Some[_]) =>
         throw new IllegalArgumentException("only one of '--files' or '--fileRoot' must be specified")
       case (Some(root), _) =>
-        Files.find(root, 2, (path, _) => path.endsWith("ScalaClean.properties")).iterator().asScala.toList
+        Files.find(root, filesRootDepth, (path, _) => path.endsWith("ScalaClean.properties")).iterator().asScala.toList
       case (_, Some(paths)) =>
         paths
     }
