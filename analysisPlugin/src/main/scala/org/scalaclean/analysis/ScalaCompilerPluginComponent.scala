@@ -507,7 +507,7 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
             case _ => None
           }
           //workaround for https://github.com/scala/bug/issues/12213
-          if (!isVar || !valDef.rhs.isEmpty) valDef.pos.`end` else {
+          if (isVar && valDef.rhs.isEmpty) {
             val scanner = newUnitScanner(new CompilationUnit(valDef.pos.source))
             scanner.ch = ' '
             scanner.lastOffset = valDef.pos.`end`
