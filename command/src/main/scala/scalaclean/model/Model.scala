@@ -312,6 +312,7 @@ sealed trait SourceModel extends ModelElement {
   type fieldType = SourceModel
 
   def filename: Path
+  def encoding: String
 }
 
 trait ProjectModel {
@@ -967,7 +968,7 @@ package impl {
 
   }
 
-  class SourceModelImpl(val info: BasicElementInfo)
+  class SourceModelImpl(val info: BasicElementInfo, val encoding: String)
       extends ElementModelImpl(info)
       with SourceModel {
 

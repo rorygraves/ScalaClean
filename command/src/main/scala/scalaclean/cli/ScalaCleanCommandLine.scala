@@ -92,6 +92,14 @@ abstract class ScalaCleanCommandLine {
   var replace: Boolean = false
 
   @ArgOption(
+    name = "--maxIssues",
+    usage = "maximum number of issues before aborting",
+    required = false,
+    hidden = false
+  )
+  var maxIssues = 0
+
+  @ArgOption(
     name = "--rulePlugins",
     usage = "additional rules typically to ban changes. " +
       "This takes multiple args in the form --rulePlugins <objectname>:params [<objectname>:params ]*. " +

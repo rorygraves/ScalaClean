@@ -1,10 +1,10 @@
 package org.scalaclean.analysis
 
 import java.io.File
-import java.nio.file.{Files, Path, Paths}
-import java.text.{DateFormat, SimpleDateFormat}
+import java.nio.file.{ Files, Path, Paths }
+import java.text.{ DateFormat, SimpleDateFormat }
 import java.time.format.DateTimeFormatter
-import java.util.{Date, Properties, UUID}
+import java.util.{ Date, Properties, UUID }
 
 import org.scalaclean.analysis.plugin.ExtensionPlugin
 import scalaclean.model.ElementId
@@ -15,7 +15,7 @@ import scala.collection.mutable
 import scala.reflect.internal.Flags
 import scala.reflect.internal.util.RangePosition
 import scala.tools.nsc.plugins.PluginComponent
-import scala.tools.nsc.{Global, Phase}
+import scala.tools.nsc.{ Global, Phase }
 
 class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent with ModelSymbolBuilder {
   override val phaseName: String = "scalaclean-compiler-plugin-phase"
@@ -45,13 +45,13 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
       val outputPath: java.nio.file.Path = outputParent match {
         case Some(root) =>
           val prefix = new SimpleDateFormat("yyyy_MM_dd-").format(new Date())
-          val dir = root.resolve(s"$prefix${UUID.randomUUID()}")
+          val dir    = root.resolve(s"$prefix${UUID.randomUUID()}")
           Files.createDirectory(dir)
           dir
         case None =>
           val base = global.settings.outputDirs.getSingleOutput match {
             case Some(so) => so.file.toPath.toAbsolutePath
-            case None => Paths.get(global.settings.d.value)
+            case None     => Paths.get(global.settings.d.value)
           }
           base.resolve("META-INF/ScalaClean/")
       }
@@ -72,7 +72,8 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
         println(s"Writing extensions file to to $extensionFile")
       extensionWriter = new ExtensionWriter(extensionFile)
 
-      traverser = new SCUnitTraverser(elementsWriter, relationsWriter, extensionWriter, debug)
+      traverser =
+        new SCUnitTraverser(elementsWriter, relationsWriter, extensionWriter, debug, global.settings.encoding.value)
       elementsWriter.logger = traverser
       relationsWriter.logger = traverser
       extensionWriter.logger = traverser
@@ -205,7 +206,8 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
       val elementsWriter: ElementsWriter,
       val relationsWriter: RelationshipsWriter,
       val extensionWriter: ExtensionWriter,
-      val debug: Boolean
+      val debug: Boolean,
+      val fileEncoding: String
   ) extends global.Traverser
       with ScopeTracking {
 
@@ -220,10 +222,13 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
     val logTransScope = true
 
     def traverseSource(unit: CompilationUnit): Unit = {
-      val sourceFile    = unit.source.file.file.toPath.toAbsolutePath.toRealPath()
-      val sourceFileStr = sourceFile.toString
+      val sourceFile = unit.source.file.file.toPath.toAbsolutePath.toRealPath()
       val sourceSymbol =
-        ModelSource(unit.body, ModelCommon(isGlobal = true, elementIds(sourceFile), sourceFile, -1, -1, -1, "<NA>"))
+        ModelSource(
+          unit.body,
+          ModelCommon(isGlobal = true, elementIds(sourceFile), sourceFile, -1, -1, -1, "<NA>"),
+          fileEncoding
+        )
       enterScope(sourceSymbol)(_ => traverse(unit.body))
 
       if (debug) {
@@ -345,16 +350,16 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
       model match {
         case cls: ModelClass =>
           //cope with constructor vals
-          val ctorSym = model.tree.symbol.asClass.primaryConstructor
+          val ctorSym    = model.tree.symbol.asClass.primaryConstructor
           val ctorParams = ctorSym.paramss.flatten.groupBy(_.nameString)
 
-          model.children.values foreach {
+          model.children.values.foreach {
             case field: ModelField =>
               //we have to trim because the compiler has trailing spaces
               ctorParams.get(field.tree.symbol.nameString.trim) match {
-              case Some(ctorParam) => field.addConstructorParam(asMSymbol(ctorParam.head.asInstanceOf[global.Symbol]))
-              case None =>
-            }
+                case Some(ctorParam) => field.addConstructorParam(asMSymbol(ctorParam.head.asInstanceOf[global.Symbol]))
+                case None            =>
+              }
             case _ =>
           }
         case _ =>
@@ -519,7 +524,7 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
               scanner.nextToken
               if (scanner.token == scala.tools.nsc.ast.parser.Tokens.USCORE) {
                 val realEnd = scanner.offset + 1
-                val oldPos = symbol.pos
+                val oldPos  = symbol.pos
                 symbol = symbol.cloneSymbol(symbol.owner)
                 symbol.pos = new RangePosition(oldPos.source, oldPos.start, oldPos.point, realEnd)
               }
@@ -647,14 +652,20 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
             }
 
             super.traverse(tree)
-            for (params <- defdef.vparamss;
-                 param <- params) {
+            for (
+              params <- defdef.vparamss;
+              param  <- params
+            ) {
               if (param.symbol.hasFlag(Flags.DEFAULTPARAM)) {
-                method.children.collectFirst{
-                  case (common, field: ModelField) if field.tree.symbol == param.symbol => field
-                }.foreach { field =>
-                  field.addDefaultGetter(asMSymbol(global.analyzer.defaultGetter(param.symbol, global.analyzer.NoContext)))
-                }
+                method.children
+                  .collectFirst {
+                    case (common, field: ModelField) if field.tree.symbol == param.symbol => field
+                  }
+                  .foreach { field =>
+                    field.addDefaultGetter(
+                      asMSymbol(global.analyzer.defaultGetter(param.symbol, global.analyzer.NoContext))
+                    )
+                  }
               }
             }
 

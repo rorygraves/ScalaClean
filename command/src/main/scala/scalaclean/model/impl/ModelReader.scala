@@ -231,7 +231,8 @@ object ModelReader {
             val hasDeclaredType = tokens(idx + 2).toBoolean
             new SetterMethodModelImpl(basicInfo, methodName, isAbstract, hasDeclaredType)
           case IoTokens.typeSource =>
-            new SourceModelImpl(basicInfo)
+            val encoding      = tokens(idx).intern
+            new SourceModelImpl(basicInfo, encoding)
 
           case other =>
             throw new IllegalArgumentException("Unknown token: $other")

@@ -2,12 +2,10 @@ package scalaclean.rules.finaliser
 
 import scalaclean.cli.ScalaCleanCommandLine
 import scalaclean.model._
-import scalaclean.rules.{AbstractRule, RuleRun}
-import scalaclean.util.ScalaCleanTreePatcher
-import scalafix.v1.SyntacticDocument
+import scalaclean.rules.{AbstractRule, RuleRun, SourceFile}
+import scalaclean.util.{ScalaCleanTreePatcher, SingleFileVisit}
 
 import scala.annotation.tailrec
-import scala.meta.io.AbsolutePath
 import scala.reflect.internal.Flags
 
 //marks things final and sealed were it can
@@ -162,18 +160,9 @@ class Finaliser(override val options: FinaliserCommandLine, override val model: 
 
   }
 
-//
-//  var elementsObserved = 0
-//  var elementsChanged  = 0
-//
-//  override def printSummary(projectName: String): Unit = println(s"""Elements Observed = $elementsObserved
-//                                                                    |Elements Changed  = $elementsChanged
-//                                                                    |Effect rate       = ${(elementsChanged.toDouble / elementsObserved.toDouble * 10000).toInt / 100} %"
-//                                                                    |""".stripMargin)
+  override def generateFixes(sourceFile: SourceFile): SingleFileVisit = {
 
-  override def fix(sModel: SourceModel, syntacticDocument: () => SyntacticDocument): List[SCPatch] = {
-
-    object visitor extends ScalaCleanTreePatcher(patchStats, syntacticDocument) {
+    object visitor extends ScalaCleanTreePatcher(sourceFile) {
       override def debug: Boolean       = options.debug
       override def addComments: Boolean = options.addComments
 
@@ -218,16 +207,9 @@ class Finaliser(override val options: FinaliserCommandLine, override val model: 
         true
       }
     }
-    visitor.visit(sModel)
+    visitor.visit(sourceFile.file)
 
-    val result = visitor.result
-//    elementsChanged += result.size
-//    if (debug) {
-//      println("--------NEW----------")
-//      result.foreach(println)
-//      println("------------------")
-//      }
-    result
+    visitor.result
   }
 
 }

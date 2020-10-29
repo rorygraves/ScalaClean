@@ -13,7 +13,7 @@ object TokenHelper {
    */
   def whitespaceOrCommentsBefore(
       targetToken: Token,
-      tokens: Tokens,
+      tokens: Array[Token],
       includeSingleLine: Boolean = true,
       includeMultiLine: Boolean = true,
       includeDocComment: Boolean = true

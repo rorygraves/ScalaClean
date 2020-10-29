@@ -2,11 +2,10 @@ package scalaclean.test
 
 import scalaclean.cli.ScalaCleanCommandLine
 import scalaclean.model._
-import scalaclean.rules.RuleRun
-import scalafix.v1.SyntacticDocument
+import scalaclean.rules.{RuleRun, SourceFile}
+import scalaclean.util.SingleFileVisit
 
 import scala.collection.JavaConverters._
-import scala.meta.AbsolutePath
 
 /**
  * A rule use to test that plugin marks are set correctly
@@ -35,7 +34,7 @@ class ShowColour(theModel: ProjectModel, pluginParams: List[String]) extends Tes
 
     override def runRule(): Unit = ???
 
-    override def fix(sModel: SourceModel, syntacticDocument: () => SyntacticDocument): List[SCPatch] = Nil
+    override def generateFixes(sourceFile: SourceFile): SingleFileVisit = ???
   }
   class ASpecificColour extends SomeSpecificColour {
     override type RealType = ASpecificColour
