@@ -274,11 +274,11 @@ abstract class RuleRun[T <: ScalaCleanCommandLine] {
       val (p2Value, p2Name, p2Show) = p2
       if (p1Show) {
         sb.append(s"###########> $p1Name       <###########\n")
-        println(p1Value)
+        sb.append(p1Value)
       }
       if (p2Show) {
         sb.append(s"###########> $p2Name       <###########\n")
-        println(p2Value)
+        sb.append(p2Value)
       }
       sb.append("###########> Diff       <###########\n")
       sb.append(error2message(diff))
