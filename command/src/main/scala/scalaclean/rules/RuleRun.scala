@@ -300,8 +300,8 @@ abstract class RuleRun[T <: ScalaCleanCommandLine] {
 
   }
 
-  def writeToFile(path: Path, content: String): Unit = {
-    Files.write(path, content.getBytes)
+  def writeToFile(path: Path, content: String, encoding: String): Unit = {
+    Files.write(path, content.getBytes(Charset.forName(encoding)))
   }
 
   def validateSource(sourceFile: SourceFile): Boolean = {
@@ -380,7 +380,7 @@ abstract class RuleRun[T <: ScalaCleanCommandLine] {
                 changed |= testSupport.compareAgainstFile(debug, expectedFile, expectedContent, obtained)
                 if (options.replace) {
                   // overwrite the '.expected' file
-                  writeToFile(expectedFile, obtained)
+                  writeToFile(expectedFile, obtained, sourceFile.file.encoding)
                 }
               } else {
                 if (options.replace) {
@@ -392,7 +392,7 @@ abstract class RuleRun[T <: ScalaCleanCommandLine] {
                         patchStats.appliedFixes(sourceFile, fixes)
                         if (debug)
                           println(s"DEBUG: Overwriting existing file: ${file.filename} with ${fixes.patches.size} changes")
-                        writeToFile(file.filename, obtained)
+                        writeToFile(file.filename, obtained, sourceFile.file.encoding)
                     }
                   }
 
