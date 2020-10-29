@@ -401,5 +401,13 @@ case class ModelClass(tree: Global#ClassDef, common: ModelCommon, isAbstract: Bo
     extends ModelSymbol
     with ClassLike
 
-case class ModelTrait(tree: Global#ClassDef, common: ModelCommon)                extends ModelSymbol with ClassLike
-case class ModelSource(tree: Global#Tree, common: ModelCommon, encoding: String) extends ModelSymbol
+case class ModelTrait(tree: Global#ClassDef, common: ModelCommon) extends ModelSymbol with ClassLike
+
+case class ModelSource(
+    tree: Global#Tree,
+    common: ModelCommon,
+    encoding: String,
+    length: Int,
+    javaHash: Int,
+    murmurHash: Int
+) extends ModelSymbol

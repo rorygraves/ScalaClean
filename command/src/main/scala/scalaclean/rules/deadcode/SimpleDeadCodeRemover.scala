@@ -9,11 +9,11 @@ object SimpleDeadCodeRemover extends AbstractRule[SimpleDeadCodeCommandLine] {
   override type Rule = SimpleDeadCodeRemover
 
   override def cmdLine                                                        = new SimpleDeadCodeCommandLine
-  override def apply(options: SimpleDeadCodeCommandLine, model: ProjectModel) = new Rule(options, model)
+  override def apply(options: SimpleDeadCodeCommandLine, model: AllProjectsModel) = new Rule(options, model)
 
 }
 
-class SimpleDeadCodeRemover(override val options: SimpleDeadCodeCommandLine, override val model: ProjectModel)
+class SimpleDeadCodeRemover(override val options: SimpleDeadCodeCommandLine, override val model: AllProjectsModel)
     extends AbstractDeadCodeRemover[SimpleDeadCodeCommandLine] {
 
   //TODO plugin for tweaks

@@ -14,10 +14,10 @@ object Finaliser extends AbstractRule[FinaliserCommandLine] {
   override type Rule = Finaliser
 
   override def cmdLine                                                   = new FinaliserCommandLine
-  override def apply(options: FinaliserCommandLine, model: ProjectModel) = new Rule(options, model)
+  override def apply(options: FinaliserCommandLine, model: AllProjectsModel) = new Rule(options, model)
 }
 
-class Finaliser(override val options: FinaliserCommandLine, override val model: ProjectModel)
+class Finaliser(override val options: FinaliserCommandLine, override val model: AllProjectsModel)
     extends RuleRun[FinaliserCommandLine] {
 
   type SpecificColour = FinaliserLevel
@@ -162,9 +162,7 @@ class Finaliser(override val options: FinaliserCommandLine, override val model: 
 
   override def generateFixes(sourceFile: SourceFile): SingleFileVisit = {
 
-    object visitor extends ScalaCleanTreePatcher(sourceFile) {
-      override def debug: Boolean       = options.debug
-      override def addComments: Boolean = options.addComments
+    object visitor extends ScalaCleanTreePatcher(sourceFile, Finaliser.this.options) {
 
       def handleDecl(modelElement: ModelElement): Unit = {
         modelElement.colour.specific match {

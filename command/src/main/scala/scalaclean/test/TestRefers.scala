@@ -6,7 +6,7 @@ import scalaclean.model._
  * A rule use to test that internal incoming references are set correctly,
  * needs to be run after TestAnalysis
  */
-class Test_internalIncomingReferences(model: ProjectModel)
+class Test_internalIncomingReferences(model: AllProjectsModel)
     extends TestCommon("Test_internalIncomingReferences", model) {
 
   override def visitInSource(modelElement: ModelElement): String =
@@ -19,7 +19,7 @@ class Test_internalIncomingReferences(model: ProjectModel)
  * A rule use to test that internal outgoing references are set correctly,
  * needs to be run after TestAnalysis
  */
-class Test_internalOutgoingReferences(model: ProjectModel)
+class Test_internalOutgoingReferences(model: AllProjectsModel)
     extends TestCommon("Test_internalOutgoingReferences", model) {
 
   override def visitInSource(modelElement: ModelElement): String = {
@@ -33,7 +33,7 @@ class Test_internalOutgoingReferences(model: ProjectModel)
  * A rule use to test that internal and external outgoing references ar set correctly,
  * needs to be run after TestAnalysis
  */
-class Test_allOutgoingReferences(model: ProjectModel) extends TestCommon("Test_allOutgoingReferences", model) {
+class Test_allOutgoingReferences(model: AllProjectsModel) extends TestCommon("Test_allOutgoingReferences", model) {
 
   override def visitInSource(modelElement: ModelElement): String =
     elementIdsTestFormat("allOutgoingReferences", modelElement,

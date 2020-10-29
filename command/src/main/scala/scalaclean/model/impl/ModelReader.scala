@@ -1,21 +1,21 @@
 package scalaclean.model.impl
 
-import java.nio.file.{Files, Paths}
+import java.nio.file.{ Files, Paths }
 
-import org.scalaclean.analysis.plugin.{ModData, VisibilityData}
-import org.scalaclean.analysis.{AnnotationData, ExtensionData, ExtensionDescriptor, IoTokens}
-import scalaclean.model.{ElementId, ElementIds}
+import org.scalaclean.analysis.plugin.{ ModData, VisibilityData }
+import org.scalaclean.analysis.{ AnnotationData, ExtensionData, ExtensionDescriptor, IoTokens }
+import scalaclean.model.{ ElementId, ElementIds }
 
 import scala.collection.mutable
 
 object ModelReader {
 
   def read(
-      project: Project,
-      elementsFilePath: String,
-      relationshipsFilePath: String,
-      extensionFilePath: String,
-      sourceDirSep: String
+            project: ProjectImpl,
+            elementsFilePath: String,
+            relationshipsFilePath: String,
+            extensionFilePath: String,
+            sourceDirSep: String
   ): (Vector[ElementModelImpl], BasicRelationshipInfo) = {
 
     val relationships = readRels(relationshipsFilePath)
@@ -47,7 +47,7 @@ object ModelReader {
 
   private def readExt(extensionFilePath: String): Map[String, Seq[ExtensionData]] = {
 
-    var mapByElementId       = Map.empty[String, mutable.Builder[ExtensionData, List[ExtensionData]]]
+    var mapByElementId = Map.empty[String, mutable.Builder[ExtensionData, List[ExtensionData]]]
 
     val path = Paths.get(extensionFilePath)
     println(s"reading extensions from $path")
@@ -163,11 +163,11 @@ object ModelReader {
   }
 
   private def readElements(
-      project: Project,
-      elementsFilePath: String,
-      relationships: BasicRelationshipInfo,
-      byId: Map[String, Seq[ExtensionData]],
-      sourceDirSep: String
+                            project: ProjectImpl,
+                            elementsFilePath: String,
+                            relationships: BasicRelationshipInfo,
+                            byId: Map[String, Seq[ExtensionData]],
+                            sourceDirSep: String
   ): Vector[ElementModelImpl] = {
     val path = Paths.get(elementsFilePath)
     println(s"reading elements from $path")
@@ -189,7 +189,7 @@ object ModelReader {
         val traversal = tokens(7).toInt
 
         val basicInfo =
-          BasicElementInfo(elementId, src, start, end, focus, flags, byId.getOrElse(tokens(1), Nil), traversal)
+          BasicElementInfo(project, elementId, src, start, end, focus, flags, byId.getOrElse(tokens(1), Nil), traversal)
 
         val idx = 8
         val ele: ElementModelImpl = typeId match {
@@ -231,8 +231,11 @@ object ModelReader {
             val hasDeclaredType = tokens(idx + 2).toBoolean
             new SetterMethodModelImpl(basicInfo, methodName, isAbstract, hasDeclaredType)
           case IoTokens.typeSource =>
-            val encoding      = tokens(idx).intern
-            new SourceModelImpl(basicInfo, encoding)
+            val encoding = tokens(idx).intern
+            val length   = tokens(idx + 1).toInt
+            val hash     = tokens(idx + 2).toInt
+            val murmur   = tokens(idx + 3).toInt
+            new SourceModelImpl(basicInfo, encoding, length, hash, murmur)
 
           case other =>
             throw new IllegalArgumentException("Unknown token: $other")

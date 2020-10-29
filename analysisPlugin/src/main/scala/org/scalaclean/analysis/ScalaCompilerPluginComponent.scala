@@ -1,10 +1,10 @@
 package org.scalaclean.analysis
 
 import java.io.File
-import java.nio.file.{ Files, Path, Paths }
-import java.text.{ DateFormat, SimpleDateFormat }
+import java.nio.file.{Files, Path, Paths}
+import java.text.{DateFormat, SimpleDateFormat}
 import java.time.format.DateTimeFormatter
-import java.util.{ Date, Properties, UUID }
+import java.util.{Date, Properties, UUID}
 
 import org.scalaclean.analysis.plugin.ExtensionPlugin
 import scalaclean.model.ElementId
@@ -15,13 +15,15 @@ import scala.collection.mutable
 import scala.reflect.internal.Flags
 import scala.reflect.internal.util.RangePosition
 import scala.tools.nsc.plugins.PluginComponent
-import scala.tools.nsc.{ Global, Phase }
+import scala.tools.nsc.{Global, Phase}
+import scala.util.hashing.MurmurHash3
 
 class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent with ModelSymbolBuilder {
   override val phaseName: String = "scalaclean-compiler-plugin-phase"
 
   override val runsAfter: List[String] = List("typer")
   // a bit ugly, but the options are read after the component is create - so it is updated by the plugin
+  var copySources                = false
   var debug                      = false
   var extensions                 = Set.empty[ExtensionPlugin]
   var options: List[String]      = Nil
@@ -32,7 +34,8 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
 
   override def newPhase(prev: Phase): Phase = new StdPhase(prev) {
 
-    var elementsWriter: ElementsWriter       = _
+    var sourceCopier:    SourceCopier        = _
+    var elementsWriter:  ElementsWriter      = _
     var relationsWriter: RelationshipsWriter = _
     var extensionWriter: ExtensionWriter     = _
     var traverser: SCUnitTraverser           = _
@@ -57,6 +60,9 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
       }
       Files.createDirectories(outputPath)
 
+      if (copySources)
+        sourceCopier = new JarSourceCopier(outputPath.resolve("sources.jar"))
+      else sourceCopier = NoSourceCopier
       val elementsFile = new File(outputPath.toFile, "scalaclean-elements.csv")
       if (debug)
         println(s"Writing elements file  to $elementsFile")
@@ -73,49 +79,53 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
       extensionWriter = new ExtensionWriter(extensionFile)
 
       traverser =
-        new SCUnitTraverser(elementsWriter, relationsWriter, extensionWriter, debug, global.settings.encoding.value)
+        new SCUnitTraverser(elementsWriter, relationsWriter, extensionWriter, sourceCopier, debug, global.settings.encoding.value)
       elementsWriter.logger = traverser
       relationsWriter.logger = traverser
       extensionWriter.logger = traverser
 
-      super.run()
+      try {
+        super.run()
 
-      val props = new Properties
-      import PropertyNames._
-      props.put(prop_sourceOsPathSeparator, java.io.File.pathSeparator)
-      props.put(prop_sourceOsDirSeparator, java.io.File.separator)
-      props.put(prop_classpath, global.settings.classpath.value)
-      props.put(prop_outputDir, outputPath.toString)
-      props.put(prop_elementsFile, elementsFile.toString)
-      props.put(prop_relationshipsFile, relationsFile.toString)
-      props.put(prop_extensionsFile, extensionFile.toString)
-      if (debug) {
-        println("SourceDirs = " + sourceDirs)
-        println("Output parent = " + outputPath)
-      }
-      if (sourceDirs.nonEmpty) {
-        props.put(prop_srcRoots, sourceDirs.mkString(File.pathSeparator))
-      } else {
-        props.put(prop_srcRoots, "/")
-      }
+        val props = new Properties
+        import PropertyNames._
+        props.put(prop_sourceOsPathSeparator, java.io.File.pathSeparator)
+        props.put(prop_sourceOsDirSeparator, java.io.File.separator)
+        props.put(prop_classpath, global.settings.classpath.value)
+        props.put(prop_outputDir, outputPath.toString)
+        props.put(prop_elementsFile, elementsFile.toString)
+        props.put(prop_relationshipsFile, relationsFile.toString)
+        props.put(prop_extensionsFile, extensionFile.toString)
+        if (debug) {
+          println("SourceDirs = " + sourceDirs)
+          println("Output parent = " + outputPath)
+        }
+        if (sourceDirs.nonEmpty) {
+          props.put(prop_srcRoots, sourceDirs.mkString(File.pathSeparator))
+        } else {
+          props.put(prop_srcRoots, "/")
+        }
 
-      val currentRelativePath = Paths.get("")
-      val srcBuildBase        = currentRelativePath.toAbsolutePath.toString
-      props.put(prop_srcBuildBase, srcBuildBase)
-      props.put(prop_srcFiles, files.mkString(File.pathSeparator))
+        val currentRelativePath = Paths.get("")
+        val srcBuildBase = currentRelativePath.toAbsolutePath.toString
+        props.put(prop_srcBuildBase, srcBuildBase)
+        props.put(prop_srcFiles, files.mkString(File.pathSeparator))
 
-      val propsFile = outputPath.resolve(s"ScalaClean.properties")
-      if (debug)
-        println("Writing props file " + propsFile)
-      props.store(Files.newBufferedWriter(propsFile), "")
-      elementsWriter.finish()
-      relationsWriter.finish()
-      extensionWriter.finish()
-      if (debug) {
-        global.reporter.echo("After Analysis Phase")
-        global.reporter.echo(s"  Wrote elements to $elementsFile")
-        global.reporter.echo(s"  Wrote relationships to $relationsFile")
+        val propsFile = outputPath.resolve(s"ScalaClean.properties")
+        if (debug)
+          println("Writing props file " + propsFile)
+        props.store(Files.newBufferedWriter(propsFile), "")
+        if (debug) {
+          global.reporter.echo("After Analysis Phase")
+          global.reporter.echo(s"  Wrote elements to $elementsFile")
+          global.reporter.echo(s"  Wrote relationships to $relationsFile")
 
+        }
+      } finally {
+        sourceCopier.close()
+        elementsWriter.finish()
+        relationsWriter.finish()
+        extensionWriter.finish()
       }
     }
 
@@ -206,6 +216,7 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
       val elementsWriter: ElementsWriter,
       val relationsWriter: RelationshipsWriter,
       val extensionWriter: ExtensionWriter,
+      val sourceCopier: SourceCopier,
       val debug: Boolean,
       val fileEncoding: String
   ) extends global.Traverser
@@ -223,12 +234,18 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
 
     def traverseSource(unit: CompilationUnit): Unit = {
       val sourceFile = unit.source.file.file.toPath.toAbsolutePath.toRealPath()
-      val sourceSymbol =
+      val content = new String(unit.source.content)
+      val sourceSymbol = {
         ModelSource(
           unit.body,
           ModelCommon(isGlobal = true, elementIds(sourceFile), sourceFile, -1, -1, -1, "<NA>"),
-          fileEncoding
+          fileEncoding,
+          content.length,
+          content.hashCode,
+          MurmurHash3.stringHash(content)
         )
+      }
+      sourceCopier.copySource(sourceSymbol, content)
       enterScope(sourceSymbol)(_ => traverse(unit.body))
 
       if (debug) {

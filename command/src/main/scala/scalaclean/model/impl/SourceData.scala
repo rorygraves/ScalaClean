@@ -8,4 +8,4 @@ import java.nio.file.Path
  * @param project the containing project
  * @param path    the relative path to the source from the project path
  */
-case class SourceData(project: Project, path: Path) {}
+case class SourceData(project: ProjectImpl, path: Path) {}

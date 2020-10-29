@@ -174,9 +174,7 @@ abstract class AbstractDeadCodeRemover[T <: AbstractDeadCodeCommandLine] extends
 
   override def generateFixes(sourceFile: SourceFile): SingleFileVisit = {
 
-    object visitor extends ScalaCleanTreePatcher(sourceFile) {
-      override def debug: Boolean       = options.debug
-      override def addComments: Boolean = options.addComments
+    object visitor extends ScalaCleanTreePatcher(sourceFile, AbstractDeadCodeRemover.this.options) {
 
       override protected def visitInSource(element: ModelElement): Boolean = {
         element match {

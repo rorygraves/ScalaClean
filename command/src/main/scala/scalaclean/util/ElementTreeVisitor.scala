@@ -1,10 +1,21 @@
 package scalaclean.util
 
-import scalaclean.model.{ ModelElement, SourceModel }
+import scalaclean.cli.ScalaCleanCommandLine
+import scalaclean.model.{ModelElement, SourceModel}
+import scalaclean.rules.SourceFile
 
-abstract class ElementTreeVisitor {
+abstract class ElementTreeVisitor[O <: ScalaCleanCommandLine](val sourceFile: SourceFile, final val options: O) {
 
-  def debug: Boolean
+  lazy val metadata = {
+    val pathString = sourceFile.file.filename.toString
+    val isExternal = options.externalInterface.exists(_.pattern.matcher(pathString).matches())
+    val isGenerated = options.generatedSource.exists(_.pattern.matcher(pathString).matches())
+    SourceMetaData(isExternal, isGenerated)
+  }
+
+  final def debug: Boolean = options.debug
+  final def addComments: Boolean = options.addComments
+
   private var currentDepth = 0
 
   final def log(msg: String) = {
@@ -13,13 +24,14 @@ abstract class ElementTreeVisitor {
 
   protected def visitElement(modelElement: ModelElement): Boolean
 
-  def beforeSource(source: SourceModel) = ()
-  def afterSource(source: SourceModel)  = ()
+  def beforeSource = ()
+  def afterSource  = ()
+
 
   final def visit(source: SourceModel): Unit = {
-    beforeSource(source)
-    visit0(source)
-    afterSource(source)
+      beforeSource
+      visit0(source)
+      afterSource
   }
 
   private def visit0(element: ModelElement): Unit = {
@@ -34,3 +46,4 @@ abstract class ElementTreeVisitor {
   }
 
 }
+case class SourceMetaData(external: Boolean, generated: Boolean)

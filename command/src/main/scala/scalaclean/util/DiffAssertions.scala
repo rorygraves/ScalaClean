@@ -40,17 +40,11 @@ trait DiffAssertions {
       diff: String
   ) extends Exception
 
-  def error2message(obtained: String, expected: String): String = {
+  def error2message(diff: String): String = {
     val sb = new StringBuilder
-    if (obtained.length < 1000) {
-      sb.append(s"""
-                   #${header("Obtained")}
-                   #${trailingSpace(obtained)}
-         """.stripMargin('#'))
-    }
     sb.append(s"""
                  #${header("Diff")}
-                 #${trailingSpace(compareContents(obtained, expected))}
+                 #${trailingSpace(diff)}
          """.stripMargin('#'))
     sb.toString()
   }

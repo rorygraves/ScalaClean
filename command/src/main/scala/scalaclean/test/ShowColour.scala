@@ -10,7 +10,7 @@ import scala.collection.JavaConverters._
 /**
  * A rule use to test that plugin marks are set correctly
  */
-class ShowColour(theModel: ProjectModel, pluginParams: List[String]) extends TestCommon("ShowColour", theModel) {
+class ShowColour(theModel: AllProjectsModel, pluginParams: List[String]) extends TestCommon("ShowColour", theModel) {
   val cmdLine = new ScalaCleanCommandLine {}
   cmdLine._rulePlugins = pluginParams.asJava
   dummyRule.markInitial()
@@ -29,7 +29,7 @@ class ShowColour(theModel: ProjectModel, pluginParams: List[String]) extends Tes
 
   object dummyRule extends RuleRun[ScalaCleanCommandLine] {
     override val options: ScalaCleanCommandLine = cmdLine
-    override val model: ProjectModel = theModel
+    override val model: AllProjectsModel = theModel
     override type SpecificColour = ASpecificColour
 
     override def runRule(): Unit = ???

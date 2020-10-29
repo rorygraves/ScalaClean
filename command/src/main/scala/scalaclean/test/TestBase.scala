@@ -2,15 +2,15 @@ package scalaclean.test
 
 import java.nio.file.Path
 
+import scalaclean.cli.ScalaCleanCommandLine
 import scalaclean.model._
 import scalaclean.rules.SourceFile
 import scalaclean.util._
 
 /**
- * A rule use to test the that incoming references ar set correctly,
- * needs to be run after ScalaCleanTestAnalysis
+ * unit test support
  */
-abstract class TestBase(val name: String, model: ProjectModel) {
+abstract class TestBase(val name: String, model: AllProjectsModel) {
 
   def beforeStart(): Unit = {
     println(s"Test Rule $name beforeStart START")
@@ -29,9 +29,7 @@ abstract class TestBase(val name: String, model: ProjectModel) {
         .allOf[SourceModel].map(_.filename).mkString("\n")}"))
     val sourceFile = new SourceFile(sModel)
 
-    object visitor extends ScalaCleanTreePatcher(sourceFile) {
-      override def debug: Boolean       = false
-      override def addComments: Boolean = false
+    object visitor extends ScalaCleanTreePatcher(sourceFile, new ScalaCleanCommandLine {}) {
 
       private def visit(modelElement: ModelElement): Boolean = {
         toPatch(elementInfo(modelElement), modelElement)

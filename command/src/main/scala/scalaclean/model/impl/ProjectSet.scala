@@ -7,8 +7,8 @@ import scalaclean.model._
 import scala.collection.immutable
 import scala.reflect.ClassTag
 
-class ProjectSet(projectPropertyPaths: Path*) extends ProjectModel {
-  val projects: List[Project] = projectPropertyPaths.toList.map(p => Project(p, this))
+class ProjectSet(projectPropertyPaths: Path*) extends AllProjectsModel {
+  override val projects: List[ProjectImpl] = projectPropertyPaths.toList.map(p => ProjectImpl(p, this))
 
   val elements: Map[ElementId, ElementModelImpl] = {
     val (elements, rels: immutable.Seq[BasicRelationshipInfo]) = projects.map(_.read).unzip

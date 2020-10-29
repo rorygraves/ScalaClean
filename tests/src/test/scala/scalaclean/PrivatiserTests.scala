@@ -1,14 +1,14 @@
 package scalaclean
 
 import scalaclean.cli.{AbstractProjectTestRunner, ScalaCleanCommandLine, SimpleRunOptions}
-import scalaclean.model.ProjectModel
+import scalaclean.model.AllProjectsModel
 import scalaclean.rules.privatiser.{FullPrivatiser, FullPrivatiserCommandLine, SimplePrivatiser, SimplePrivatiserCommandLine}
 
 
 class FullPrivatiserTests extends BasePrivatiserTests {
   override def projectsTest(projectNames: List[String], options: SimpleRunOptions): Unit = {
     object tester extends AbstractProjectTestRunner[FullPrivatiserCommandLine, FullPrivatiser](projectNames, options) {
-      override def rule(cmd: FullPrivatiserCommandLine, model: ProjectModel)= new FullPrivatiser(cmd, model)
+      override def rule(cmd: FullPrivatiserCommandLine, model: AllProjectsModel)= new FullPrivatiser(cmd, model)
       override val expectationSuffix = ".full"
     }
     tester.run()
@@ -23,7 +23,7 @@ class FullPrivatiserNoDupTests extends BasePrivatiserTests {
         options.reduceDuplicateScopeChanges = true
       }
 
-      override def rule(cmd: FullPrivatiserCommandLine, model: ProjectModel)= new FullPrivatiser(cmd, model)
+      override def rule(cmd: FullPrivatiserCommandLine, model: AllProjectsModel)= new FullPrivatiser(cmd, model)
       override val expectationSuffix = ".full-reduceDuplicate"
     }
     tester.run()
@@ -34,7 +34,7 @@ class SimplePrivatiserTests extends BasePrivatiserTests {
 
   override def projectsTest(projectNames: List[String], options: SimpleRunOptions): Unit = {
     object tester extends AbstractProjectTestRunner[SimplePrivatiserCommandLine, SimplePrivatiser](projectNames, options) {
-      override def rule(cmd: SimplePrivatiserCommandLine, model: ProjectModel)= new SimplePrivatiser(cmd, model)
+      override def rule(cmd: SimplePrivatiserCommandLine, model: AllProjectsModel)= new SimplePrivatiser(cmd, model)
       override val expectationSuffix: String = ".simple"
     }
     tester.run()
@@ -51,7 +51,7 @@ class SimplePrivatiserNoDupTests extends BasePrivatiserTests {
         options.reduceDuplicateScopeChanges = true
       }
 
-      override def rule(cmd: SimplePrivatiserCommandLine, model: ProjectModel)= new SimplePrivatiser(cmd, model)
+      override def rule(cmd: SimplePrivatiserCommandLine, model: AllProjectsModel)= new SimplePrivatiser(cmd, model)
       override val expectationSuffix: String = ".simple-reduceDuplicate"
     }
     tester.run()

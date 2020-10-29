@@ -3,7 +3,7 @@ package scalaclean.test
 import scalaclean.model._
 
 /** A rule use to test the that overrides as set correctly */
-class Test_internalDirectOverrides(model: ProjectModel) extends TestCommon("Test_internalDirectOverrides", model) {
+class Test_internalDirectOverrides(model: AllProjectsModel) extends TestCommon("Test_internalDirectOverrides", model) {
 
   override def visitInSource(modelElement: ModelElement): String =
     elementsInTestFormat("internalDirectOverrides", modelElement,
@@ -12,7 +12,7 @@ class Test_internalDirectOverrides(model: ProjectModel) extends TestCommon("Test
 }
 
 /** A rule use to test the that overrides as set correctly */
-class Test_internalTransitiveOverrides(model: ProjectModel)
+class Test_internalTransitiveOverrides(model: AllProjectsModel)
     extends TestCommon("Test_internalTransitiveOverrides", model) {
 
   override def visitInSource(modelElement: ModelElement): String =
@@ -21,7 +21,7 @@ class Test_internalTransitiveOverrides(model: ProjectModel)
 }
 
 /** A rule use to test the that overrides as set correctly */
-class Test_allDirectOverrides(model: ProjectModel) extends TestCommon("Test_allDirectOverrides", model) {
+class Test_allDirectOverrides(model: AllProjectsModel) extends TestCommon("Test_allDirectOverrides", model) {
 
   override def visitInSource(modelElement: ModelElement): String =
     elementAndIdsInTestFormat("allDirectOverrides", modelElement,
@@ -29,7 +29,7 @@ class Test_allDirectOverrides(model: ProjectModel) extends TestCommon("Test_allD
 }
 
 /** A rule use to test the that overrides as set correctly */
-class Test_allTransitiveOverrides(model: ProjectModel) extends TestCommon("Test_allTransitiveOverrides", model) {
+class Test_allTransitiveOverrides(model: AllProjectsModel) extends TestCommon("Test_allTransitiveOverrides", model) {
 
   override def visitInSource(modelElement: ModelElement): String =
     elementAndIdsInTestFormat("allTransitiveOverrides", modelElement,
@@ -37,7 +37,7 @@ class Test_allTransitiveOverrides(model: ProjectModel) extends TestCommon("Test_
 }
 
 /** A rule use to test the that overrides as set correctly */
-class Test_internalDirectOverriddenBy(model: ProjectModel)
+class Test_internalDirectOverriddenBy(model: AllProjectsModel)
     extends TestCommon("Test_internalDirectOverriddenBy", model) {
 
   override def visitInSource(modelElement: ModelElement): String =
@@ -47,7 +47,7 @@ class Test_internalDirectOverriddenBy(model: ProjectModel)
 }
 
 /** A rule use to test the that overrides as set correctly */
-class Test_internalTransitiveOverriddenBy(model: ProjectModel)
+class Test_internalTransitiveOverriddenBy(model: AllProjectsModel)
     extends TestCommon("Test_internalTransitiveOverriddenBy", model) {
 
   override def visitInSource(modelElement: ModelElement): String =

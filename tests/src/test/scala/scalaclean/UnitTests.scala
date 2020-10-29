@@ -8,7 +8,7 @@ import org.scalatest.funsuite.AnyFunSuite
 import org.scalatest.{BeforeAndAfterAllConfigMap, ConfigMap}
 import org.scalatestplus.junit.AssertionsForJUnit
 import scalaclean.cli.SCPatchUtil
-import scalaclean.model.ProjectModel
+import scalaclean.model.AllProjectsModel
 import scalaclean.model.impl.ProjectSet
 import scalaclean.test._
 import scalaclean.util.DiffAssertions
@@ -21,7 +21,7 @@ trait AbstractUnitTests extends AnyFunSuite with AssertionsForJUnit with DiffAss
     overwrite = configMap.getWithDefault("overwrite", "false").equalsIgnoreCase("true")
   }
 
-  def runTest(file: String, ruleFn: ProjectModel => TestCommon, expectationSuffix: String = "", overwrite: Boolean = false): Unit = {
+  def runTest(file: String, ruleFn: AllProjectsModel => TestCommon, expectationSuffix: String = "", overwrite: Boolean = false): Unit = {
     val scalaCleanWorkspace = if (Files.exists(Paths.get("../testProjects"))) {
       Paths.get("..").toAbsolutePath.toRealPath()
     } else {
@@ -47,7 +47,7 @@ trait AbstractUnitTests extends AnyFunSuite with AssertionsForJUnit with DiffAss
       SCPatchUtil.applyFixes(origDocContents, patches)
     }
 
-    def runRule(projectModel: ProjectModel): Unit = {
+    def runRule(projectModel: AllProjectsModel): Unit = {
 
       println("---------------------------------------------------------------------------------------------------")
       // run rule
@@ -77,7 +77,7 @@ trait AbstractUnitTests extends AnyFunSuite with AssertionsForJUnit with DiffAss
           println("###########> expected       <###########")
           println(expected)
           println("###########> Diff       <###########")
-          println(error2message(obtained, expected))
+          println(error2message(diff))
 
           fail("Differences detected, see diff above")
         }

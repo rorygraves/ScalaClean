@@ -148,6 +148,8 @@ sealed trait ModelElement extends Ordered[ModelElement] {
 
   protected def infoName: String = modelElementId.id
 
+  def project: SingleProjectModel
+
   def flagsDebug = {
     //consider extending HasFlags
 
@@ -162,7 +164,7 @@ sealed trait ModelElement extends Ordered[ModelElement] {
 }
 
 sealed trait ClassLike extends ModelElement {
-  def getCompanionObject(model: ProjectModel): Option[ObjectModel] = {
+  def getCompanionObject(model: AllProjectsModel): Option[ObjectModel] = {
     val ele = modelElementId.companionObjectOrSelf
     if (ele == modelElementId) None
     else Some(model.element[ObjectModel](ele))
@@ -313,9 +315,17 @@ sealed trait SourceModel extends ModelElement {
 
   def filename: Path
   def encoding: String
+  def sourceLength: Int
+  def sourceJavaHash: Int
+  def sourceMurmurHash: Int
 }
-
-trait ProjectModel {
+trait SingleProjectModel {
+  /** Get the original source if it was retained (via -P:scalaclean-analysis-plugin:copySources:true in the compiler)
+    */
+  def originalSource(file: SourceModel): Option[String]
+  def allProjects: AllProjectsModel
+}
+trait AllProjectsModel {
 
   def element[T <: ModelElement](id: ElementId)(implicit tpe: ClassTag[T]): T
 
@@ -323,9 +333,11 @@ trait ProjectModel {
 
   def size: Int
 
-  def allOf[T <: ModelElement: ClassTag]: Iterator[T]
+  def allOf[T <: ModelElement : ClassTag]: Iterator[T]
 
   def printStructure(): Unit = allOf[ClassLike].foreach(cls => println(s"class ${cls.fullName}"))
+
+  def projects: List[SingleProjectModel]
 }
 
 object Filters {
@@ -391,6 +403,7 @@ package impl {
   import org.scalaclean.analysis.FlagHelper
 
   case class BasicElementInfo(
+      project: ProjectImpl,
       elementId: ElementId,
       source: SourceData,
       startPos: Int,
@@ -623,7 +636,7 @@ package impl {
 
     val source: SourceData = info.source
 
-    def project: Project = source.project
+    def project: ProjectImpl = source.project
 
     def projects: ProjectSet = project.projects
 
@@ -968,7 +981,7 @@ package impl {
 
   }
 
-  class SourceModelImpl(val info: BasicElementInfo, val encoding: String)
+  class SourceModelImpl(val info: BasicElementInfo, val encoding: String, val sourceLength: Int, val sourceJavaHash: Int, val sourceMurmurHash: Int)
       extends ElementModelImpl(info)
       with SourceModel {
 

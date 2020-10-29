@@ -2,14 +2,14 @@ package scalaclean.broken
 
 import scalaclean.AbstractProjectTests
 import scalaclean.cli.{AbstractProjectTestRunner, ScalaCleanCommandLine, SimpleRunOptions}
-import scalaclean.model.ProjectModel
+import scalaclean.model.AllProjectsModel
 import scalaclean.rules.privatiser.{FullPrivatiser, FullPrivatiserCommandLine, SimplePrivatiser, SimplePrivatiserCommandLine}
 
 
 class BrokenFullPrivatiserTests extends BrokenPrivatiserTests {
   override def projectsTest(projectNames: List[String], options: SimpleRunOptions): Unit = {
     object tester extends AbstractProjectTestRunner[FullPrivatiserCommandLine, FullPrivatiser](projectNames, options) {
-      override def rule(cmd: FullPrivatiserCommandLine, model: ProjectModel)= new FullPrivatiser(cmd, model)
+      override def rule(cmd: FullPrivatiserCommandLine, model: AllProjectsModel)= new FullPrivatiser(cmd, model)
       override val expectationSuffix = ".full"
     }
     tester.run()
@@ -24,7 +24,7 @@ class BrokenFullPrivatiserNoDupTests extends BrokenPrivatiserTests {
         options.reduceDuplicateScopeChanges = true
       }
 
-      override def rule(cmd: FullPrivatiserCommandLine, model: ProjectModel)= new FullPrivatiser(cmd, model)
+      override def rule(cmd: FullPrivatiserCommandLine, model: AllProjectsModel)= new FullPrivatiser(cmd, model)
       override val expectationSuffix = ".full-reduceDuplicate"
     }
     tester.run()
@@ -35,7 +35,7 @@ class BrokenSimplePrivatiserTests extends BrokenPrivatiserTests {
 
   override def projectsTest(projectNames: List[String], options: SimpleRunOptions): Unit = {
     object tester extends AbstractProjectTestRunner[SimplePrivatiserCommandLine, SimplePrivatiser](projectNames, options) {
-      override def rule(cmd: SimplePrivatiserCommandLine, model: ProjectModel)= new SimplePrivatiser(cmd, model)
+      override def rule(cmd: SimplePrivatiserCommandLine, model: AllProjectsModel)= new SimplePrivatiser(cmd, model)
       override val expectationSuffix: String = ".simple"
     }
     tester.run()
@@ -52,7 +52,7 @@ class BrokenSimplePrivatiserNoDupTests extends BrokenPrivatiserTests {
         options.reduceDuplicateScopeChanges = true
       }
 
-      override def rule(cmd: SimplePrivatiserCommandLine, model: ProjectModel)= new SimplePrivatiser(cmd, model)
+      override def rule(cmd: SimplePrivatiserCommandLine, model: AllProjectsModel)= new SimplePrivatiser(cmd, model)
       override val expectationSuffix: String = ".simple-reduceDuplicate"
     }
     tester.run()
@@ -64,7 +64,7 @@ abstract class BrokenPrivatiserTests extends AbstractProjectTests {
 
     override def projectsTest(projectNames: List[String], options: SimpleRunOptions): Unit = {
       object tester extends AbstractProjectTestRunner[FullPrivatiserCommandLine, FullPrivatiser](projectNames, options) {
-        override def rule(cmd: FullPrivatiserCommandLine, model: ProjectModel)= new FullPrivatiser(cmd, model)
+        override def rule(cmd: FullPrivatiserCommandLine, model: AllProjectsModel)= new FullPrivatiser(cmd, model)
         val expectationSuffix: String = ""
       }
       tester.run()
