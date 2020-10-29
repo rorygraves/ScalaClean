@@ -11,11 +11,8 @@ import scalaclean.cli.SCPatchUtil
 import scalaclean.model.ProjectModel
 import scalaclean.model.impl.ProjectSet
 import scalaclean.test._
-import scalaclean.util.FileHelper.toPlatform
-import scalaclean.util.{DiffAssertions, FileHelper}
+import scalaclean.util.DiffAssertions
 
-import scala.meta._
-import scala.meta.internal.io.FileIO
 
 trait AbstractUnitTests extends AnyFunSuite with AssertionsForJUnit with DiffAssertions with BeforeAndAfterAllConfigMap {
   private var overwrite = false
@@ -25,19 +22,19 @@ trait AbstractUnitTests extends AnyFunSuite with AssertionsForJUnit with DiffAss
   }
 
   def runTest(file: String, ruleFn: ProjectModel => TestCommon, expectationSuffix: String = "", overwrite: Boolean = false): Unit = {
-    val projectName = "unitTestProject"
-    val scalaCleanWorkspace = if (new File(toPlatform("../testProjects")).exists()) {
-      ".."
+    val scalaCleanWorkspace = if (Files.exists(Paths.get("../testProjects"))) {
+      Paths.get("..").toAbsolutePath.toRealPath()
     } else {
-      "."
+      Paths.get(".").toAbsolutePath.toRealPath()
     }
 
-    val targetFiles = List(
-      RelativePath(file)
-    )
+    val projectDir = scalaCleanWorkspace.resolve(s"testProjects/unitTestProject/")
+    val srcRoot = projectDir.resolve(s"src/main/scala/")
+    val targetFiles = List(srcRoot.resolve(file))
+    val propsFile = projectDir.resolve("target/scala-2.12/classes/META-INF/ScalaClean/ScalaClean.properties")
+    val projects = new ProjectSet(propsFile)
 
-    val outputClassDir: String = s"$scalaCleanWorkspace/testProjects/$projectName/target/scala-2.12/classes/"
-    val inputSourceDirectories: List[AbsolutePath] = Classpath(toPlatform(s"$scalaCleanWorkspace/testProjects/$projectName/src/main/scala")).entries
+    runRule(projects)
 
     def applyRule(
                    rule: TestCommon,
@@ -46,19 +43,8 @@ trait AbstractUnitTests extends AnyFunSuite with AssertionsForJUnit with DiffAss
                  ): String = {
 
       rule.beforeStart()
-      val patches = rule.run(file)
+      val patches = rule.run(file).patches
       SCPatchUtil.applyFixes(origDocContents, patches)
-    }
-
-    def run(): Unit = {
-
-      val classDir = outputClassDir + FileHelper.fileSep + "META-INF" + FileHelper.fileSep + "ScalaClean"
-      val srcDir = Paths.get(classDir).toAbsolutePath
-
-      val propsFile = srcDir.resolve("ScalaClean.properties")
-      val projects = new ProjectSet(propsFile)
-
-      runRule(projects)
     }
 
     def runRule(projectModel: ProjectModel): Unit = {
@@ -66,21 +52,21 @@ trait AbstractUnitTests extends AnyFunSuite with AssertionsForJUnit with DiffAss
       println("---------------------------------------------------------------------------------------------------")
       // run rule
 
+      val charset = StandardCharsets.UTF_8
+
       val rule = ruleFn(projectModel)
       rule.beforeStart()
       targetFiles.foreach { targetFile =>
-        val absFile = inputSourceDirectories.head.resolve(targetFile)
-        val origFile = FileIO.slurp(absFile, StandardCharsets.UTF_8)
-        val obtained = stripLocalIds(applyRule(rule, absFile.toNIO, origFile))
+        val origFile = new String(Files.readAllBytes(targetFile), charset)
+        val obtained = applyRule(rule, targetFile, origFile)
 
-        val targetOutput = RelativePath(targetFile.toString() + expectationSuffix + ".expected")
-        val outputFile = inputSourceDirectories.head.resolve(targetOutput)
-        val expected = stripLocalIds(FileIO.slurp(outputFile, StandardCharsets.UTF_8))
+        val targetOutput = targetFile.resolveSibling(targetFile.getFileName.toString() + expectationSuffix + ".expected")
+        val expected = new String(Files.readAllBytes(targetOutput), charset)
 
         if (overwrite) {
-          println("Overwriting target file: " + outputFile)
-          val w = new FileOutputStream(outputFile.toString())
-          w.write(obtained.getBytes(StandardCharsets.UTF_8))
+          println("Overwriting target file: " + targetOutput)
+          val w = Files.newBufferedWriter(targetOutput, charset)
+          w.write(obtained)
           w.close()
         }
 
@@ -97,12 +83,7 @@ trait AbstractUnitTests extends AnyFunSuite with AssertionsForJUnit with DiffAss
         }
       }
     }
-
-    run()
   }
-
-  private val LocalIds = "/local([0-9]+)".r
-  private def stripLocalIds(s: String) = LocalIds.replaceAllIn(s, "/localXXXXXXXX")
 }
 
 

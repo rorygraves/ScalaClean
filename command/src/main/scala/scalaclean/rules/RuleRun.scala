@@ -1,18 +1,16 @@
 package scalaclean.rules
 
 import java.io.{PrintWriter, StringWriter}
-import java.nio.charset.StandardCharsets
+import java.nio.charset.Charset
 import java.nio.file.{Files, Path, Paths}
 
 import scalaclean.cli.{SCPatchUtil, ScalaCleanCommandLine}
 import scalaclean.model._
 import scalaclean.model.impl.{Project, ProjectSet}
-import scalaclean.util.{DiffAssertions, DocHelper, PatchStats}
-import scalafix.v1.SyntacticDocument
+import scalaclean.util.{DiffAssertions, PatchStats, SingleFileVisit}
 
-import scala.meta.internal.io.FileIO
-import scala.meta.{AbsolutePath}
 import scala.reflect.ClassTag
+import scala.util.{Failure, Success, Try}
 
 abstract class AbstractRule[T <: ScalaCleanCommandLine] {
   type Rule <: RuleRun[T]
@@ -48,7 +46,7 @@ abstract class RuleRun[T <: ScalaCleanCommandLine] {
   val model: ProjectModel
   def name = getClass.getSimpleName
 
-  val patchStats                              = new PatchStats
+  private lazy val patchStats                 = new PatchStats(options)
   def debug                                   = options.debug
   def addComments                             = options.addComments
   def printSummary(projectName: String): Unit = patchStats.printSummary(projectName)
@@ -105,7 +103,7 @@ abstract class RuleRun[T <: ScalaCleanCommandLine] {
 
   def runRule(): Unit
 
-  def fix(targetFile: SourceModel, syntacticDocument: () => SyntacticDocument): List[SCPatch]
+  def generateFixes(sourceFile: SourceFile): SingleFileVisit
 
   def markAll[E <: ModelElement: ClassTag](colour: Colour): Unit = {
     val all = model.allOf[E].toList
@@ -194,62 +192,46 @@ abstract class RuleRun[T <: ScalaCleanCommandLine] {
     // ++
   }
 
-  def generateHTML(generated: String, original: String): Unit = {
-    import scala.io.Source
-    val cssText: String = Source.fromResource("default-style.css").mkString
-
-    writeToFile(Paths.get("/tmp/code.css"), cssText)
-    val sw = new StringWriter()
-    val pw = new PrintWriter(sw)
-    pw.println(
-      """
-        |<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-        |<html xmlns="http://www.w3.org/1999/xhtml">
-        |    <head>
-        |        <title>XXXXX</title>
-        |        <link rel="stylesheet" type="text/css" href="code.css" title="Style">
-        |    </head>
-        |    <body onload="initializeLinked()">
-        |        <pre>
-        |""".stripMargin
-    )
-
-    pw.println(generated)
-    pw.println("--------------------")
-    pw.println("--------------------")
-    pw.println(original)
-    pw.println("--------------------")
-
-    pw.println(
-      """        </pre>
-        |    </body>
-        |</html>
-        |""".stripMargin
-    )
-
-    pw.flush()
-    val str = sw.toString
-    writeToFile(Paths.get("/tmp/code.html"), str)
-    //    Runtime.getRuntime.exec("open /tmp/code.html")
-    //    System.exit(1)
-
-  }
-
-  def applyRule(
-      targetFile: SourceModel,
-      syntacticDocument: () => SyntacticDocument,
-      suppress: Boolean,
-      source: String,
-  ): String = {
-
-    // actually run the rule
-    val fixes: Seq[SCPatch] = fix(targetFile, syntacticDocument)
-    val fixedSource         = SCPatchUtil.applyFixes(source, fixes)
-
-    //    generateHTML(fixedSource, source)
-
-    fixedSource
-  }
+//  def generateHTML(generated: String, original: String): Unit = {
+//    import scala.io.Source
+//    val cssText: String = Source.fromResource("default-style.css").mkString
+//
+//    writeToFile(Paths.get("/tmp/code.css"), cssText)
+//    val sw = new StringWriter()
+//    val pw = new PrintWriter(sw)
+//    pw.println(
+//      """
+//        |<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+//        |<html xmlns="http://www.w3.org/1999/xhtml">
+//        |    <head>
+//        |        <title>XXXXX</title>
+//        |        <link rel="stylesheet" type="text/css" href="code.css" title="Style">
+//        |    </head>
+//        |    <body onload="initializeLinked()">
+//        |        <pre>
+//        |""".stripMargin
+//    )
+//
+//    pw.println(generated)
+//    pw.println("--------------------")
+//    pw.println("--------------------")
+//    pw.println(original)
+//    pw.println("--------------------")
+//
+//    pw.println(
+//      """        </pre>
+//        |    </body>
+//        |</html>
+//        |""".stripMargin
+//    )
+//
+//    pw.flush()
+//    val str = sw.toString
+//    writeToFile(Paths.get("/tmp/code.html"), str)
+//    //    Runtime.getRuntime.exec("open /tmp/code.html")
+//    //    System.exit(1)
+//
+//  }
 
   def run(): Boolean = {
     val projectSet = model match {
@@ -261,9 +243,14 @@ abstract class RuleRun[T <: ScalaCleanCommandLine] {
     beforeStart()
 
     var changed = false
-    projectSet.projects.foreach(project => changed |= runRuleOnProject(project))
+    projectSet.projects.foreach { project =>
+      if (patchStats.issueCount <= options.maxIssues) {
+        changed |= runRuleOnProject(project)
+      }
+    }
     if (options.debug)
       println(s"DEBUG: Changed = $changed")
+    printSummary("ALL")
     changed
   }
 
@@ -273,7 +260,10 @@ abstract class RuleRun[T <: ScalaCleanCommandLine] {
       src.filename.resolveSibling(src.filename.getFileName + options.testOptions.expectationSuffix + ".expected")
     }
 
-    def compareAgainstFile(expected: String, obtained: String): Boolean = {
+    def compareAgainstFile(debug: Boolean, expectedFile: Path, expected: String, obtained: String): Boolean = {
+
+      if (debug)
+        println("DEBUG Comparing obtained vs " + expectedFile)
 
       val diff = DiffAssertions.compareContents(obtained, expected)
       if (diff.nonEmpty) {
@@ -288,10 +278,6 @@ abstract class RuleRun[T <: ScalaCleanCommandLine] {
         false
     }
 
-  }
-
-  def writeToFile(path: AbsolutePath, content: String): Unit = {
-    writeToFile(path.toNIO, content)
   }
 
   def writeToFile(path: Path, content: String): Unit = {
@@ -314,49 +300,55 @@ abstract class RuleRun[T <: ScalaCleanCommandLine] {
     val files = model.allOf[SourceModel]
 
     files.foreach { file =>
-
-      if (!Files.exists(file.filename)) {
-        if (options.skipNonexistentFiles)
-          patchStats.skippedFile(file.filename)
-        else
-          throw new IllegalStateException(s"cant find file $file")
-      } else {
-
-        val content = new String(Files.readAllBytes(file.filename), StandardCharsets.UTF_8)
-
-        val syntacticDocument = () => DocHelper.readSyntacticDoc(file, content)
-
-        val obtained = applyRule(file, syntacticDocument, suppress = false, content)
-
-        val expectedFile = testSupport.expectedPathForTarget(file)
-
-        def expectedContent = new String(Files.readAllBytes(expectedFile), StandardCharsets.UTF_8)
-
-        if (options.testOptions.validate) {
-
-          changed |= testSupport.compareAgainstFile(expectedContent, obtained)
-          if (options.replace) {
-            // overwrite the '.expected' file
-            writeToFile(expectedFile, obtained)
-          }
+      if (patchStats.issueCount <= options.maxIssues) {
+        val sourceFile = new SourceFile(file)
+        patchStats.process(sourceFile)
+        if (!Files.exists(file.filename)) {
+          patchStats.fileNotFound(sourceFile)
+          if (!options.skipNonexistentFiles)
+            throw new IllegalStateException(s"cant find file $file")
         } else {
-          if (options.replace) {
-            // overwrite the base file
-            if (debug)
-              println(s"DEBUG: Overwriting existing file: ${file.filename}")
-            writeToFile(file.filename, obtained)
-          } else {
 
-            if (debug)
-              println("DEBUG Comparing obtained vs " + expectedFile)
+          Try(generateFixes(sourceFile)) match {
+            case Failure(t) => patchStats.failedToGenerateFixes(sourceFile, t)
+            case Success(fixes) =>
+              lazy val obtained = SCPatchUtil.applyFixes(sourceFile.content, fixes.patches)
 
-            // diff against original file
-            changed |= testSupport.compareAgainstFile(expectedContent, obtained)
+              lazy val expectedFile: Path = testSupport.expectedPathForTarget(file)
+
+              def expectedContent = new String(Files.readAllBytes(expectedFile), Charset.forName(file.encoding))
+
+              if (options.testOptions.validate) {
+                patchStats.appliedFixes(sourceFile, fixes)
+                changed |= testSupport.compareAgainstFile(debug, expectedFile, expectedContent, obtained)
+                if (options.replace) {
+                  // overwrite the '.expected' file
+                  writeToFile(expectedFile, obtained)
+                }
+              } else {
+                if (options.replace) {
+                  // overwrite the base file
+                  if (fixes.patches.nonEmpty) {
+                    Try(obtained) match {
+                      case Failure(f) => patchStats.failedToApplyFixes(sourceFile, fixes, f)
+                      case Success(obtained) =>
+                        patchStats.appliedFixes(sourceFile, fixes)
+                        if (debug)
+                          println(s"DEBUG: Overwriting existing file: ${file.filename} with ${fixes.patches.size} changes")
+                        writeToFile(file.filename, obtained)
+                    }
+                  }
+
+                } else {
+                  patchStats.appliedFixes(sourceFile, fixes)
+                  // diff against original file
+                  changed |= testSupport.compareAgainstFile(debug, expectedFile, expectedContent, obtained)
+                }
+              }
           }
         }
       }
     }
-    printSummary("ALL")
     changed
   }
 

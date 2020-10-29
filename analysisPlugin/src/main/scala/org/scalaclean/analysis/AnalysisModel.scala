@@ -73,8 +73,9 @@ sealed trait ModelSymbol extends HasModelCommon {
   }
 
   var children: Map[ModelCommon, ModelSymbol] = Map.empty
-  def findChildBySymbol[T <: ModelSymbol : ClassTag](sym: Global#Symbol): Option[T] = {
-    children.values.collectFirst{
+
+  def findChildBySymbol[T <: ModelSymbol: ClassTag](sym: Global#Symbol): Option[T] = {
+    children.values.collectFirst {
       case ele if ele.tree.symbol == sym =>
         ele.asInstanceOf[T]
     }
@@ -168,12 +169,12 @@ sealed trait ModelSymbol extends HasModelCommon {
       println(s"duplicate of : $newCsvString")
     }
     this match {
-      case f : ModelField =>
-        f.constructorParam.foreach{ p =>
+      case f: ModelField =>
+        f.constructorParam.foreach { p =>
           printRelStart()
           println(s"has associated constructor param  of : $p")
         }
-        f.defaultGetter.foreach{ p =>
+        f.defaultGetter.foreach { p =>
           printRelStart()
           println(s"has associated defaultGetter  of : $p")
         }
@@ -213,7 +214,7 @@ sealed trait ModelSymbol extends HasModelCommon {
     if (suffix != -1) relWriter.recordDuplicate(this)
 
     this match {
-      case f : ModelField =>
+      case f: ModelField =>
         f.constructorParam.foreach(param => relWriter.relatedCtorParam(f, param))
         f.defaultGetter.foreach(getter => relWriter.defaultGetterMethod(f, getter))
       case _ =>
@@ -229,10 +230,9 @@ sealed trait ModelSymbol extends HasModelCommon {
         //TODO move params of a global method to be global
         //its a parameter of a method
         case mf: ModelField
-          if mf.isParameter &&
-            mf.tree.symbol.owner == this.tree.symbol &&
-            this.common.isGlobal && this.isInstanceOf[ModelMethod]
-        =>
+            if mf.isParameter &&
+              mf.tree.symbol.owner == this.tree.symbol &&
+              this.common.isGlobal && this.isInstanceOf[ModelMethod] =>
           //probably not in the long term
           this.refersRels ++= mf.refersRels
           Some(t)
@@ -244,36 +244,38 @@ sealed trait ModelSymbol extends HasModelCommon {
       }
     }
     val duplicateGroups = children.values.groupBy(_.common.elementId).filter(_._2.size > 1)
-    val suffix = new AtomicInteger
+    val suffix          = new AtomicInteger
     for (duplicate: Iterable[ModelSymbol] <- duplicateGroups.values.toList) {
       suffix.set(0)
       def keep(symToKeep: ModelSymbol): Unit = {
-        duplicate filter (_ ne symToKeep) foreach (_.markDuplicateOf(symToKeep, suffix.incrementAndGet()))
+        duplicate.filter(_ ne symToKeep).foreach(_.markDuplicateOf(symToKeep, suffix.incrementAndGet()))
       }
-      val preferred = duplicate filter (!_.tree.symbol.isSynthetic)
+      val preferred = duplicate.filter(!_.tree.symbol.isSynthetic)
       preferred.size match {
         case 1 =>
           println(s"flatten - found preferred - $newCsvString, ${duplicate.size}")
           keep(preferred.head)
         case 0 =>
           println(s"flatten - cant find any preferred - $newCsvString, ${duplicate.size}")
-          keep (duplicate.head)
+          keep(duplicate.head)
         case n =>
           //try harder ??
           println(s"flatten - cant find single preferred - $newCsvString, ${duplicate.size}")
-          keep (duplicate.head)
+          keep(duplicate.head)
       }
     }
     refersRels = refersRels.filter(_._1.common.elementId != this.common.elementId)
 
   }
+
   // -1 means no duplicate
   var suffix: Int = -1
+
   def markDuplicateOf(mainDeDup: ModelSymbol, suffix: Int): Unit = {
     this.suffix = suffix
   }
-  def idWithDeDuplicationSuffix = if (suffix == -1) newCsvString else s"${newCsvString}--$suffix"
 
+  def idWithDeDuplicationSuffix = if (suffix == -1) newCsvString else s"${newCsvString}--$suffix"
 
 }
 
@@ -308,17 +310,20 @@ sealed abstract class ModelField extends ModelSymbol {
 
   //for a class val, this is the associated ctor field if it exists
   var constructorParam = Option.empty[ModelCommon]
-  def addConstructorParam(constructorParam:ModelCommon) = {
-    assert (this.constructorParam.isEmpty)
-    assert (constructorParam != null)
+
+  def addConstructorParam(constructorParam: ModelCommon) = {
+    assert(this.constructorParam.isEmpty)
+    assert(constructorParam != null)
     this.constructorParam = Some(constructorParam)
   }
+
   //for a method param val, this is the associated default accessor if it exists
   var defaultGetter = Option.empty[ModelCommon]
+
   def addDefaultGetter(defaultGetter: ModelCommon) = {
-    assert (this.defaultGetter.isEmpty)
-    assert (defaultGetter != null)
-    assert (defaultGetter != null)
+    assert(this.defaultGetter.isEmpty)
+    assert(defaultGetter != null)
+    assert(defaultGetter != null)
     this.defaultGetter = Some(defaultGetter)
   }
 
@@ -396,5 +401,5 @@ case class ModelClass(tree: Global#ClassDef, common: ModelCommon, isAbstract: Bo
     extends ModelSymbol
     with ClassLike
 
-case class ModelTrait(tree: Global#ClassDef, common: ModelCommon) extends ModelSymbol with ClassLike
-case class ModelSource(tree: Global#Tree, common: ModelCommon)    extends ModelSymbol
+case class ModelTrait(tree: Global#ClassDef, common: ModelCommon)                extends ModelSymbol with ClassLike
+case class ModelSource(tree: Global#Tree, common: ModelCommon, encoding: String) extends ModelSymbol

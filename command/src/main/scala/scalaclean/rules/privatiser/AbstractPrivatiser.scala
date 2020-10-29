@@ -3,11 +3,8 @@ package scalaclean.rules.privatiser
 import org.scalaclean.analysis.plugin.VisibilityData
 import scalaclean.cli.ScalaCleanCommandLine
 import scalaclean.model._
-import scalaclean.rules.RuleRun
-import scalaclean.util.ScalaCleanTreePatcher
-import scalafix.v1.SyntacticDocument
-
-import scala.meta.io.AbsolutePath
+import scalaclean.rules.{RuleRun, SourceFile}
+import scalaclean.util.{ScalaCleanTreePatcher, SingleFileVisit}
 import scala.meta.tokens.Token
 
 abstract class AbstractPrivatiser[T <: AbstractPrivatiserCommandLine](val options: T, val model: ProjectModel)
@@ -168,158 +165,151 @@ abstract class AbstractPrivatiser[T <: AbstractPrivatiserCommandLine](val option
     res
   }
 
-  var elementsObserved = 0
-  var elementsChanged  = 0
+  override def generateFixes(sourceFile: SourceFile): SingleFileVisit = {
 
-  override def fix(sModel: SourceModel, syntacticDocument: () => SyntacticDocument): List[SCPatch] = {
+    object visitor extends ScalaCleanTreePatcher(sourceFile) {
 
-    val visitor: PrivatiserVisitor = newPrivatiserVisitor(syntacticDocument)
-    visitor.visit(sModel)
+      // TODO CURRENT UNUSED
+      //      def existingAccess(mods: Seq[Mod]): (Option[Mod], PrivatiserLevel) = {
+      //        val res: Option[(Option[Mod], PrivatiserLevel)] = mods.collectFirst {
+      //          case s@Mod.Private(scope) => (Some(s), Scoped.Private(OldElementId.fromTree(scope), "existing"))
+      //          case s@Mod.Protected(scope) => (Some(s), Scoped.Protected(OldElementId.fromTree(scope), "existing", forceProtected = false))
+      //        }
+      //        res.getOrElse((None, Public("existing")))
+      //      }
+      //
+      //      private def changeAccessModifier(
+      //                                        level: PrivatiserLevel, mods: Seq[Mod], defn: Stat, aModel: ModelElement, forcePosition: Option[Token]): Boolean = {
+      //        val (mod, existing) = existingAccess(mods)
+      //        val proposed = level.asText(aModel)
+      //
+      //        def buildInsertion(toReplace: String): Boolean = {
+      //          forcePosition match {
+      //            case Some(token) =>
+      //              lb.append(SCPatch(token.start, token.start, s"$toReplace "))
+      //              true
+      //            case None =>
+      //              val tokens = defn.tokens
+      //              tokens.find {
+      //                _.start == aModel.rawStart
+      //              } match {
+      //                case Some(token) =>
+      //                  lb.append(SCPatch(token.start, token.start, s"$toReplace "))
+      //                  true
+      //                case None =>
+      //                  //probably quite worrying
+      //                  lb.append(SCPatch(defn.pos.start, defn.pos.start, s"$toReplace "))
+      //                  true
+      //              }
+      //          }
+      //        }
+      //
+      //        val structuredPatch: Boolean =
+      //          (mod, level.shouldReplace(aModel), proposed) match {
+      //            case (_, _, None) => false
+      //            case (None, _, Some(toReplace)) =>
+      //              buildInsertion(toReplace)
+      //            case (_, false, Some(toReplace)) =>
+      //              buildInsertion(toReplace)
+      //            case (Some(existing), true, Some(toReplace)) =>
+      //              lb.append(SCPatch(existing.pos.start, existing.pos.end, s"$toReplace"))
+      //              true
+      //          }
+      //        val updatedMarker = level.marker2(defn).map { v => lb.append(v); true }.getOrElse(false)
+      //
+      //        structuredPatch || updatedMarker
+      //
+      //      }
+      //
 
-    val result = visitor.result
-    if (debug) {
-      println("--------NEW----------")
-      result.foreach(println)
-      println("------------------")
-    }
-    result
-  }
+      override def debug: Boolean = options.debug
 
-  def newPrivatiserVisitor(syntacticDocument: () => SyntacticDocument) = new PrivatiserVisitor(syntacticDocument)
+      override def addComments: Boolean = options.addComments
 
-  class PrivatiserVisitor(syntacticDocument: () => SyntacticDocument)
-      extends ScalaCleanTreePatcher(patchStats, syntacticDocument) {
+      override protected def visitInSource(modelElement: ModelElement): Boolean = {
+        if (!modelElement.modelElementId.isLocal) {
 
-    // TODO CURRENT UNUSED
-    //      def existingAccess(mods: Seq[Mod]): (Option[Mod], PrivatiserLevel) = {
-    //        val res: Option[(Option[Mod], PrivatiserLevel)] = mods.collectFirst {
-    //          case s@Mod.Private(scope) => (Some(s), Scoped.Private(OldElementId.fromTree(scope), "existing"))
-    //          case s@Mod.Protected(scope) => (Some(s), Scoped.Protected(OldElementId.fromTree(scope), "existing", forceProtected = false))
-    //        }
-    //        res.getOrElse((None, Public("existing")))
-    //      }
-    //
-    //      private def changeAccessModifier(
-    //                                        level: PrivatiserLevel, mods: Seq[Mod], defn: Stat, aModel: ModelElement, forcePosition: Option[Token]): Boolean = {
-    //        val (mod, existing) = existingAccess(mods)
-    //        val proposed = level.asText(aModel)
-    //
-    //        def buildInsertion(toReplace: String): Boolean = {
-    //          forcePosition match {
-    //            case Some(token) =>
-    //              lb.append(SCPatch(token.start, token.start, s"$toReplace "))
-    //              true
-    //            case None =>
-    //              val tokens = defn.tokens
-    //              tokens.find {
-    //                _.start == aModel.rawStart
-    //              } match {
-    //                case Some(token) =>
-    //                  lb.append(SCPatch(token.start, token.start, s"$toReplace "))
-    //                  true
-    //                case None =>
-    //                  //probably quite worrying
-    //                  lb.append(SCPatch(defn.pos.start, defn.pos.start, s"$toReplace "))
-    //                  true
-    //              }
-    //          }
-    //        }
-    //
-    //        val structuredPatch: Boolean =
-    //          (mod, level.shouldReplace(aModel), proposed) match {
-    //            case (_, _, None) => false
-    //            case (None, _, Some(toReplace)) =>
-    //              buildInsertion(toReplace)
-    //            case (_, false, Some(toReplace)) =>
-    //              buildInsertion(toReplace)
-    //            case (Some(existing), true, Some(toReplace)) =>
-    //              lb.append(SCPatch(existing.pos.start, existing.pos.end, s"$toReplace"))
-    //              true
-    //          }
-    //        val updatedMarker = level.marker2(defn).map { v => lb.append(v); true }.getOrElse(false)
-    //
-    //        structuredPatch || updatedMarker
-    //
-    //      }
-    //
+          def changeVisibility(visText: String) = {
+            val currentVis = modelElement.extensionOfType[VisibilityData].getOrElse(VisibilityData.PUBLIC)
 
-    override def debug: Boolean = options.debug
-
-    override def addComments: Boolean = options.addComments
-
-    override protected def visitInSource(modelElement: ModelElement): Boolean = {
-      if (!modelElement.modelElementId.isLocal) {
-
-        def changeVisibility(visText: String) = {
-          val currentVis = modelElement.extensionOfType[VisibilityData].getOrElse(VisibilityData.PUBLIC)
-
-          val expectedTokens: Seq[String] = {
-            currentVis match {
-              case VisibilityData(start, end, "", None)         => List()
-              case VisibilityData(start, end, vis, None)        => List(vis)
-              case VisibilityData(start, end, vis, Some(scope)) => List(vis, "[", scope.innerScopeString, "]")
-            }
-          }
-          val beginIndex = tokens.indexWhere(t => t.start == modelElement.rawStart)
-          assert(beginIndex != -1)
-
-          def find(
-              startIndex: Int,
-              text: String,
-              maxIndex: Option[Int] = None,
-              maxPos: Option[Int] = None
-          ): (Int, Token) = {
-            def showTokens(start: Int, count: Int, search: String, msg: String): Unit = {
-              (start to start + count).foreach(i => println(s" token #$i ${tokens(i)}"))
-              throw new IllegalStateException(s"$msg")
-            }
-
-            val found = tokens.indexWhere(t => t.text == text, startIndex)
-            assert(found != -1, showTokens(startIndex, 10, text, s"Can't find '$text'"))
-            maxIndex.foreach { i =>
-              assert(found <= i, showTokens(startIndex, 10, text, s"too far when looking for '$text''"))
-            }
-            maxPos.foreach { p =>
-              assert(tokens(found).start <= p, showTokens(startIndex, 10, text, s"too far when looking for '$text''"))
-            }
-
-            (found, tokens(found))
-          }
-
-          val (targetStart, targetEnd) =
-            if (expectedTokens.isEmpty) (modelElement.rawStart, modelElement.rawStart)
-            else {
-              val start = find(beginIndex, expectedTokens.head, maxPos = Some(modelElement.rawFocusStart))
-              val end = expectedTokens.tail.foldLeft(start) { case (index, text) =>
-                find(index._1, text, maxPos = Some(modelElement.rawFocusStart))
+            val expectedTokens: Seq[String] = {
+              currentVis match {
+                case VisibilityData(start, end, "", None) => List()
+                case VisibilityData(start, end, vis, None) => List(vis)
+                case VisibilityData(start, end, vis, Some(scope)) => List(vis, "[", scope.innerScopeString, "]")
               }
-              (start._2.start, end._2.end)
             }
-          if (debug)
-            log(s" TargetPos = $targetStart -> $targetEnd")
+            val beginIndex = tokenArray.indexWhere(t => t.start == modelElement.rawStart)
+            assert(beginIndex != -1)
 
-          val replacementText = if (targetStart == targetEnd) visText + " " else visText
-          this.collect(SCPatch(targetStart, targetEnd, replacementText))
+            def find(
+                      startIndex: Int,
+                      text: String,
+                      maxIndex: Option[Int] = None,
+                      maxPos: Option[Int] = None
+                    ): (Int, Token) = {
+              def showTokens(start: Int, count: Int, search: String, msg: String): Unit = {
+                (start to start + count).foreach(i => println(s" token #$i ${tokenArray(i)}"))
+                throw new IllegalStateException(s"$msg")
+              }
+
+              val found = tokenArray.indexWhere(t => t.text == text, startIndex)
+              assert(found != -1, showTokens(startIndex, 10, text, s"Can't find '$text'"))
+              maxIndex.foreach { i =>
+                assert(found <= i, showTokens(startIndex, 10, text, s"too far when looking for '$text''"))
+              }
+              maxPos.foreach { p =>
+                assert(tokenArray(found).start <= p, showTokens(startIndex, 10, text, s"too far when looking for '$text''"))
+              }
+
+              (found, tokenArray(found))
+            }
+
+            val (targetStart, targetEnd) =
+              if (expectedTokens.isEmpty) (modelElement.rawStart, modelElement.rawStart)
+              else {
+                val start = find(beginIndex, expectedTokens.head, maxPos = Some(modelElement.rawFocusStart))
+                val end = expectedTokens.tail.foldLeft(start) { case (index, text) =>
+                  find(index._1, text, maxPos = Some(modelElement.rawFocusStart))
+                }
+                (start._2.start, end._2.end)
+              }
+            if (debug)
+              log(s" TargetPos = $targetStart -> $targetEnd")
+
+            val replacementText = if (targetStart == targetEnd) visText + " " else visText
+            this.collect(SCPatch(targetStart, targetEnd, replacementText))
+          }
+
+          modelElement match {
+            case fieldModel: FieldModel if fieldModel.declaredIn.nonEmpty =>
+            case accessorModel: AccessorModel if accessorModel.field.isDefined =>
+            case _ =>
+              modelElement.colour.specific.foreach(_.asText(modelElement, options).foreach(v => changeVisibility(v)))
+          }
         }
 
-        modelElement match {
-          case fieldModel: FieldModel if fieldModel.declaredIn.nonEmpty      =>
-          case accessorModel: AccessorModel if accessorModel.field.isDefined =>
+        // should be traverse deeper
+        !modelElement.modelElementId.isLocal && (modelElement match {
+          case _: ClassLike =>
+            true
+          case _: MethodModel | _: FieldModel | _: FieldsModel =>
+            false
           case _ =>
-            modelElement.colour.specific.foreach(_.asText(modelElement, options).foreach(v => changeVisibility(v)))
-        }
+            true
+        })
       }
-
-      // should be traverse deeper
-      !modelElement.modelElementId.isLocal && (modelElement match {
-        case _: ClassLike =>
-          true
-        case _: MethodModel | _: FieldModel | _: FieldsModel =>
-          false
-        case _ =>
-          true
-      })
     }
+
+      visitor.visit(sourceFile.file)
+
+      val result = visitor.result
+      if (debug) {
+        println("--------NEW----------")
+        result.patches.foreach(println)
+        println("------------------")
+      }
+      result
 
   }
 

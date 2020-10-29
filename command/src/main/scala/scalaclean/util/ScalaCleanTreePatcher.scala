@@ -1,6 +1,7 @@
 package scalaclean.util
 
 import scalaclean.model.{ ModelElement, SCPatch, SourceModel }
+import scalaclean.rules.SourceFile
 import scalafix.v1.SyntacticDocument
 
 import scala.collection.mutable.ListBuffer
@@ -12,11 +13,12 @@ import scala.collection.mutable.ListBuffer
  *
  * It has default handling of source files and non source elements
  */
-abstract class ScalaCleanTreePatcher(stats: PatchStats, _syntacticDocument: () => SyntacticDocument)
-    extends ElementTreeVisitor {
+abstract class ScalaCleanTreePatcher(sourceFile: SourceFile) extends ElementTreeVisitor {
 
-  protected lazy val syntacticDocument: SyntacticDocument = _syntacticDocument()
-  protected def visitSourceFile(s: SourceModel)           = true
+  protected def syntacticDocument: SyntacticDocument = sourceFile.syntacticDocument
+  def tokenArray = sourceFile.tokenArray
+
+  protected def visitSourceFile(s: SourceModel)      = true
 
   protected def visitNotInSource(modelElement: ModelElement) = true
 
@@ -25,36 +27,25 @@ abstract class ScalaCleanTreePatcher(stats: PatchStats, _syntacticDocument: () =
   def addComments: Boolean
 
   override protected final def visitElement(modelElement: ModelElement): Boolean = {
-    val patchcount = patchCount
-    _elementsVisited += 1
+    elementsVisited += 1
     val res = modelElement match {
       case s: SourceModel =>
-        _filesVisited += 1
         visitSourceFile(s)
       case _ if modelElement.existsInSource =>
-        _sourceElementsVisited += 1
+        sourceElementsVisited += 1
         if (addComments)
           addComment(modelElement, s"mark - ${modelElement.mark}")
         visitInSource(modelElement)
       case _ =>
         visitNotInSource(modelElement)
     }
-    if (patchcount != patchCount)
-      _elementsChanged += 1
     res
   }
 
-  private var _filesVisited          = 0
-  private var _elementsVisited       = 0
-  private var _sourceElementsVisited = 0
-  private var _elementsChanged       = 0
+  private var elementsVisited       = 0
+  private var sourceElementsVisited = 0
 
-  def filesVisited          = _filesVisited
-  def elementsVisited       = _elementsVisited
-  def sourceElementsVisited = _sourceElementsVisited
-  def elementsChanged       = _elementsChanged
-
-  lazy val tokens = syntacticDocument.tokens.tokens
+  def result = SingleFileVisit(collector.toList.sortBy(_.startPos), elementsVisited, sourceElementsVisited)
 
   def remove(element: ModelElement, comment: String = ""): Unit = {
     replace(element, "", "remove", comment)
@@ -62,13 +53,13 @@ abstract class ScalaCleanTreePatcher(stats: PatchStats, _syntacticDocument: () =
 
   def replace(element: ModelElement, text: String, actionName: String = "replace", comment: String = ""): Unit = {
     if (debug)
-      log(s" $actionName(${element.name},'$text')")
+      log(s" $actionName(${element.name},'$text') --- $comment")
 
     val start =
       if (element.annotations.isEmpty) element.rawStart
-    else element.annotations.minBy(_.posOffsetStart).posOffsetStart - 1 + element.rawStart
-    val candidateBeginToken = tokens.find(t => t.start >= start && t.start <= t.end).head
-    val newBeingToken       = TokenHelper.whitespaceOrCommentsBefore(candidateBeginToken, syntacticDocument.tokens)
+      else element.annotations.minBy(_.posOffsetStart).posOffsetStart - 1 + element.rawStart
+    val candidateBeginToken = tokenArray.find(t => t.start >= start && t.start <= t.end).head
+    val newBeingToken       = TokenHelper.whitespaceOrCommentsBefore(candidateBeginToken, tokenArray)
     val newStartPos         = newBeingToken.headOption.map(_.start).getOrElse(start)
 
     collect(SCPatch(newStartPos, element.rawEnd, text, comment))
@@ -93,9 +84,6 @@ abstract class ScalaCleanTreePatcher(stats: PatchStats, _syntacticDocument: () =
     collector.+=(value)
   }
 
-  final def result: List[SCPatch] = collector.toList.sortBy(_.startPos)
-
-  protected def patchCount = collector.size
-
-  override def afterSource(source: SourceModel): Unit = stats.addFrom(this)
 }
+
+case class SingleFileVisit(patches: List[SCPatch], elementsVisited: Int, sourceElementsVisited: Int)

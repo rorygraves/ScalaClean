@@ -2,11 +2,8 @@ package scalaclean.rules.deadcode
 
 import scalaclean.cli.ScalaCleanCommandLine
 import scalaclean.model._
-import scalaclean.rules.RuleRun
-import scalaclean.util.ScalaCleanTreePatcher
-import scalafix.v1.SyntacticDocument
-
-import scala.meta.io.AbsolutePath
+import scalaclean.rules.{RuleRun, SourceFile}
+import scalaclean.util.{ScalaCleanTreePatcher, SingleFileVisit}
 
 /** A rule that removes unreferenced classes */
 abstract class AbstractDeadCodeRemover[T <: AbstractDeadCodeCommandLine] extends RuleRun[T] {
@@ -175,9 +172,9 @@ abstract class AbstractDeadCodeRemover[T <: AbstractDeadCodeCommandLine] extends
         markUsed(e, markEnclosing = false, Main, e :: Nil, "serialisationCode"))
   }
 
-  override def fix(sModel: SourceModel, syntacticDocument: () => SyntacticDocument): List[SCPatch] = {
+  override def generateFixes(sourceFile: SourceFile): SingleFileVisit = {
 
-    object visitor extends ScalaCleanTreePatcher(patchStats, syntacticDocument) {
+    object visitor extends ScalaCleanTreePatcher(sourceFile) {
       override def debug: Boolean       = options.debug
       override def addComments: Boolean = options.addComments
 
@@ -233,16 +230,9 @@ abstract class AbstractDeadCodeRemover[T <: AbstractDeadCodeCommandLine] extends
       }
     }
 
-    visitor.visit(sModel)
+    visitor.visit(sourceFile.file)
 
-    val result = visitor.result
-    if (debug) {
-      println("--------NEW----------")
-      result.foreach(println)
-      println("------------------")
-    }
-
-    result//.map(s => SCPatch(s.startPos, s.endPos, s.replacementText))
+    visitor.result
   }
 
   object Usage {
