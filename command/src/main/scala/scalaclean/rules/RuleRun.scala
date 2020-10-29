@@ -306,7 +306,7 @@ abstract class RuleRun[T <: ScalaCleanCommandLine] {
 
   def validateSource(sourceFile: SourceFile): Boolean = {
     def isChanged(): String = {
-      var changed = new StringBuilder
+      val changed = new StringBuilder
       val content = sourceFile.content
       if (content.length != sourceFile.file.sourceLength)
         changed append s"Source validation failed for ${sourceFile.file.filename} : length found ${content.length} expected ${sourceFile.file.sourceLength}\n"

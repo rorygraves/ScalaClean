@@ -131,7 +131,7 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
 
     override def apply(unit: global.CompilationUnit): Unit = {
 
-      val sourceFile = unit.source.file.file.toPath.toAbsolutePath.toRealPath()
+      val sourceFile = sanePath(unit.source.file)
 
       files += sourceFile
 
@@ -233,7 +233,7 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
     val logTransScope = true
 
     def traverseSource(unit: CompilationUnit): Unit = {
-      val sourceFile = unit.source.file.file.toPath.toAbsolutePath.toRealPath()
+      val sourceFile = sanePath(unit.source.file)
       val content = new String(unit.source.content)
       val sourceSymbol = {
         ModelSource(

@@ -1,9 +1,9 @@
 package org.scalaclean.analysis
 
-import java.nio.file.{Path, Paths}
+import java.nio.file.{ Path, Paths }
 import java.util
 
-import scalaclean.model.{ElementIdManager, FieldPath}
+import scalaclean.model.{ ElementIdManager, FieldPath }
 
 import scala.annotation.tailrec
 import scala.collection.mutable
@@ -18,14 +18,15 @@ trait ModelSymbolBuilder {
   def sourceDirs: List[Path]
   val elementIds = new ElementIdManager
 
-  private val mSymbolCache2 = mutable.Map[global.Symbol, ModelCommon]()
-  private val mSymbolCache  = mutable.Map[global.Symbol, ModelCommon]()
-  private val fileToSafePath  = new util.IdentityHashMap[AbstractFile, Path]()
+  private val mSymbolCache2  = mutable.Map[global.Symbol, ModelCommon]()
+  private val mSymbolCache   = mutable.Map[global.Symbol, ModelCommon]()
+  private val fileToSafePath = new util.IdentityHashMap[AbstractFile, Path]()
 //  private val aliases  = mutable.Map[global.Symbol, ModelCommon]()
 
   def externalSymbol(gSym: Global#Symbol): ModelCommon = {
     asMSymbol(gSym.asInstanceOf[global.Symbol])
   }
+
 //
 //  def addAlias(alias: global.Symbol, model: ModelSymbol): Unit = {
 //    assert(!aliases.contains(alias))
@@ -75,6 +76,19 @@ trait ModelSymbolBuilder {
 
   }
 
+  def sanePath(file: AbstractFile) = {
+    fileToSafePath.computeIfAbsent(
+      file,
+      file => {
+        val path =
+          if (file.file eq null) Paths.get(file.toString)
+          else file.file.toPath
+
+        path.toAbsolutePath.toRealPath()
+      }
+    )
+  }
+
   private def asMSymbolX(gSym: global.Symbol, forceField: Boolean): ModelCommon = {
     val cache = if (forceField) mSymbolCache2 else mSymbolCache
 
@@ -84,10 +98,8 @@ trait ModelSymbolBuilder {
         val (startPos, endPos, focusPos) =
           if (gSym.pos == NoPosition) (-1, -1, -1) else (gSym.pos.start, gSym.pos.end, gSym.pos.focus.start)
         val sourceFile =
-          if (gSym.sourceFile != null)
-            fileToSafePath.computeIfAbsent(gSym.sourceFile, _.file.toPath.toAbsolutePath.toRealPath())
-          else
-            Paths.get("-")
+          if (gSym.sourceFile != null) sanePath(gSym.sourceFile)
+          else Paths.get("-")
 
         val newName =
           if (forceField) elementIds.applyAndForceField(gSym) else elementIds(gSym) //getNewName(gSym) + specialSuffix
@@ -97,6 +109,7 @@ trait ModelSymbolBuilder {
       }
     )
   }
+
 //
 //  def mungeUnitPath(input: Path): String = {
 //    val abs = input.toAbsolutePath
