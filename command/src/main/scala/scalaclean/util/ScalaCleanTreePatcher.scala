@@ -1,6 +1,7 @@
 package scalaclean.util
 
-import scalaclean.model.{ ModelElement, SCPatch, SourceModel }
+import scalaclean.cli.ScalaCleanCommandLine
+import scalaclean.model.{ModelElement, SCPatch, SourceModel}
 import scalaclean.rules.SourceFile
 import scalafix.v1.SyntacticDocument
 
@@ -13,7 +14,8 @@ import scala.collection.mutable.ListBuffer
  *
  * It has default handling of source files and non source elements
  */
-abstract class ScalaCleanTreePatcher(sourceFile: SourceFile) extends ElementTreeVisitor {
+abstract class ScalaCleanTreePatcher[O <: ScalaCleanCommandLine](sourceFile: SourceFile, options: O)
+  extends ElementTreeVisitor[O](sourceFile, options) {
 
   protected def syntacticDocument: SyntacticDocument = sourceFile.syntacticDocument
   def tokenArray = sourceFile.tokenArray
@@ -23,8 +25,6 @@ abstract class ScalaCleanTreePatcher(sourceFile: SourceFile) extends ElementTree
   protected def visitNotInSource(modelElement: ModelElement) = true
 
   protected def visitInSource(modelElement: ModelElement): Boolean
-  def debug: Boolean
-  def addComments: Boolean
 
   override protected final def visitElement(modelElement: ModelElement): Boolean = {
     elementsVisited += 1

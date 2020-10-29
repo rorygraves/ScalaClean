@@ -1,12 +1,14 @@
 package org.scalaclean.analysis
 
 import java.nio.file.{Path, Paths}
+import java.util
 
 import scalaclean.model.{ElementIdManager, FieldPath}
 
 import scala.annotation.tailrec
 import scala.collection.mutable
 import scala.reflect.internal.util.NoPosition
+import scala.reflect.io.AbstractFile
 import scala.tools.nsc.Global
 
 trait ModelSymbolBuilder {
@@ -18,6 +20,7 @@ trait ModelSymbolBuilder {
 
   private val mSymbolCache2 = mutable.Map[global.Symbol, ModelCommon]()
   private val mSymbolCache  = mutable.Map[global.Symbol, ModelCommon]()
+  private val fileToSafePath  = new util.IdentityHashMap[AbstractFile, Path]()
 //  private val aliases  = mutable.Map[global.Symbol, ModelCommon]()
 
   def externalSymbol(gSym: Global#Symbol): ModelCommon = {
@@ -82,7 +85,7 @@ trait ModelSymbolBuilder {
           if (gSym.pos == NoPosition) (-1, -1, -1) else (gSym.pos.start, gSym.pos.end, gSym.pos.focus.start)
         val sourceFile =
           if (gSym.sourceFile != null)
-            gSym.sourceFile.file.toPath.toAbsolutePath.toRealPath()
+            fileToSafePath.computeIfAbsent(gSym.sourceFile, _.file.toPath.toAbsolutePath.toRealPath())
           else
             Paths.get("-")
 

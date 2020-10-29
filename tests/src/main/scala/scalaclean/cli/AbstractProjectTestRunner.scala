@@ -3,7 +3,7 @@ package scalaclean.cli
 import java.io.File
 import java.nio.file.{Files, Path, Paths}
 
-import scalaclean.model.ProjectModel
+import scalaclean.model.AllProjectsModel
 import scalaclean.model.impl.ProjectSet
 import scalaclean.rules.RuleRun
 import scalaclean.util.DiffAssertions
@@ -17,7 +17,7 @@ abstract class AbstractProjectTestRunner[Cmd <: ScalaCleanCommandLine: ClassTag,
     extends DiffAssertions with Assertions{
 
   def cmdLine: Cmd = classTag[Cmd].runtimeClass.newInstance().asInstanceOf[Cmd]
-  def rule(cmd: Cmd, model: ProjectModel): Rule
+  def rule(cmd: Cmd, model: AllProjectsModel): Rule
 
   def customise(options: Cmd): Unit = ()
 

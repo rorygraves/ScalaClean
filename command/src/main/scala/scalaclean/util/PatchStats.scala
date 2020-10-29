@@ -1,14 +1,16 @@
 package scalaclean.util
 
+import java.io.{PrintStream, PrintWriter}
 import java.nio.file.Path
 
 import scalaclean.cli.ScalaCleanCommandLine
-import scalaclean.model.{ SCPatch, SourceModel }
+import scalaclean.model.{SCPatch, SourceModel}
 import scalaclean.rules.SourceFile
 
 import scala.collection.mutable
 
 class PatchStats(options: ScalaCleanCommandLine) {
+
   def issueCount = issues.size
 
   val debug = options.debug
@@ -17,6 +19,7 @@ class PatchStats(options: ScalaCleanCommandLine) {
     println(s"""Files           Observed             = $filesVisited
                |Files           Skipped              = ${fileDoesntExist.size}
                |Files           Errors               = ${issues.size}
+               |Files           Inconsistent         = ${inconsistentFiles}
                |Files           Changed              = ${filesChanged}
                |Files           Effect rate          = ${(filesChanged.toDouble / filesVisited.toDouble * 10000).toInt / 100} %
                |Elements        Observed             = $elementsVisited
@@ -29,11 +32,11 @@ class PatchStats(options: ScalaCleanCommandLine) {
       println(s"error in file $file $message")
       error.printStackTrace(System.out)
       patches.foreach(println)
-
     }
   }
 
   private var filesVisited          = 0
+  private var inconsistentFiles     = 0
   private var filesChanged          = 0
   private var elementsVisited       = 0
   private var sourceElementsVisited = 0
@@ -75,6 +78,18 @@ class PatchStats(options: ScalaCleanCommandLine) {
 
   def process(sourceFile: SourceFile) = {
     filesVisited += 1
+  }
+  val noException = new Exception("") {
+    override def printStackTrace(s: PrintStream): Unit = ()
+    override def printStackTrace(s: PrintWriter): Unit = ()
+  }
+  def sourceChanged(sourceFile: SourceFile, message: String, isIssue: Boolean) = {
+    if (isIssue)
+      issues(sourceFile.file.filename) = (message, noException, Nil)
+    if (debug) {
+      println(s"sourceChanged!!! ${sourceFile.file.filename}\n$message")
+    }
+    inconsistentFiles += 1
   }
 
 }

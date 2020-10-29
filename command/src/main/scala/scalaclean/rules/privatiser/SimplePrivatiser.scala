@@ -7,10 +7,10 @@ object SimplePrivatiser extends AbstractRule[SimplePrivatiserCommandLine] {
   override type Rule = SimplePrivatiser
 
   override def cmdLine                                                          = new SimplePrivatiserCommandLine
-  override def apply(options: SimplePrivatiserCommandLine, model: ProjectModel) = new Rule(options, model)
+  override def apply(options: SimplePrivatiserCommandLine, model: AllProjectsModel) = new Rule(options, model)
 }
 
-class SimplePrivatiser(options: SimplePrivatiserCommandLine, model: ProjectModel)
+class SimplePrivatiser(options: SimplePrivatiserCommandLine, model: AllProjectsModel)
     extends AbstractPrivatiser(options, model) {
 
 

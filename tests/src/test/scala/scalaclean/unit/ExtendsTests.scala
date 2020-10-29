@@ -2,7 +2,7 @@ package scalaclean.unit
 
 import org.scalatestplus.junit.AssertionsForJUnit
 import scalaclean.AbstractUnitTests
-import scalaclean.model.ProjectModel
+import scalaclean.model.AllProjectsModel
 import scalaclean.test.{Test_extendedBy, Test_extends, Test_extendsCompiled}
 
 object ExtendsTests {
@@ -11,7 +11,7 @@ object ExtendsTests {
 }
 class ExtendsTests extends AbstractUnitTests with AssertionsForJUnit {
 
-  def doRun(test: ProjectModel => Test_extends, suffix: String): Unit = {
+  def doRun(test: AllProjectsModel => Test_extends, suffix: String): Unit = {
     runTest(ExtendsTests.src,
       test,
       expectationSuffix = s".extends.$suffix",
@@ -52,7 +52,7 @@ class ExtendsTests extends AbstractUnitTests with AssertionsForJUnit {
 
 class ExtendsCompiledTests extends AbstractUnitTests {
 
-  def doRun(test: ProjectModel => Test_extendsCompiled, suffix: String): Unit = {
+  def doRun(test: AllProjectsModel => Test_extendsCompiled, suffix: String): Unit = {
     runTest(ExtendsTests.src,
       test,
       expectationSuffix = s".extends-compiled.$suffix",
@@ -93,7 +93,7 @@ class ExtendsCompiledTests extends AbstractUnitTests {
 
 class ExtendedByTests extends AbstractUnitTests {
 
-  def doRun(test: ProjectModel => Test_extendedBy, suffix: String): Unit = {
+  def doRun(test: AllProjectsModel => Test_extendedBy, suffix: String): Unit = {
     runTest(ExtendsTests.src,
       test,
       expectationSuffix = s".extendedBy.$suffix",

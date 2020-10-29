@@ -104,6 +104,7 @@ lazy val unitTestProject = project
         s"-Jdummy=${jar.lastModified}", // ensures recompile
 //        "-P:scalaclean-analysis-plugin:debug:true",
         s"-P:scalaclean-analysis-plugin:srcdirs:$srcLocations",
+        "-P:scalaclean-analysis-plugin:copySources:true"
       )
     }
   )

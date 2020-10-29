@@ -7,7 +7,7 @@ import scalaclean.rules.{RuleRun, SourceFile}
 import scalaclean.util.{ScalaCleanTreePatcher, SingleFileVisit}
 import scala.meta.tokens.Token
 
-abstract class AbstractPrivatiser[T <: AbstractPrivatiserCommandLine](val options: T, val model: ProjectModel)
+abstract class AbstractPrivatiser[T <: AbstractPrivatiserCommandLine](val options: T, val model: AllProjectsModel)
     extends RuleRun[T] {
 
   type SpecificColour = PrivatiserLevel
@@ -167,7 +167,7 @@ abstract class AbstractPrivatiser[T <: AbstractPrivatiserCommandLine](val option
 
   override def generateFixes(sourceFile: SourceFile): SingleFileVisit = {
 
-    object visitor extends ScalaCleanTreePatcher(sourceFile) {
+    object visitor extends ScalaCleanTreePatcher(sourceFile, AbstractPrivatiser.this.options) {
 
       // TODO CURRENT UNUSED
       //      def existingAccess(mods: Seq[Mod]): (Option[Mod], PrivatiserLevel) = {
@@ -221,10 +221,6 @@ abstract class AbstractPrivatiser[T <: AbstractPrivatiserCommandLine](val option
       //
       //      }
       //
-
-      override def debug: Boolean = options.debug
-
-      override def addComments: Boolean = options.addComments
 
       override protected def visitInSource(modelElement: ModelElement): Boolean = {
         if (!modelElement.modelElementId.isLocal) {
@@ -303,14 +299,7 @@ abstract class AbstractPrivatiser[T <: AbstractPrivatiserCommandLine](val option
 
       visitor.visit(sourceFile.file)
 
-      val result = visitor.result
-      if (debug) {
-        println("--------NEW----------")
-        result.patches.foreach(println)
-        println("------------------")
-      }
-      result
-
+      visitor.result
   }
 
 }

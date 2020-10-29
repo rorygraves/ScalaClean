@@ -2,7 +2,7 @@ package scalaclean.test
 
 import scalaclean.model._
 
-abstract class TestCommon(name: String, model: ProjectModel) extends TestBase(name, model) {
+abstract class TestCommon(name: String, model: AllProjectsModel) extends TestBase(name, model) {
 
   /**
    * Visit the model element.

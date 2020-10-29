@@ -35,7 +35,7 @@ class ElementsWriter(file: File) extends CommonWriter(file) {
       case x: ModelFields => commonPrefix(x) ::: List(x.syntheticName, x.isLazy, x.fieldCount)
       case x: ModelVal    => commonPrefix(x) ::: fieldCommon(x) ::: List(x.isLazy)
       case x: ModelVar    => commonPrefix(x) ::: fieldCommon(x)
-      case x: ModelSource => commonPrefix(x) ::: List(x.encoding)
+      case x: ModelSource => commonPrefix(x) ::: List(x.encoding, x.length, x.javaHash, x.murmurHash)
     }
     val msg = fields.mkString(",")
 

@@ -1,14 +1,13 @@
 package scalaclean
 
-import org.scalatest.Ignore
 import scalaclean.cli.{AbstractProjectTestRunner, SimpleRunOptions}
-import scalaclean.model.ProjectModel
+import scalaclean.model.AllProjectsModel
 import scalaclean.rules.deadcode.{FullDeadCodeCommandLine, FullDeadCodeRemover, SimpleDeadCodeCommandLine, SimpleDeadCodeRemover}
 
 class FullDeadCodeTests extends BaseDeadCodeTests {
   override def projectsTest(projectNames: List[String], options: SimpleRunOptions): Unit = {
     object tester extends AbstractProjectTestRunner[FullDeadCodeCommandLine, FullDeadCodeRemover](projectNames, options) {
-      override def rule(cmd: FullDeadCodeCommandLine, model: ProjectModel)= new FullDeadCodeRemover(cmd, model)
+      override def rule(cmd: FullDeadCodeCommandLine, model: AllProjectsModel)= new FullDeadCodeRemover(cmd, model)
       override val expectationSuffix = ".full"
     }
     tester.run()
@@ -19,7 +18,7 @@ class SimpleDeadCodeTests extends BaseDeadCodeTests {
 
   override def projectsTest(projectNames: List[String], options: SimpleRunOptions): Unit = {
     object tester extends AbstractProjectTestRunner[SimpleDeadCodeCommandLine, SimpleDeadCodeRemover](projectNames, options) {
-      override def rule(cmd: SimpleDeadCodeCommandLine, model: ProjectModel)= new SimpleDeadCodeRemover(cmd, model)
+      override def rule(cmd: SimpleDeadCodeCommandLine, model: AllProjectsModel)= new SimpleDeadCodeRemover(cmd, model)
       override val expectationSuffix: String = ".simple"
     }
     tester.run()

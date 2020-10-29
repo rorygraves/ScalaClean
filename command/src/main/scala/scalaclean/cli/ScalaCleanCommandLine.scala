@@ -9,6 +9,7 @@ import java.util.{Collections, List => JList}
 import scalaclean.rules.plugin.{RulePlugin, RulePluginFactory}
 
 import scala.collection.JavaConverters._
+import scala.util.matching.Regex
 
 case class SimpleRunOptions(
     debug: Boolean = false,
@@ -92,14 +93,6 @@ abstract class ScalaCleanCommandLine {
   var replace: Boolean = false
 
   @ArgOption(
-    name = "--maxIssues",
-    usage = "maximum number of issues before aborting",
-    required = false,
-    hidden = false
-  )
-  var maxIssues = 0
-
-  @ArgOption(
     name = "--rulePlugins",
     usage = "additional rules typically to ban changes. " +
       "This takes multiple args in the form --rulePlugins <objectname>:params [<objectname>:params ]*. " +
@@ -110,7 +103,7 @@ abstract class ScalaCleanCommandLine {
   )
   var _rulePlugins: JList[String] = Collections.emptyList()
 
-  def rulePlugins: Seq[RulePlugin] =
+  def rulePlugins: Seq[RulePlugin] = {
     _rulePlugins.asScala.map { objectNameAndParams =>
       try {
         RulePluginFactory(objectNameAndParams)
@@ -118,7 +111,15 @@ abstract class ScalaCleanCommandLine {
         case e: Exception => throw new Exception(s"failed to parse parameter '$objectNameAndParams'", e)
       }
     }.toList
+  }
 
+  @ArgOption(
+    name = "--maxIssues",
+    usage = "maximum number of issues before aborting",
+    required = false,
+    hidden = false
+  )
+  var maxIssues = 0
 
   @ArgOption(
     name = "--skipNonexistentFiles",
@@ -127,6 +128,33 @@ abstract class ScalaCleanCommandLine {
     hidden = false
   )
   var skipNonexistentFiles: Boolean = false
+
+  @ArgOption(
+    name = "--sourceValidation",
+    usage = "validate that the sources are unchanged, and behaviour if they are not",
+    required = false,
+    hidden = false
+  )
+  var sourceValidation: SourceValidation = SourceValidation.NONE
+
+  @ArgOption(
+    name = "--externalInterface",
+    usage = "consider the files with these regex to be called by external uncaptured things (e.g. java)",
+    required = false,
+    hidden = false
+  )
+  private var _externalInterface: JList[String] = Collections.emptyList()
+  lazy val externalInterface: List[Regex] = _externalInterface.asScala.toList.map(new Regex(_))
+
+  @ArgOption(
+    name = "--generatedSource",
+    usage = "consider the files with these regex to be generated (so dont change then)",
+    required = false,
+    hidden = false
+  )
+  private var _generatedSource: JList[String] = Collections.emptyList()
+  lazy val generatedSource: List[Regex] = _generatedSource.asScala.toList.map(new Regex(_))
+
   //test specific options, so no API interface
   object testOptions {
     /**

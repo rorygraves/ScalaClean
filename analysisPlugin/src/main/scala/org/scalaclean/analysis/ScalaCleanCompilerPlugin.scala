@@ -30,6 +30,8 @@ class ScalaCleanCompilerPlugin(override val global: Global) extends Plugin {
     for (option <- realOptions) {
       if (option == "debug:true") {
         component.debug = true
+      } else if (option == "copySources:true") {
+        component.copySources = true
       } else if (option.startsWith("extension:")) {
         val end = {
           val end = option.indexOf(':', 10)
