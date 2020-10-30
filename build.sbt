@@ -110,7 +110,7 @@ lazy val unitTestProject = project
   )
 
 // template for projects running non unit tests
-def testInputProject(id: String, projectLocation: String, showTrees: Boolean = false, browseTrees: Boolean = false, debug: Boolean = false)(
+def testInputProject(id: String, projectLocation: String, showTrees: Boolean = false, browseTrees: Boolean = false, debug: Boolean = false, encoding: String = "UTF-8")(
     dependencies: ClasspathDep[ProjectReference]*
 ) = sbt.Project
   .apply(id, file(projectLocation))
@@ -135,6 +135,7 @@ def testInputProject(id: String, projectLocation: String, showTrees: Boolean = f
       ).flatten
 
       List(
+        "-encoding", encoding,
         "-Yrangepos",
         s"-Xplugin:${jar.getAbsolutePath}",
         s"-Jdummy=${jar.lastModified}", // ensures recompile
@@ -177,6 +178,18 @@ lazy val deadCodeProject15_entry_point =
 lazy val deadCodeProject16_params =
   testInputProject("deadCodeProject16_params", "testProjects/deadCodeProject16_params")()
 
+lazy val deadCodeProject17_annotations =
+  testInputProject("deadCodeProject17_annotations", "testProjects/deadCodeProject17_annotations")()
+
+lazy val deadCodeProject18_utf8 =
+  testInputProject("deadCodeProject18_utf8", "testProjects/deadCodeProject18_utf8", encoding="UTF-8")()
+
+lazy val deadCodeProject18_utf16 =
+  testInputProject("deadCodeProject18_utf16", "testProjects/deadCodeProject18_utf16", encoding="UTF-16")()
+
+lazy val deadCodeProject18_utf32 =
+  testInputProject("deadCodeProject18_utf32", "testProjects/deadCodeProject18_utf32", encoding="UTF-32")()
+
 lazy val privatiserProject1 = testInputProject("privatiserProject1", "testProjects/privatiserProject1")()
 lazy val privatiserProject2 = testInputProject("privatiserProject2", "testProjects/privatiserProject2")()
 lazy val privatiserProject3 = testInputProject("privatiserProject3", "testProjects/privatiserProject3")()
@@ -216,7 +229,11 @@ lazy val deadCodeTests = List(
   deadCodeProject13_case_class,
   deadCodeProject14_anon_class,
   deadCodeProject15_entry_point,
-  deadCodeProject16_params
+  deadCodeProject16_params,
+  deadCodeProject17_annotations,
+  deadCodeProject18_utf8,
+  deadCodeProject18_utf16,
+  deadCodeProject18_utf32
 )
 
 lazy val finaliserTests = List(finaliserProject1)

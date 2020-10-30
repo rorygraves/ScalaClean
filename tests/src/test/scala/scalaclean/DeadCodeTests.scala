@@ -88,7 +88,23 @@ abstract class BaseDeadCodeTests extends AbstractProjectTests {
   }
 
   test("deadCodeProject16_params") {
-    projectTest("deadCodeProject16_params",SimpleRunOptions(debug=true))
+    projectTest("deadCodeProject16_params")
+  }
+
+  test("deadCodeProject17_annotations") {
+    projectTest("deadCodeProject17_annotations")
+  }
+
+  test("deadCodeProject18_utf8") {
+    projectTest("deadCodeProject18_utf8")
+  }
+
+  test("deadCodeProject18_utf16") {
+    projectTest("deadCodeProject18_utf16")
+  }
+
+  test("deadCodeProject18_utf32") {
+    projectTest("deadCodeProject18_utf32")
   }
 
 }

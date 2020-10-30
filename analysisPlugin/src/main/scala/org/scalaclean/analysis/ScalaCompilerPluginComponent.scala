@@ -3,14 +3,10 @@ package org.scalaclean.analysis
 import java.io.File
 import java.nio.file.{Files, Path, Paths}
 import java.text.{DateFormat, SimpleDateFormat}
-import java.time.format.DateTimeFormatter
+import java.util
 import java.util.{Date, Properties, UUID}
 
 import org.scalaclean.analysis.plugin.ExtensionPlugin
-import scalaclean.model.ElementId
-
-import scala.annotation.tailrec
-import scala.collection.immutable.HashSet
 import scala.collection.mutable
 import scala.reflect.internal.Flags
 import scala.reflect.internal.util.RangePosition
@@ -265,48 +261,58 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
       }
     }
 
-    val initialVisited: Set[global.Symbol] = HashSet[global.Symbol](global.NoSymbol)
+    type VisitedType = util.Map[AnyRef, java.lang.Boolean]
+    val initialVisited:VisitedType = new util.IdentityHashMap[AnyRef, java.lang.Boolean]()
+    initialVisited.put(NoSymbol, java.lang.Boolean.TRUE)
+    initialVisited.put(NoType, java.lang.Boolean.TRUE)
 
-    def resetVisited(visited: Set[global.Symbol]) {
-      visitedTypes = visited
+    def resetVisited(resetTypes: VisitedType) {
+      visited = resetTypes
     }
 
-    def newVisited(): Set[global.Symbol] = {
-      val existing = visitedTypes
-      visitedTypes = initialVisited
+    def newVisited(): VisitedType= {
+      val existing = visited
+      visited = new util.IdentityHashMap[AnyRef, java.lang.Boolean](initialVisited)
       existing
+    }
+    def isFirstVisit(to: AnyRef): Boolean = {
+      visited.put(to, java.lang.Boolean.TRUE) eq null
     }
 
     newVisited()
 
-    var visitedTypes: Set[global.Symbol] = HashSet.empty[global.Symbol]
+    var visited: VisitedType = initialVisited
 
+    def add(symbol: global.Symbol): Boolean = {
+      if (symbol eq global.NoSymbol) false
+      else {
+        val added = isFirstVisit(symbol)
+        if (added) {
+          currentScope.addRefers(asMSymbol(symbol), symbol.isSynthetic)
+          traverseAnnotationInfos(symbol.annotations)
+        }
+        added
+      }
+    }
     def traverseType(tpe: global.Type): Unit = {
       if (tpe ne null)
         traverseImpl(tpe)
 
-      def add(symbol: global.Symbol): Boolean = {
-        if (symbol eq global.NoSymbol) false
-        else {
-          val added = visitedTypes + symbol
-          if (added eq visitedTypes) false
-          else {
-            visitedTypes = added
-            currentScope.addRefers(asMSymbol(symbol), symbol.isSynthetic)
-            true
-          }
-        }
-      }
 
       def traverseImpl(tpe: global.Type) {
-        tpe.foreach { tpePart =>
-          val widened = tpePart.dealiasWiden
-          val added1  = add(widened.termSymbol)
-          val added2  = add(widened.typeSymbol)
-          if (added1 || added2) widened match {
-            case ref: global.TypeRefApi =>
-              ref.args.foreach(traverseImpl)
-            case _ =>
+        if (isFirstVisit(tpe)) {
+          traverseAnnotationInfos(tpe.annotations)
+          add(tpe.termSymbol)
+          add(tpe.typeSymbol)
+          tpe.foreach { tpePart =>
+            val widened = tpePart.dealiasWiden
+            val added1 = add(widened.termSymbol)
+            val added2 = add(widened.typeSymbol)
+            if (added1 || added2) widened match {
+              case ref: global.TypeRefApi =>
+                ref.args.foreach(traverseImpl)
+              case _ =>
+            }
           }
         }
       }
@@ -399,9 +405,38 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
               currentScope.addOverride(asMSymbol(entry), direct = true)
             }
           }
-
         }
       }
+    }
+
+    def traverseClassFileAnnotation(arg: ClassfileAnnotArg): Unit = {
+      if (isFirstVisit(arg)) arg match {
+        case LiteralAnnotArg(const) => traverseType(const.tpe)
+        case ArrayAnnotArg(array) => array foreach traverseClassFileAnnotation
+        case NestedAnnotArg(info) => traverseAnnotationInfo(info)
+        case UnmappableAnnotArg =>
+        case ScalaSigBytes(_) =>
+      }
+    }
+
+    def traverseAnnotationInfos(anns: Seq[AnnotationInfo]): Unit = anns foreach traverseAnnotationInfo
+
+    def traverseAnnotationInfo(ann: AnnotationInfo): Unit = {
+      if (isFirstVisit(ann)) {
+        traverseAnnotationInfos(ann.metaAnnotations)
+        traverseType(ann.tpe)
+        traverse(ann.original)
+        ann.assocs foreach { case (_, arg) => traverseClassFileAnnotation(arg) }
+        traverseParams(ann.scalaArgs)
+      }
+    }
+    def traverseInnards(tree: Tree): Unit = {
+      traverseType(tree.tpe)
+      if (tree.symbol ne null) {
+        val sym = tree.symbol
+        if (sym.tpe ne tree.tpe) traverseType(sym.tpe)
+      }
+      super.traverse(tree)
     }
 
     override def traverse(tree: Tree): Unit = {
@@ -410,8 +445,7 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
         case packageDef: PackageDef =>
           // ignore package symbol for now
           enterTransScope("PackageDef") {
-            traverseType(tree.tpe)
-            super.traverse(packageDef)
+            traverseInnards(tree)
           }
         case treeSelect: Select =>
           enterTransScope("Select") {
@@ -420,28 +454,23 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
             if (hasCurrentGlobalScope) {
               currentScope.addRefers(asMSymbol(treeSelect.symbol), isSynthetic = false)
             }
-            traverseType(tree.tpe)
-            super.traverse(treeSelect)
+            traverseInnards(tree)
           }
         case template: Template =>
           enterTransScope("Template") {
-            traverseType(tree.tpe)
-            super.traverse(template)
+            traverseInnards(tree)
           }
         case typeTree: TypeTree =>
           enterTransScope("TypeTree") {
-            traverseType(tree.tpe)
-            super.traverse(typeTree)
+            traverseInnards(tree)
           }
         case blockTree: Block =>
           enterTransScope("Block") {
-            traverseType(tree.tpe)
-            super.traverse(blockTree)
+            traverseInnards(tree)
           }
         case superTree: Super =>
           enterTransScope("Super") {
-            traverseType(tree.tpe)
-            super.traverse(superTree)
+            traverseInnards(tree)
           }
         case EmptyTree =>
         // do nothing
@@ -451,13 +480,19 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
         case literalTree: Literal =>
           enterTransScope("Literal") {
             literalTree.attachments.get[analyzer.OriginalTreeAttachment].foreach(x => traverse(x.original))
-            super.traverse(literalTree)
+            traverseInnards(tree)
+            literalTree.value.value match {
+              case x: Type =>
+                traverseType(x)
+              case x: Symbol =>
+                add(x)
+              case _ =>
+            }
           }
         case identTree: Ident =>
           //          identTree.name
           enterTransScope("Ident " + identTree.symbol) {
-            traverseType(tree.tpe)
-            super.traverse(identTree)
+            traverseInnards(tree)
             currentScope.addRefers(asMSymbol(identTree.symbol), identTree.symbol.isSynthetic)
           }
 
@@ -478,16 +513,15 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
               }
             }
             recordOverrides(obj)
-            super.traverse(tree)
+            traverseInnards(tree)
             postProcess(obj)
           }
 
         case apply: Apply =>
-          traverseType(tree.tpe)
           val target      = asMSymbol(apply.symbol)
           val isSynthetic = apply.symbol.isSynthetic
           currentScope.addRefers(target, isSynthetic)
-          super.traverse(tree)
+          traverseInnards(tree)
 
         // *********************************************************************************************************
         case classDef: ClassDef =>
@@ -500,7 +534,7 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
             else ModelClass(classDef, mSymbol, symbol.isAbstractClass)
           enterScope(cls) { cls =>
             recordOverrides(cls)
-            super.traverse(tree)
+            traverseInnards(tree)
             postProcess(cls)
           }
 
@@ -512,7 +546,7 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
           enterScope(fields) { fields =>
             symbol.updateAttachment(fields)
             //we don't bother traversing the types of the symbol as they will be traversed on the actual fields
-            super.traverse(tree)
+            traverseInnards(tree)
           }
         //        case defDef: DefDef if defDef.mods.isArtifact && defDef.mods.isSynthetic && defDef.symbol.isAccessor =>
         ////          defDef.
@@ -638,11 +672,9 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
                 currentScope.addRefers(asMSymbol(typeSymbol), typeSymbol.isSynthetic)
                 typeTarget.typeArgs.foreach(tpe => typeRels(tpe))
               }
-
               typeRels(valDef.tpt.tpe)
             }
-
-            super.traverse(tree)
+            traverseInnards(tree)
           }
 
         // *********************************************************************************************************
@@ -668,7 +700,7 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
               addMethodOverrides(method, symbol)
             }
 
-            super.traverse(tree)
+            traverseInnards(tree)
             for (
               params <- defdef.vparamss;
               param  <- params
@@ -742,12 +774,10 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
 
         case New(tpt) =>
           scopeLog(s"--  NEW tree ${tpt.symbol} - ${asMSymbol(tpt.symbol)}")
-          traverseType(tree.tpe)
-          super.traverse(tree)
+          traverseInnards(tree)
         case unknown =>
           scopeLog("--  unhandled tree" + tree.getClass)
-          traverseType(tree.tpe)
-          super.traverse(tree)
+          traverseInnards(tree)
       }
     }
 

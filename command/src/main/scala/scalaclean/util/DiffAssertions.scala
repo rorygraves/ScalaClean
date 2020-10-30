@@ -1,22 +1,27 @@
 package scalaclean.util
 
+import java.util
+import java.util.{List => JList}
+
 object DiffAssertions {
 
-  def compareContents(original: String, revised: String): String = {
-    def splitLines(s: String) = s.trim.replaceAllLiterally("\r\n", "\n").split("\n")
-    compareContents(splitLines(original), splitLines(revised))
+  def compareContents(original: String, originalName: String, revised: String, revisedName: String): String = {
+    def splitLines(s: String) = {
+      util.Arrays.asList(s.trim.split("\r?\n") :_*)
+    }
+    compareContents(splitLines(original), originalName, splitLines(revised), revisedName)
   }
 
-  def compareContents(original: Seq[String], revised: Seq[String]): String = {
+  def compareContents(original: JList[String], originalName: String, revised: JList[String], revisedName: String): String = {
     import collection.JavaConverters._
-    val diff = difflib.DiffUtils.diff(original.asJava, revised.asJava)
+    val diff = difflib.DiffUtils.diff(original, revised)
     if (diff.getDeltas.isEmpty) ""
     else
       difflib.DiffUtils
         .generateUnifiedDiff(
-          "obtained",
-          "expected",
-          original.asJava,
+          originalName,
+          revisedName,
+          original,
           diff,
           1
         )
@@ -51,5 +56,5 @@ trait DiffAssertions {
 
   def trailingSpace(str: String): String = str.replaceAll(" \n", "∙\n")
 
-  def compareContents(original: String, revised: String): String = DiffAssertions.compareContents(original, revised)
+  def compareContents(original: String, revised: String): String = DiffAssertions.compareContents(original, "original", revised, "revised")
 }
