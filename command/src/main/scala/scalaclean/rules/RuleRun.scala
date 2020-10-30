@@ -242,20 +242,11 @@ abstract class RuleRun[T <: ScalaCleanCommandLine] {
   //  }
 
   def run(): Boolean = {
-    val projectSet = model match {
-      case projectSet: ProjectSet => projectSet
-      case _ => new ProjectSet(options.files: _*)
-    }
     println(s"Running rule: $name")
 
     beforeStart()
 
-    var changed = false
-    projectSet.projects.foreach { project =>
-      if (patchStats.issueCount <= options.maxIssues) {
-        changed |= runRuleOnProject(project)
-      }
-    }
+    val changed = runRuleOnModel()
     if (options.debug)
       println(s"DEBUG: Changed = $changed")
     printSummary("ALL")
@@ -287,7 +278,7 @@ abstract class RuleRun[T <: ScalaCleanCommandLine] {
     }
     def compareAgainstFile(debug: Boolean, expectedFile: Path, expected: String, obtained: String): Boolean = {
 
-      val diff = DiffAssertions.compareContents(obtained, expected)
+      val diff = DiffAssertions.compareContents(obtained, "obtained", expected, "expected")
       if (diff.nonEmpty) {
         println(diffString(diff, expectedFile,(obtained, "obtained", true), (expected, "expected", true)))
         true
@@ -305,7 +296,7 @@ abstract class RuleRun[T <: ScalaCleanCommandLine] {
   }
 
   def validateSource(sourceFile: SourceFile): Boolean = {
-    def isChanged(): String = {
+    def isChanged(detail: Boolean): String = {
       val changed = new StringBuilder
       val content = sourceFile.content
       if (content.length != sourceFile.file.sourceLength)
@@ -315,12 +306,12 @@ abstract class RuleRun[T <: ScalaCleanCommandLine] {
       if (MurmurHash3.stringHash(content) != sourceFile.file.sourceMurmurHash) {
         changed append s"Source validation failed for ${sourceFile.file.filename} : MurmurHash3 found ${MurmurHash3.stringHash(content)} expected ${sourceFile.file.sourceMurmurHash}"
       }
-      if (changed.nonEmpty) {
+      if (changed.nonEmpty && detail) {
         sourceFile.file.project.originalSource(sourceFile.file) foreach {
           original =>
             changed append "\n"
-            val diff = DiffAssertions.compareContents(content, original)
-            changed append testSupport.diffString(diff, sourceFile.file.filename, (original, "compiled", true), (content, "current", true))
+            val diff = DiffAssertions.compareContents(original, "compiled", content, "current")
+            changed append testSupport.diffString(diff, sourceFile.file.filename,(content, "current", true), (original, "compiled", true))
         }
 
       }
@@ -331,23 +322,20 @@ abstract class RuleRun[T <: ScalaCleanCommandLine] {
     options.sourceValidation match {
       case SourceValidation.NONE => true
       case SourceValidation.SKIP =>
-        val changed = isChanged()
+        val changed = isChanged(false)
         if (!changed.isEmpty) patchStats.sourceChanged(sourceFile, changed, false)
         changed.isEmpty
       case SourceValidation.FAIL =>
-        val changed = isChanged()
+        val changed = isChanged(true)
         if (!changed.isEmpty) patchStats.sourceChanged(sourceFile, changed, true)
         changed.isEmpty
     }
   }
 
   /**
-    * @param project The target project
     * @return True if diffs were seen or files were changed
     */
-  def runRuleOnProject(
-                        project: ProjectImpl
-                      ): Boolean = {
+  def runRuleOnModel(): Boolean = {
 
     var changed = false
 

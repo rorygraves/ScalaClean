@@ -70,7 +70,7 @@ trait AbstractUnitTests extends AnyFunSuite with AssertionsForJUnit with DiffAss
           w.close()
         }
 
-        val diff = DiffAssertions.compareContents(obtained, expected)
+        val diff = DiffAssertions.compareContents(obtained, "obtained", expected, "expected")
         if (diff.nonEmpty) {
           println("###########> obtained       <###########")
           println(obtained)
@@ -131,7 +131,7 @@ class UnitTests extends AbstractUnitTests with AssertionsForJUnit {
   }
 
   test("allOutgoingReferences") {
-    runTest("scalaclean/test/references/allOutgoingReferences/allOutgoingReferences.scala", new Test_allOutgoingReferences(_))
+    runTest("scalaclean/test/references/allOutgoingReferences/allOutgoingReferences.scala", new Test_allOutgoingReferences(_), overwrite = true)
   }
 
   test("internalIncomingReferences") {
