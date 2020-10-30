@@ -434,6 +434,7 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
       traverseType(tree.tpe)
       if (tree.symbol ne null) {
         val sym = tree.symbol
+        add(sym)
         if (sym.tpe ne tree.tpe) traverseType(sym.tpe)
       }
       super.traverse(tree)
