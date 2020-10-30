@@ -222,7 +222,8 @@ sealed trait ModelSymbol extends HasModelCommon {
     children.values.foreach(child => child.outputStructure(eleWriter, relWriter, extensionWriter))
   }
 
-  def flatten(aliases: mutable.Map[ModelSymbol, ModelSymbol]): Unit = {
+  def flatten(): Unit = {
+    children foreach (_._2.flatten)
 //    children = children.flatMap { case t @ (common, child) =>
 //      child.flatten(aliases)
 //      child match {

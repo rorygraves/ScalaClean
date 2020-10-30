@@ -249,7 +249,7 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
         sourceSymbol.printStructure()
         println("----------------")
       }
-      sourceSymbol.flatten(mutable.Map[ModelSymbol, ModelSymbol]())
+      sourceSymbol.flatten()
       if (debug) {
         println("--- AFTER -------------")
         sourceSymbol.printStructure()
