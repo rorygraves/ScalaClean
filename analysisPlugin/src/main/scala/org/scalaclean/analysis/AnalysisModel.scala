@@ -5,7 +5,6 @@ import java.util.concurrent.atomic.AtomicInteger
 
 import scalaclean.model.ElementId
 
-import scala.collection.immutable.ListSet
 import scala.collection.mutable
 import scala.reflect.ClassTag
 import scala.tools.nsc.Global
@@ -81,12 +80,12 @@ sealed trait ModelSymbol extends HasModelCommon {
     }
   }
 
-  var extendsRels: ListSet[(HasModelCommon, Boolean)]   = ListSet.empty
-  var overridesRels: ListSet[(HasModelCommon, Boolean)] = ListSet.empty
-  var refersRels: ListSet[(HasModelCommon, Boolean)]    = ListSet.empty
-  var withinRels: ListSet[ModelSymbol]                  = ListSet.empty
-  var gettersFor: ListSet[ModelCommon]                  = ListSet.empty
-  var settersFor: ListSet[ModelCommon]                  = ListSet.empty
+  var extendsRels: Set[(HasModelCommon, Boolean)]   = Set.empty
+  var overridesRels: Set[(HasModelCommon, Boolean)] = Set.empty
+  var refersRels: Set[(HasModelCommon, Boolean)]    = Set.empty
+  var withinRels: Set[ModelSymbol]                  = Set.empty
+  var gettersFor: Set[ModelCommon]                  = Set.empty
+  var settersFor: Set[ModelCommon]                  = Set.empty
 
   def addGetterFor(field: ModelCommon): Unit = {
     gettersFor += field
@@ -223,26 +222,33 @@ sealed trait ModelSymbol extends HasModelCommon {
     children.values.foreach(child => child.outputStructure(eleWriter, relWriter, extensionWriter))
   }
 
-  def flatten(): Unit = {
-    children = children.flatMap { case t @ (common, child) =>
-      child.flatten()
-      child match {
-        //TODO move params of a global method to be global
-        //its a parameter of a method
-        case mf: ModelField
-            if mf.isParameter &&
-              mf.tree.symbol.owner == this.tree.symbol &&
-              this.common.isGlobal && this.isInstanceOf[ModelMethod] =>
-          //probably not in the long term
-          this.refersRels ++= mf.refersRels
-          Some(t)
-        case mf: ModelField if mf.isParameter || !mf.isGlobal =>
-          this.refersRels ++= mf.refersRels
-          None
-        case _ =>
-          Some(t)
-      }
-    }
+  def flatten(aliases: mutable.Map[ModelSymbol, ModelSymbol]): Unit = {
+//    children = children.flatMap { case t @ (common, child) =>
+//      child.flatten(aliases)
+//      child match {
+//        //TODO move params of a global method to be global
+//        //its a parameter of a method
+//        case mf: ModelField
+//            if mf.isParameter &&
+//              mf.tree.symbol.owner == this.tree.symbol &&
+//              this.common.isGlobal && this.isInstanceOf[ModelMethod] =>
+//          //probably not in the long term
+//          this.refersRels ++= mf.refersRels
+//          Some(t)
+//        case mf: ModelField if mf.isParameter || !mf.isGlobal =>
+//          val x = mf.refersRels.toList.indexWhere{ _.toString().contains("usedMethod2") }
+//          val y = this
+//          println(y)
+//          this.refersRels ++= mf.refersRels
+//          val z = this.refersRels.toList.indexWhere{ _.toString().contains("usedMethod2") }
+//          if (x != -1 && z == -1) {
+//            println("help")
+//          }
+//          None
+//        case _ =>
+//          Some(t)
+//      }
+//    }
     val duplicateGroups = children.values.groupBy(_.common.elementId).filter(_._2.size > 1)
     val suffix          = new AtomicInteger
     for (duplicate: Iterable[ModelSymbol] <- duplicateGroups.values.toList) {

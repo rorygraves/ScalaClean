@@ -249,7 +249,7 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
         sourceSymbol.printStructure()
         println("----------------")
       }
-      sourceSymbol.flatten()
+      sourceSymbol.flatten(mutable.Map[ModelSymbol, ModelSymbol]())
       if (debug) {
         println("--- AFTER -------------")
         sourceSymbol.printStructure()
@@ -439,6 +439,33 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
       super.traverse(tree)
     }
 
+    def isInterestingValDef(valDef: ValDef): Boolean = {
+      if (valDef.symbol.hasFlag(Flags.PARAM)) {
+        //we keep parameters of methods that we keep
+        currentScope match {
+          case method: ModelMethod =>
+            val res = method.tree.symbol == valDef.symbol.owner
+            res
+          case _ =>
+            false
+        }
+      }
+      else
+        isChildOfClassLike(valDef)
+    }
+    def isChildOfClassLike(tree: Tree): Boolean = {
+      val res = currentScope match {
+        case _: ModelObject =>
+          tree.symbol.owner == currentScope.tree.symbol.moduleClass
+        case _: ClassLike =>
+          tree.symbol.owner == currentScope.tree.symbol
+        case _: ModelField => false
+        case _: ModelMethod => false
+        case _ => ???
+      }
+      res
+    }
+
     override def traverse(tree: Tree): Unit = {
 
       tree match {
@@ -540,20 +567,19 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
 
         // *********************************************************************************************************
         //cope with compound field declarations e.g. val (a,b,c,_ ) = ....
-        case valDef: ValDef if valDef.mods.isArtifact && valDef.mods.isSynthetic =>
+        case valDef: ValDef if valDef.mods.isArtifact && valDef.mods.isSynthetic && isChildOfClassLike(valDef) =>
           val symbol = valDef.symbol
           val fields = ModelFields(valDef, asMSymbol(symbol), symbol.isLazy)
           enterScope(fields) { fields =>
             symbol.updateAttachment(fields)
             //we don't bother traversing the types of the symbol as they will be traversed on the actual fields
-            traverseInnards(tree)
           }
         //        case defDef: DefDef if defDef.mods.isArtifact && defDef.mods.isSynthetic && defDef.symbol.isAccessor =>
         ////          defDef.
         //          scopeLog(s"skip synthetic accessor ${defDef.name}")
 
         // *********************************************************************************************************
-        case valDef: ValDef =>
+        case valDef: ValDef if isInterestingValDef(valDef) =>
           //its only a var due to for https://github.com/scala/bug/issues/12213 -- see below
           var symbol = valDef.symbol
           val isVar  = symbol.isVar
@@ -678,7 +704,7 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
           }
 
         // *********************************************************************************************************
-        case defdef: DefDef =>
+        case defdef: DefDef if isChildOfClassLike(defdef)=>
           // TODO This feels wrong - this is def declType Defined field
           val declTypeDefined = defdef.isTyped
           val symbol          = defdef.symbol

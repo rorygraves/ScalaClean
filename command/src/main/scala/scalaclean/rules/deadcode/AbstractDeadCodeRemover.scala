@@ -144,6 +144,12 @@ abstract class AbstractDeadCodeRemover[T <: AbstractDeadCodeCommandLine] extends
     runSerialisationRule()
   }
   def runBasicRule(): Unit = {
+    for (source <- model.allOf[SourceModel];
+    if sourceMetaData(source).external) {
+//TODO
+
+    }
+
     allMainEntryPoints.foreach(e => markUsed(e, markEnclosing = true, Main, e :: Nil, "app"))
     allJunitTest.foreach(e => markUsed(e, markEnclosing = true, Test, e :: Nil, "junit test"))
     allJunitClasses.foreach { testClass =>

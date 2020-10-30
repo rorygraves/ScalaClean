@@ -96,7 +96,7 @@ abstract class BaseDeadCodeTests extends AbstractProjectTests {
   }
 
   test("deadCodeProject18_utf8") {
-    projectTest("deadCodeProject18_utf8")
+    projectTest("deadCodeProject18_utf8", SimpleRunOptions(debug=true))
   }
 
   test("deadCodeProject18_utf16") {

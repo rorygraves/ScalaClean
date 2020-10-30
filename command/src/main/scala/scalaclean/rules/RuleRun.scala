@@ -3,6 +3,7 @@ package scalaclean.rules
 import java.io.{PrintWriter, StringWriter}
 import java.nio.charset.Charset
 import java.nio.file.{Files, Path, Paths}
+import java.util.concurrent.ConcurrentHashMap
 
 import scalaclean.cli.{SCPatchUtil, ScalaCleanCommandLine}
 import scalaclean.model._
@@ -395,5 +396,15 @@ abstract class RuleRun[T <: ScalaCleanCommandLine] {
     }
     changed
   }
+  private val sourceMetadataCache = new ConcurrentHashMap[SourceModel, SourceMetaData]()
+  def sourceMetaData(source: SourceModel): SourceMetaData = {
+    sourceMetadataCache.computeIfAbsent(source, sourceFile => {
+      val pathString = sourceFile.filename.toString
+      val isExternal = options.externalInterface.exists(_.pattern.matcher(pathString).matches())
+      val isGenerated = options.generatedSource.exists(_.pattern.matcher(pathString).matches())
+      SourceMetaData(isExternal, isGenerated)
+    })
+  }
 
 }
+final case class SourceMetaData(external: Boolean, generated: Boolean)

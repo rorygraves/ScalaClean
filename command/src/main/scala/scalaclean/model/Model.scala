@@ -10,8 +10,6 @@ import scala.tools.nsc.symtab.Flags
 import Filters._
 import InternalFilters._
 
-import scala.reflect.internal.HasFlags
-
 sealed trait ModelElement extends Ordered[ModelElement] {
 
   override def compare(that: ModelElement): Int = modelElementId.id.compare(that.modelElementId.id)
