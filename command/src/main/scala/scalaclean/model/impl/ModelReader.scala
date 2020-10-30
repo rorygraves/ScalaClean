@@ -97,6 +97,7 @@ object ModelReader {
     val duplicateB     = List.newBuilder[DuplicateImpl]
     val ctorParamB     = List.newBuilder[ConstructorParamImpl]
     val defaultGetterB = List.newBuilder[DefaultGetterImpl]
+    val selfTypeB      = List.newBuilder[SelfTypeImpl]
 
     val path = Paths.get(relationshipsFilePath)
     println(s"reading relationships from $path")
@@ -119,7 +120,8 @@ object ModelReader {
             extendsB += new ExtendsImpl(from, to, isDirect)
           case IoTokens.relOverrides =>
             val isDirect = tokens(offset).toBoolean
-            overridesB += new OverridesImpl(from, to, isDirect)
+            val isSynthetic = tokens(offset+1).toBoolean
+            overridesB += new OverridesImpl(from, to, isDirect, isSynthetic)
           case IoTokens.relWithin =>
             withinB += new WithinImpl(from, to)
           case IoTokens.relGetter =>
@@ -132,6 +134,8 @@ object ModelReader {
             ctorParamB += new ConstructorParamImpl(from, to)
           case IoTokens.defaultGetter =>
             defaultGetterB += new DefaultGetterImpl(from, to)
+          case IoTokens.selfType =>
+            selfTypeB += new SelfTypeImpl(from, to)
 
         }
       } catch {
@@ -148,6 +152,7 @@ object ModelReader {
     val duplicate     = duplicateB.result().groupBy(_.fromElementId)
     val ctorParam     = ctorParamB.result().groupBy(_.fromElementId)
     val defaultGetter = defaultGetterB.result().groupBy(_.fromElementId)
+    val selfType      = selfTypeB.result().groupBy(_.fromElementId)
 
     BasicRelationshipInfo(
       refersTo,
@@ -158,7 +163,8 @@ object ModelReader {
       setter,
       duplicate,
       ctorParam,
-      defaultGetter
+      defaultGetter,
+      selfType
     )
   }
 
@@ -219,17 +225,20 @@ object ModelReader {
             val isAbstract      = tokens(idx).toBoolean
             val methodName      = tokens(idx + 1).intern()
             val hasDeclaredType = tokens(idx + 2).toBoolean
-            new PlainMethodModelImpl(basicInfo, methodName, isAbstract, hasDeclaredType)
+            val scSynthetic     = tokens(idx + 3).toBoolean
+            new PlainMethodModelImpl(basicInfo, methodName, isAbstract, hasDeclaredType, scSynthetic)
           case IoTokens.typeGetterMethod =>
             val isAbstract      = tokens(idx).toBoolean
             val methodName      = tokens(idx + 1).intern()
             val hasDeclaredType = tokens(idx + 2).toBoolean
-            new GetterMethodModelImpl(basicInfo, methodName, isAbstract, hasDeclaredType)
+            val scSynthetic     = tokens(idx + 3).toBoolean
+            new GetterMethodModelImpl(basicInfo, methodName, isAbstract, hasDeclaredType, scSynthetic)
           case IoTokens.typeSetterMethod =>
             val isAbstract      = tokens(idx).toBoolean
             val methodName      = tokens(idx + 1).intern()
             val hasDeclaredType = tokens(idx + 2).toBoolean
-            new SetterMethodModelImpl(basicInfo, methodName, isAbstract, hasDeclaredType)
+            val scSynthetic     = tokens(idx + 3).toBoolean
+            new SetterMethodModelImpl(basicInfo, methodName, isAbstract, hasDeclaredType, scSynthetic)
           case IoTokens.typeSource =>
             val encoding = tokens(idx).intern
             val length   = tokens(idx + 1).toInt

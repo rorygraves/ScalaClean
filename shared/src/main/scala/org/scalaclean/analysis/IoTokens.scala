@@ -13,6 +13,7 @@ object IoTokens {
   val duplicateOf    = "duplicateOf"
   val ctorParam      = "ctorParam"
   val defaultGetter  = "defaultGetter"
+  val selfType       = "selfType"
 
   val typeObject       = "object"
   val typeClass        = "class"

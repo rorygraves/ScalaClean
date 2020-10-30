@@ -3,6 +3,7 @@ package scalaclean.rules
 import java.io.{PrintWriter, StringWriter}
 import java.nio.charset.Charset
 import java.nio.file.{Files, Path, Paths}
+import java.util.concurrent.ConcurrentHashMap
 
 import scalaclean.cli.{SCPatchUtil, ScalaCleanCommandLine}
 import scalaclean.model._
@@ -112,6 +113,8 @@ abstract class RuleRun[T <: ScalaCleanCommandLine] {
   def runRule(): Unit
 
   def generateFixes(sourceFile: SourceFile): SingleFileVisit
+
+  def generateFixesInParallel: Boolean = true
 
   def markAll[E <: ModelElement : ClassTag](colour: Colour): Unit = {
     val all = model.allOf[E].toList
@@ -342,7 +345,7 @@ abstract class RuleRun[T <: ScalaCleanCommandLine] {
     if (debug)
       println("---------------------------------------------------------------------------------------------------")
 
-    val files = model.allOf[SourceModel]
+    val files =  model.allOf[SourceModel]
 
     files.foreach { file =>
       if (patchStats.issueCount <= options.maxIssues) {
@@ -352,7 +355,9 @@ abstract class RuleRun[T <: ScalaCleanCommandLine] {
           patchStats.fileNotFound(sourceFile)
           if (!options.skipNonexistentFiles)
             throw new IllegalStateException(s"cant find file $file")
-        } else if (validateSource(sourceFile))
+        } else if (validateSource(sourceFile)) {
+          if (debug)
+            println(s"processing file ${sourceFile.file}")
 
           Try(generateFixes(sourceFile)) match {
             case Failure(t) => patchStats.failedToGenerateFixes(sourceFile, t)
@@ -391,9 +396,20 @@ abstract class RuleRun[T <: ScalaCleanCommandLine] {
                 }
               }
           }
+        }
       }
     }
     changed
   }
+  private val sourceMetadataCache = new ConcurrentHashMap[SourceModel, SourceMetaData]()
+  def sourceMetaData(source: SourceModel): SourceMetaData = {
+    sourceMetadataCache.computeIfAbsent(source, sourceFile => {
+      val pathString = sourceFile.filename.toString
+      val isExternal = options.externalInterface.exists(_.pattern.matcher(pathString).matches())
+      val isGenerated = options.generatedSource.exists(_.pattern.matcher(pathString).matches())
+      SourceMetaData(isExternal, isGenerated)
+    })
+  }
 
 }
+final case class SourceMetaData(external: Boolean, generated: Boolean)

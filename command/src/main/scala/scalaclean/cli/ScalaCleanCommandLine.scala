@@ -1,8 +1,9 @@
 package scalaclean.cli
 
 import java.nio.file.{Files, Path, Paths}
+import java.util
 
-import org.kohsuke.args4j.spi.{MultiPathOptionHandler, OneArgumentOptionHandler, Setter}
+import org.kohsuke.args4j.spi.{MultiPathOptionHandler, OneArgumentOptionHandler, Setter, StringArrayOptionHandler}
 import org.kohsuke.args4j.{CmdLineParser, OptionDef, Option => ArgOption}
 import java.util.{Collections, List => JList}
 
@@ -101,7 +102,7 @@ abstract class ScalaCleanCommandLine {
     handler = classOf[MultiPathOptionHandler],
     hidden = false
   )
-  var _rulePlugins: JList[String] = Collections.emptyList()
+  var _rulePlugins: JList[String] = new util.ArrayList[String]()
 
   def rulePlugins: Seq[RulePlugin] = {
     _rulePlugins.asScala.map { objectNameAndParams =>
@@ -139,20 +140,22 @@ abstract class ScalaCleanCommandLine {
 
   @ArgOption(
     name = "--externalInterface",
-    usage = "consider the files with these regex to be called by external uncaptured things (e.g. java)",
+    usage = "consider the files/elements with these regex to be called by external uncaptured things (e.g. java)",
+    handler = classOf[StringArrayOptionHandler],
     required = false,
     hidden = false
   )
-  private var _externalInterface: JList[String] = Collections.emptyList()
+  private var _externalInterface: JList[String] = new util.ArrayList[String]()
   lazy val externalInterface: List[Regex] = _externalInterface.asScala.toList.map(new Regex(_))
 
   @ArgOption(
     name = "--generatedSource",
     usage = "consider the files with these regex to be generated (so dont change then)",
+    handler = classOf[StringArrayOptionHandler],
     required = false,
     hidden = false
   )
-  private var _generatedSource: JList[String] = Collections.emptyList()
+  private var _generatedSource: JList[String] = new util.ArrayList[String]()
   lazy val generatedSource: List[Regex] = _generatedSource.asScala.toList.map(new Regex(_))
 
   //test specific options, so no API interface

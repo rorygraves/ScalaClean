@@ -40,8 +40,12 @@ class SimpleDeadCodeRemover(override val options: SimpleDeadCodeCommandLine, ove
   def simpleMarkUsed(subject: ModelElement, accessor: ElementId, comment: String): Unit = {
     if (debug)
       println(s"[SimpleDeadCode] mark ${subject.modelElementId} as used due to $accessor $comment")
-    moreMarked = true
-    subject.colour = simpleColours.foundSimpleUsage
+    subject match {
+      case _: ClassLike =>
+        markUsed(subject, false, Main, Nil, comment ::Nil)
+      case _ =>
+        markUsed(subject, false, Main.withoutClass, Nil, comment ::Nil)
+    }
   }
   var moreMarked = false
 

@@ -56,8 +56,8 @@ abstract class BaseDeadCodeTests extends AbstractProjectTests {
     projectTest("deadCodeProject7")
   }
 
-  test("deadCode8") {
-    projectTest("deadCodeProject8")
+  test("deadCode8_overrides") {
+    projectTest("deadCodeProject8_overrides")
   }
 
   test("deadCode9-naming") {
@@ -105,6 +105,10 @@ abstract class BaseDeadCodeTests extends AbstractProjectTests {
 
   test("deadCodeProject18_utf32") {
     projectTest("deadCodeProject18_utf32")
+  }
+
+  test("deadCodeProject19_selftype") {
+    projectTest("deadCodeProject19_selftype")
   }
 
 }

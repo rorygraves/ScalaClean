@@ -172,12 +172,16 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
       depth += 1
       scopeLog(s"-symbol: ${mSymbol.common.elementId}")
       val oldVisited = newVisited()
-      outer.foreach(o => mSymbol.addWithin(o))
+      outer.foreach(o => mSymbol.setWithin(o))
       extensions.foreach { e =>
-        val data = e.extendedData(mSymbol, mSymbol.tree.asInstanceOf[e.g.Tree], scopeStack.tail)
+        val data = e.extendedData(
+          mSymbol,
+          mSymbol.tree.asInstanceOf[Option[e.g.Tree]],
+          mSymbol.symbol.asInstanceOf[e.g.Symbol],
+          scopeStack.tail)
         mSymbol.addExtensionData(data)
       }
-      traverseType(mSymbol.tree.tpe.asInstanceOf[global.Type])
+      traverseType(mSymbol.symbol.tpe.asInstanceOf[global.Type])
 
       fn(mSymbol)
       scopeStack = scopeStack.tail
@@ -321,50 +325,85 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
     def isObjectOrAny(sym: Symbol): Boolean = {
       sym == definitions.AnyClass || sym == definitions.ObjectClass
     }
+    private def recordOverrides(classLike: ClassLike, classSymbolXX: global.Symbol) = {
+      val classSymbol: global.ClassSymbol = classLike match {
+        case obj: ModelObject => obj.symbol.moduleClass.asClass.asInstanceOf[global.ClassSymbol]
+        case _ => classLike.symbol.asClass.asInstanceOf[global.ClassSymbol]
+      }
+      val cursor = new overridingPairs.Cursor(classSymbol)
+      val direct = mutable.Map[Symbol, mutable.Set[Symbol]]()
+      val indirect = mutable.Map[Symbol, mutable.Set[Symbol]]()
+      while (cursor.hasNext) {
+        val entry = cursor.currentPair
 
-    def recordOverrides(model: ClassLike): Unit = {
-      val classSymbol = model.tree.symbol.asInstanceOf[global.Symbol]
+        def addTo(data: mutable.Map[Symbol, mutable.Set[Symbol]]): Unit =
+          data.getOrElseUpdate(entry.low, mutable.Set[Symbol]()) += entry.high
+
+        if (entry.low.isMethod) {
+          //we dont consider types ATM
+
+          if (entry.low.owner == classSymbol)
+            addTo(direct)
+          else
+          //can we trim the ones that we know we dont participate in, less data churn?
+          //if (!entry.low.isEffectivelyFinalOrNotOverridden)
+          //
+          //we should probably limit the parents to be ones that we cant recover, so parents that are compiled in this run
+          //if (currentRun.compiles(entry.low))
+          //maybe trim the Object/Any relationships as well
+            addTo(indirect)
+        }
+        cursor.next()
+      }
+      def processParents(localMethod: ModelMethod, parentSym: Symbol, synthetic: Boolean): Unit = {
+        for (indirectParents <- indirect.remove(parentSym);
+             indirectParent <- indirectParents) {
+          localMethod.addOverride(asMSymbol(indirectParent), direct = false, synthetic = synthetic)
+          processParents(localMethod, indirectParent, synthetic)
+        }
+      }
+      for ((baseSym, parents) <- direct;
+           directMethod = classLike.getChildBySymbol[ModelMethod](baseSym);
+           parent <- parents) {
+        directMethod.addOverride(asMSymbol(parent), direct = true, synthetic = false)
+        processParents(directMethod, parent, false)
+      }
+      while(indirect.nonEmpty) {
+        val (baseSym, parents) = indirect.head
+        indirect.remove(baseSym)
+
+        val sym = baseSym.cloneSymbol(classSymbol)
+        sym.pos = classSymbol.pos.focus
+        val syntheticMethod = ModelSyntheticMethod(sym, asMSymbol(sym))
+        enterScope(syntheticMethod) { method =>
+          method.addOverride(asMSymbol(baseSym), direct = true, synthetic = true)
+          parents foreach { parent =>
+            method.addOverride(asMSymbol(parent), direct = true, synthetic = true)
+            processParents(method, parent, true)
+          }
+        }
+      }
+    }
+
+    def recordExtends(classLike: ClassLike, classSymbol: global.Symbol): Unit = {
 
       val directSymbols = classSymbol.info.parents.map(t => asMSymbol(t.typeSymbol)).toSet
 
       classSymbol.ancestors.foreach { ancestorSymbol =>
         val ancestorMSymbol = asMSymbol(ancestorSymbol)
-        val direct          = directSymbols.contains(ancestorMSymbol)
-        recordExtendsClass(ancestorMSymbol, model, direct = direct)
-      }
-      val cursor                                                                = new overridingPairs.Cursor(classSymbol)
-      val seenJunctionsBetweenParents: mutable.Map[Symbol, mutable.Set[Symbol]] = new mutable.HashMap
-
-      while (cursor.hasNext) {
-        val entry = cursor.currentPair
-        if (entry.low.owner == classSymbol) {
-          model.remainingChildOverrides.getOrElseUpdate(entry.low, new mutable.HashSet[Global#Symbol]) += entry.high
-        } else if (!isObjectOrAny(entry.low.owner) || !isObjectOrAny(entry.high.owner)) {
-
-          val dummyMethodSym = entry.low.cloneSymbol(classSymbol)
-          dummyMethodSym.setPos(classSymbol.pos.focusStart)
-          dummyMethodSym.setFlag(Flags.SYNTHETIC)
-
-          val targetSet = seenJunctionsBetweenParents.getOrElseUpdate(dummyMethodSym, new mutable.HashSet[Symbol])
-          targetSet += entry.low
-          targetSet += entry.high
-        }
-        cursor.next()
+        val direct = directSymbols.contains(ancestorMSymbol)
+        recordExtendsClass(ancestorMSymbol, classLike, direct = direct)
       }
 
-      seenJunctionsBetweenParents.foreach { case (dummyMethodSym, targets) =>
-        enterScope(
-          ModelPlainMethod(
-            DefDef(dummyMethodSym, new Modifiers(dummyMethodSym.flags, newTermName(""), Nil), global.EmptyTree),
-            asMSymbol(dummyMethodSym),
-            isTyped = false,
-            isAbstract = false
-          )
-        ) { _ =>
-          //if not recorded above, then maybe this should be a synthetic override
-          targets.foreach(entry => currentScope.addOverride(asMSymbol(entry), direct = true))
-        }
-      }
+    }
+    def handleClassLike(classLike: ClassLike): Unit = {
+      val classSymbol = classLike.symbol.asInstanceOf[global.Symbol]
+      recordExtends(classLike, classSymbol)
+      postProcess(classLike)
+      // we post-process before we add the overrides, as a trait val is just a ValDef, so a ModelField
+      // and post-process will add a getter if one isnt defined
+      // and recordOverrides needs that getter/setter to wire up
+      recordOverrides(classLike, classSymbol)
 
     }
 
@@ -373,39 +412,19 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
       model match {
         case cls: ModelClass =>
           //cope with constructor vals
-          val ctorSym    = model.tree.symbol.asClass.primaryConstructor
+          val ctorSym    = model.symbol.asClass.primaryConstructor
           val ctorParams = ctorSym.paramss.flatten.groupBy(_.nameString)
 
           model.children.values.foreach {
             case field: ModelField =>
               //we have to trim because the compiler has trailing spaces
-              ctorParams.get(field.tree.symbol.nameString.trim) match {
+              ctorParams.get(field.symbol.nameString.trim) match {
                 case Some(ctorParam) => field.addConstructorParam(asMSymbol(ctorParam.head.asInstanceOf[global.Symbol]))
                 case None            =>
               }
             case _ =>
           }
         case _ =>
-      }
-      if (model.remainingChildOverrides.nonEmpty) {
-        scopeLog(s"add additional overrides in class but not in tree")
-        model.remainingChildOverrides.foreach { case (l, parents) =>
-          val local = l.asInstanceOf[global.Symbol]
-          enterScope(
-            ModelPlainMethod(
-              DefDef(local, new Modifiers(local.flags, newTermName(""), Nil), global.EmptyTree),
-              asMSymbol(local),
-              isTyped = false,
-              isAbstract = false
-            )
-          ) { _ =>
-            //if not recorded above, then maybe this should be a synthetic override
-            parents.foreach { e =>
-              val entry = e.asInstanceOf[global.Symbol]
-              currentScope.addOverride(asMSymbol(entry), direct = true)
-            }
-          }
-        }
       }
     }
 
@@ -434,9 +453,37 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
       traverseType(tree.tpe)
       if (tree.symbol ne null) {
         val sym = tree.symbol
+        add(sym)
         if (sym.tpe ne tree.tpe) traverseType(sym.tpe)
       }
       super.traverse(tree)
+    }
+
+    def isInterestingValDef(valDef: ValDef): Boolean = {
+      if (valDef.symbol.hasFlag(Flags.PARAM)) {
+        //we keep parameters of methods that we keep
+        currentScope match {
+          case method: ModelMethod =>
+            val res = method.symbol == valDef.symbol.owner
+            res
+          case _ =>
+            false
+        }
+      }
+      else
+        isChildOfClassLike(valDef)
+    }
+    def isChildOfClassLike(tree: Tree): Boolean = {
+      val res = currentScope match {
+        case _: ModelObject =>
+          tree.symbol.owner == currentScope.symbol.moduleClass
+        case _: ClassLike =>
+          tree.symbol.owner == currentScope.symbol
+        case _: ModelField => false
+        case _: ModelMethod => false
+        case _ => ???
+      }
+      res
     }
 
     override def traverse(tree: Tree): Unit = {
@@ -512,9 +559,8 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
                 scopeLog("  outerScope:                " + outerScope)
               }
             }
-            recordOverrides(obj)
             traverseInnards(tree)
-            postProcess(obj)
+            handleClassLike(obj)
           }
 
         case apply: Apply =>
@@ -533,27 +579,32 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
             if (isTrait) ModelTrait(classDef, mSymbol)
             else ModelClass(classDef, mSymbol, symbol.isAbstractClass)
           enterScope(cls) { cls =>
-            recordOverrides(cls)
             traverseInnards(tree)
-            postProcess(cls)
+            handleClassLike(cls)
+            // cope with a self type
+            // NOTE - we cant use classDef.symbol.hasSelfType because we have to cope with having a thisSym
+            // which is the same type - e.g. class Foo { x => } . Not sure why but this only fails on some classes only though
+            if (classDef.symbol.thisSym ne classDef.symbol) {
+              val thisSym = classDef.symbol.thisSym
+              relationsWriter.recordSelfTypeField(cls, cls.findChildBySymbol[ModelField](thisSym).get)
+            }
           }
 
         // *********************************************************************************************************
         //cope with compound field declarations e.g. val (a,b,c,_ ) = ....
-        case valDef: ValDef if valDef.mods.isArtifact && valDef.mods.isSynthetic =>
+        case valDef: ValDef if valDef.mods.isArtifact && valDef.mods.isSynthetic && isChildOfClassLike(valDef) =>
           val symbol = valDef.symbol
           val fields = ModelFields(valDef, asMSymbol(symbol), symbol.isLazy)
           enterScope(fields) { fields =>
             symbol.updateAttachment(fields)
             //we don't bother traversing the types of the symbol as they will be traversed on the actual fields
-            traverseInnards(tree)
           }
         //        case defDef: DefDef if defDef.mods.isArtifact && defDef.mods.isSynthetic && defDef.symbol.isAccessor =>
         ////          defDef.
         //          scopeLog(s"skip synthetic accessor ${defDef.name}")
 
         // *********************************************************************************************************
-        case valDef: ValDef =>
+        case valDef: ValDef if isInterestingValDef(valDef) =>
           //its only a var due to for https://github.com/scala/bug/issues/12213 -- see below
           var symbol = valDef.symbol
           val isVar  = symbol.isVar
@@ -617,7 +668,6 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
                   ) { method =>
                     method.addGetterFor(field.common)
                     method.addedAccessor = true
-                    addMethodOverrides(method, getter)
                   }
                 }
                 if (isVar && setter != NoSymbol && !cls.children.contains(setterSym)) {
@@ -633,7 +683,6 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
                   ) { method =>
                     method.addSetterFor(field.common)
                     method.addedAccessor = true
-                    addMethodOverrides(method, setter)
                   }
                 }
                 //when children could not find the field - e.g. a trait var
@@ -678,7 +727,7 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
           }
 
         // *********************************************************************************************************
-        case defdef: DefDef =>
+        case defdef: DefDef if isChildOfClassLike(defdef)=>
           // TODO This feels wrong - this is def declType Defined field
           val declTypeDefined = defdef.isTyped
           val symbol          = defdef.symbol
@@ -696,9 +745,6 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
                 case _ =>
               }
 
-            if (symbol.owner.isClass) {
-              addMethodOverrides(method, symbol)
-            }
 
             traverseInnards(tree)
             for (
@@ -708,7 +754,7 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
               if (param.symbol.hasFlag(Flags.DEFAULTPARAM)) {
                 method.children
                   .collectFirst {
-                    case (common, field: ModelField) if field.tree.symbol == param.symbol => field
+                    case (common, field: ModelField) if field.symbol == param.symbol => field
                   }
                   .foreach { field =>
                     field.addDefaultGetter(
@@ -781,49 +827,6 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
       }
     }
 
-    def addMethodOverrides(method: ModelMethod, symbol: Symbol): Unit = method.withinRels.head match {
-      case clsDirectParent: ClassLike =>
-        val classSym = symbol.owner
-
-        val directSymbols: Set[global.Symbol] = clsDirectParent.removeChildOverride(symbol) match {
-          case None => Set()
-          case Some(syms) =>
-            syms.asInstanceOf[mutable.Set[global.Symbol]].toSet
-        }
-
-        directSymbols.foreach(s => method.addOverride(asMSymbol(s), direct = true))
-
-        //        val directParentSymbols: Set[ModelCommon] = symbol.info.parents.map(t => asMSymbol(t.typeSymbol)).toSet
-        //
-        //        scopeLog(s"DirectParentSymbols = $directParentSymbols")
-        //
-        //        val directParentSymbols2 = symbol.outerClass
-        //
-        //        scopeLog(s"DirectParentSymbols2 = $classSym")
-        //        scopeLog(s"DirectParentSymbols2 = $directParentSymbols2")
-        //
-        //        val directClassParentSymbols = classSym.info.parents.map(t => asMSymbol(t.typeSymbol)).toSet
-        //
-        //        scopeLog(s"DirectParentSymbols3 = $directClassParentSymbols")
-        //
-        //        classSym.ancestors foreach { ancestorSymbol =>
-        //          val ancestorMSymbol = asMSymbol(ancestorSymbol)
-        //          val direct = directSymbols.contains(ancestorSymbol)
-        //          val overridden = symbol.overriddenSymbol(ancestorSymbol)
-        //          if (overridden != NoSymbol) {
-        //            scopeLog(s"    AAAAA ${overridden} $direct")
-        //          }
-        //        }
-
-        symbol.overrides.foreach { overridden =>
-          //          val overriddenOwnerMSym = asMSymbol(overridden.owner)
-          if (!directSymbols.contains(overridden))
-            method.addOverride(asMSymbol(overridden), direct = false)
-        }
-
-      //if it not a top level method then it cant override anything
-      case _ =>
-    }
 
   }
 

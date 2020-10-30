@@ -10,8 +10,6 @@ import scala.tools.nsc.symtab.Flags
 import Filters._
 import InternalFilters._
 
-import scala.reflect.internal.HasFlags
-
 sealed trait ModelElement extends Ordered[ModelElement] {
 
   override def compare(that: ModelElement): Int = modelElementId.id.compare(that.modelElementId.id)
@@ -231,6 +229,7 @@ sealed trait ClassLike extends ModelElement {
       it = it.filter(e => filter(e.isDirect, e.fromElement))
     it.map(_.fromElement)
   }
+  def selfType: Option[FieldModel]
 
 }
 
@@ -257,6 +256,11 @@ sealed trait TraitModel extends ClassLike
 
 sealed trait MethodModel extends ModelElement {
   def methodName: String
+  /** is it an extra method added by scala clean
+    * e.g. for the junction of 2 traits
+    * tra
+    */
+  def scSynthetic: Boolean
 }
 
 sealed trait AccessorModel extends MethodModel with FieldOrAccessorModel {
@@ -288,6 +292,7 @@ sealed trait FieldModel extends FieldOrAccessorModel {
   def declaredIn: Option[FieldsModel]
 
   def fieldsInSameDeclaration: List[fieldType]
+  def selfTypeFor: Option[ClassLike]
 
   def isParameter: Boolean
   def associatedConstructorParameter: Option[FieldModel]
@@ -299,6 +304,7 @@ sealed trait FieldsModel extends ModelElement {
 }
 
 sealed trait ValModel extends FieldModel {
+
   def isLazy: Boolean
 
   type fieldType = ValModel
@@ -429,7 +435,8 @@ package impl {
       setter: Map[ElementId, List[SetterImpl]],
       duplicate: Map[ElementId, List[DuplicateImpl]],
       ctorParam: Map[ElementId, List[ConstructorParamImpl]],
-      defaultGetters: Map[ElementId, List[DefaultGetterImpl]]
+      defaultGetters: Map[ElementId, List[DefaultGetterImpl]],
+      selfTypes:Map[ElementId, List[SelfTypeImpl]]
   ) {
 
     def sortValues: BasicRelationshipInfo = {
@@ -445,6 +452,7 @@ package impl {
      val duplicateF = Future(duplicate.transform { case (k, v) => v.sortBy(v => (v.fromElementId.id, v.toElementId.id)) })
      val ctorParamF = Future(ctorParam.transform { case (k, v) => v.sortBy(v => (v.fromElementId.id, v.toElementId.id)) })
      val defaultGettersF = Future(defaultGetters.transform { case (k, v) => v.sortBy(v => (v.fromElementId.id, v.toElementId.id)) })
+     val selfTypeF = Future(selfTypes.transform { case (k, v) => v.sortBy(v => (v.fromElementId.id, v.toElementId.id)) })
 
       BasicRelationshipInfo(
         refers = Await.result(refersF, Duration.Inf),
@@ -455,7 +463,8 @@ package impl {
         setter = Await.result(setterF, Duration.Inf),
         duplicate = Await.result(duplicateF, Duration.Inf),
         ctorParam = Await.result(ctorParamF, Duration.Inf),
-        defaultGetters = Await.result(defaultGettersF, Duration.Inf)
+        defaultGetters = Await.result(defaultGettersF, Duration.Inf),
+        selfTypes = Await.result(selfTypeF, Duration.Inf)
       )
     }
 
@@ -469,6 +478,7 @@ package impl {
       duplicate.values.foreach(_.foreach(_.complete(modelElements)))
       ctorParam.values.foreach(_.foreach(_.complete(modelElements)))
       defaultGetters.values.foreach(_.foreach(_.complete(modelElements)))
+      selfTypes.values.foreach(_.foreach(_.complete(modelElements)))
     }
 
     def byTo: BasicRelationshipInfo = {
@@ -485,7 +495,8 @@ package impl {
         setter = byToSymbol(setter),
         duplicate = byToSymbol(duplicate),
         ctorParam = byToSymbol(ctorParam),
-        defaultGetters = byToSymbol(defaultGetters)
+        defaultGetters = byToSymbol(defaultGetters),
+        selfTypes = byToSymbol(selfTypes)
       )
 
     }
@@ -500,7 +511,8 @@ package impl {
         setter = this.setter ++ that.setter,
         duplicate = this.duplicate ++ that.duplicate,
         ctorParam = this.ctorParam ++ that.ctorParam,
-        defaultGetters = this.defaultGetters ++ that.defaultGetters
+        defaultGetters = this.defaultGetters ++ that.defaultGetters,
+        selfTypes = this.selfTypes ++ that.selfTypes
       )
       //there should be no overlaps
       //      assert(res.refers.size == this.refers.size + that.refers.size)
@@ -727,6 +739,7 @@ package impl {
 
     private var _extnds: List[Extends]     = _
     private var _extendedBy: List[Extends] = _
+    private var _selfType: Option[FieldModelImpl] = None
 
     override def complete(
         elementIdManager: ElementIdManager,
@@ -737,8 +750,17 @@ package impl {
       super.complete(elementIdManager, modelElements, relsFrom, relsTo)
       _extnds = relsFrom.extnds.getOrElse(modelElementId, Nil)
       _extendedBy = relsTo.extnds.getOrElse(modelElementId, Nil)
+      relsFrom.selfTypes.get(info.elementId) match {
+        case Some(List(selfTypeImpl)) =>
+          val field = selfTypeImpl.toElement.get //its mandated to be in the model
+          this._selfType = Some(field)
+          field._selfTypeFor = Some(this)
+        case None =>
+        case Some(list) => require(false, s"multiple self types for $this, $list")
 
+      }
     }
+    override def selfType: Option[FieldModelImpl] = _selfType
 
     override protected def extnds: Seq[Extends] = _extnds
 
@@ -765,6 +787,9 @@ package impl {
       _fields: String
   ) extends ElementModelImpl(info)
       with FieldModel {
+    private[impl] var _selfTypeFor: Option[ClassLikeModelImpl] = None
+
+    override def selfTypeFor: Option[ClassLike] = _selfTypeFor
 
     override def fieldsInSameDeclaration =
       (declaredIn.map(_.fieldsInDeclaration)).getOrElse(Nil).asInstanceOf[List[fieldType]]
@@ -847,7 +872,9 @@ package impl {
 
   class ObjectModelImpl(info: BasicElementInfo)
       extends ClassLikeModelImpl(info)
-      with ObjectModel
+      with ObjectModel {
+    override def selfTypeFor: Option[ClassLike] = None
+  }
 
   class TraitModelImpl(info: BasicElementInfo)
       extends ClassLikeModelImpl(info)
@@ -857,7 +884,8 @@ package impl {
       info: BasicElementInfo,
       val methodName: String,
       override val isAbstract: Boolean,
-      val hasDeclaredType: Boolean
+      val hasDeclaredType: Boolean,
+      val scSynthetic: Boolean
   ) extends ElementModelImpl(info)
       with PlainMethodModel {
     var _defaultAccessorFor = Option.empty[FieldModelImpl]
@@ -869,7 +897,8 @@ package impl {
       info: BasicElementInfo,
       val methodName: String,
       override val isAbstract: Boolean,
-      val hasDeclaredType: Boolean
+      val hasDeclaredType: Boolean,
+      val scSynthetic: Boolean
   ) extends ElementModelImpl(info)
       with GetterMethodModel {
 
@@ -897,7 +926,8 @@ package impl {
       info: BasicElementInfo,
       val methodName: String,
       override val isAbstract: Boolean,
-      val hasDeclaredType: Boolean
+      val hasDeclaredType: Boolean,
+      val scSynthetic: Boolean
   ) extends ElementModelImpl(info)
       with SetterMethodModel {
 

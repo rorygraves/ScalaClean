@@ -12,12 +12,12 @@ class RelationshipsWriter(file: File) {
     s"${from.newCsvString},$token,${to.newCsvString}"
   }
 
-  def overrides(overrider: ModelMethod, overridden: HasModelCommon, isDirect: Boolean): Unit = {
+  def overrides(overrider: ModelMethod, overridden: HasModelCommon, isDirect: Boolean, synthetic: Boolean): Unit = {
     writeLine(
       overrider,
       overridden,
-      s"${commonOutput(overrider, IoTokens.relOverrides, overridden)},$isDirect",
-      s"${IoTokens.relOverrides}) Direct:$isDirect"
+      s"${commonOutput(overrider, IoTokens.relOverrides, overridden)},$isDirect,$synthetic",
+      s"${IoTokens.relOverrides}) Direct:$isDirect, synthetic:$synthetic"
     )
   }
 
@@ -80,6 +80,14 @@ class RelationshipsWriter(file: File) {
       defaultGetter,
       s"${commonOutput(field, IoTokens.defaultGetter, defaultGetter)}",
       s"${IoTokens.defaultGetter} $field $defaultGetter"
+    )
+  }
+  def recordSelfTypeField(cls: ClassLike, selfTypeField: ModelField): Unit = {
+    writeLine(
+      cls,
+      selfTypeField,
+      s"${commonOutput(cls, IoTokens.selfType, selfTypeField)}",
+      s"${IoTokens.selfType} $cls $selfTypeField"
     )
   }
 

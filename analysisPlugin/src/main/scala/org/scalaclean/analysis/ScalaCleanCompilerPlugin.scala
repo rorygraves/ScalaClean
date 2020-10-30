@@ -82,5 +82,5 @@ class ScalaCleanCompilerPlugin(override val global: Global) extends Plugin {
 
   override val components: List[PluginComponent] = List(
     component
-  ) //, new ScalaCompilerBeforeTyperPluginComponent(global))
+  )
 }

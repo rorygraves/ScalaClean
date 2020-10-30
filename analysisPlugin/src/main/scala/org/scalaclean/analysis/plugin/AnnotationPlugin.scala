@@ -12,13 +12,14 @@ class AnnotationPlugin(val sc: ScalaCompilerPluginComponent) extends ExtensionPl
 
   override def extendedData(
       mSymbol: ModelSymbol,
-      tree: g.Tree,
+      tree: Option[g.Tree],
+      symbol: g.Symbol,
       enclosingModel: List[ModelSymbol]
   ): List[ExtensionData] = {
     val extensionData = mutable.ListBuffer[ExtensionData]()
 
-    tree.symbol.annotations.foreach(annotation =>
-      extensionData += AnnotationDataBuilder.buildSimpleAnnotation(g)(tree, annotation)
+    symbol.annotations.foreach(annotation =>
+      extensionData += AnnotationDataBuilder.buildSimpleAnnotation(g)(symbol, annotation)
     )
     extensionData.result
   }
