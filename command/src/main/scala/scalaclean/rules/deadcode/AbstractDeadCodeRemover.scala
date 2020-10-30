@@ -157,9 +157,18 @@ abstract class AbstractDeadCodeRemover[T <: AbstractDeadCodeCommandLine] extends
     }
     model.allOf[FieldModel].filter(_.associatedConstructorParameter.isDefined) foreach { e=>
       e.mark = Mark.dontChange(SimpleReason("has ctor val") )
+      e.associatedConstructorParameter.get.enclosing.headOption.foreach {
+        _.mark = Mark.dontChange(SimpleReason("is ctor") )
+      }
     }
     model.allOf[PlainMethodModel].filter(_.defaultAccessorFor.isDefined) foreach { e=>
       e.mark = Mark.dontChange(SimpleReason("default accessor methods") )
+    }
+    model.allOf[PlainMethodModel].filter{
+      case method: PlainMethodModel =>
+      method.methodName == "<init>"
+    } foreach { e=>
+      e.mark = Mark.dontChange(SimpleReason("constructor") )
     }
   }
   def runExtraRules(): Unit = {}
