@@ -107,4 +107,8 @@ abstract class BaseDeadCodeTests extends AbstractProjectTests {
     projectTest("deadCodeProject18_utf32")
   }
 
+  test("deadCodeProject19_selftype") {
+    projectTest("deadCodeProject19_selftype")
+  }
+
 }

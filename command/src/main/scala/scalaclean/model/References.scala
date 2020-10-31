@@ -21,6 +21,7 @@ sealed trait Reference {
     case _: DuplicateImpl => "Duplicates"
     case _: ConstructorParamImpl => "ConstructorParam"
     case _: DefaultGetterImpl => "DefaultParameterGetter"
+    case _: SelfTypeImpl => "SelfType"
   }
 }
 
@@ -121,6 +122,9 @@ package impl {
       with Reference
   final class DefaultGetterImpl(from: ElementId, to: ElementId)
     extends ReferenceImpl[FieldModelImpl, PlainMethodModelImpl](from, to)
+      with Reference
+  final class SelfTypeImpl(from: ElementId, to: ElementId)
+    extends ReferenceImpl[ClassLikeModelImpl, FieldModelImpl](from, to)
       with Reference
 
 }

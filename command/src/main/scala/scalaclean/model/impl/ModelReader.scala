@@ -97,6 +97,7 @@ object ModelReader {
     val duplicateB     = List.newBuilder[DuplicateImpl]
     val ctorParamB     = List.newBuilder[ConstructorParamImpl]
     val defaultGetterB = List.newBuilder[DefaultGetterImpl]
+    val selfTypeB      = List.newBuilder[SelfTypeImpl]
 
     val path = Paths.get(relationshipsFilePath)
     println(s"reading relationships from $path")
@@ -132,6 +133,8 @@ object ModelReader {
             ctorParamB += new ConstructorParamImpl(from, to)
           case IoTokens.defaultGetter =>
             defaultGetterB += new DefaultGetterImpl(from, to)
+          case IoTokens.selfType =>
+            selfTypeB += new SelfTypeImpl(from, to)
 
         }
       } catch {
@@ -148,6 +151,7 @@ object ModelReader {
     val duplicate     = duplicateB.result().groupBy(_.fromElementId)
     val ctorParam     = ctorParamB.result().groupBy(_.fromElementId)
     val defaultGetter = defaultGetterB.result().groupBy(_.fromElementId)
+    val selfType      = selfTypeB.result().groupBy(_.fromElementId)
 
     BasicRelationshipInfo(
       refersTo,
@@ -158,7 +162,8 @@ object ModelReader {
       setter,
       duplicate,
       ctorParam,
-      defaultGetter
+      defaultGetter,
+      selfType
     )
   }
 

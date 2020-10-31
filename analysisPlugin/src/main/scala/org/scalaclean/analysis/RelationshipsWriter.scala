@@ -82,6 +82,14 @@ class RelationshipsWriter(file: File) {
       s"${IoTokens.defaultGetter} $field $defaultGetter"
     )
   }
+  def recordSelfTypeField(cls: ClassLike, selfTypeField: ModelField): Unit = {
+    writeLine(
+      cls,
+      selfTypeField,
+      s"${commonOutput(cls, IoTokens.selfType, selfTypeField)}",
+      s"${IoTokens.selfType} $cls $selfTypeField"
+    )
+  }
 
 
   def recordDuplicate(symbol: ModelSymbol) = {

@@ -176,6 +176,10 @@ abstract class AbstractDeadCodeRemover[T <: AbstractDeadCodeCommandLine] extends
     } foreach { e=>
       e.mark = Mark.dontChange(SimpleReason("constructor") )
     }
+    for (cls <- model.allOf[ClassLike];
+         self <- cls.selfType) {
+      self.mark = Mark.dontChange(SimpleReason("self type field") )
+    }
   }
   def runExtraRules(): Unit = {}
   def runSerialisationRule(): Unit = {

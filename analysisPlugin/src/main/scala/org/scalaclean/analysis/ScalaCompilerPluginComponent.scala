@@ -564,6 +564,11 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
             recordOverrides(cls)
             traverseInnards(tree)
             postProcess(cls)
+            //cope with a self type
+            if (classDef.symbol.hasSelfType) {
+              val thisSym = classDef.symbol.thisSym
+              relationsWriter.recordSelfTypeField(cls, cls.findChildBySymbol[ModelField](thisSym).get)
+            }
           }
 
         // *********************************************************************************************************

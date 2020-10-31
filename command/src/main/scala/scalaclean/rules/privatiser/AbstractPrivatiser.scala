@@ -72,6 +72,11 @@ abstract class AbstractPrivatiser[T <: AbstractPrivatiserCommandLine](val option
   override def runRule(): Unit = {
     markKnown()
     ruleSpecific()
+    for (cls <- model.allOf[ClassLike];
+         self <- cls.selfType) {
+      self.mark = Mark.dontChange(SimpleReason("self type field") )
+    }
+
     if (debug)
       model.allOf[ModelElement].toList.sortBy(_.infoPosSorted).foreach(ele => println(s"$ele  colour: ${ele.colour}"))
   }
