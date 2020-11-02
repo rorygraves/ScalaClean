@@ -111,4 +111,8 @@ abstract class BaseDeadCodeTests extends AbstractProjectTests {
     projectTest("deadCodeProject19_selftype")
   }
 
+  test("deadCodeProject20_overridevals") {
+    projectTest("deadCodeProject20_overridevals", options = SimpleRunOptions.apply(replace = true))
+  }
+
 }
