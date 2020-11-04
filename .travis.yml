@@ -1,2 +1,4 @@
 language: scala
 scala: 2.12.12
+jdk:
+  - openjdk8
