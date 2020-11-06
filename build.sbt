@@ -200,6 +200,8 @@ lazy val privatiserProject7 = testInputProject("privatiserProject7", "testProjec
 
 lazy val finaliserProject1 = testInputProject("finaliserProject1", "testProjects/finaliserProject1")()
 
+lazy val testScalaPProject = testInputProject("scalap", "testProjects/scalap")()
+
 lazy val scratch = testInputProject("scratch", "testProjects/scratch", showTrees = false)()
 
 lazy val privatiserTests = List(
@@ -236,12 +238,16 @@ lazy val deadCodeTests = List(
   deadCodeProject18_utf32
 )
 
+lazy val otherProjects = List{
+  testScalaPProject
+}
+
 lazy val finaliserTests = List(finaliserProject1)
 
 lazy val scratchProjects = List(scratch)
 
 lazy val testDep =
-  List(command, unitTestProject) ::: privatiserTests ::: deadCodeTests ::: finaliserTests ::: scratchProjects
+  List(command, unitTestProject) ::: privatiserTests ::: deadCodeTests ::: finaliserTests ::: scratchProjects ::: otherProjects
 
 lazy val tests = project
   .dependsOn(testDep.map(classpathDependency(_)): _*)
