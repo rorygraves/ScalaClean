@@ -47,22 +47,22 @@ class ProjectSet(projectPropertyPaths: Path*) extends AllProjectsModel {
     modelElements
   }
 
-  override def element[T <: ModelElement](id: ElementId)(implicit tpe: ClassTag[T]): T = {
+  override def element[T <: ModelElement: ClassTag: NotNothing](id: ElementId): T = {
 
     elements.get(id) match {
       case None       => throw new IllegalArgumentException(s"Unknown element $id")
       case Some(x: T) => x
       case Some(x) =>
-        throw new IllegalArgumentException(s"Unexpected element $id - found a $x when expecting a ${tpe.runtimeClass}")
+        throw new IllegalArgumentException(s"Unexpected element $id - found a $x when expecting a ${implicitly[ClassTag[T]].runtimeClass}")
     }
   }
 
-  override def getElement[T <: ModelElement](id: ElementId)(implicit tpe: ClassTag[T]): Option[T] = {
+  override def getElement[T <: ModelElement: ClassTag: NotNothing](id: ElementId): Option[T] = {
     elements.get(id) match {
       case None       => None
       case Some(x: T) => Some(x)
       case Some(x) =>
-        throw new IllegalArgumentException(s"Unexpected element $id - found a $x when expecting a ${tpe.runtimeClass}")
+        throw new IllegalArgumentException(s"Unexpected element $id - found a $x when expecting a ${implicitly[ClassTag[T]].runtimeClass}")
     }
   }
 
@@ -74,8 +74,8 @@ class ProjectSet(projectPropertyPaths: Path*) extends AllProjectsModel {
     }
   }
 
-  override def allOf[T <: ModelElement: ClassTag]: Iterator[T] = {
-    allCache.get(implicitly(classTag[T]).runtimeClass).asInstanceOf[Iterable[T]].iterator
+  override def allOf[T <: ModelElement: ClassTag : NotNothing]: Iterator[T] = {
+    allCache.get(implicitly[ClassTag[T]].runtimeClass).asInstanceOf[Iterable[T]].iterator
   }
 
 }
