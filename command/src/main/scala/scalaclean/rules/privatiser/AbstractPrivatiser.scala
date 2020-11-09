@@ -106,28 +106,20 @@ abstract class AbstractPrivatiser[T <: AbstractPrivatiserCommandLine](val option
   }
 
   def inMethod(element: ModelElement): Boolean = {
-    def isOrInMethod(element: ModelElement): Boolean = {
-      element.isInstanceOf[MethodModel] ||
-      element.enclosing.exists(isOrInMethod)
-    }
-
-    element.enclosing.exists(isOrInMethod)
+    element.enclosingOf[MethodModel].isDefined
   }
 
   def localLevel(element: ModelElement): Colour = {
-    element match {
-      case _ if !element.colour.isInitial => element.colour
-      case _ if element.enclosing.size == 1 =>
-        element.enclosing.head match {
-          case sourceFile: SourceModel if element.isInstanceOf[ClassLike] =>
-            determineIfPrivate(element, element.modelElementId)
-
-          case classLike: ClassLike =>
-            determineIfPrivate(element, classLike.modelElementId)
-
-          case _ =>
-            dontChangeBecause.notInClassLike
-        }
+    if (!element.colour.isInitial) element.colour
+    else element.enclosing match {
+      case Some(sourceFile: SourceModel) if element.isInstanceOf[ClassLike] =>
+        determineIfPrivate(element, element.modelElementId)
+      case Some(classLike: ClassLike) =>
+        determineIfPrivate(element, classLike.modelElementId)
+      case Some(_) =>
+        dontChangeBecause.notInClassLike
+      case None =>
+        dontChangeBecause.notInClassLike
     }
   }
 

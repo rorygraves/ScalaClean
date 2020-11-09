@@ -116,7 +116,7 @@ abstract class RuleRun[T <: ScalaCleanCommandLine] {
 
   def generateFixesInParallel: Boolean = true
 
-  def markAll[E <: ModelElement : ClassTag](colour: Colour): Unit = {
+  def markAll[E <: ModelElement : ClassTag: NotNothing](colour: Colour): Unit = {
     val all = model.allOf[E].toList
     model
       .allOf[E]

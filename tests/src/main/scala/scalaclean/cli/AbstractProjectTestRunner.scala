@@ -3,17 +3,16 @@ package scalaclean.cli
 import java.io.File
 import java.nio.file.{Files, Path, Paths}
 
-import scalaclean.model.AllProjectsModel
+import scalaclean.model.{AllProjectsModel, NotNothing}
 import scalaclean.model.impl.ProjectSet
 import scalaclean.rules.RuleRun
 import scalaclean.util.DiffAssertions
-
 import org.scalatest.Assertions
 
 import scala.reflect.{ClassTag, classTag}
 import scala.collection.JavaConverters._
 
-abstract class AbstractProjectTestRunner[Cmd <: ScalaCleanCommandLine: ClassTag, Rule <: RuleRun[Cmd]](val projectNames: List[String], runOptions: SimpleRunOptions)
+abstract class AbstractProjectTestRunner[Cmd <: ScalaCleanCommandLine: ClassTag: NotNothing, Rule <: RuleRun[Cmd]](val projectNames: List[String], runOptions: SimpleRunOptions)
     extends DiffAssertions with Assertions{
 
   def cmdLine: Cmd = classTag[Cmd].runtimeClass.newInstance().asInstanceOf[Cmd]

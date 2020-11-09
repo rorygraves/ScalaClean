@@ -34,23 +34,27 @@ sealed trait ModelElement extends Ordered[ModelElement] {
   final def isPrivate     = (Flags.PRIVATE & flags) != 0
   final def isPrivateThis = (Flags.PrivateLocal & flags) == Flags.PrivateLocal
 
-  //usually just one element. Can be >1 for  RHS of a val (a,b,c) = ...
-  //where a,b,c are the enclosing
-  def enclosing: List[ModelElement]
+  /** an element unless its a source file */
+  def enclosing: Option[ModelElement]
+  def enclosingOf[T <: ModelElement : ClassTag : NotNothing]: Option[T]
+  def enclosingIterator : Iterator[ModelElement]
 
   def classOrEnclosing: ClassLike
 
-  def annotationsOf(cls: Class[_]): Iterable[AnnotationData] = annotations.filter(_.fqName == cls.getName)
+  def annotationsOf[T : ClassTag : NotNothing]: Iterable[AnnotationData] = {
+    val name = implicitly[ClassTag[T]].runtimeClass
+    annotations.filter(_.fqName == name)
+  }
 
   def annotations: Iterable[AnnotationData] = extensions.collect { case a: AnnotationData => a }
 
   def extensions: Iterable[ExtensionData]
 
-  def extensionsOfType[T <: ExtensionData: ClassTag]: Iterable[T] = {
+  def extensionsOfType[T <: ExtensionData: ClassTag : NotNothing]: Iterable[T] = {
     extensions.collect { case a: T => a }
   }
 
-  def extensionOfType[T <: ExtensionData: ClassTag]: Option[T] = {
+  def extensionOfType[T <: ExtensionData: ClassTag : NotNothing]: Option[T] = {
     extensions.collectFirst { case a: T => a }
   }
   def duplicateOf: Option[ModelElement]
@@ -111,7 +115,7 @@ sealed trait ModelElement extends Ordered[ModelElement] {
 
   def innerClassLike: Seq[ClassLike]
 
-  def allChildren: List[ElementModelImpl]
+  def allChildren: List[ModelElement]
 
   def isAbstract: Boolean
 
@@ -333,13 +337,13 @@ trait SingleProjectModel {
 }
 trait AllProjectsModel {
 
-  def element[T <: ModelElement](id: ElementId)(implicit tpe: ClassTag[T]): T
+  def element[T <: ModelElement: ClassTag : NotNothing](id: ElementId): T
 
-  def getElement[T <: ModelElement](id: ElementId)(implicit tpe: ClassTag[T]): Option[T]
+  def getElement[T <: ModelElement: ClassTag: NotNothing](id: ElementId): Option[T]
 
   def size: Int
 
-  def allOf[T <: ModelElement : ClassTag]: Iterator[T]
+  def allOf[T <: ModelElement : ClassTag: NotNothing]: Iterator[T]
 
   def printStructure(): Unit = allOf[ClassLike].foreach(cls => println(s"class ${cls.fullName}"))
 
@@ -407,6 +411,8 @@ package impl {
   import java.nio.file.Path
 
   import org.scalaclean.analysis.FlagHelper
+
+  import scala.collection.AbstractIterator
 
   case class BasicElementInfo(
       project: ProjectImpl,
@@ -615,13 +621,12 @@ package impl {
         relsTo: BasicRelationshipInfo
     ): Unit = {
 
-      _within = (relsFrom.within
-        .getOrElse(modelElementId, Nil)
-        .map {
-          _.toElement.get.asInstanceOf[ElementModelImpl]
-        })
-        .distinct
-        .sortWith(elementSort)
+      _within = relsFrom.within.get(modelElementId) match {
+        case Some(value :: Nil) => value.toElement.getOrElse(
+          throw new IllegalStateException(s"parent for $this (${value.toElementId}) not in model"))
+        case None => assert (isInstanceOf[SourceModel]);null
+        case Some(values) => throw new IllegalStateException(s"${values.size} parents for $this (${values map (_.toElementId)})")
+      }
       _children = (relsTo.within
         .getOrElse(modelElementId, Nil)
         .map {
@@ -659,7 +664,7 @@ package impl {
     override def flags: Long = info.flags
 
     //start set by `complete`
-    private var _within: List[ElementModelImpl]   = _
+    private var _within: ElementModelImpl   = _
     private var _children: List[ElementModelImpl] = _
 
     private[impl] var _refersTo: List[Refers]   = _
@@ -675,9 +680,24 @@ package impl {
     override def overrides: List[Overrides]  = _overrides
     override def overridden: List[Overrides] = _overridden
 
-    override def enclosing: List[ElementModelImpl] = _within
+    override def enclosing: Option[ElementModelImpl] = Option(_within)
+    override def enclosingOf[T <: ModelElement : ClassTag : NotNothing]: Option[T] =
+      enclosingIterator.collectFirst{case res: T => res}
+    override def enclosingIterator: Iterator[ModelElement] =
+      if (_within eq null) Iterator.empty
+      else new AbstractIterator[ModelElement] {
+        var current = ElementModelImpl.this
+        override def hasNext: Boolean = current._within ne null
 
-    override def classOrEnclosing: ClassLike = enclosing.head.classOrEnclosing
+        override def next(): ModelElement =
+          if (!hasNext) Iterator.empty.next()
+          else {
+            current = current._within
+            current
+          }
+      }
+
+    override def classOrEnclosing: ClassLike = _within.classOrEnclosing
 
     override def duplicateOf: Option[ModelElement] = _duplicateOf
     override def duplicates: Set[_ <: ModelElement] = _duplicates
