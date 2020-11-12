@@ -184,7 +184,7 @@ abstract class RuleRun[T <: ScalaCleanCommandLine] {
     allJunitTest
       .map(_.classOrEnclosing)
       .toSet
-      .flatMap { cls: ClassLike => cls.extendedByClassLike() ++ cls.extendsClassLikeCompiled() } iterator
+      .flatMap { cls: ClassLike => cls.extendedByElement() ++ cls.extendsElement() } iterator
   }
 
   def allScalaTests: Iterator[ClassLike] = {

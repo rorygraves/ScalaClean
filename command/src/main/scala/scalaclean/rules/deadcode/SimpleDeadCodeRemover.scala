@@ -97,7 +97,7 @@ class SimpleDeadCodeRemover(override val options: SimpleDeadCodeCommandLine, ove
       .allOf[ClassLike]
       .foreach(e =>
         if (e.colour.isInitial && e.existsInSource) {
-          e.extendedByClassLike(false, (_, cls) => !cls.colour.isInitial).take(1).foreach{
+          e.extendedByElement(None,  Some( e => !e.element.colour.isInitial)).take(1).foreach{
             ele => simpleMarkUsed(e, ele.modelElementId, "extendedBy")
           }
         }

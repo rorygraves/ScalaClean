@@ -164,7 +164,7 @@ class Finaliser(override val options: FinaliserCommandLine, override val model: 
 
   def calcClassLevel(classLike: ClassLike): Colour = classLike match {
     case model: ClassModel =>
-      val ext = model.extendedByClassLike()
+      val ext = model.extendedByElement()
       if (ext.isEmpty)
         changeTo.makeFinal
       else {
@@ -177,7 +177,7 @@ class Finaliser(override val options: FinaliserCommandLine, override val model: 
     case model: ObjectModel => dontChangeBecause.isObject
     case model: TraitModel =>
       val mySource = getSource(model)
-      val ext      = model.extendedByClassLike()
+      val ext      = model.extendedByElement()
       if (ext.forall(cls => getSource(cls) == mySource))
         changeTo.makeSealed
       else
