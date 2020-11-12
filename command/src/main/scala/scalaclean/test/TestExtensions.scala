@@ -9,7 +9,7 @@ import scalaclean.model._
 class TestExtensions(model: AllProjectsModel) extends TestCommon("TestExtensions", model) {
 
   override def visitInSource(modelElement: ModelElement): String = {
-    modelElement.annotations match {
+    modelElement.annotations.toList match {
       case Nil => "XX"
       case ann =>
         val asDebug = (ann.map(_.toString)).toList.sorted

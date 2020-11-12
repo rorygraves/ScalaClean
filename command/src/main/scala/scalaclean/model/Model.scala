@@ -3,12 +3,9 @@ package scalaclean.model
 import java.nio.file.Path
 
 import org.scalaclean.analysis.{AnnotationData, ExtensionData}
-import scalaclean.model.impl.ElementModelImpl
 
 import scala.reflect.ClassTag
 import scala.tools.nsc.symtab.Flags
-import Filters._
-import InternalFilters._
 
 sealed trait ModelElement extends Ordered[ModelElement] {
 
@@ -41,27 +38,30 @@ sealed trait ModelElement extends Ordered[ModelElement] {
 
   def classOrEnclosing: ClassLike
 
-  def annotationsOf[T : ClassTag : NotNothing]: Iterable[AnnotationData] = {
-    val name = implicitly[ClassTag[T]].runtimeClass
+  def annotationsOf[T : ClassTag : NotNothing]: Iterator[AnnotationData] = {
+    val name = implicitly[ClassTag[T]].runtimeClass.getName
     annotations.filter(_.fqName == name)
   }
 
-  def annotations: Iterable[AnnotationData] = extensions.collect { case a: AnnotationData => a }
+  def annotations: Iterator[AnnotationData] = extensions.collect { case a: AnnotationData => a }
 
-  def extensions: Iterable[ExtensionData]
+  def extensions: Iterator[ExtensionData]
 
-  def extensionsOfType[T <: ExtensionData: ClassTag : NotNothing]: Iterable[T] = {
+  def extensionsOfType[T <: ExtensionData: ClassTag : NotNothing]: Iterator[T] = {
     extensions.collect { case a: T => a }
   }
 
   def extensionOfType[T <: ExtensionData: ClassTag : NotNothing]: Option[T] = {
     extensions.collectFirst { case a: T => a }
   }
+  /** There are certain times when the compiler model has multiple elements that, in ScalaCleans model are the same thing
+    * so in that case Scalaclean will choose a primary element and some duplicates. All of the relationships are to the
+    * primary, and the duplicates retain flags to indicate the alternate usages/meanings
+    *
+    * if a.duplicates(Set(b,c)) then b/c.duplicateOf(a)
+    */
   def duplicateOf: Option[ModelElement]
   def duplicates: Set[_ <: ModelElement]
-
-  //start target APIs
-  // def outgoingReferences: Iterable[Refers] = allOutgoingReferences map (_._2)
 
   def overrides: Iterable[Overrides]
   def overridden: Iterable[Overrides]
@@ -178,61 +178,77 @@ sealed trait ClassLike extends ModelElement {
 
   def xtends(symbol: ElementId): Boolean
 
-  protected def extnds: Seq[Extends]
-  protected def extendedBy: Seq[Extends]
-
-  private def extendsClassLike0(onlyDirect: Boolean, filter: ExtendsClassLike): Iterator[Extends] = {
-    var it = extnds.iterator
-    if (onlyDirect)
-      it = it.filter(OnlyDirect)
-    if (filter ne All)
-      it = it.filter(e => filter(e.isDirect, e.toElement, e.toElementId))
-    it
-  }
 
   /**
-   * get the classes and traits that this extends. Note this is limitted to the classes nd traits that are compiled and have scalaclean metadata
-   *
-   * @see extendsClassLike if you want the ones in libraries as well
-   * @param onlyDirect if true, only the direct extensions, otherwise all
-   * @param filter     a general purpose filter for the relations to consider
-   */
-  def extendsClassLikeCompiled(
-      onlyDirect: Boolean = false,
-      filter: ExtendsClassLikeCompiled = All
-  ): Iterator[ClassLike] = {
-    extendsClassLike0(onlyDirect, (direct, cls, _) => cls.isDefined && filter(direct, cls.get)).flatMap(_.toElement)
-  }
+    * The classes and traits that this ClassLike extends. Note this is limited to the classes and traits that are
+    * compiled and have scalaclean metadata
+    *
+    * @see extendsElementId if you want the ones in libraries as well
+    * @see extendsFull if you want full flexibility
+    * @param direct if Some(true)  - only the direct extensions
+    *              if Some(false) - exclude the direct extensions
+    *              if None        - all
+    * @param filter     a general purpose filter for the relations to consider
+    */
+  def extendsElement(
+                      direct: Option[Boolean] = None,
+                      filter: Option[ExtendsInternalReference => Boolean] = None
+                    ): Iterator[ClassLike]
+  /**
+    * The classes and traits that this ClassLike extends. Note this includes external libraries
+    *
+    * @see extendsElement if you want just the compiled elements
+    * @see extendsFull if you want full flexibility
+    * @param direct if Some(true)  - only the direct extensions
+    *              if Some(false) - exclude the direct extensions
+    *              if None        - all
+    * @param filter     a general purpose filter for the relations to consider
+    */
+  def extendsElementId(
+                      direct: Option[Boolean] = None,
+                      filter: Option[ExtendsReference => Boolean] = None
+                    ): Iterator[ElementId]
+  /**
+    * The classes and traits that this ClassLike extends.
+    *
+    * @see extendsElement if you want just the compiled elements
+    * @see extendsElementId if you want just the element ids
+    * @param direct if Some(true)  - only the direct extensions
+    *              if Some(false) - exclude the direct extensions
+    *              if None        - all
+    * @param filter     a general purpose filter for the relations to consider
+    */
+  def extendsFull(
+                  direct: Option[Boolean] = None,
+                  filter: Option[ExtendsReference => Boolean] = None
+                 ): Iterator[ExtendsReference]
 
   /**
-   * get the classes and traits that this extends
-   *
-   * @see extendsClassLikeCompiled if you want the ones not from source to be returned
-   * @param onlyDirect if true, only the direct extensions, otherwise all
-   * @param filter     a general purpose filter for the relations to consider
-   * @return an iterator of (Option[ClassLike], ElementId). If the class is None, then this is a library class
-   */
-  def extendsClassLike(
-      onlyDirect: Boolean = false,
-      filter: ExtendsClassLike = All
-  ): Iterator[(Option[ClassLike], ElementId)] = {
-    extendsClassLike0(onlyDirect, filter).map(e => (e.toElement, e.toElementId))
-  }
-
+    * get the object, classes and traits that extend this
+    *
+    * @see extendedByFull if you want all full flexiblity
+    * @param direct if Some(true)  - only the direct extensions
+    *              if Some(false) - exclude the direct extensions
+    *              if None        - all
+    * @param filter     a general purpose filter for the relations to consider
+    */
+  def extendedByElement(
+                         direct: Option[Boolean] = None,
+                         filter: Option[ExtendedByReference => Boolean] = None
+                       ): Iterator[ClassLike]
   /**
-   * get the object, classes and traits that extend this
-   *
-   * @param onlyDirect if true, only the direct extensions, otherwise all
-   * @param filter     a general purpose filter for the relations to consider
-   */
-  def extendedByClassLike(onlyDirect: Boolean = false, filter: ExtendedByClassLike = All): Iterator[ClassLike] = {
-    var it = extendedBy.iterator
-    if (onlyDirect)
-      it = it.filter(OnlyDirect)
-    if (filter ne All)
-      it = it.filter(e => filter(e.isDirect, e.fromElement))
-    it.map(_.fromElement)
-  }
+    * get the object, classes and traits that extend this
+    *
+    * @see extendedByElement if you want just the elements
+    * @param direct if Some(true)  - only the direct extensions
+    *              if Some(false) - exclude the direct extensions
+    *              if None        - all
+    * @param filter     a general purpose filter for the relations to consider
+    */
+  def extendedByFull(
+                         direct: Option[Boolean] = None,
+                         filter: Option[ExtendedByReference => Boolean] = None
+                       ): Iterator[ExtendedByReference]
   def selfType: Option[FieldModel]
 
 }
@@ -350,62 +366,6 @@ trait AllProjectsModel {
   def projects: List[SingleProjectModel]
 }
 
-object Filters {
-
-  trait ExtendsClassLike {
-
-    /**
-     * a specialised filter for a ClassLike.
-     * @see ClassLike.extendsClassLike
-     * @see ClassLike.extendsClassLikeCompiled
-     * @param direct if true the extension is direct
-     * @param asClass None if the related class is a library, or the class if it is compiled in any loaded project
-     * @param asElement the related class
-     * @return true if the relationship should be included
-     */
-    def apply(direct: Boolean, asClass: Option[ClassLike], asElement: ElementId): Boolean
-  }
-
-  trait ExtendsClassLikeCompiled {
-
-    /**
-     * a specialised filter for a ClassLike.
-     * @see ClassLike.extendsClassLike
-     * @see ClassLike.extendsClassLikeCompiled
-     * @param direct if true the extension is direct
-     * @param clazz the related class
-     * @return true if the relationship should be included
-     */
-    def apply(direct: Boolean, clazz: ClassLike): Boolean
-  }
-
-  trait ExtendedByClassLike {
-
-    /**
-     * a specialised filter for a ClassLike.
-     * @see ClassLike.extendedByClassLike
-     * @param direct if true the extension is direct
-     * @param clazz the related class
-     * @return true if the relationship should be included
-     */
-    def apply(direct: Boolean, clazz: ClassLike): Boolean
-  }
-
-}
-
-private[model] object InternalFilters {
-
-  object All extends Filters.ExtendsClassLike with Filters.ExtendsClassLikeCompiled with ExtendedByClassLike {
-    override def apply(direct: Boolean, asClass: Option[ClassLike], asElement: ElementId): Boolean = true
-    override def apply(direct: Boolean, clazz: ClassLike): Boolean                                 = true
-  }
-
-  object OnlyDirect extends ((Extends) => Boolean) {
-    override def apply(ex: Extends): Boolean = ex.isDirect
-  }
-
-}
-
 package impl {
 
   import java.nio.file.Path
@@ -413,6 +373,8 @@ package impl {
   import org.scalaclean.analysis.FlagHelper
 
   import scala.collection.AbstractIterator
+
+  import RelationshipNavigation._
 
   case class BasicElementInfo(
       project: ProjectImpl,
@@ -649,7 +611,7 @@ package impl {
       }
     }
 
-    override def extensions: Iterable[ExtensionData] = info.extensions
+    override def extensions: Iterator[ExtensionData] = info.extensions.iterator
 
     val source: SourceData = info.source
 
@@ -670,8 +632,8 @@ package impl {
     private[impl] var _refersTo: List[Refers]   = _
     private[impl] var _refersFrom: List[Refers] = _
 
-    private var _overrides: List[Overrides]  = _
-    private var _overridden: List[Overrides] = _
+    private var _overrides: List[OverridesImpl]  = _
+    private var _overridden: List[OverridesImpl] = _
 
     private var _duplicateOf = Option.empty[ElementModelImpl]
     private var _duplicates = Set.empty[ElementModelImpl]
@@ -708,7 +670,7 @@ package impl {
 
     override def methods: List[MethodModel] = _children.collect { case m: MethodModel => m }
 
-    override def innerClassLike: Seq[ClassLike] = _children.collect { case c: ClassLikeModelImpl => c }
+    override def innerClassLike: Seq[ClassLike] = _children.collect { case c: ClassLikeImpl => c }
 
     final protected def typeName = this match {
       case _: ClassModelImpl        => "class"
@@ -753,12 +715,12 @@ package impl {
     override def existsInSource: Boolean = offsetEnd != offsetStart
   }
 
-  abstract sealed class ClassLikeModelImpl(info: BasicElementInfo)
+  abstract sealed class ClassLikeImpl(info: BasicElementInfo)
       extends ElementModelImpl(info)
       with ClassLike {
 
-    private var _extnds: List[Extends]     = _
-    private var _extendedBy: List[Extends] = _
+    private var _extnds: List[ExtendsImpl]     = _
+    private var _extendedBy: List[ExtendsImpl] = _
     private var _selfType: Option[FieldModelImpl] = None
 
     override def complete(
@@ -782,10 +744,6 @@ package impl {
     }
     override def selfType: Option[FieldModelImpl] = _selfType
 
-    override protected def extnds: Seq[Extends] = _extnds
-
-    override protected def extendedBy: Seq[Extends] = _extendedBy
-
     override def classOrEnclosing: ClassLike = this
 
     override def fullName: String = info.elementId.toString
@@ -794,10 +752,55 @@ package impl {
       xtends(PathNodes(ClassPath, cls.runtimeClass.getName))
     }
 
-    override def xtends(symbol: ElementId): Boolean = {
-      extnds.exists(_.toElementId == symbol)
+    override def xtends(symbol: ElementId): Boolean = Caches.xtends(symbol, this)
+
+    private def extendsClassLike0[T]( rel:  Seq[ExtendsImpl],
+                                      direct: Option[Boolean],
+                                      filterToDefined: Boolean,
+                                      filter: Option[ExtendsImpl => Boolean],
+                                      resultMapper: ExtendsImpl => T): Iterator[T] = {
+      var it: Iterator[ExtendsImpl] = rel.iterator
+      it = direct match {
+        case Some(true) => it.filter(_.isDirect)
+        case Some(false) => it.filterNot(_.isDirect)
+        case None => it
+      }
+      if (filterToDefined)
+        it = it.filter(_.toIsElement)
+      it = filter match {
+        case Some(f) =>
+          it filter f
+        case None => it
+      }
+      it map resultMapper
     }
 
+    override def extendsElement(
+                        direct: Option[Boolean] = None,
+                        filter: Option[ExtendsInternalReference => Boolean] = None
+                      ): Iterator[ClassLike] =
+      extendsClassLike0(_extnds, direct, true, filter map ( e=> new ExtendsInternalReferenceFilter(e)), _.toElementRaw)
+    override def extendsElementId(
+                                   direct: Option[Boolean] = None,
+                                   filter: Option[ExtendsReference => Boolean] = None
+                        ): Iterator[ElementId] =
+      extendsClassLike0(_extnds, direct, false, filter map (e=> new ExtendsReferenceFilter(e)), _.toElementId)
+    override def extendsFull(
+                              direct: Option[Boolean] = None,
+                     filter: Option[ExtendsReference => Boolean] = None
+                   ): Iterator[ExtendsReference] =
+      extendsClassLike0(_extnds, direct, false, filter map (e=> new ExtendsReferenceFilter(e)), ExtendsToReferenceData.apply(_))
+    override def extendedByElement(
+                                    direct: Option[Boolean],
+                                    filter: Option[ExtendedByReference => Boolean]
+                                  ): Iterator[ClassLike] =
+      extendsClassLike0(_extendedBy, direct, false, filter map (e=> new ExtendedByReferenceFilter(e)), _.fromElement)
+
+    override def extendedByFull(
+                                 direct: Option[Boolean],
+                                 filter: Option[ExtendedByReference => Boolean]
+                               ): Iterator[ExtendedByReference] =
+      extendsClassLike0(_extendedBy, direct, false, filter map (e=> new ExtendedByReferenceFilter(e)), ExtendedByReferenceData.apply(_))
   }
 
   abstract sealed class FieldModelImpl(
@@ -807,7 +810,7 @@ package impl {
       _fields: String
   ) extends ElementModelImpl(info)
       with FieldModel {
-    private[impl] var _selfTypeFor: Option[ClassLikeModelImpl] = None
+    private[impl] var _selfTypeFor: Option[ClassLikeImpl] = None
 
     override def selfTypeFor: Option[ClassLike] = _selfTypeFor
 
@@ -887,17 +890,17 @@ package impl {
   }
 
   class ClassModelImpl(info: BasicElementInfo)
-      extends ClassLikeModelImpl(info)
+      extends ClassLikeImpl(info)
       with ClassModel
 
   class ObjectModelImpl(info: BasicElementInfo)
-      extends ClassLikeModelImpl(info)
+      extends ClassLikeImpl(info)
       with ObjectModel {
     override def selfTypeFor: Option[ClassLike] = None
   }
 
   class TraitModelImpl(info: BasicElementInfo)
-      extends ClassLikeModelImpl(info)
+      extends ClassLikeImpl(info)
       with TraitModel
 
   class PlainMethodModelImpl(

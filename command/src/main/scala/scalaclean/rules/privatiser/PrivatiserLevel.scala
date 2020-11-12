@@ -115,7 +115,7 @@ private[privatiser] final case class Scoped(
     }
 
     def referencedInSubclass: Boolean = context match {
-      case classLike: ClassLike => !classLike.extendedByClassLike().isEmpty
+      case classLike: ClassLike => !classLike.extendedByElement().isEmpty
       case _                    => !context.overridden.isEmpty
     }
     //we dont need to label elements private if the enclosing class is private, or more restrictive
