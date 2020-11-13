@@ -137,12 +137,12 @@ abstract class AbstractDeadCodeRemover[T <: AbstractDeadCodeCommandLine] extends
     //overrides
     //TODO should probably mark the definition as used only here
     // as the method/class could be abstract, or maybe thats a different rule
-    element.internalTransitiveOverrides.foreach { enclosed =>
+    element.overridesElement().foreach { enclosed =>
       markUsed(enclosed, markEnclosing = true, purpose, pathWithElement, comment_overrides)
     }
 
     //overridden by
-    element.internalTransitiveOverriddenBy.foreach { enclosed =>
+    element.overriddenByElement().foreach { enclosed =>
       markUsed(enclosed, markEnclosing = false, purpose.withoutClass, pathWithElement, comment_overridden)
     }
     element match {
@@ -229,7 +229,7 @@ abstract class AbstractDeadCodeRemover[T <: AbstractDeadCodeCommandLine] extends
     }
     allScalaTests.foreach(e => markEntryUsed(e, markEnclosing = true, Test, e, "scalatests"))
 
-    model.allOf[MethodModel].filter(_.allTransitiveOverrides.exists(_._1.isEmpty)) foreach {e =>
+    (model.allOf[MethodModel] ++ model.allOf[FieldModel]).filter(_.overridesExternal) foreach {e =>
       markEntryUsed(e, markEnclosing = false, MainNotClass, e, "external API implementation/override")
     }
 

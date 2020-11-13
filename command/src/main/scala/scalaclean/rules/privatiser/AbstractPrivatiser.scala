@@ -162,7 +162,7 @@ abstract class AbstractPrivatiser[T <: AbstractPrivatiserCommandLine](val option
       res = res.merge(access)
     }
     //we must be visible to anything that overrides us
-    element.internalDirectOverriddenBy.foreach { overriddenBy =>
+    element.overriddenByElement(direct=Some(true)).foreach { overriddenBy =>
       res = res.merge(
         makeChange(
           Scoped.Protected(overriddenBy.modelElementId, s"overridden in from $overriddenBy", forceProtected = false)
@@ -171,14 +171,14 @@ abstract class AbstractPrivatiser[T <: AbstractPrivatiserCommandLine](val option
     }
 
     //We must be at least as visible as anything that we override
-    element.allDirectOverrides.foreach {
-      case (Some(overriddenModel), _) =>
+    element.overridesFull(direct=Some(true)).map(_.elementIfDefined).foreach {
+      case Some(overriddenModel) =>
         val overriddenVisibility = localLevel(overriddenModel).specific match {
           case Some(s: Scoped) if s.isProtected => makeChange(s.copy(forceProtected = true))
           case other                            => localLevel(overriddenModel)
         }
         res = res.merge(overriddenVisibility)
-      case (None, _) =>
+      case None =>
         //if it is not in the model, then we will leave this as is
         res = dontChangeBecause.inheritsFromExternal
     }

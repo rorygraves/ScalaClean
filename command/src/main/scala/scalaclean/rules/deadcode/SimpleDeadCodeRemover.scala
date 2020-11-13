@@ -103,15 +103,10 @@ class SimpleDeadCodeRemover(override val options: SimpleDeadCodeCommandLine, ove
         }
       )
     // methods which overiddes something  external ( so we but implement, as we cant remove)
-    model
-      .allOf[MethodModel]
+    (model.allOf[MethodModel] ++ model.allOf[FieldModel])
       .foreach(e =>
-        if (e.colour.isInitial && e.existsInSource) {
-          e.allTransitiveOverrides.iterator.collectFirst{
-            case (None, id) => id
-          }.foreach{ id =>
-            simpleMarkUsed(e, id, s"overrides external")
-          }
+        if (e.colour.isInitial && e.existsInSource && e.overridesExternal) {
+            simpleMarkUsed(e, e.modelElementId, s"overrides external")
         }
       )
 
@@ -132,7 +127,7 @@ class SimpleDeadCodeRemover(override val options: SimpleDeadCodeCommandLine, ove
         .allOf[MethodModel]
         .foreach(e =>
           if (e.colour.isInitial) {
-            e.internalTransitiveOverriddenBy.iterator.filterNot(_.colour.isInitial).take(1).foreach {
+            e.overriddenByElement(filter = Some(!_.element.colour.isInitial)).take(1).foreach {
               ele => simpleMarkUsed(e, ele.modelElementId, "overridden by used")
             }
           }
@@ -142,7 +137,7 @@ class SimpleDeadCodeRemover(override val options: SimpleDeadCodeCommandLine, ove
         .allOf[MethodModel]
         .foreach(e =>
           if (e.colour.isInitial) {
-            e.internalTransitiveOverrides.iterator.collectFirst {
+            e.overridesElement().collectFirst {
               case ele if !ele.colour.isInitial => ele
             }.foreach {
               ele => simpleMarkUsed(e, ele.modelElementId, s"overrides internal ")

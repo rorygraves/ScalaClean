@@ -123,8 +123,7 @@ class Finaliser(override val options: FinaliserCommandLine, override val model: 
       case cls: ClassModel if localLevel(cls).specific.contains(Final) => dontChangeBecause.ownerIsFinalClass
       case cls: ObjectModel                            => dontChangeBecause.ownerIsObject
       case cls: ClassLike =>
-        val overrides = method.overridden
-        if (overrides.isEmpty) changeTo.makeFinal
+        if (method.overriddenByElement().isEmpty) changeTo.makeFinal
         else changeTo.keepOpen
       case encl => dontChange(s"enclosed in $encl")
     }
@@ -139,12 +138,13 @@ class Finaliser(override val options: FinaliserCommandLine, override val model: 
       case cls: ClassLike                                  =>
         // we need to consider the accessors. The val isn't overridden, but if the accessor is then we cant make it final
         // in the parent
-        val overrides: Iterable[Overrides] = field.overridden ++ field.accessors.flatMap(_.overridden)
+        val overrides = field.overriddenByElement() ++ field.accessors.flatMap(_.overriddenByElement())
         if (overrides.isEmpty)
           changeTo.makeFinal
         else {
-          val size = overrides.size
-          dontChange(s"$size overrides - e.g. ${overrides.head.fromElementId}")
+          val first = overrides.next
+          val size = overrides.size + 1
+          dontChange(s"$size overrides - e.g. ${first}")
         }
       case encl => dontChange(s"enclosed in $encl")
     }

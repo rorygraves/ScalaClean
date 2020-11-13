@@ -7,7 +7,7 @@ class Test_internalDirectOverrides(model: AllProjectsModel) extends TestCommon("
 
   override def visitInSource(modelElement: ModelElement): String =
     elementsInTestFormat("internalDirectOverrides", modelElement,
-      modelElement.internalDirectOverrides)
+      modelElement.overridesElement(direct = Some(true)))
 
 }
 
@@ -17,7 +17,7 @@ class Test_internalTransitiveOverrides(model: AllProjectsModel)
 
   override def visitInSource(modelElement: ModelElement): String =
     elementsInTestFormat("internalTransitiveOverrides", modelElement,
-      modelElement.internalTransitiveOverrides)
+      modelElement.overridesElement())
 }
 
 /** A rule use to test the that overrides as set correctly */
@@ -25,7 +25,7 @@ class Test_allDirectOverrides(model: AllProjectsModel) extends TestCommon("Test_
 
   override def visitInSource(modelElement: ModelElement): String =
     elementAndIdsInTestFormat("allDirectOverrides", modelElement,
-      modelElement.allDirectOverrides.iterator)
+      modelElement.overridesFull(direct=Some(true)))
 }
 
 /** A rule use to test the that overrides as set correctly */
@@ -33,7 +33,7 @@ class Test_allTransitiveOverrides(model: AllProjectsModel) extends TestCommon("T
 
   override def visitInSource(modelElement: ModelElement): String =
     elementAndIdsInTestFormat("allTransitiveOverrides", modelElement,
-      modelElement.allTransitiveOverrides.iterator)
+      modelElement.overridesFull())
 }
 
 /** A rule use to test the that overrides as set correctly */
@@ -42,7 +42,7 @@ class Test_internalDirectOverriddenBy(model: AllProjectsModel)
 
   override def visitInSource(modelElement: ModelElement): String =
     elementsInTestFormat("internalDirectOverriddenBy", modelElement,
-      modelElement.internalDirectOverriddenBy)
+      modelElement.overriddenByElement(direct = Some(true)))
 
 }
 
@@ -52,6 +52,6 @@ class Test_internalTransitiveOverriddenBy(model: AllProjectsModel)
 
   override def visitInSource(modelElement: ModelElement): String =
     elementsInTestFormat("internalTransitiveOverriddenBy", modelElement,
-      modelElement.internalTransitiveOverriddenBy)
+      modelElement.overriddenByElement())
 
 }
