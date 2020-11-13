@@ -1,21 +1,12 @@
 package scalaclean.model.impl
 
-import scalaclean.model.{
-  ClassLike,
-  ElementId,
-  ExtendedByReference,
-  ExtendsInternalReference,
-  ExtendsReference,
-  HasIsDirect,
-  HasIsSynthetic,
-  ModelElement,
-  Reference
-}
+import scalaclean.model.{ClassLike, ElementId, ExtendedByReference, ExtendsInternalReference, ExtendsReference, HasIsDirect, HasIsSynthetic, ModelElement, NotNothing, OverriddenByReference, OverridesInternalReference, OverridesReference, Reference}
 
 import scala.runtime.AbstractFunction1
 
 private[impl] object RelationshipNavigation {
 
+  //generic relationship infra
   abstract class RelsBaseFilter[T <: Reference] extends AbstractFunction1[T, Boolean] {
     protected var current: T = _
 
@@ -56,6 +47,7 @@ private[impl] object RelationshipNavigation {
     def elementId: ElementId = current.fromElementId
   }
 
+  //extends relationship
   abstract class ExtendsReferenceBaseFilter extends RelsBaseFilter[ExtendsImpl] with RelsDirectFilter[ExtendsImpl]
 
   class ExtendsReferenceFilter(f: ExtendsReference => Boolean)
@@ -79,28 +71,90 @@ private[impl] object RelationshipNavigation {
     override def applyImpl: Boolean = f(this)
   }
 
-  object ExtendsToReferenceData {
+  //overrides relationship
+  abstract class OverridesReferenceBaseFilter
+      extends RelsBaseFilter[OverridesImpl]
+      with RelsDirectFilter[OverridesImpl]
+      with RelsSyntheticFilter[OverridesImpl]
 
-    def apply(e: ExtendsImpl): ExtendsReference = new ExtendsReference {
-      override def isDirect: Boolean = e.isDirect
-
-      override def elementIsDefined: Boolean = e.toIsElement
-
-      override def elementIfDefined: Option[ClassLike] = e.toElement
-
-      override def elementId: ElementId = e.toElementId
-    }
-
+  class OverridesReferenceFilter(f: OverridesReference => Boolean)
+      extends OverridesReferenceBaseFilter
+      with RelsToFilter[ElementModelImpl, ElementModelImpl, OverridesImpl]
+      with OverridesReference {
+    override def applyImpl: Boolean = f(this)
   }
 
-  object ExtendedByReferenceData {
+  class OverridesInternalReferenceFilter(f: OverridesInternalReference => Boolean)
+      extends OverridesReferenceBaseFilter
+      with RelsToInternalFilter[ElementModelImpl, ElementModelImpl, OverridesImpl]
+      with OverridesInternalReference {
+    override def applyImpl: Boolean = f(this)
+  }
 
-    def apply(e: ExtendsImpl): ExtendedByReference = new ExtendedByReference {
-      override def isDirect: Boolean = e.isDirect
+  class OverriddenByReferenceFilter(f: OverriddenByReference => Boolean)
+      extends OverridesReferenceBaseFilter
+      with RelsFromFilter[ElementModelImpl, ElementModelImpl, OverridesImpl]
+      with OverriddenByReference {
+    override def applyImpl: Boolean = f(this)
+  }
 
-      override def element: ClassLike = e.fromElement
+  object NavigationData {
+    abstract class RelsBase[T <: Reference](protected val data: T)
+
+    trait RelsDirect[T <: Reference with HasIsDirect] {
+      self: RelsBase[T] =>
+      def isDirect: Boolean = data.isDirect
     }
 
+    trait RelsSynthetic[T <: Reference with HasIsSynthetic] {
+      self: RelsBase[T] =>
+      def isSynthetic: Boolean = data.isSynthetic
+    }
+
+    trait RelsTo[From <: ModelElement, To <: ModelElement, Rels <: ReferenceImpl[From, To]] {
+      self: RelsBase[Rels] =>
+      def elementIsDefined: Boolean    = data.toIsElement
+      def elementIfDefined: Option[To] = data.toElement
+      def elementId: ElementId         = data.toElementId
+    }
+
+    trait RelsFrom[From <: ElementModelImpl, To <: ElementModelImpl, Rels <: ReferenceImpl[From, To]] {
+      self: RelsBase[Rels] =>
+      def element: From        = data.fromElement
+      def elementId: ElementId = data.fromElementId
+    }
+
+    class ExtendsReferenceData(e: ExtendsImpl)
+      extends RelsBase[ExtendsImpl](e)
+        with RelsDirect[ExtendsImpl]
+        with RelsTo[ClassLikeImpl, ClassLikeImpl, ExtendsImpl]
+        with ExtendsReference
+
+    class ExtendedByReferenceData(e: ExtendsImpl)
+      extends RelsBase[ExtendsImpl](e)
+        with RelsDirect[ExtendsImpl]
+        with RelsFrom[ClassLikeImpl, ClassLikeImpl, ExtendsImpl]
+        with ExtendedByReference
+
+    def to(e: ExtendsImpl): ExtendsReference      = new ExtendsReferenceData(e)
+    def from(e: ExtendsImpl): ExtendedByReference = new ExtendedByReferenceData(e)
+
+    class OverridesReferenceData(e: OverridesImpl)
+      extends RelsBase[OverridesImpl](e)
+        with RelsSynthetic[OverridesImpl]
+        with RelsDirect[OverridesImpl]
+        with RelsTo[ElementModelImpl, ElementModelImpl, OverridesImpl]
+        with OverridesReference
+
+    class OverriddenByReferenceData(e: OverridesImpl)
+      extends RelsBase[OverridesImpl](e)
+        with RelsSynthetic[OverridesImpl]
+        with RelsDirect[OverridesImpl]
+        with RelsFrom[ElementModelImpl, ElementModelImpl, OverridesImpl]
+        with OverriddenByReference
+
+    def to(e: OverridesImpl): OverridesReference      = new OverridesReferenceData(e)
+    def from(e: OverridesImpl): OverriddenByReference = new OverriddenByReferenceData(e)
   }
 
 }

@@ -16,7 +16,7 @@ class Test_extends(
   override def visitInSource(modelElement: ModelElement): String = modelElement match {
     case classLike: ClassLike =>
       elementAndIdsInTestFormat("extends", modelElement,
-        classLike.extendsFull(directOnly, filter).map(e => (e.elementIfDefined, e.elementId)))
+        classLike.extendsFull(directOnly, filter))
     case _ => ""
   }
 

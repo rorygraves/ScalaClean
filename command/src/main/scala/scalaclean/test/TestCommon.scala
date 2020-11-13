@@ -22,9 +22,10 @@ abstract class TestCommon(name: String, model: AllProjectsModel) extends TestBas
    */
   def visitInSource(modelElement: ModelElement): String
 
-  def elementAndIdsInTestFormat(test: String, focus: ModelElement, elements: Iterator[(Option[ModelElement], ElementId)]): String = {
-    val strings = elements.map {
-      case (clOpt, elementId) =>
+  def elementAndIdsInTestFormat(test: String, focus: ModelElement, elements: Iterator[ExternalElementReference[_ <: ModelElement]]): String = {
+    val strings = elements.map { r =>
+      val clOpt = r.elementIfDefined
+      val elementId = r.elementId
         clOpt.foreach(cl =>
           assert(cl.modelElementId == elementId, s"cl.modelElementId(${cl.modelElementId}) != elementId($elementId)")
         )

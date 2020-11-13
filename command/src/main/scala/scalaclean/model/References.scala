@@ -74,6 +74,10 @@ sealed trait Within extends Reference
 trait ExtendsReference         extends ExternalElementReference[ClassLike] with HasIsDirect
 trait ExtendsInternalReference extends InternalElementReference[ClassLike] with HasIsDirect
 trait ExtendedByReference      extends InternalElementReference[ClassLike] with HasIsDirect
+
+trait OverridesReference         extends ExternalElementReference[ModelElement] with HasIsDirect with HasIsSynthetic
+trait OverridesInternalReference extends InternalElementReference[ModelElement] with HasIsDirect with HasIsSynthetic
+trait OverriddenByReference      extends InternalElementReference[ModelElement] with HasIsDirect with HasIsSynthetic
 //end concrete relationship results from model APIs
 
 package impl {
@@ -137,12 +141,12 @@ package impl {
 
   final class OverridesImpl(from: ElementId, to: ElementId, val isDirect: Boolean, val isSynthetic: Boolean)
   //maybe should be Member, Member
-      extends ReferenceImpl[ModelElement, ModelElement](from, to)
+      extends ReferenceImpl[ElementModelImpl, ElementModelImpl](from, to)
       with Overrides {
 
-    override def clsFrom: Class[ModelElement] = classOf[ModelElement]
+    override def clsFrom: Class[ElementModelImpl] = classOf[ElementModelImpl]
 
-    override def clsTo: Class[ModelElement] = classOf[ModelElement]
+    override def clsTo: Class[ElementModelImpl] = classOf[ElementModelImpl]
 
     override def toString: String = s"Overrides($from -> $to, isDirect = $isDirect, isSynthetic = $isSynthetic"
   }

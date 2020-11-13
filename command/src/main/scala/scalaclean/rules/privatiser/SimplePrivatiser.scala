@@ -13,21 +13,12 @@ object SimplePrivatiser extends AbstractRule[SimplePrivatiserCommandLine] {
 class SimplePrivatiser(options: SimplePrivatiserCommandLine, model: AllProjectsModel)
     extends AbstractPrivatiser(options, model) {
 
-
-  def isOverridden(e: ModelElement): Boolean = {
-    e.internalTransitiveOverriddenBy.nonEmpty
-  }
-
-  def isOverrides(e: ModelElement): Boolean = {
-    e.allTransitiveOverrides.nonEmpty
-  }
-
   override def ruleSpecific(): Unit = {
     model.allOf[ModelElement].foreach {
-      case e if isOverridden(e) =>
-        e.colour = dontChange(s"It's overridden ${e.internalTransitiveOverriddenBy.head}")
-      case e if isOverrides(e) =>
-        e.colour = dontChange(s"It overrides ${e.allTransitiveOverrides.head}")
+      case e if e.overriddenByElement().nonEmpty =>
+        e.colour = dontChange(s"It's overridden ${e.overriddenByElement().next}")
+      case e if e.overridesElementId().nonEmpty =>
+        e.colour = dontChange(s"It overrides ${e.overridesElementId().next}")
       case e => e.colour = localLevel(e)
     }
   }
