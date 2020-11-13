@@ -36,6 +36,10 @@ class Finaliser(override val options: FinaliserCommandLine, override val model: 
     val ownerIsObject         = dontChange("owner is a an object")
     val ownerIsPrivateOrFinal = dontChange("owner is private/final")
     val ownerWillBeFinal      = dontChange("owner will be a final class")
+
+    val itsGenerated = dontChange("its a generated API")
+    val itsExternal = dontChange("its an external API")
+
   }
 
   object changeTo {
@@ -45,6 +49,27 @@ class Finaliser(override val options: FinaliserCommandLine, override val model: 
   }
 
   override def runRule(): Unit = {
+
+    def markAllUsed(e: ModelElement, reason: Mark[SpecificColour]): Unit = {
+      e.mark = reason
+      e.allChildren foreach (markAllUsed(_, reason))
+    }
+    if (options.externalInterface.nonEmpty || options.generatedSource.nonEmpty) {
+      for (source <- model.allOf[SourceModel]) {
+        val md = sourceMetaData(source)
+        if (md.external) markAllUsed(source, dontChangeBecause.itsExternal)
+        else if (md.generated) markAllUsed(source, dontChangeBecause.itsGenerated)
+      }
+      if (options.externalInterface.nonEmpty) {
+        val externalElements = model.allOf[ModelElement].toStream.par.filter { e =>
+          val id = e.modelElementId.id
+          options.externalInterface.exists(_.pattern.matcher(id).matches())
+        } toList
+
+        externalElements.foreach(_.mark = dontChangeBecause.itsExternal)
+      }
+    }
+
     model.allOf[ModelElement].foreach {
       case e: SourceModel =>
         e.colour = dontChangeBecause.sourceFile

@@ -2,6 +2,7 @@ package scalaclean.util
 
 import java.io.{PrintStream, PrintWriter}
 import java.nio.file.Path
+import java.util.concurrent.atomic.AtomicInteger
 
 import scalaclean.cli.ScalaCleanCommandLine
 import scalaclean.model.{SCPatch, SourceModel}
@@ -21,11 +22,11 @@ class PatchStats(options: ScalaCleanCommandLine) {
                |Files           Errors               = ${issues.size}
                |Files           Inconsistent         = ${inconsistentFiles}
                |Files           Changed              = ${filesChanged}
-               |Files           Effect rate          = ${(filesChanged.toDouble / filesVisited.toDouble * 10000).toInt / 100} %
+               |Files           Effect rate          = ${(filesChanged.get.toDouble / filesVisited.get.toDouble * 10000).toInt / 100} %
                |Elements        Observed             = $elementsVisited
                |Source Elements Observed             = $sourceElementsVisited
                |Source Elements Changed              = $elementsChanged
-               |Source Elements Effect rate          = ${(elementsChanged.toDouble / sourceElementsVisited.toDouble * 10000).toInt / 100} %
+               |Source Elements Effect rate          = ${(elementsChanged.get.toDouble / sourceElementsVisited.get.toDouble * 10000).toInt / 100} %
                |""".stripMargin)
     fileDoesntExist.sorted.foreach(file => println(s"skipped nonexistent file $file"))
     issues.foreach { case (file, (message, error, patches)) =>
@@ -35,12 +36,12 @@ class PatchStats(options: ScalaCleanCommandLine) {
     }
   }
 
-  private var filesVisited          = 0
-  private var inconsistentFiles     = 0
-  private var filesChanged          = 0
-  private var elementsVisited       = 0
-  private var sourceElementsVisited = 0
-  private var elementsChanged       = 0
+  private val filesVisited          = new AtomicInteger
+  private val inconsistentFiles     = new AtomicInteger
+  private val filesChanged          = new AtomicInteger
+  private val elementsVisited       = new AtomicInteger
+  private val sourceElementsVisited = new AtomicInteger
+  private val elementsChanged       = new AtomicInteger
 
   private var fileDoesntExist: List[Path] = Nil
   private val issues                      = mutable.SortedMap[Path, (String, Throwable, List[SCPatch])]()
@@ -70,14 +71,14 @@ class PatchStats(options: ScalaCleanCommandLine) {
 
       }
     }
-    filesChanged += 1
-    elementsVisited += fixes.elementsVisited
-    sourceElementsVisited += fixes.sourceElementsVisited
-    elementsChanged += fixes.patches.size
+    filesChanged.incrementAndGet()
+    elementsVisited.addAndGet(fixes.elementsVisited)
+    sourceElementsVisited .addAndGet(fixes.sourceElementsVisited)
+    elementsChanged .addAndGet( fixes.patches.size)
   }
 
   def process(sourceFile: SourceFile) = {
-    filesVisited += 1
+    filesVisited.incrementAndGet()
   }
   val noException = new Exception("") {
     override def printStackTrace(s: PrintStream): Unit = ()
@@ -89,7 +90,7 @@ class PatchStats(options: ScalaCleanCommandLine) {
     if (debug) {
       println(s"sourceChanged!!! ${sourceFile.file.filename}\n$message")
     }
-    inconsistentFiles += 1
+    inconsistentFiles.incrementAndGet()
   }
 
 }

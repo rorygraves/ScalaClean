@@ -13,7 +13,8 @@ class ModsPlugin(val sc: ScalaCompilerPluginComponent) extends ExtensionPlugin {
 
   override def extendedData(
       mSymbol: ModelSymbol,
-      tree: g.Tree,
+      tree: Option[g.Tree],
+      _symbol: g.Symbol,
       enclosingModel: List[ModelSymbol]
   ): List[ExtensionData] = {
     // Visibility encoding seems to be like this
@@ -28,10 +29,10 @@ class ModsPlugin(val sc: ScalaCompilerPluginComponent) extends ExtensionPlugin {
     // protected[foo]  === Flags.PROTECTED &  'privateWithin=="foo"'
     val vis: List[VisibilityData] = {
       val symbol: g.Symbol = mSymbol match {
-        case field: ModelField             => tree.symbol.getterIn(tree.symbol.owner)
+        case field: ModelField             => _symbol.getterIn(_symbol.owner)
         case accessor: ModelAccessorMethod => g.NoSymbol
         case fields: ModelFields           => g.NoSymbol
-        case _                             => tree.symbol
+        case _                             => _symbol
       }
       if (symbol.hasFlag(Flags.PROTECTED | Flags.PRIVATE) || symbol.hasAccessBoundary) {
         val within =
@@ -43,11 +44,10 @@ class ModsPlugin(val sc: ScalaCompilerPluginComponent) extends ExtensionPlugin {
         List(VisibilityData(Int.MinValue, Int.MinValue, group, within))
       } else Nil
     }
-
     val others: List[ExtensionData] = tree match {
-      case d: g.MemberDefApi =>
-        d.mods.positions.collect { case (f, pos) =>
-          val basePos = tree.pos.start
+      case Some(memberDef: g.MemberDefApi) =>
+        memberDef.mods.positions.collect { case (f, pos) =>
+          val basePos = memberDef.pos.start
           ModData(pos.start - basePos, pos.end - basePos, f)
         }(scala.collection.breakOut)
       case _ => Nil

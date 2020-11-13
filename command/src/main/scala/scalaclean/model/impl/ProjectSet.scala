@@ -5,7 +5,7 @@ import java.nio.file.Path
 import scalaclean.model._
 
 import scala.collection.immutable
-import scala.reflect.ClassTag
+import scala.reflect.{ClassTag, classTag}
 
 class ProjectSet(projectPropertyPaths: Path*) extends AllProjectsModel {
   override val projects: List[ProjectImpl] = projectPropertyPaths.toList.map(p => ProjectImpl(p, this))
@@ -68,8 +68,14 @@ class ProjectSet(projectPropertyPaths: Path*) extends AllProjectsModel {
 
   override def size: Int = elements.size
 
+  private val allCache = new ClassValue[Iterable[ModelElement]] {
+    override def computeValue(tpe: Class[_]): Iterable[ModelElement] = {
+      elements.values.iterator.filter{ e => tpe.isInstance(e)}.toArray(ClassTag(tpe))
+    }
+  }
+
   override def allOf[T <: ModelElement: ClassTag]: Iterator[T] = {
-    elements.values.iterator.collect { case x: T => x }
+    allCache.get(implicitly(classTag[T]).runtimeClass).asInstanceOf[Iterable[T]].iterator
   }
 
 }

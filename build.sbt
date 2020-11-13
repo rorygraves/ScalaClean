@@ -156,7 +156,7 @@ lazy val deadCodeProject6a = testInputProject("deadCodeProject6a", "testProjects
 lazy val deadCodeProject6b = testInputProject("deadCodeProject6b", "testProjects/deadCodeProject6b")(deadCodeProject6a)
 
 lazy val deadCodeProject7       = testInputProject("deadCodeProject7", "testProjects/deadCodeProject7")()
-lazy val deadCodeProject8       = testInputProject("deadCodeProject8", "testProjects/deadCodeProject8")()
+lazy val deadCodeProject8       = testInputProject("deadCodeProject8_overrides", "testProjects/deadCodeProject8_overrides")()
 lazy val deadCodeProject9       = testInputProject("deadCodeProject9", "testProjects/deadCodeProject9")()
 lazy val deadCodeProject10_vals = testInputProject("deadCodeProject10_vals", "testProjects/deadCodeProject10_vals")()
 
@@ -189,6 +189,9 @@ lazy val deadCodeProject18_utf16 =
 
 lazy val deadCodeProject18_utf32 =
   testInputProject("deadCodeProject18_utf32", "testProjects/deadCodeProject18_utf32", encoding="UTF-32")()
+
+lazy val deadCodeProject19_selftype =
+  testInputProject("deadCodeProject19_selftype", "testProjects/deadCodeProject19_selftype")()
 
 lazy val privatiserProject1 = testInputProject("privatiserProject1", "testProjects/privatiserProject1")()
 lazy val privatiserProject2 = testInputProject("privatiserProject2", "testProjects/privatiserProject2")()
@@ -235,7 +238,8 @@ lazy val deadCodeTests = List(
   deadCodeProject17_annotations,
   deadCodeProject18_utf8,
   deadCodeProject18_utf16,
-  deadCodeProject18_utf32
+  deadCodeProject18_utf32,
+  deadCodeProject19_selftype
 )
 
 lazy val otherProjects = List{

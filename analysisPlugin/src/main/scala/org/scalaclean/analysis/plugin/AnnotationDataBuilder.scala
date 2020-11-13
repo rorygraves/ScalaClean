@@ -7,7 +7,7 @@ import scala.tools.nsc.Global
 
 object AnnotationDataBuilder {
 
-  def buildSimpleAnnotation(g: Global)(annotated: g.Tree, annotation: g.AnnotationInfo): ExtensionData = {
+  def buildSimpleAnnotation(g: Global)(symbol: g.Symbol, annotation: g.AnnotationInfo): ExtensionData = {
     def print(assoc: g.ClassfileAnnotArg): String = {
       import g._
       assoc match {
@@ -23,7 +23,7 @@ object AnnotationDataBuilder {
     }
 
     val clazz     = annotation.tpe.typeSymbol.fullName
-    val targetPos = annotated.pos
+    val targetPos = symbol.pos
     val pos       = if (annotation.pos == NoPosition) Position.range(targetPos.source, 0, 0, 0) else annotation.pos
     var values    = Map.empty[String, String]
     annotation.assocs.foreach { case (name, assoc) => values = values.updated(name.toString, clean(print(assoc))) }

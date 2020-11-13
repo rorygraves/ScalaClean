@@ -31,7 +31,7 @@ trait ModelSymbolBuilder {
 //  def addAlias(alias: global.Symbol, model: ModelSymbol): Unit = {
 //    assert(!aliases.contains(alias))
 //    assert(!mSymbolCache.contains(alias))
-//    assert(model.tree.symbol != alias)
+//    assert(model.symbol != alias)
 //    aliases(alias) = model.common
 //    mSymbolCache(alias) = model.common
 //  }

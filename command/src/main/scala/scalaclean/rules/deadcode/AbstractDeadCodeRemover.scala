@@ -5,6 +5,8 @@ import scalaclean.model._
 import scalaclean.rules.{RuleRun, SourceFile}
 import scalaclean.util.{ScalaCleanTreePatcher, SingleFileVisit}
 
+import scala.collection.mutable
+
 /** A rule that removes unreferenced classes */
 abstract class AbstractDeadCodeRemover[T <: AbstractDeadCodeCommandLine] extends RuleRun[T] {
 
@@ -13,66 +15,85 @@ abstract class AbstractDeadCodeRemover[T <: AbstractDeadCodeCommandLine] extends
   sealed trait Purpose {
     def id: Int
 
+    def withClass: Purpose
+    def withoutClass: Purpose
+
     override def toString: String = getClass.getSimpleName.replace("$", "")
   }
 
   override def debugDump(): Unit = {
     println("-------------------------------------------------------------")
 
-    val used   = model.allOf[ModelElement].filter(_.colour.specific.isDefined).toList.map(_.modelElementId.id).sorted
-    val unused = model.allOf[ModelElement].filter(_.colour.isInitial).toList.map(_.modelElementId.id).sorted
-    val banned = model.allOf[ModelElement].filter(_.colour.changesAreBanned).toList.map(_.modelElementId.id).sorted
+    val used   = model.allOf[ModelElement].filter(_.colour.specific.isDefined).toList.sortBy(_.modelElementId.id)
+    val unused = model.allOf[ModelElement].filter(_.colour.isInitial).toList.sortBy(_.modelElementId.id)
+    val banned = model.allOf[ModelElement].filter(_.colour.changesAreBanned).toList.sortBy(_.modelElementId.id)
 
     println("Used symbols =  " + used.size)
     println("Unused size = " + unused.size)
     println("Banned size = " + banned.size)
     println("Used Elements: ")
-    used.foreach(e => println("  " + e))
+    used.foreach(e => println(s"  ${e.modelElementId.id} ${e.colour.specific.get}"))
     println("Unused Elements: ")
-    unused.foreach(e => println("  " + e))
+    unused.foreach(e => println(s"  ${e.modelElementId.id} "))
     println("-------------------------------------------------------------")
 
   }
 
-  def markRhs(element: ModelElement, purpose: Purpose, path: List[ModelElement], comment: String): Unit = {
+  def markRhs(element: ModelElement, purpose: Purpose, path: List[ModelElement], comment: List[String]): Unit = {
+    lazy val comment_valDefO = "valDef(outgoing)" :: comment
+    lazy val comment_valDef = "valDef" :: comment
+    lazy val comment_varDefO = "varDef(outgoing)" :: comment
+    lazy val comment_varDef = "varDef" :: comment
+    lazy val comment_objO = "obj(outgoing)" :: comment
+    lazy val comment_obj = "obj" :: comment
+
+
     element.fields.foreach {
       case valDef: ValModel =>
         if (!valDef.isLazy) {
           valDef.internalOutgoingReferences.foreach { case (ref, _) =>
-            markUsed(ref, markEnclosing = true, purpose, valDef :: path, s"$comment -> valDef(outgoing)")
+            markUsed(ref, markEnclosing = true, purpose, valDef :: path, comment_valDefO)
           }
-          markRhs(valDef, purpose, valDef :: path, s"$comment -> valDef")
+          markRhs(valDef, purpose, valDef :: path, comment_valDef)
         }
       case varDef: VarModel =>
         varDef.internalOutgoingReferences.foreach { case (ref, _) =>
-          markUsed(ref, markEnclosing = true, purpose, varDef :: path, s"$comment -> varDef(outgoing)")
+          markUsed(ref, markEnclosing = true, purpose, varDef :: path, comment_varDefO)
         }
-        markRhs(varDef, purpose, varDef :: path, s"$comment -> varDef")
+        markRhs(varDef, purpose, varDef :: path, comment_varDef)
       //TODO - not sure if this is correct
       // an inner object is lazy in scala, so probably should only be marked when used
       case obj: ObjectModel =>
         obj.internalOutgoingReferences.foreach { case (ref, _) =>
-          markUsed(ref, markEnclosing = true, purpose, obj :: path, s"$comment -> obj(outgoing)")
+          markUsed(ref, markEnclosing = true, purpose, obj :: path, comment_objO)
         }
-        markRhs(obj, purpose, obj :: path, s"$comment -> obj")
+        markRhs(obj, purpose, obj :: path, comment_obj)
     }
   }
-
   def markUsed(
       element: ModelElement,
       markEnclosing: Boolean,
       purpose: Purpose,
       path: List[ModelElement],
-      comment: String
+      comment: List[String]
   ): Unit = {
     val current = element.colour
     if (!current.changesAreBanned && !current.specific.exists(_.hasPurpose(purpose))) {
       if (debug)
-        println(s"mark $element as used for $purpose due to ${path.mkString("->")} $comment")
+        println(s"mark $element as used for $purpose due to ${path.mkString("->")} ${comment.mkString("->")}")
 
       val newSpecificUsage = current.specific.getOrElse(Usage(purpose)).withPurpose(purpose)
       element.colour = current.withSpecific(newSpecificUsage)
+      recordChange(element)
       adjustUsage(element, markEnclosing, purpose, path, comment)
+    }
+  }
+  var trackChanges = false
+  val trackedChanges = new mutable.Queue[ModelElement]
+  def recordChange(element: ModelElement): Unit = {
+    if (trackChanges) element match {
+      case _ :ClassLike =>  trackedChanges += element
+      case _ =>
     }
   }
 
@@ -81,11 +102,21 @@ abstract class AbstractDeadCodeRemover[T <: AbstractDeadCodeCommandLine] extends
       markEnclosing: Boolean,
       purpose: Purpose,
       path: List[ModelElement],
-      comment: String
+      comment: List[String]
   ): Unit = {
+    val pathWithElement = element :: path
+
+    lazy val comment_internalOutgoingReferences = "internalOutgoingReferences" :: comment
+    lazy val comment_rhs = "markRhs" :: comment
+    lazy val comment_enclosing = "enclosing" :: comment
+    lazy val comment_overrides = "overrides" :: comment
+    lazy val comment_overridden = "overridden" :: comment
+    lazy val comment_field = "field" :: comment
+    lazy val comment_fields = "fields" :: comment
+
     //all the elements that this refers to
     element.internalOutgoingReferences.foreach { case (ref, _) =>
-      markUsed(ref, markEnclosing = true, purpose, element :: path, s"$comment -> internalOutgoingReferences")
+      markUsed(ref, markEnclosing = true, purpose, pathWithElement, comment_internalOutgoingReferences)
     }
 
     // for the vars, (non lazy) vals and objects - eagerly traverse the RHS, as it is called
@@ -94,46 +125,48 @@ abstract class AbstractDeadCodeRemover[T <: AbstractDeadCodeCommandLine] extends
     // we could consider marking at as used differently - a different colour
     //
     // don't mark the fields as used though
-    markRhs(element, purpose, element :: path, s"$comment -> markRhs")
+    markRhs(element, purpose, pathWithElement, comment_rhs)
 
     if (markEnclosing) {
       //enclosing
       element.enclosing.foreach { enclosed =>
-        markUsed(enclosed, markEnclosing = true, purpose, element :: path, s"$comment - enclosing")
+        markUsed(enclosed, markEnclosing = true, purpose, pathWithElement, comment_enclosing)
       }
     }
 
-    //overridden
+    //overrides
+    //TODO should probably mark the definition as used only here
+    // as the method/class could be abstract, or maybe thats a different rule
     element.internalTransitiveOverrides.foreach { enclosed =>
-      markUsed(enclosed, markEnclosing = true, purpose, element :: path, s"$comment - overrides")
+      markUsed(enclosed, markEnclosing = true, purpose, pathWithElement, comment_overrides)
     }
 
-    //overrides
+    //overridden by
     element.internalTransitiveOverriddenBy.foreach { enclosed =>
-      markUsed(enclosed, markEnclosing = false, purpose, element :: path, s"$comment - overrides")
+      markUsed(enclosed, markEnclosing = false, purpose.withoutClass, pathWithElement, comment_overridden)
     }
     element match {
       case accessor: AccessorModel =>
         accessor.field.foreach { f =>
-          markUsed(f, markEnclosing = true, purpose, element :: path, s"$comment - field ")
+          markUsed(f, markEnclosing = true, purpose, pathWithElement, comment_field)
         }
-      case obj: ObjectModel =>
-        //not sure if this is needed. Apply method should be referenced directly
-        //is this a ScalaMeta hangover??
-        obj.methods.foreach { m =>
-          if (m.methodName == "apply")
-            markUsed(m, markEnclosing = false, purpose, element :: path, s"$comment - apply method of used object")
-        }
+//      case obj: ObjectModel =>
+//        //not sure if this is needed. Apply method should be referenced directly
+//        //is this a ScalaMeta hangover??
+//        obj.methods.foreach { m =>
+//          if (m.methodName == "apply")
+//            markUsed(m, markEnclosing = false, purpose, pathWithElement, comment apply method of used object")
+//        }
       case field: FieldModel =>
         field.declaredIn.foreach { f =>
-          markUsed(f, markEnclosing = true, purpose, element :: path, s"$comment - fields declaration ")
+          markUsed(f, markEnclosing = true, purpose, pathWithElement, comment_fields)
         }
-      //not sure if this is needed.
-      //is this a ScalaMeta hangover??
-      case trt: TraitModel =>
-        trt.fields.foreach { fieldsInTrait =>
-          markUsed(fieldsInTrait, markEnclosing = false, purpose, element :: path, s"$comment - inside a used trait")
-        }
+//      //not sure if this is needed.
+//      //is this a ScalaMeta hangover??
+//      case trt: TraitModel =>
+//        trt.fields.foreach { fieldsInTrait =>
+//          markUsed(fieldsInTrait, markEnclosing = false, purpose, pathWithElement, comment inside a used trait")
+//        }
       case _ =>
     }
   }
@@ -142,14 +175,64 @@ abstract class AbstractDeadCodeRemover[T <: AbstractDeadCodeCommandLine] extends
     runBasicRule()
     runExtraRules()
     runSerialisationRule()
+    fixupClassesAndContent()
+  }
+
+
+
+  def fixupClassesAndContent(): Unit = {
+    def processInnards(cls: ClassLike, purpose: Purpose): Unit = {
+      assert (purpose.withClass eq purpose)
+      val withoutClass = purpose.withoutClass
+      cls.allChildren foreach { e =>
+        e.colour.specific match {
+          case Some (p) if p.hasPurpose(withoutClass) && !p.hasPurpose(purpose) =>
+            markUsed(e, false, purpose, e :: Nil, "fixup" :: Nil)
+          case _ =>
+        }
+      }
+    }
+    def fixClassIfNeeded(ele: ModelElement): Unit = ele match {
+      case cls: ClassLike  =>
+        cls.colour.specific match {
+          case None  => if (cls.colour.changesAreBanned)
+            processInnards(cls, Main)
+          case Some(p) =>
+            if (p.hasPurpose(Main))
+              processInnards(cls, Main)
+            if (p.hasPurpose(Test))
+              processInnards(cls, Test)
+        }
+      case _ =>
+    }
+
+    trackChanges = true
+    model.allOf[ClassLike] foreach fixClassIfNeeded
+
+    trackedChanges dropWhile { e => fixClassIfNeeded(e); true}
   }
   def runBasicRule(): Unit = {
-    allMainEntryPoints.foreach(e => markUsed(e, markEnclosing = true, Main, e :: Nil, "app"))
-    allJunitTest.foreach(e => markUsed(e, markEnclosing = true, Test, e :: Nil, "junit test"))
-    allJunitClasses.foreach { testClass =>
-      markUsed(testClass, markEnclosing = true, Test, testClass :: Nil, "junit test class")
+    def markEntryUsed(
+                  element: ModelElement,
+                  markEnclosing: Boolean,
+                  purpose: Purpose,
+                  start: ModelElement,
+                  comment: String
+                ): Unit = {
+      this.markUsed(element, markEnclosing, purpose, start :: Nil, comment :: Nil)
     }
-    allScalaTests.foreach(e => markUsed(e, markEnclosing = true, Test, e :: Nil, "scalatests"))
+
+      allMainEntryPoints.foreach(e => markEntryUsed(e, markEnclosing = true, Main, e, "app"))
+    allJunitTest.foreach(e => markEntryUsed(e, markEnclosing = true, Test, e, "junit test"))
+    allJunitClasses.foreach { testClass =>
+      markEntryUsed(testClass, markEnclosing = true, Test, testClass, "junit test class")
+    }
+    allScalaTests.foreach(e => markEntryUsed(e, markEnclosing = true, Test, e, "scalatests"))
+
+    model.allOf[MethodModel].filter(_.allTransitiveOverrides.exists(_._1.isEmpty)) foreach {e =>
+      markEntryUsed(e, markEnclosing = false, MainNotClass, e, "external API implementation/override")
+    }
+
     //we dont really want to do this but we don't successfully remove parameters,
     // and classes parameters overlap with the val
     model.allOf[FieldModel].filter(_.isParameter) foreach { e=>
@@ -170,15 +253,41 @@ abstract class AbstractDeadCodeRemover[T <: AbstractDeadCodeCommandLine] extends
     } foreach { e=>
       e.mark = Mark.dontChange(SimpleReason("constructor") )
     }
+    for (cls <- model.allOf[ClassLike];
+         self <- cls.selfType) {
+      self.mark = Mark.dontChange(SimpleReason("self type field") )
+    }
+
+    def markAllUsed(e: ModelElement, comment: String): Unit = {
+      markEntryUsed(e, false, Main, e, comment)
+      e.allChildren foreach (markAllUsed(_, comment))
+    }
+    if (options.externalInterface.nonEmpty || options.generatedSource.nonEmpty) {
+      for (source <- model.allOf[SourceModel]) {
+        val md = sourceMetaData(source)
+        if (md.external) markAllUsed(source, "external API")
+        else if (md.generated) markAllUsed(source, "generated API")
+      }
+      if (options.externalInterface.nonEmpty) {
+        val externalElements = model.allOf[ModelElement].toStream.par.filter { e =>
+          val id = e.modelElementId.id
+          options.externalInterface.exists(_.pattern.matcher(id).matches())
+        } toList
+
+        externalElements.foreach(e => markEntryUsed(e, false, Main, e, "external API"))
+      }
+    }
+
   }
   def runExtraRules(): Unit = {}
   def runSerialisationRule(): Unit = {
+    val serialisationCode = "serialisationCode" :: Nil
     allSerialisationEntries.foreach(e =>
     //we don't really want to mark a class as used just because it had a serialisation method
     //so we limit it to just those that seem to be in use already
     //you could also consider that all serialisable classes are live ....
       if (!e.classOrEnclosing.colour.isInitial)
-        markUsed(e, markEnclosing = false, Main, e :: Nil, "serialisationCode"))
+        markUsed(e, markEnclosing = false, Main.withoutClass, e :: Nil, serialisationCode))
   }
 
   override def generateFixes(sourceFile: SourceFile): SingleFileVisit = {
@@ -225,6 +334,17 @@ abstract class AbstractDeadCodeRemover[T <: AbstractDeadCodeCommandLine] extends
               true
             }
 
+          case cls: ClassLike =>
+            if (debug)
+              log(" cls element handling")
+            if (element.colour.isInitial && element.existsInSource) {
+              remove(element, s"Simple ${element.name} (${element.getClass} unused")
+              false
+            } else if (element.colour.specific.isDefined && !element.colour.specific.get.hashSomeMainPurpose && element.existsInSource) {
+              remove(element, s"Simple ${element.name} (${element.getClass} unused")
+              false
+            } else
+              true
           case element =>
             if (debug)
               log(" basic element handling")
@@ -243,10 +363,15 @@ abstract class AbstractDeadCodeRemover[T <: AbstractDeadCodeCommandLine] extends
   }
 
   object Usage {
-    def apply (p: Purpose) = new Usage(p.id)
+    private val data = Array.tabulate(64)(new Usage(_))
+    def apply (p: Purpose) = {
+      require (p.id != 0)
+      data(p.id)
+    }
   }
   case class Usage private (existingPurposes: Int) extends SomeSpecificColour {
-    require (existingPurposes != 0)
+    def hashSomeMainPurpose: Boolean = hasPurpose(Main) || hasPurpose(Test)
+
     override type RealType = Usage
 
     override def merge(other: Usage): Usage = {
@@ -263,14 +388,46 @@ abstract class AbstractDeadCodeRemover[T <: AbstractDeadCodeCommandLine] extends
 
     def hasPurpose(purpose: Purpose): Boolean = 0 != (existingPurposes & purpose.id)
 
+    override def toString: String = {
+      var res = ""
+      if (hasPurpose(Main))
+        res += "Main, "
+      if (hasPurpose(MainNotClass))
+        res += "MainNotClass, "
+      if (hasPurpose(Test))
+        res += "Test, "
+      if (hasPurpose(TestNotClass))
+        res += "TestNotClass, "
+
+      if (!res.isEmpty) res = res.substring(0, res.length - 2)
+      s"[$res]"
+    }
   }
 
-  object Main extends Purpose {
+  sealed trait WithClass {
+    self: Purpose =>
+    override final def withClass = self
+  }
+  sealed trait WithoutClass {
+    self: Purpose =>
+    override final def withoutClass = self
+  }
+  object Main extends Purpose with WithClass {
     override def id: Int = 1
+    override def withoutClass: Purpose = MainNotClass
+  }
+  object MainNotClass extends Purpose  with WithoutClass{
+    override def id: Int = 1 << 1
+    override def withClass: Purpose = Main
   }
 
-  object Test extends Purpose {
-    override def id: Int = 1 << 1
+  object Test extends Purpose with WithClass {
+    override def id: Int = 1 << 2
+    override def withoutClass: Purpose = TestNotClass
+  }
+  object TestNotClass extends Purpose with WithoutClass{
+    override def id: Int = 1 << 3
+    override def withClass: Purpose = Test
   }
   val mainUsage = Usage(Main)
   val testUsage = Usage(Test)

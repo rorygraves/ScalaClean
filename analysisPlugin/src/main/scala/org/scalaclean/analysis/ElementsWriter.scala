@@ -8,7 +8,7 @@ class ElementsWriter(file: File) extends CommonWriter(file) {
     List(
       ioToken,
       idWithDeDuplicationSuffix,
-      tree.symbol.flags.toHexString,
+      symbol.flags.toHexString,
       sourceFile,
       posStart,
       posEnd,
@@ -28,7 +28,7 @@ class ElementsWriter(file: File) extends CommonWriter(file) {
     }
 
     val fields = modelSymbol match {
-      case x: ModelMethod => commonPrefix(x) ::: List(x.isAbstract, x.sourceName, x.isTyped)
+      case x: ModelMethod => commonPrefix(x) ::: List(x.isAbstract, x.sourceName, x.isTyped, x.isScalaCleanSynthetic)
       case x: ModelClass  => commonPrefix(x)
       case x: ModelTrait  => commonPrefix(x)
       case x: ModelObject => commonPrefix(x)

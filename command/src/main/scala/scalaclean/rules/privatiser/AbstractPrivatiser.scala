@@ -23,6 +23,11 @@ abstract class AbstractPrivatiser[T <: AbstractPrivatiserCommandLine](val option
     val itsInACompoundField  = dontChange("in a compound field declaration")
     val notInClassLike       = dontChange(s"Its not in a classLike so private already")
     val inheritsFromExternal = dontChange("inherits from external")
+
+    val itsAParameter = dontChange("its a parameter")
+    val itaADefaultAccessor = dontChange("its a default accessor")
+    val itsGenerated = dontChange("its a generated API")
+    val itsExternal = dontChange("its an external API")
   }
 
   def markKnown(): Unit = {
@@ -51,13 +56,32 @@ abstract class AbstractPrivatiser[T <: AbstractPrivatiserCommandLine](val option
     //we dont really want to do this but we don't successfully handle parameters,
     // and classes parameters overlap with the val
     model.allOf[FieldModel].filter(_.isParameter) foreach { e=>
-      e.mark = Mark.dontChange(SimpleReason("parameter") )
+      e.mark = dontChangeBecause.itsAParameter
     }
     // defaul accessors are internal to the compiler model
     model.allOf[PlainMethodModel].filter(_.defaultAccessorFor.isDefined) foreach { e=>
-      e.mark = Mark.dontChange(SimpleReason("default accessor methods") )
+      e.mark = dontChangeBecause.itaADefaultAccessor
     }
 
+    def markAllUsed(e: ModelElement, reason: Mark[SpecificColour]): Unit = {
+      e.mark = reason
+      e.allChildren foreach (markAllUsed(_, reason))
+    }
+    if (options.externalInterface.nonEmpty || options.generatedSource.nonEmpty) {
+      for (source <- model.allOf[SourceModel]) {
+        val md = sourceMetaData(source)
+        if (md.external) markAllUsed(source, dontChangeBecause.itsExternal)
+        else if (md.generated) markAllUsed(source, dontChangeBecause.itsGenerated)
+      }
+      if (options.externalInterface.nonEmpty) {
+        val externalElements = model.allOf[ModelElement].toStream.par.filter { e =>
+          val id = e.modelElementId.id
+          options.externalInterface.exists(_.pattern.matcher(id).matches())
+        } toList
+
+        externalElements.foreach(_.mark = dontChangeBecause.itsExternal)
+      }
+    }
   }
 
   def isPublic(e: ModelElement): Boolean = {
@@ -72,6 +96,11 @@ abstract class AbstractPrivatiser[T <: AbstractPrivatiserCommandLine](val option
   override def runRule(): Unit = {
     markKnown()
     ruleSpecific()
+    for (cls <- model.allOf[ClassLike];
+         self <- cls.selfType) {
+      self.mark = Mark.dontChange(SimpleReason("self type field") )
+    }
+
     if (debug)
       model.allOf[ModelElement].toList.sortBy(_.infoPosSorted).foreach(ele => println(s"$ele  colour: ${ele.colour}"))
   }

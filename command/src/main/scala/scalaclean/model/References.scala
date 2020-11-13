@@ -21,6 +21,7 @@ sealed trait Reference {
     case _: DuplicateImpl => "Duplicates"
     case _: ConstructorParamImpl => "ConstructorParam"
     case _: DefaultGetterImpl => "DefaultParameterGetter"
+    case _: SelfTypeImpl => "SelfType"
   }
 }
 
@@ -38,6 +39,16 @@ trait Extends extends Reference {
 
 trait Overrides extends Reference {
   def isDirect: Boolean
+  /** special cases of the junction point between trait that have the same method, and the
+    * classLike doesn't implement the method
+    * e.g.
+    * trait A { def x: Int}
+    * trait B { def x = 1}
+    * object C extends A with B
+    *
+    * if the relationship is synthetic then the source also is
+    */
+  def isSynthetic: Boolean
 }
 
 trait Within extends Reference {}
@@ -89,11 +100,11 @@ package impl {
 
   }
 
-  final class OverridesImpl(from: ElementId, to: ElementId, val isDirect: Boolean)
+  final class OverridesImpl(from: ElementId, to: ElementId, val isDirect: Boolean, val isSynthetic: Boolean)
       extends ReferenceImpl(from, to)
       with Overrides {
 
-    override def toString: String = s"Overrides($from -> $to, isDirect = $isDirect"
+    override def toString: String = s"Overrides($from -> $to, isDirect = $isDirect, isSynthetic = $isSynthetic"
   }
 
   final class GetterImpl(from: ElementId, to: ElementId)
@@ -121,6 +132,9 @@ package impl {
       with Reference
   final class DefaultGetterImpl(from: ElementId, to: ElementId)
     extends ReferenceImpl[FieldModelImpl, PlainMethodModelImpl](from, to)
+      with Reference
+  final class SelfTypeImpl(from: ElementId, to: ElementId)
+    extends ReferenceImpl[ClassLikeModelImpl, FieldModelImpl](from, to)
       with Reference
 
 }
