@@ -51,20 +51,20 @@ abstract class AbstractDeadCodeRemover[T <: AbstractDeadCodeCommandLine] extends
     element.fields.foreach {
       case valDef: ValModel =>
         if (!valDef.isLazy) {
-          valDef.internalOutgoingReferences.foreach { case (ref, _) =>
+          valDef.refersToElement().foreach { ref =>
             markUsed(ref, markEnclosing = true, purpose, valDef :: path, comment_valDefO)
           }
           markRhs(valDef, purpose, valDef :: path, comment_valDef)
         }
       case varDef: VarModel =>
-        varDef.internalOutgoingReferences.foreach { case (ref, _) =>
+        varDef.refersToElement().foreach { ref =>
           markUsed(ref, markEnclosing = true, purpose, varDef :: path, comment_varDefO)
         }
         markRhs(varDef, purpose, varDef :: path, comment_varDef)
       //TODO - not sure if this is correct
       // an inner object is lazy in scala, so probably should only be marked when used
       case obj: ObjectModel =>
-        obj.internalOutgoingReferences.foreach { case (ref, _) =>
+        obj.refersToElement().foreach { ref =>
           markUsed(ref, markEnclosing = true, purpose, obj :: path, comment_objO)
         }
         markRhs(obj, purpose, obj :: path, comment_obj)
@@ -115,7 +115,7 @@ abstract class AbstractDeadCodeRemover[T <: AbstractDeadCodeCommandLine] extends
     lazy val comment_fields = "fields" :: comment
 
     //all the elements that this refers to
-    element.internalOutgoingReferences.foreach { case (ref, _) =>
+    element.refersToElement().foreach { ref =>
       markUsed(ref, markEnclosing = true, purpose, pathWithElement, comment_internalOutgoingReferences)
     }
 

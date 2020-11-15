@@ -23,14 +23,13 @@ class SimplePrivatiser(options: SimplePrivatiserCommandLine, model: AllProjectsM
     }
   }
 
-  override def determineAccess(element: ModelElement, myClassLike: ElementId, incomingReferences: Iterable[Refers]): Colour = {
+  override def determineAccess(element: ModelElement, myClassLike: ElementId, incomingReferences: Iterator[ModelElement]): Colour = {
     val myId = element.modelElementId
 
     var refFromContainer: ModelElement = null
     var refFromCompanion: ModelElement = null
     var refFromOutside: ModelElement   = null
-    incomingReferences.foreach { ref =>
-      val from = ref.fromElement
+    incomingReferences.foreach { from =>
       if (from.modelElementId.equalsOrHasParent(myId)) {
         if (debug)
           println("internal reference can be ignored")

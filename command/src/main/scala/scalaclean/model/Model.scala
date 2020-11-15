@@ -162,26 +162,79 @@ sealed trait ModelElement extends Ordered[ModelElement] {
 
   def overridesExternal: Boolean
 
-  //should be in the following form
-  def outgoingReferences: Iterable[Refers]
 
-  //  def outgoingReferencedInternal[T <: ModelElement]: Iterable[T]
-  //  def outgoingReferencedExternal: Iterable[Symbol]
-  //
-  def incomingReferences: Iterable[Refers]
+  /**
+    * The elements that this element refers to. Note this is limited to those elements that are
+    * compiled and have scalaclean metadata
+    *
+    * @see refersToElementId if you want the ones in libraries as well
+    * @see refersToFull if you want full flexibility
+    * @param synthetic if Some(true)  - only the synthetic references
+    *              if Some(false) - exclude the synthetic references
+    *              if None        - all
+    * @param filter     a general purpose filter for the relations to consider
+    */
+  def refersToElement(
+                       synthetic: Option[Boolean] = None,
+                       filter: Option[RefersToInternalReference => Boolean] = None
+                     ): Iterator[ModelElement]
+  /**
+    * The elements that this element refers to. Note this includes all elements
+    *
+    * @see refersToElement if you want just the compiled elements
+    * @see refersToFull if you want full flexibility
+    * @param synthetic if Some(true)  - only the synthetic references
+    *              if Some(false) - exclude the synthetic references
+    *              if None        - all
+    * @param filter     a general purpose filter for the relations to consider
+    */
+  def refersToElementId(
+                         synthetic: Option[Boolean] = None,
+                         filter: Option[RefersToReference => Boolean] = None
+                       ): Iterator[ElementId]
 
-  //  def incomingReferencedInternal[T <: ModelElement]: Iterable[T]
+  /**
+    * The classes and traits that this ClassLike overrides.
+    *
+    * @see refersToElement if you want just the compiled elements
+    * @see refersToElementId if you want just the element ids
+    * @param synthetic if Some(true)  - only the synthetic references
+    *              if Some(false) - exclude the synthetic references
+    *              if None        - all
+    * @param filter     a general purpose filter for the relations to consider
+    */
+  def refersToFull(
+                    synthetic: Option[Boolean] = None,
+                    filter: Option[RefersToReference => Boolean] = None
+                  ): Iterator[RefersToReference]
 
-  //end target APIs
+  /**
+    * get the object, classes and traits that extend this
+    *
+    * @see referredToByFull if you want all full flexiblity
+    * @param synthetic if Some(true)  - only the synthetic references
+    *              if Some(false) - exclude the synthetic references
+    *              if None        - all
+    * @param filter     a general purpose filter for the relations to consider
+    */
+  def referredToByElement(
+                           synthetic: Option[Boolean] = None,
+                           filter: Option[ReferredToByReference => Boolean] = None
+                         ): Iterator[ModelElement]
 
-  //start old APIs
-  def internalOutgoingReferences: List[(ModelElement, Refers)]
-
-  def internalIncomingReferences: List[(ModelElement, Refers)]
-
-  def allOutgoingReferences: List[(Option[ModelElement], Refers)]
-
-  //end old APIs
+  /**
+    * get the object, classes and traits that extend this
+    *
+    * @see referredToByElement if you want just the elements
+    * @param synthetic if Some(true)  - only the synthetic references
+    *              if Some(false) - exclude the synthetic references
+    *              if None        - all
+    * @param filter     a general purpose filter for the relations to consider
+    */
+  def referredToByFull(
+                        synthetic: Option[Boolean] = None,
+                        filter: Option[ReferredToByReference => Boolean] = None
+                      ): Iterator[ReferredToByReference]
 
   //any block may contain many val of the same name!
   //  val foo = {
@@ -606,28 +659,8 @@ package impl {
 
   }
 
-  trait LegacyReferences {
-    self: ElementModelImpl =>
-
-    override def internalOutgoingReferences: List[(ModelElement, Refers)] = {
-      _refersTo.collect {
-        case r if r.toElement.isDefined => (r.toElement.get, r)
-      }
-    }
-
-    override def internalIncomingReferences: List[(ModelElement, Refers)] = {
-      _refersFrom.collect { case r => (r.fromElement, r) }
-    }
-
-    override def allOutgoingReferences: List[(Option[ModelElement], Refers)] = {
-      _refersTo.map(r => (r.toElement, r))
-    }
-
-  }
-
   abstract sealed class ElementModelImpl(info: BasicElementInfo)
-      extends ModelElement
-      with LegacyReferences{
+      extends ModelElement{
 
     private def elementSort(e1: ElementModelImpl, e2: ElementModelImpl): Boolean = {
       (e1.compare(e2)) > 0
@@ -693,19 +726,93 @@ package impl {
     override def flags: Long = info.flags
 
     //start set by `complete`
-    private var _within: ElementModelImpl         = _
-    private var _children: List[ElementModelImpl] = _
+    private[this] var _within: ElementModelImpl         = _
+    private[this] var _children: List[ElementModelImpl] = _
+    private def within = _within
 
-    private[impl] var _refersTo: List[Refers]   = _
-    private[impl] var _refersFrom: List[Refers] = _
+    private[this] var _refersTo: List[RefersImpl]   = _
+    private[this] var _refersFrom: List[RefersImpl] = _
 
-    private var _overrides: List[OverridesImpl]  = _
-    private var _overridden: List[OverridesImpl] = _
+    private[this] var _overrides: List[OverridesImpl]  = _
+    private[this] var _overridden: List[OverridesImpl] = _
 
-    private var _duplicateOf = Option.empty[ElementModelImpl]
-    private var _duplicates  = Set.empty[ElementModelImpl]
+    private[this] var _duplicateOf = Option.empty[ElementModelImpl]
+    private[this] var _duplicates  = Set.empty[ElementModelImpl]
 
     //end set by `complete`
+    private def refers0[T](
+                               rel: Seq[RefersImpl],
+                               synthetic: Option[Boolean],
+                               filterToDefined: Boolean,
+                               filter: Option[RefersImpl => Boolean],
+                               resultMapper: RefersImpl => T
+                             ): Iterator[T] = {
+      var it: Iterator[RefersImpl] = rel.iterator
+      it = synthetic match {
+        case Some(true)  => it.filter(_.isSynthetic)
+        case Some(false) => it.filterNot(_.isSynthetic)
+        case None        => it
+      }
+      if (filterToDefined)
+        it = it.filter(_.toIsElement)
+      it = filter match {
+        case Some(f) =>
+          it.filter(f)
+        case None => it
+      }
+      it.map(resultMapper)
+    }
+
+    override def refersToElement(
+                                   synthetic: Option[Boolean],
+                                   filter: Option[RefersToInternalReference => Boolean]
+                                 ): Iterator[ModelElement] = refers0(
+      _refersTo,
+      synthetic,
+      true,
+      filter.map(e => new RefersToInternalReferenceFilter(e)),
+      _.toElementRaw
+    )
+
+    override def refersToElementId(
+                                     synthetic: Option[Boolean],
+                                     filter: Option[RefersToReference => Boolean]
+                                   ): Iterator[ElementId] =
+      refers0(_refersTo, synthetic, false, filter.map(e => new RefersToReferenceFilter(e)), _.toElementId)
+
+    override def refersToFull(
+                                synthetic: Option[Boolean],
+                                filter: Option[RefersToReference => Boolean] = None
+                              ): Iterator[RefersToReference] = refers0(
+      _refersTo,
+      synthetic,
+      false,
+      filter.map(e => new RefersToReferenceFilter(e)),
+      NavigationData.to
+    )
+
+    override def referredToByElement(
+                                      synthetic: Option[Boolean],
+                                      filter: Option[ReferredToByReference => Boolean]
+                                    ): Iterator[ModelElement] = refers0(
+      _refersFrom,
+      synthetic,
+      false,
+      filter.map(e => new ReferredToByReferenceFilter(e)),
+      _.fromElement
+    )
+
+    override def referredToByFull(
+                                   synthetic: Option[Boolean],
+                                   filter: Option[ReferredToByReference => Boolean]
+                                 ): Iterator[ReferredToByReference] = refers0(
+      _refersFrom,
+      synthetic,
+      false,
+      filter.map(e => new ReferredToByReferenceFilter(e)),
+      NavigationData.from
+    )
+
     private def overrides0[T](
         rel: Seq[OverridesImpl],
         direct: Option[Boolean],
@@ -806,12 +913,12 @@ package impl {
       else
         new AbstractIterator[ModelElement] {
           var current                   = ElementModelImpl.this
-          override def hasNext: Boolean = current._within ne null
+          override def hasNext: Boolean = current.within ne null
 
           override def next(): ModelElement =
             if (!hasNext) Iterator.empty.next()
             else {
-              current = current._within
+              current = current.within
               current
             }
 
@@ -825,9 +932,7 @@ package impl {
     // sorting in complete()  to make debugging easier
     override def allChildren: List[ElementModelImpl] = _children
     override def fields: List[FieldModel]            = _children.collect { case f: FieldModelImpl => f }
-
     override def methods: List[MethodModel] = _children.collect { case m: MethodModel => m }
-
     override def innerClassLike: Seq[ClassLike] = _children.collect { case c: ClassLikeImpl => c }
 
     final protected def typeName = this match {
@@ -843,9 +948,9 @@ package impl {
       case _: SourceModelImpl       => "source"
     }
 
-    private val offsetStart      = info.startPos
-    private val offsetEnd        = info.endPos
-    private val offsetFocusStart = info.focusStart
+    private def offsetStart      = info.startPos
+    private def offsetEnd        = info.endPos
+    private def offsetFocusStart = info.focusStart
 
     override protected def infoPosString: String = {
       s"$offsetStart-$offsetEnd"
@@ -864,10 +969,6 @@ package impl {
 
     override def sourceFileName: String = source.path.toString
 
-    override def incomingReferences: Iterable[Refers] = _refersFrom
-
-    override def outgoingReferences: Iterable[Refers] = _refersTo
-
     override def isAbstract: Boolean = false
 
     override def existsInSource: Boolean = offsetEnd != offsetStart
@@ -875,8 +976,8 @@ package impl {
 
   abstract sealed class ClassLikeImpl(info: BasicElementInfo) extends ElementModelImpl(info) with ClassLike {
 
-    private var _extnds: List[ExtendsImpl]        = _
-    private var _extendedBy: List[ExtendsImpl]    = _
+    private[this] var _extnds: List[ExtendsImpl]        = _
+    private[this] var _extendedBy: List[ExtendsImpl]    = _
     private var _selfType: Option[FieldModelImpl] = None
 
     override def complete(
@@ -1065,7 +1166,7 @@ package impl {
 
   class TraitModelImpl(info: BasicElementInfo) extends ClassLikeImpl(info) with TraitModel
 
-  abstract class MethodModelImpl(
+  sealed abstract class MethodModelImpl(
       info: BasicElementInfo,
       val methodName: String,
       override val isAbstract: Boolean,

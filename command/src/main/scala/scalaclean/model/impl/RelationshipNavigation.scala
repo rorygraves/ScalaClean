@@ -1,6 +1,6 @@
 package scalaclean.model.impl
 
-import scalaclean.model.{ClassLike, ElementId, ExtendedByReference, ExtendsInternalReference, ExtendsReference, HasIsDirect, HasIsSynthetic, ModelElement, NotNothing, OverriddenByReference, OverridesInternalReference, OverridesReference, Reference}
+import scalaclean.model._
 
 import scala.runtime.AbstractFunction1
 
@@ -73,28 +73,53 @@ private[impl] object RelationshipNavigation {
 
   //overrides relationship
   abstract class OverridesReferenceBaseFilter
-      extends RelsBaseFilter[OverridesImpl]
+    extends RelsBaseFilter[OverridesImpl]
       with RelsDirectFilter[OverridesImpl]
       with RelsSyntheticFilter[OverridesImpl]
 
   class OverridesReferenceFilter(f: OverridesReference => Boolean)
-      extends OverridesReferenceBaseFilter
+    extends OverridesReferenceBaseFilter
       with RelsToFilter[ElementModelImpl, ElementModelImpl, OverridesImpl]
       with OverridesReference {
     override def applyImpl: Boolean = f(this)
   }
 
   class OverridesInternalReferenceFilter(f: OverridesInternalReference => Boolean)
-      extends OverridesReferenceBaseFilter
+    extends OverridesReferenceBaseFilter
       with RelsToInternalFilter[ElementModelImpl, ElementModelImpl, OverridesImpl]
       with OverridesInternalReference {
     override def applyImpl: Boolean = f(this)
   }
 
   class OverriddenByReferenceFilter(f: OverriddenByReference => Boolean)
-      extends OverridesReferenceBaseFilter
+    extends OverridesReferenceBaseFilter
       with RelsFromFilter[ElementModelImpl, ElementModelImpl, OverridesImpl]
       with OverriddenByReference {
+    override def applyImpl: Boolean = f(this)
+  }
+  //refers relationship
+  abstract class RefersReferenceBaseFilter
+    extends RelsBaseFilter[RefersImpl]
+      with RelsSyntheticFilter[RefersImpl]
+
+  class RefersToReferenceFilter(f: RefersToReference => Boolean)
+    extends RefersReferenceBaseFilter
+      with RelsToFilter[ElementModelImpl, ElementModelImpl, RefersImpl]
+      with RefersToReference {
+    override def applyImpl: Boolean = f(this)
+  }
+
+  class RefersToInternalReferenceFilter(f: RefersToInternalReference => Boolean)
+    extends RefersReferenceBaseFilter
+      with RelsToInternalFilter[ElementModelImpl, ElementModelImpl, RefersImpl]
+      with RefersToInternalReference {
+    override def applyImpl: Boolean = f(this)
+  }
+
+  class ReferredToByReferenceFilter(f: ReferredToByReference => Boolean)
+    extends RefersReferenceBaseFilter
+      with RelsFromFilter[ElementModelImpl, ElementModelImpl, RefersImpl]
+      with ReferredToByReference {
     override def applyImpl: Boolean = f(this)
   }
 
@@ -155,6 +180,21 @@ private[impl] object RelationshipNavigation {
 
     def to(e: OverridesImpl): OverridesReference      = new OverridesReferenceData(e)
     def from(e: OverridesImpl): OverriddenByReference = new OverriddenByReferenceData(e)
+
+    class RefersToReferenceData(e: RefersImpl)
+      extends RelsBase[RefersImpl](e)
+        with RelsSynthetic[RefersImpl]
+        with RelsTo[ElementModelImpl, ElementModelImpl, RefersImpl]
+        with RefersToReference
+
+    class ReferredToByReferenceData(e: RefersImpl)
+      extends RelsBase[RefersImpl](e)
+        with RelsSynthetic[RefersImpl]
+        with RelsFrom[ElementModelImpl, ElementModelImpl, RefersImpl]
+        with ReferredToByReference
+
+    def to(e: RefersImpl): RefersToReference       = new RefersToReferenceData(e)
+    def from(e: RefersImpl): ReferredToByReference = new ReferredToByReferenceData(e)
   }
 
 }

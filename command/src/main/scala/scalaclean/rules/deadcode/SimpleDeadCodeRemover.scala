@@ -64,7 +64,7 @@ class SimpleDeadCodeRemover(override val options: SimpleDeadCodeCommandLine, ove
           fieldsModel.fieldsInDeclaration.flatMap(incomingReferences)
         case _ => Nil
       }
-      val refs = thisElement.internalIncomingReferences.map(_._1).iterator ++ extra
+      val refs = thisElement.referredToByElement() ++ extra
       refs.filterNot(tried).foreach {
         case e1 if e1.existsInSource && !encloses(e1) =>
           simpleMarkUsed(element, e1.modelElementId, "references")
