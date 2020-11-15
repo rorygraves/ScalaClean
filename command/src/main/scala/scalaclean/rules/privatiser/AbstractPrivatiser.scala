@@ -128,31 +128,30 @@ abstract class AbstractPrivatiser[T <: AbstractPrivatiserCommandLine](val option
       case fieldModel: FieldModel =>
         determineAccess(element, myClassLike, incomingReferences(fieldModel))
       case fieldsModel: FieldsModel =>
-        determineAccess(element, myClassLike, fieldsModel.fieldsInDeclaration.flatMap(incomingReferences))
+        determineAccess(element, myClassLike, fieldsModel.fieldsInDeclaration.iterator.flatMap(incomingReferences))
       case e =>
-        determineAccess(element, myClassLike, e.incomingReferences)
+        determineAccess(element, myClassLike, e.referredToByElement())
     }
   }
 
-  def incomingReferences(fieldModel: FieldModel) = {
+  def incomingReferences(fieldModel: FieldModel): Iterator[ModelElement] = {
     //all of the direct references + all of the references in from the getters/setters that are compiler generated ( not in source)
     //and filter out the internal accesses from the accessors
-    val generatedAccessors = fieldModel.accessors.filter(!_.existsInSource).toList
-    (fieldModel.incomingReferences.filterNot { refers: Refers =>
-      generatedAccessors.contains(refers.fromElement)
-    }) ++ generatedAccessors.flatMap(_.incomingReferences)
+    val generatedAccessors = fieldModel.accessors.filter(!_.existsInSource).toSet[ModelElement]
+    (fieldModel.referredToByElement().filterNot { e =>
+      generatedAccessors.contains(e)
+    }) ++ generatedAccessors.flatMap(_.referredToByElement())
   }
 
   def determineAccess(
       element: ModelElement,
       myClassLike: ElementId,
-      incomingReferences: Iterable[Refers]
+      incomingReferences: Iterator[ModelElement]
   ): Colour = {
 
     var res: Colour = Mark.initial[PrivatiserLevel]
 
-    incomingReferences.foreach { refers: Refers =>
-      val ref         = refers.fromElement
+    incomingReferences.foreach { ref =>
       val isFromChild = ref.classOrEnclosing.xtends(myClassLike)
       val access: Colour =
         if (isFromChild)

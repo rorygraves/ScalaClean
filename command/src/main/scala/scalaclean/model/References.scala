@@ -78,6 +78,10 @@ trait ExtendedByReference      extends InternalElementReference[ClassLike] with 
 trait OverridesReference         extends ExternalElementReference[ModelElement] with HasIsDirect with HasIsSynthetic
 trait OverridesInternalReference extends InternalElementReference[ModelElement] with HasIsDirect with HasIsSynthetic
 trait OverriddenByReference      extends InternalElementReference[ModelElement] with HasIsDirect with HasIsSynthetic
+
+trait RefersToReference          extends ExternalElementReference[ModelElement] with HasIsSynthetic
+trait RefersToInternalReference  extends InternalElementReference[ModelElement] with HasIsSynthetic
+trait ReferredToByReference      extends InternalElementReference[ModelElement] with HasIsSynthetic
 //end concrete relationship results from model APIs
 
 package impl {
@@ -119,10 +123,10 @@ package impl {
   }
 
   sealed abstract class ReferenceImplBase(from: ElementId, to: ElementId)
-      extends ReferenceImpl[ModelElement, ModelElement](from, to) {
-    override def clsFrom: Class[ModelElement] = classOf[ModelElement]
+      extends ReferenceImpl[ElementModelImpl, ElementModelImpl](from, to) {
+    override def clsFrom: Class[ElementModelImpl] = classOf[ElementModelImpl]
 
-    override def clsTo: Class[ModelElement] = classOf[ModelElement]
+    override def clsTo: Class[ElementModelImpl] = classOf[ElementModelImpl]
   }
 
   final class RefersImpl(from: ElementId, to: ElementId, val isSynthetic: Boolean)

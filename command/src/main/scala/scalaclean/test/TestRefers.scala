@@ -11,7 +11,7 @@ class Test_internalIncomingReferences(model: AllProjectsModel)
 
   override def visitInSource(modelElement: ModelElement): String =
     elementsInTestFormat("internalIncomingReferences", modelElement,
-      modelElement.internalIncomingReferences.map(_._1))
+      modelElement.referredToByElement())
 
 }
 
@@ -24,7 +24,7 @@ class Test_internalOutgoingReferences(model: AllProjectsModel)
 
   override def visitInSource(modelElement: ModelElement): String = {
     elementsInTestFormat("internalOutgoingReferences", modelElement,
-      modelElement.internalOutgoingReferences.map(_._1))
+      modelElement.refersToElement())
   }
 
 }
@@ -37,6 +37,6 @@ class Test_allOutgoingReferences(model: AllProjectsModel) extends TestCommon("Te
 
   override def visitInSource(modelElement: ModelElement): String =
     elementIdsTestFormat("allOutgoingReferences", modelElement,
-      modelElement.allOutgoingReferences.map(_._2.toElementId))
+      modelElement.refersToElementId())
 
 }
