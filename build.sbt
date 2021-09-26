@@ -1,8 +1,11 @@
-val scala212         = "2.12.12"
+import sbt.Keys.sourceDirectories
+
+val scala212         = "2.12.14"
 val scalametaVersion = "4.3.20"
-val scalaFixVersion  = "0.9.21"
-val junitVersion     = "4.13"
+val scalaFixVersion  = "0.9.31"
 val scalaTestVersion = "3.2.2"
+val scalaTestPlusVersion = "3.2.10.0"
+val junitInterfaceVersion= "0.13.2"
 
 inThisBuild(
   List(
@@ -17,18 +20,18 @@ inThisBuild(
   )
 )
 
-skip in publish := true
+publish / skip := true
 
 lazy val mergeSettings = Def.settings(
-  test.in(assembly) := {},
-  logLevel.in(assembly) := Level.Error,
-  assemblyJarName.in(assembly) :=
+  assembly / test := {},
+  assembly / logLevel := Level.Error,
+  assembly / assemblyJarName :=
     name.value + "_" + scalaVersion.value + "-" + version.value + "-assembly.jar",
-  assemblyOption.in(assembly) ~= { _.copy(includeScala = false) },
-  Keys.`package`.in(Compile) := {
-    val slimJar = Keys.`package`.in(Compile).value
+  assembly / assemblyOption ~= { _.copy(includeScala = false) },
+  Compile / Keys.`package` := {
+    val slimJar = (Compile / Keys.`package`).value
     val fatJar =
-      new File(crossTarget.value + "/" + assemblyJarName.in(assembly).value)
+      new File(crossTarget.value + "/" + (assembly / assemblyJarName).value)
     val _ = assembly.value
     IO.copy(
       List(fatJar -> slimJar),
@@ -36,11 +39,11 @@ lazy val mergeSettings = Def.settings(
     )
     slimJar
   },
-  packagedArtifact.in(Compile).in(packageBin) := {
-    val temp           = packagedArtifact.in(Compile).in(packageBin).value
+  Compile / packageBin / packagedArtifact := {
+    val temp           = (Compile / packageBin / packagedArtifact).value
     val (art, slimJar) = temp
     val fatJar =
-      new File(crossTarget.value + "/" + assemblyJarName.in(assembly).value)
+      new File(crossTarget.value + "/" + (assembly / assemblyJarName).value)
     val _ = assembly.value
     IO.copy(
       List(fatJar -> slimJar),
@@ -48,11 +51,11 @@ lazy val mergeSettings = Def.settings(
     )
     (art, slimJar)
   },
-  assemblyMergeStrategy.in(assembly) := {
+  assembly / assemblyMergeStrategy := {
     case PathList("com", "sun", _*) => MergeStrategy.discard
     case PathList("sun", _*)        => MergeStrategy.discard
     case x =>
-      val oldStrategy = (assemblyMergeStrategy in assembly).value
+      val oldStrategy = (assembly / assemblyMergeStrategy).value
       oldStrategy(x)
   },
 )
@@ -72,10 +75,10 @@ lazy val analysisPlugin = project
     libraryDependencies += "org.scala-lang" % "scala-compiler" % scala212,
     libraryDependencies += "org.scala-lang" % "scala-reflect"  % scala212,
     mergeSettings,
-    fork in Test := true
+    Test / fork := true
   )
 
-fork in Test := true
+Test / fork := true
 
 lazy val command = project
   .dependsOn(shared)
@@ -91,11 +94,11 @@ lazy val command = project
 lazy val unitTestProject = project
   .in(file("testProjects/unitTestProject"))
   .settings(
-    skip in publish := true,
+    publish / skip := true,
     scalacOptions ++= {
       // we depend on the assembly jar
-      val jar          = (assembly in Compile in analysisPlugin).value
-      val srcLocations = (sourceDirectories in Compile).value.mkString(java.io.File.pathSeparator)
+      val jar          = (analysisPlugin / Compile / assembly).value
+      val srcLocations = (Compile / sourceDirectories).value.mkString(java.io.File.pathSeparator)
       Seq(
         //  "-Xprint:typer",
         //      "-Ycompact-trees",
@@ -115,18 +118,17 @@ def testInputProject(id: String, projectLocation: String, showTrees: Boolean = f
 ) = sbt.Project
   .apply(id, file(projectLocation))
   .settings(
-    libraryDependencies += "junit"              % "junit"           % junitVersion           ,
-    libraryDependencies += "org.scalatest"     %% "scalatest"       % scalaTestVersion       ,
-    libraryDependencies += "org.scalatestplus" %% "junit-4-12"      % s"$scalaTestVersion.0" ,
-    libraryDependencies += "com.novocode"       % "junit-interface" % "0.11"                 ,
+    libraryDependencies += "org.scalatest"     %% "scalatest"       % scalaTestVersion,
+    libraryDependencies += "org.scalatestplus" %% "junit-4-13" % scalaTestPlusVersion % "test",
+    libraryDependencies += "com.github.sbt" % "junit-interface" % junitInterfaceVersion,
 
     scalacOptions += "-Yrangepos",
-    skip in publish := true,
+    publish / skip := true,
     scalacOptions ++= {
       // we depend on the assembly jar
       //    val baseDirectory.value /"custom_lib"
-      val jar          = (assembly in Compile in analysisPlugin).value
-      val srcLocations = (sourceDirectories in Compile).value.mkString(java.io.File.pathSeparator)
+      val jar          = (analysisPlugin / Compile / assembly).value
+      val srcLocations = (Compile / sourceDirectories).value.mkString(java.io.File.pathSeparator)
       assert(srcLocations.nonEmpty)
       val extras = List(
         if (showTrees) List("-Xprint:typer") else Nil,
@@ -259,11 +261,10 @@ lazy val tests = project
     moduleName := "tests",
     libraryDependencies += "args4j"             % "args4j"        % "2.33",
     libraryDependencies += "ch.epfl.scala"     %% "scalafix-core" % scalaFixVersion,
-    libraryDependencies += "junit"              % "junit"         % junitVersion           % Test,
-    libraryDependencies += "org.scalatest"     %% "scalatest"     % scalaTestVersion       ,
-    libraryDependencies += "org.scalatestplus" %% "junit-4-12"    % s"$scalaTestVersion.0" % Test,
+    libraryDependencies += "org.scalatest"     %% "scalatest"       % scalaTestVersion,
+    libraryDependencies += "org.scalatestplus" %% "junit-4-13" % scalaTestPlusVersion % "test",
+    libraryDependencies += "com.github.sbt" % "junit-interface" % junitInterfaceVersion,
     scalaVersion := scala212,
     crossPaths := false,
     parallelExecution := false,
-    libraryDependencies += "com.novocode" % "junit-interface" % "0.11" % Test,
   )
