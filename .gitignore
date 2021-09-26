@@ -7,3 +7,4 @@ target/
 /.shelf/
 /ScalaClean.ipr
 /ScalaClean.iws
+.bsp/

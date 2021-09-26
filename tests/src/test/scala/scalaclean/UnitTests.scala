@@ -88,6 +88,9 @@ trait AbstractUnitTests extends AnyFunSuite with AssertionsForJUnit with DiffAss
 
 
 class UnitTests extends AbstractUnitTests with AssertionsForJUnit {
+//  -  var y2: Int = _/* VarModel C:scalaclean.test.nodes.GrandParentTrait/V:y2 [193-208] <method> <accessor> <defaultinit>  [[C:scalaclean.test.nodes.GrandParentTrait/V:y2]] *//* GetterMethodModel C:scalaclean.test.nodes.GrandParentTrait/M:y2() [193-208] <method> <accessor> <defaultinit>  [[C:scalaclean.test.nodes.GrandParentTrait/M:y2()]] */
+//  +  var y2: Int/* GetterMethodModel C:scalaclean.test.nodes.GrandParentTrait/M:y2() [193-204] <method> <accessor> <defaultinit>  [[C:scalaclean.test.nodes.GrandParentTrait/M:y2()]] */ = _/* VarModel C:scalaclean.test.nodes.GrandParentTrait/V:y2 [193-208] <method> <accessor> <defaultinit>  [[C:scalaclean.test.nodes.GrandParentTrait/V:y2]] */
+
   test("nodesTest")  {
     runTest("scalaclean/test/nodes/nodes.scala", new TestNodes(_))
   }
