@@ -46,10 +46,10 @@ class ModsPlugin(val sc: ScalaCompilerPluginComponent) extends ExtensionPlugin {
     }
     val others: List[ExtensionData] = tree match {
       case Some(memberDef: g.MemberDefApi) =>
-        memberDef.mods.positions.collect { case (f, pos) =>
+        memberDef.mods.positions.toStream.collect { case (f, pos) =>
           val basePos = memberDef.pos.start
           ModData(pos.start - basePos, pos.end - basePos, f)
-        }(scala.collection.breakOut)
+        }.toList
       case _ => Nil
     }
     vis ::: others

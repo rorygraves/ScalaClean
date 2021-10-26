@@ -64,7 +64,7 @@ class Finaliser(override val options: FinaliserCommandLine, override val model: 
         val externalElements = model.allOf[ModelElement].toStream.par.filter { e =>
           val id = e.modelElementId.id
           options.externalInterface.exists(_.pattern.matcher(id).matches())
-        } toList
+        }.toList
 
         externalElements.foreach(_.mark = dontChangeBecause.itsExternal)
       }

@@ -31,7 +31,7 @@ class ProjectSet(projectPropertyPaths: Path*) extends AllProjectsModel {
    import scala.concurrent.ExecutionContext.Implicits._
    import scala.concurrent.{Await, Future}
    import scala.concurrent.duration.Duration
-    val basicRels = rels.par.reduce(_ + _)
+    val basicRels = rels.reduce(_ + _)
     val relsFromF = Future(basicRels.sortValues)
     val relsToF   = Future(basicRels.byTo.sortValues)
 

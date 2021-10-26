@@ -10,7 +10,7 @@ import scalaclean.util.DiffAssertions
 import org.scalatest.Assertions
 
 import scala.reflect.{ClassTag, classTag}
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 abstract class AbstractProjectTestRunner[Cmd <: ScalaCleanCommandLine: ClassTag: NotNothing, Rule <: RuleRun[Cmd]](val projectNames: List[String], runOptions: SimpleRunOptions)
     extends DiffAssertions with Assertions{

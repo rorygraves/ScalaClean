@@ -2,7 +2,7 @@ package x1.scalaclean.test.rules.privatiser.MakePublic {
 
   object AppPublic extends App {
     import x2.scalaclean.test.rules.privatiser.MakePublic.Other._
-    println(myVal + myVar + myDef + myObj.toString + (new myClass + (new myTrait {}).toString))
+    println(s"$myVal$myVar$myDef$myObj${new myClass}${new myTrait {}}")
     import x2.scalaclean.test.rules.privatiser.MakePublic.Other3.{ myVal => myValOn3 }
     println(myValOn3)
     x2.scalaclean.test.rules.privatiser.MakePublic.Access.access2()
@@ -44,12 +44,12 @@ package x2.scalaclean.test.rules.privatiser.MakePublic {
 
     def access2() = {
       import x2.scalaclean.test.rules.privatiser.MakePublic.Other2._
-      println(myVal + myVar + myDef + myObj.toString + (new myClass + (new myTrait {}).toString))
+      println(s"$myVal$myVar$myDef$myObj${new myClass}${new myTrait {}}")
     }
 
     def access3() = {
       import x2.scalaclean.test.rules.privatiser.MakePublic.Other3._
-      println(myVal + myVar + myDef + myObj.toString + (new myClass + (new myTrait {}).toString))
+      println(s"$myVal$myVar$myDef$myObj${new myClass}${new myTrait {}}")
     }
 
   }

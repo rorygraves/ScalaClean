@@ -1,15 +1,13 @@
 package scalaclean.cli
 
-import java.nio.file.{Files, Path, Paths}
-import java.util
-
 import org.kohsuke.args4j.spi.{MultiPathOptionHandler, OneArgumentOptionHandler, Setter, StringArrayOptionHandler}
 import org.kohsuke.args4j.{CmdLineParser, OptionDef, Option => ArgOption}
-import java.util.{Collections, List => JList}
-
 import scalaclean.rules.plugin.{RulePlugin, RulePluginFactory}
 
-import scala.collection.JavaConverters._
+import java.nio.file.{Files, Path, Paths}
+import java.util
+import java.util.{List => JList}
+import scala.jdk.CollectionConverters._
 import scala.util.matching.Regex
 
 case class SimpleRunOptions(

@@ -56,7 +56,7 @@ class SimpleDeadCodeRemover(override val options: SimpleDeadCodeCommandLine, ove
 
     val tried = new mutable.HashSet[ModelElement]
     val todo  = new mutable.HashSet[ModelElement]
-    def oneLevel(thisElement: ModelElement) {
+    def oneLevel(thisElement: ModelElement): Unit = {
       val extra = thisElement match {
         case fieldModel: FieldModel =>
           incomingReferences(fieldModel)

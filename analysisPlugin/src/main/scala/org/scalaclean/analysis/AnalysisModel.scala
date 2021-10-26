@@ -241,7 +241,7 @@ sealed trait ModelSymbol extends HasModelCommon {
   }
 
   def flatten(): Unit = {
-    children foreach (_._2.flatten)
+    children foreach (_._2.flatten())
     val duplicateGroups = children.values.groupBy(_.common.elementId).filter(_._2.size > 1)
     val suffix          = new AtomicInteger
     for (duplicate: Iterable[ModelSymbol] <- duplicateGroups.values.toList) {

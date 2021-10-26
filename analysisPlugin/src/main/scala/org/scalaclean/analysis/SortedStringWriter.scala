@@ -27,7 +27,7 @@ class SortedStringWriter(targetPath: Path) {
       target.write(line)
       target.newLine()
     }
-    strings.clear
+    strings.clear()
     target.flush()
   }
 
