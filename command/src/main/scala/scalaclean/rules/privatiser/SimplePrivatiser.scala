@@ -16,9 +16,9 @@ class SimplePrivatiser(options: SimplePrivatiserCommandLine, model: AllProjectsM
   override def ruleSpecific(): Unit = {
     model.allOf[ModelElement].foreach {
       case e if e.overriddenByElement().nonEmpty =>
-        e.colour = dontChange(s"It's overridden ${e.overriddenByElement().next}")
+        e.colour = dontChange(s"It's overridden ${e.overriddenByElement().next()}")
       case e if e.overridesElementId().nonEmpty =>
-        e.colour = dontChange(s"It overrides ${e.overridesElementId().next}")
+        e.colour = dontChange(s"It overrides ${e.overridesElementId().next()}")
       case e => e.colour = localLevel(e)
     }
   }

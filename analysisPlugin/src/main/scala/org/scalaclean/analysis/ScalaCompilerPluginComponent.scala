@@ -1,12 +1,12 @@
 package org.scalaclean.analysis
 
+import org.scalaclean.analysis.plugin.ExtensionPlugin
+
 import java.io.File
 import java.nio.file.{Files, Path, Paths}
-import java.text.{DateFormat, SimpleDateFormat}
+import java.text.SimpleDateFormat
 import java.util
 import java.util.{Date, Properties, UUID}
-
-import org.scalaclean.analysis.plugin.ExtensionPlugin
 import scala.collection.mutable
 import scala.reflect.internal.Flags
 import scala.reflect.internal.util.RangePosition
@@ -50,7 +50,7 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
         case None =>
           val base = global.settings.outputDirs.getSingleOutput match {
             case Some(so) => so.file.toPath.toAbsolutePath
-            case None     => Paths.get(global.settings.d.value)
+            case None     => Paths.get(global.settings.outdir.value)
           }
           base.resolve("META-INF/ScalaClean/")
       }
@@ -270,11 +270,11 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
     initialVisited.put(NoSymbol, java.lang.Boolean.TRUE)
     initialVisited.put(NoType, java.lang.Boolean.TRUE)
 
-    def resetVisited(resetTypes: VisitedType) {
+    def resetVisited(resetTypes: VisitedType): Unit = {
       visited = resetTypes
     }
 
-    def newVisited(): VisitedType= {
+    def newVisited(): VisitedType = {
       val existing = visited
       visited = new util.IdentityHashMap[AnyRef, java.lang.Boolean](initialVisited)
       existing
@@ -303,7 +303,7 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
         traverseImpl(tpe)
 
 
-      def traverseImpl(tpe: global.Type) {
+      def traverseImpl(tpe: global.Type): Unit = {
         if (isFirstVisit(tpe)) {
           traverseAnnotationInfos(tpe.annotations)
           add(tpe.termSymbol)
@@ -433,8 +433,9 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
         case LiteralAnnotArg(const) => traverseType(const.tpe)
         case ArrayAnnotArg(array) => array foreach traverseClassFileAnnotation
         case NestedAnnotArg(info) => traverseAnnotationInfo(info)
-        case UnmappableAnnotArg =>
-        case ScalaSigBytes(_) =>
+        //        case UnmappableAnnotArg =>
+        //        case ScalaSigBytes(_) =>
+        case _ =>
       }
     }
 
@@ -621,9 +622,9 @@ class ScalaCompilerPluginComponent(val global: Global) extends PluginComponent w
             scanner.offset = scanner.lastOffset + 1
             scanner.charOffset = scanner.offset
 
-            scanner.nextToken
+            scanner.nextToken()
             if (scanner.token == scala.tools.nsc.ast.parser.Tokens.EQUALS) {
-              scanner.nextToken
+              scanner.nextToken()
               if (scanner.token == scala.tools.nsc.ast.parser.Tokens.USCORE) {
                 val realEnd = scanner.offset + 1
                 val oldPos  = symbol.pos

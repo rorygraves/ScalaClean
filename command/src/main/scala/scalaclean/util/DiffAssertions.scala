@@ -13,7 +13,7 @@ object DiffAssertions {
   }
 
   def compareContents(original: JList[String], originalName: String, revised: JList[String], revisedName: String): String = {
-    import collection.JavaConverters._
+    import scala.jdk.CollectionConverters._
     val diff = difflib.DiffUtils.diff(original, revised)
     if (diff.getDeltas.isEmpty) ""
     else

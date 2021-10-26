@@ -21,7 +21,7 @@ class AnnotationPlugin(val sc: ScalaCompilerPluginComponent) extends ExtensionPl
     symbol.annotations.foreach(annotation =>
       extensionData += AnnotationDataBuilder.buildSimpleAnnotation(g)(symbol, annotation)
     )
-    extensionData.result
+    extensionData.result()
   }
 
 }

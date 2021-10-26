@@ -32,7 +32,7 @@ object AppWithMain2 {
 }
 
 trait UnusedTrait {
-  def unusedTraitMethod(x: Int)
+  def unusedTraitMethod(x: Int) : Unit
 }
 
 object Used2 {

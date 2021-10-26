@@ -5,7 +5,7 @@ import scalaclean.model._
 import scalaclean.rules.{RuleRun, SourceFile}
 import scalaclean.util.SingleFileVisit
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 /**
  * A rule use to test that plugin marks are set correctly

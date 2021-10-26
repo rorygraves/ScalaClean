@@ -77,7 +77,7 @@ abstract class AbstractPrivatiser[T <: AbstractPrivatiserCommandLine](val option
         val externalElements = model.allOf[ModelElement].toStream.par.filter { e =>
           val id = e.modelElementId.id
           options.externalInterface.exists(_.pattern.matcher(id).matches())
-        } toList
+        }.toList
 
         externalElements.foreach(_.mark = dontChangeBecause.itsExternal)
       }

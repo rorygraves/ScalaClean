@@ -17,8 +17,9 @@ object AnnotationDataBuilder {
           val clazz = annInfo.tpe.typeSymbol.fullName
           //TODO if we really need it
           clean(s"@$clazz(<TODO>)")
-        case UnmappableAnnotArg => ???
-        case ScalaSigBytes(_)   => ???
+        //        case UnmappableAnnotArg => ???
+        //        case ScalaSigBytes(_)   => ???
+        case _ => ???
       }
     }
 

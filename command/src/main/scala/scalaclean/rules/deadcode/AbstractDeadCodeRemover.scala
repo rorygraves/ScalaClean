@@ -272,7 +272,7 @@ abstract class AbstractDeadCodeRemover[T <: AbstractDeadCodeCommandLine] extends
         val externalElements = model.allOf[ModelElement].toStream.par.filter { e =>
           val id = e.modelElementId.id
           options.externalInterface.exists(_.pattern.matcher(id).matches())
-        } toList
+        }.toList
 
         externalElements.foreach(e => markEntryUsed(e, false, Main, e, "external API"))
       }
