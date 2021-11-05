@@ -12,6 +12,10 @@ available when working file by file as most current static analysis tools do.
 Runnable, but probably will do something bad ;).
 See the instructions below if you want to give it a try.
 
+Supported:  
+   - Scala 2.12.5
+   - Scala 2.13.6 (See Scala 2_13 branch)
+
 ## Ideas
 
 - Dead code detection removal
@@ -99,8 +103,5 @@ a bit of investigation and a sample project (see ```testProjects/deadCodeXXX``` 
 - [ScalaFix](https://github.com/scalacenter/scalafix)
 - [ScalaMeta/SemanticDB](https://scalameta.org/)
 
-## Setup instructions
-
-Open in Intellij - not all tests are passing at this point
 
 
