@@ -61,11 +61,11 @@ object Arguments {
       res
     }
 
-    def parse(args: Array[String], res: Arguments) {
+    def parse(args: Array[String], res: Arguments): Unit = {
       if (args != null) {
         var i = 0
         while (i < args.length)
-          if ((args(i) == null) || (args(i).length() == 0))
+          if ((args(i) == null) || args(i).isEmpty)
             i += 1
           else if (args(i).charAt(0) != optionPrefix) {
             res.addOther(args(i))
