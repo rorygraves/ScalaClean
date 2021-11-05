@@ -1,16 +1,14 @@
 package scalaclean.cli
 
-import java.io.File
-import java.nio.file.{Files, Path, Paths}
-
-import scalaclean.model.{AllProjectsModel, NotNothing}
+import org.scalatest.Assertions
 import scalaclean.model.impl.ProjectSet
+import scalaclean.model.{AllProjectsModel, NotNothing}
 import scalaclean.rules.RuleRun
 import scalaclean.util.DiffAssertions
-import org.scalatest.Assertions
 
-import scala.reflect.{ClassTag, classTag}
+import java.nio.file.{Files, Path, Paths}
 import scala.jdk.CollectionConverters._
+import scala.reflect.{ClassTag, classTag}
 
 abstract class AbstractProjectTestRunner[Cmd <: ScalaCleanCommandLine: ClassTag: NotNothing, Rule <: RuleRun[Cmd]](val projectNames: List[String], runOptions: SimpleRunOptions)
     extends DiffAssertions with Assertions{

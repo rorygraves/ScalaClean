@@ -1,5 +1,7 @@
 package objectannotation
 
+import scala.annotation.Annotation
+
 object AnnotApp1 extends App {
   UsedObject
 }
@@ -13,14 +15,13 @@ object UsedObject {
   def unused1 = ???
 }
 
-class UsedAnnotation1(value: Class[_])
+class UsedAnnotation1(value: Class[_]) extends Annotation
 
-class UsedByAnnotation1(value: Class[_])
-class UsedByAnnotation2(value: Class[_])
-class UsedByAnnotation3(value: Class[_])
-class UsedByAnnotation4(value: Class[_])
+class UsedByAnnotation1(value: Class[_]) extends Annotation
+class UsedByAnnotation2(value: Class[_]) extends Annotation
+class UsedByAnnotation3(value: Class[_]) extends Annotation
+class UsedByAnnotation4(value: Class[_]) extends Annotation
 
-class UnusedAnnotation(value: Class[_])
+class UnusedAnnotation(value: Class[_]) extends Annotation
 
-class UsedMethodAnnotation
-
+class UsedMethodAnnotation extends Annotation
